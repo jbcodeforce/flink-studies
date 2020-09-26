@@ -1,0 +1,16 @@
+site_name: Apache Flink Studies
+repo_url: https://github.com/jbcodeforce/flink-studies.git
+nav:
+  - Introduction: index.md
+  - Kubernetes Deployment: k8s-deploy.md
+  - Stateful function: stateful-func.md
+ 
+theme: 
+  name: material
+extra_css: ["extra.css"]
+markdown_extensions:
+  - admonition
+  - codehilite
+  - footnotes
+  - pymdownx.smartsymbols
+  - pymdownx.superfences
