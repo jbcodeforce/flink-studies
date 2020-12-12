@@ -1,0 +1,97 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Debug (Launch)",
+            "request": "launch",
+            "mainClass": "jbcodeforce.p1.WordCountMain",
+            "args": "wc.txt"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch) - Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-RideCountExample<common>",
+            "request": "launch",
+            "mainClass": "org.apache.flink.training.examples.ridecount.RideCountExample",
+            "projectName": "common"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-HourlyTipsExercise<hourly-tips>",
+            "request": "launch",
+            "mainClass": "org.apache.flink.training.exercises.hourlytips.HourlyTipsExercise",
+            "projectName": "hourly-tips"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-HourlyTipsSolution<hourly-tips>",
+            "request": "launch",
+            "mainClass": "org.apache.flink.training.solutions.hourlytips.HourlyTipsSolution",
+            "projectName": "hourly-tips"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-LongRidesExercise<long-ride-alerts>",
+            "request": "launch",
+            "mainClass": "org.apache.flink.training.exercises.longrides.LongRidesExercise",
+            "projectName": "long-ride-alerts"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-LongRidesSolution<long-ride-alerts>",
+            "request": "launch",
+            "mainClass": "org.apache.flink.training.solutions.longrides.LongRidesSolution",
+            "projectName": "long-ride-alerts"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-WordCountMain<my-flink>",
+            "request": "launch",
+            "mainClass": "jbcodeforce.p1.WordCountMain",
+            "projectName": "my-flink"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-RideCleansingExercise<ride-cleansing>",
+            "request": "launch",
+            "mainClass": "org.apache.flink.training.exercises.ridecleansing.RideCleansingExercise",
+            "projectName": "ride-cleansing"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-RideCleansingSolution<ride-cleansing>",
+            "request": "launch",
+            "mainClass": "org.apache.flink.training.solutions.ridecleansing.RideCleansingSolution",
+            "projectName": "ride-cleansing"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-RidesAndFaresExercise<rides-and-fares>",
+            "request": "launch",
+            "mainClass": "org.apache.flink.training.exercises.ridesandfares.RidesAndFaresExercise",
+            "projectName": "rides-and-fares"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-RidesAndFaresSolution<rides-and-fares>",
+            "request": "launch",
+            "mainClass": "org.apache.flink.training.solutions.ridesandfares.RidesAndFaresSolution",
+            "projectName": "rides-and-fares"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-MavenWrapperDownloader",
+            "request": "launch",
+            "mainClass": "MavenWrapperDownloader"
+        }
+    ]
+}

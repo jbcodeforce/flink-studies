@@ -16,6 +16,7 @@ The setup is describe in [the product doc](https://ci.apache.org/projects/flink/
 The diagram below illustrates the standard deployment of a job on k8s with session mode:
 
  ![1](https://ci.apache.org/projects/flink/flink-docs-release-1.11/fig/FlinkOnK8s.svg)
+ *src: apache flink site*
  
 ## Flink application deployment
 

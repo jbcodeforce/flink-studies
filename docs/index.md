@@ -1,14 +1,37 @@
 # Apache Flink Studies
 
-## What 
+## The What 
 
-Apache Flink is a framework and distributed processing engine for stateful computations over unbounded and bounded data streams.
+[Apache Flink](https://flink.apache.org) (2016) is a framework and distributed processing engine for stateful computations over unbounded and bounded data streams. It is considered to be superior to spark and hadoop. It supports batch and graph processing. Flink's streaming model is based on windowing and checkpointing, it uses controlled cyclic dependency graph as its execution engine.
 
-[Product documentation](https://flink.apache.org/flink-architecture.html). 
+Here is simple diagram of Flink architecture.
 
-Base docker image is: [https://hub.docker.com/_/flink](https://hub.docker.com/_/flink)
+ ![0](./images/arch.png)
 
-See [Flink docker setup](https://ci.apache.org/projects/flink/flink-docs-master/ops/deployment/docker.html)
+We can use the docker images to deploy a **Session** or **Job cluster** in a containerized environment.
+
+### Clusters
+
+Use session cluster to run multiple jobs: we need a JobManager container. Job cluster is for as single job: the cluster and the job are deployed together.
+
+Different [deployment models](https://ci.apache.org/projects/flink/flink-docs-release-1.11/ops/deployment/) are supported:
+
+* Deploy on executing cluster, this is the **session mode**. There is a trade off to run multiple concurrent jobs in session mode.
+* **Per job** mode, spin up a cluster per job submission. More k8s oriented. This provides better resource isolation.
+* **Application mode** creates a cluster per app with the main() executed on the JobManager. It can include multiple jobs but run inside the app. It allows for saving the CPU cycles required, but also save the bandwidth required for downloading the dependencies locally.
+
+
+### Useful links
+
+* [Product documentation](https://flink.apache.org/flink-architecture.html). 
+* Base docker image is: [https://hub.docker.com/_/flink](https://hub.docker.com/_/flink)
+* [Flink docker setup](https://ci.apache.org/projects/flink/flink-docs-master/ops/deployment/docker.html) and the docker-compose on this repo.
+
+## Batch processing
+
+Process all the data in one job with bounded dataset. It is used when we need all the data for assessing trend, develop model, and with concerned about throughput than latency.
+
+Hadoop was designed to do batch processing.
 
 ## Stream processing concepts
 
@@ -19,10 +42,12 @@ In [Flink](https://ci.apache.org/projects/flink/flink-docs-release-1.11/learn-fl
 It can consume from kafka, kinesis, queue, and any data source. A typical high level view of flink app:
 
  ![2](https://ci.apache.org/projects/flink/flink-docs-release-1.11/fig/flink-application-sources-sinks.png)
+ *src: apache flink site*
 
 Programs in Flink are inherently parallel and distributed. During execution, a stream has one or more stream partitions, and each operator has one or more operator subtasks.
 
  ![3](https://ci.apache.org/projects/flink/flink-docs-release-1.11/fig/parallel_dataflow.svg)
+ *src: apache flink site*
 
 A Flink application, can be stateful, is run in parallel on a distributed cluster. The various parallel instances of a given operator will execute independently, in separate threads, and in general will be running on different machines. 
 State is always accessed locally, which helps Flink applications achieve high throughput and low-latency. You can choose to keep state on the JVM heap, or if it is too large, in efficiently organized on-disk data structures.
@@ -38,6 +63,63 @@ The Flink Dashboard figure presents the execution reporting of those components:
  ![6](./images/flink-dashboard.png)
 
 The execution is from one of the training examples, the number of task slot was set to 4, and one job is running.
+
+Spark is not a true real time processing while Fink is. Spark supports batch processing. 
+
+## First app
+
+* Start Flink session cluster using:
+
+```shell
+docker-compose up -d
+```
+
+* Create a quarkus app: `mvn io.quarkus:quarkus-maven-plugin:1.10.3.Final:create -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`
+
+* Add following [maven dependencies](https://mvnrepository.com/artifact/org.apache.flink) into pom.xml
+
+```
+<!-- https://mvnrepository.com/artifact/org.apache.flink/flink-java -->
+<dependency>
+    <groupId>org.apache.flink</groupId>
+    <artifactId>flink-java</artifactId>
+    <version>1.12.0</version>
+</dependency>
+<dependency>
+    <groupId>org.apache.flink</groupId>
+    <artifactId>flink-streaming-java_2.12</artifactId>
+    <version>1.12.0</version>
+    <scope>provided</scope>
+</dependency>
+```
+
+* Build the main function with the following structure:
+   * get execution context
+   * defined process flow
+   * start the execution
+
+```java
+  ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+  ParameterTool params = ParameterTool.fromArgs(args);
+  env.getConfig().setGlobalJobParameters(params);
+  ...
+
+```
+
+* Every Flink application needs an execution environment, env in this example. To submit a job to a Session cluster via the command line:
+
+```shell
+CNAME="jbcodeforce.p1.WordCountMain"
+JMC=$(docker ps --filter name=jobmanager --format={{.ID}})
+docker cp ./target/my-flink-1.0.0-SNAPSHOT-runner.jar "${JMC}":/job.jar
+docker cp wc.txt "${JMC}":/wc.txt
+docker exec -ti $JMC sh -c "chmod 666 /wc.txt"
+docker exec -ti $JMC flink run -d -c $CNAME /job.jar --input /wc.text --output /out.csv 
+```
+
+[http://localhost:8081/#/overview](http://localhost:8081/#/overview). 
+
+Create a quarkus main class.
 
 ## Taxi rides examples
 
@@ -141,13 +223,6 @@ context.timerService().registerEventTimeTimer(getTimerTime(ride));
 
 It generates to the output stream / sink only records from this onTimer.
 
-## Running the Flink cluster
-
-Different [deployment models](https://ci.apache.org/projects/flink/flink-docs-release-1.11/ops/deployment/) are supported:
-
-* Deploy on executing cluster, this is the **session mode**. There is a trade off to run multiple concurrent jobs in session mode.
-* **Per job** mode, spin up a cluster per job submission. More k8s oriented. This provides better resource isolation.
-* **Application mode** creates a cluster per app with the main() executed on the JobManager. It can include multiple jobs but run inside the app. It allows for saving the CPU cycles required, but also save the bandwidth required for downloading the dependencies locally.
 
 ## Development approach
 
@@ -186,3 +261,7 @@ services:
         taskmanager.numberOfTaskSlots: 2
         parallelism.default: 2
 ```
+
+## Resources
+
+* Udemy Apache Flink a real time hands-on on flink. (2 stars for me)
