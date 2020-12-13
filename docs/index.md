@@ -69,7 +69,9 @@ Spark is not a true real time processing while Fink is. Spark supports batch pro
 
 ## First app
 
-* Start Flink session cluster using the following: The docker compose mount to /home the local folder in both the job manager and task manager containers so we can submit the job from the jobmanager (accessing the compiled jar) and the data in the task manager is we use file:///home/...
+The goal is to develop a [Java main function with the process flow definition](https://ci.apache.org/projects/flink/flink-docs-release-1.11/dev/datastream_api.html#anatomy-of-a-flink-program). Build a jar and then send the jar as a job to the job manager. For development we can use docker-compose to start a simple Flink cluster to run in session mode or use a docker compose that starts a standalone job manager to execute one unique job, which is the jar mounted inside the docker image. 
+
+* Start Flink session cluster using the following: The docker compose mounts to /home the local folder in both the job manager and task manager containers so we can submit the job from the jobmanager (accessing the compiled jar) and the data files in the task manager is we use `file:///home/...`
 
 ```shell
 docker-compose up -d
@@ -95,9 +97,10 @@ docker-compose up -d
 ```
 
 * Build the main function with the following structure:
-   * get execution context
-   * defined process flow
-   * start the execution
+
+    * get execution context
+    * defined process flow
+    * start the execution
 
 ```java
   ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
@@ -107,20 +110,86 @@ docker-compose up -d
 
 ```
 
+* package the jar with `mvn package`
 * Every Flink application needs an execution environment, env in this example. To submit a job to a Session cluster use the commands:
 
 ```shell
+# One way with mounted files to both task manager and job manager.
 CNAME="jbcodeforce.p1.WordCountMain"
 JMC=$(docker ps --filter name=jobmanager --format={{.ID}})
-docker exec -ti $JMC flink run -d -c $CNAME /job.jar --input file://home/my-flink/wc.text --output file://home/out.csv 
+docker exec -ti $JMC flink run -d -c $CNAME /home/my-flink/target/my-flink-1.0.0-SNAPSHOT.jar --input file://home/my-flink/data/wc.text --output file://home/data/out.csv 
 ```
 
-[http://localhost:8081/#/overview](http://localhost:8081/#/overview). 
+The file needs to be accessible from the Taskmanager container: so mounting the same filesystem to both container helps to access the jar for the java class and the potential file to be used to process the data.
 
+The UI for the dashboard is accessible at [http://localhost:8081/#/overview](http://localhost:8081/#/overview).
+
+## More Data set basic apps
+
+See example in [my-flink package p1]()
+
+### Inner join
+
+Need to read from two files and prepare them as tuples. Then process each records of the first tuple with second one using field 0 on both tuples as join key. The with() build the new tuple with combined values.
+
+```java
+ DataSet<Tuple3<Integer,String,String>> joinedSet = 
+      personSet.join(locationSet)
+      .where(0) // indice of the field to be used to do join from first tuple
+      .equalTo(0)  // to match the field in idx 0 of the second tuple
+      .with( new JoinFunction<Tuple2<Integer, String>, 
+                              Tuple2<Integer, String>, 
+                              Tuple3<Integer, String, String>>() {
+          
+          public Tuple3<Integer, String, String> join(Tuple2<Integer, String> person,  Tuple2<Integer, String> location)  {
+              return new Tuple3<Integer, String, String>(person.f0,   person.f1,  location.f1);
+          }              
+      });
+```
+
+```
+flink run -d -c jbcodeforce.p1.InnerJoin /home/my-flink/target/my-flink-1.0.0-SNAPSHOT.jar --persons file:///home/my-flink/data/persons.txt --locations file:///home/my-flink/data/locations.txt --output file:///home/my-flink/data/joinout.csv 
+```
+
+### Left outer join
+
+The construct is the same except the results will include matching records from both tuples and non matching from left:
+
+```java
+
+ DataSet<Tuple3<Integer,String,String>> joinedSet = 
+            personSet.leftOuterJoin(locationSet)
+            ....
+
+      public Tuple3<Integer, String, String> join(
+                        Tuple2<Integer, String> person,  
+                        Tuple2<Integer, String> location)  {
+          if (location == null) {
+              return new Tuple3<Integer, String, String>(person.f0, person.f1, "NULL");
+          }
+          return new Tuple3<Integer, String, String>(person.f0,   person.f1,  location.f1);
+      }  
+```
+
+Other type of joins include: **right outer join** where matching records from both data sets are present and non matching from the right, and **full outer join** when matching and non matching are present.
+
+## Data Stream example
+
+Data stream API is used to get real time data. It can come from file with readFile with watching folder for new file to read, socketTextStream or any streaming source (addSource) like Twitter, Kafka...
+
+The output can also be a stream as sink: writeAsTExt(),.. writeToSocket, addSink...
+
+See example in `my-flink` project source [WordCountSocketStream](), and to test it, use the `nc -l 9999` tool to open a socket on port 9999 and send text message.
+
+When using docker we need to open a socket in the same network as the flink task manager, so a command like:
+
+```shell
+docker run -t --rm --network  flink-studies_default --name ncs -h ncshost subfuzion/netcat -l 9999
+```
 
 ## Taxi rides examples
 
-See [this flink-training github](https://github.com/apache/flink-training/tree/release-1.11). 
+See [this flink-training github](https://github.com/apache/flink-training/tree/release-1.11).
 
 * [Lab 1- filter non NY taxi rides](https://github.com/apache/flink-training/tree/release-1.11/ride-cleansing), the process flow uses the DataStream::filter method. The NYCFilter is a class-filter-function.
 
@@ -139,7 +208,7 @@ public static class NYCFilter implements FilterFunction<TaxiRide> {
 }
 ```
 
-This exercise uses a lot of utility classes for data and tests which hide the complexity (see the common folder).
+This exercise uses a lot of utility classes for data and tests which hide the complexity of the data preparation (see the common folder).
 
 * [Process ride and fare data streams for stateful enrichment](https://github.com/apache/flink-training/tree/release-1.11/rides-and-fares). The result should be a DataStream<Tuple2<TaxiRide, TaxiFare>>, with one record for each distinct rideId. Each tuple should pair the TaxiRide START event for some rideId with its matching TaxiFare. There is no control over the order of arrival of the ride and fare records for each rideId.
 
@@ -221,9 +290,7 @@ context.timerService().registerEventTimeTimer(getTimerTime(ride));
 It generates to the output stream / sink only records from this onTimer.
 
 
-## Development approach
-
-Develop a [Java main function with the process flow definition](https://ci.apache.org/projects/flink/flink-docs-release-1.11/dev/datastream_api.html#anatomy-of-a-flink-program). Build a jar and then send the jar as a job to the job manager. For development we can use docker-compose to start a simple Flink cluster to run in session mode or use a docker compose that starts a standalone job manager to execute one unique job, which is the jar mounted inside the docker image. 
+## Example of standalone job compose file
 
 Change the parameter of the sandalone-job command:
 
@@ -261,4 +328,5 @@ services:
 
 ## Resources
 
+* Flink site with tutorial
 * Udemy Apache Flink a real time hands-on on flink. (2 stars for me)

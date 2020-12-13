@@ -3,3 +3,5 @@
 This repository includes notes on apache Flink and code studies.
 
 Better read in [BOOK format.](https://jbcodeforce.github.io/flink-studies/).
+
+my-flink project includes java main classes for simple filtering, joins operations...
