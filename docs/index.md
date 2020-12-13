@@ -26,6 +26,7 @@ Different [deployment models](https://ci.apache.org/projects/flink/flink-docs-re
 * [Product documentation](https://flink.apache.org/flink-architecture.html). 
 * Base docker image is: [https://hub.docker.com/_/flink](https://hub.docker.com/_/flink)
 * [Flink docker setup](https://ci.apache.org/projects/flink/flink-docs-master/ops/deployment/docker.html) and the docker-compose on this repo.
+* [FAQ](https://wints.github.io/flink-web//faq.html)
 
 ## Batch processing
 
@@ -68,7 +69,7 @@ Spark is not a true real time processing while Fink is. Spark supports batch pro
 
 ## First app
 
-* Start Flink session cluster using:
+* Start Flink session cluster using the following: The docker compose mount to /home the local folder in both the job manager and task manager containers so we can submit the job from the jobmanager (accessing the compiled jar) and the data in the task manager is we use file:///home/...
 
 ```shell
 docker-compose up -d
@@ -106,20 +107,16 @@ docker-compose up -d
 
 ```
 
-* Every Flink application needs an execution environment, env in this example. To submit a job to a Session cluster via the command line:
+* Every Flink application needs an execution environment, env in this example. To submit a job to a Session cluster use the commands:
 
 ```shell
 CNAME="jbcodeforce.p1.WordCountMain"
 JMC=$(docker ps --filter name=jobmanager --format={{.ID}})
-docker cp ./target/my-flink-1.0.0-SNAPSHOT-runner.jar "${JMC}":/job.jar
-docker cp wc.txt "${JMC}":/wc.txt
-docker exec -ti $JMC sh -c "chmod 666 /wc.txt"
-docker exec -ti $JMC flink run -d -c $CNAME /job.jar --input /wc.text --output /out.csv 
+docker exec -ti $JMC flink run -d -c $CNAME /job.jar --input file://home/my-flink/wc.text --output file://home/out.csv 
 ```
 
 [http://localhost:8081/#/overview](http://localhost:8081/#/overview). 
 
-Create a quarkus main class.
 
 ## Taxi rides examples
 
