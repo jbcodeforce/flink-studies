@@ -15,7 +15,6 @@ public class WordCountMain {
         ParameterTool params = ParameterTool.fromArgs(args);
         env.getConfig().setGlobalJobParameters(params);
         
-        // each line in the file will be in its own dataset
         DataSet<String> text = env.readTextFile(params.get("input"));
         DataSet<String> filtered = text.filter(new FilterFunction<String>() {
                 public boolean filter(String value) {

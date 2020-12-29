@@ -6,6 +6,28 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch SaleDataServer",
+            "request": "launch",
+            "mainClass": "jbcodeforce.SaleDataServer",
+            "projectName": "my-flink"
+        },
+        {
+            "type": "java",
+            "name": "Launch ProfitAverageMR",
+            "request": "launch",
+            "mainClass": "jbcodeforce.datastream.ProfitAverageMR",
+            "projectName": "my-flink",
+            "args": "--input data/avg.txt"
+        },
+        {
+            "type": "java",
+            "name": "Launch LeftOuterJoin",
+            "request": "launch",
+            "mainClass": "jbcodeforce.p1.LeftOuterJoin",
+            "projectName": "my-flink"
+        },
+        {
+            "type": "java",
             "name": "Debug (Launch)",
             "request": "launch",
             "mainClass": "jbcodeforce.p1.WordCountMain",

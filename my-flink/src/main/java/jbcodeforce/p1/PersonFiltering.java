@@ -9,12 +9,12 @@ public class PersonFiltering {
         final StreamExecutionEnvironment env =
                 StreamExecutionEnvironment.getExecutionEnvironment();
 
-        DataStream<Person> flintstones = env.fromElements(
+        DataStream<Person> persons = env.fromElements(
                 new Person("Fred", 35),
                 new Person("Wilma", 35),
                 new Person("Pebbles", 2));
 
-        DataStream<Person> adults = flintstones.filter(new FilterFunction<Person>() {
+        DataStream<Person> adults = persons.filter(new FilterFunction<Person>() {
             @Override
             public boolean filter(Person person) throws Exception {
                 return person.age >= 18;

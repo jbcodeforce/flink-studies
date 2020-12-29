@@ -8,6 +8,11 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.utils.ParameterTool;
 
+/**
+ * Do a left join on person and location.
+ * @param args
+ * @throws Exception
+ */
 public class LeftOuterJoin {
     
     public static void main(String[] args) throws Exception {
