@@ -1,4 +1,4 @@
-package jbcodeforce;
+package jbcodeforce.sale;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -8,11 +8,12 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class SaleDataServer {
-    public static boolean AUTO_FLUSH = true;
-
+    public static final boolean AUTO_FLUSH = true;
+    public static final int PORT = 9181;
     public static void main(String[] args) {
         try {
-            ServerSocket listener = new ServerSocket(9181);
+            System.out.println("Listen on port " + PORT);
+            ServerSocket listener = new ServerSocket(PORT);
             try {
                 Socket socket = listener.accept();
                 System.out.println("Connected on " + socket.toString());

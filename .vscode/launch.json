@@ -6,6 +6,20 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch TelemetryAggregate",
+            "request": "launch",
+            "mainClass": "jbcodeforce.kafka.TelemetryAggregate",
+            "projectName": "my-flink"
+        },
+        {
+            "type": "java",
+            "name": "Launch SaleDataServer",
+            "request": "launch",
+            "mainClass": "jbcodeforce.sale.SaleDataServer",
+            "projectName": "my-flink"
+        },
+        {
+            "type": "java",
             "name": "Launch SaleDataServer",
             "request": "launch",
             "mainClass": "jbcodeforce.SaleDataServer",

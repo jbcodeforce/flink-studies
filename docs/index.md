@@ -129,7 +129,7 @@ In previous execution, `flink` is a CLI.
 
 The file needs to be accessible from the Task manager container: so mounting the same filesystem to both container helps to access the jar for the java class and the potential file to be used to process the data.
 
-See [this programming examples note](#programming.md). [Operators](https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/operators/)) transform one or more DataStreams into a new DataStream. Programs can combine multiple transformations into sophisticated dataflow topologies.
+See [this programming note](#programming.md) for other dataflow examples. [Operators](https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/operators/)) transform one or more DataStreams into a new DataStream. Programs can combine multiple transformations into sophisticated dataflow topologies.
 
 ## Example of standalone job compose file
 
@@ -184,6 +184,7 @@ State snapshots are save in a state backend (in memory, HDFS, RockDB).
 KeyedStream is a key-value store. Key match the key in the stream, state update does not need transaction.
 
 For DataSet (Batch processing) there is no checkpoint, so in case of failure the stream is replayed.
+
 
 ## Resources
 

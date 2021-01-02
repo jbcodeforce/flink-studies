@@ -125,12 +125,18 @@ mapped.keyBy(( Tuple4<String, String, String, Integer> record) -> record.f0 ).ma
 
 ## Windowing
 
-Windows are buckets within a Stream and can be defined with times, or count of elements.
+[Windows](https://ci.apache.org/projects/flink/flink-docs-release-1.12/dev/stream/operators/windows.html) are buckets within a Stream and can be defined with times, or count of elements.
 
-* Tumbling window: a window every n seconds. Amount of the data vary in a window.
-* Sliding window: same but windows can overlap. So there is a `window sliding time` parameter.
-* Session window
-* Global window
+* **Tumbling** window: a window every n seconds. Amount of the data vary in a window. `.keyBy(...).window(TumblingProcessingTimeWindows.of(Time.seconds(2)))`
+* **Sliding** window: same but windows can overlap. So there is a `window sliding time` parameter: `.keyBy(...).window(SlidingProcessingTimeWindows.of(Time.seconds(2), Time.seconds(1)))`
+* **Session** window: Starts when the data stream processes records and stop when there is inactivity, so the timer set this threshold: `.keyBy(...).window(ProcessingTimeSessionWindows.withGap(Time.seconds(5)))`. The operator creates one window for each data element received
+* **Global** window: one window per key and never close. The processing is done with Trigger:
+
+    ```java
+    .keyBy(0)
+	.window(GlobalWindows.create())
+	.trigger(CountTrigger.of(5))
+    ```
 
 KeyStream can help to run in parallel, each window will have the same key.
 
@@ -139,6 +145,37 @@ The time is a parameter of the flow / environment:
 * `ProcessingTime` = system time of the machine executing the task: best performance and low latency
 * `EventTime` = the time at the source level, embedded in the record. Deliver consistent and deterministic results regardless of order 
 * `IngestionTime` = time when getting into Flink. 
+
+See example [TumblingWindowOnSale.java](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/windows/TumblingWindowOnSale.java) and to test it, do the following:
+
+```shell
+# Start the SaleDataServer that starts a server on socket 9181 and will read the avg.txt file and send each line to the socket
+java -cp target/my-flink-1.0.0-SNAPSHOT.jar jbcodeforce.sale.SaleDataServer
+# inside the job manager container start with 
+`flink run -d -c jbcodeforce.windows.TumblingWindowOnSale /home/my-flink/target/my-flink-1.0.0-SNAPSHOT.jar`.
+# The job creates the data/profitPerMonthWindowed.txt file with accumulated sale and number of record in a 2 seconds tumbling time window
+(June,Bat,Category5,154,6)
+(August,PC,Category5,74,2)
+(July,Television,Category1,50,1)
+(June,Tablet,Category2,142,5)
+(July,Steamer,Category5,123,6)
+...
+```
+
+### Trigger
+
+[Trigger](https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/stream/operators/windows.html#triggers) determines when a window is ready to be processed. All windows have default trigger. Global window has explicit trigger. We can implement our own triggers by implementing the Trigger interface.
+
+### Eviction
+
+### Watermark
+
+[Watermark](https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/event_timestamps_watermarks.html) is the mechanism to keep how the event time has progressed: with windowing operator, event time stamp is used, but windows are define on elapse time, for example, 10 minutes, so watermark helps to track where the process is in this window.
+The Flink API expects a WatermarkStrategy that contains both a TimestampAssigner and WatermarkGenerator. A TimestampAssigner is a simple function that extracts a field from an event. A number of common strategies are available out of the box as static methods on WatermarkStrategy, so reference to the documentation and examples.
+
+Watermark is crucial for out of order events, and when dealing with multi sources. Kafka topic partitions can be a challenge without watermark. With IoT device and network latency, it is possible to get an event with an earlier timestamp, while the operator has already processed such event timestamp from other source.
+
+It is possible to configure to accept late event, with the `allowed lateness` time by which element can be late before being dropped. Flink keeps a state of Window until the allowed lateness time expires.
 
 ## Taxi rides examples
 

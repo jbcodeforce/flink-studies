@@ -5,8 +5,10 @@ import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple5;
 import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.core.fs.FileSystem.WriteMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.windowing.assigners.SlidingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 
@@ -20,13 +22,14 @@ public class TumblingWindowOnSale {
         env.getConfig().setGlobalJobParameters(params);
 
         // record ex: 01-06-2018,June,Category5,Bat,12
-        DataStream<String> saleStream = env.socketTextStream("localhost", 9181);
+        DataStream<String> saleStream = env.socketTextStream("host.docker.internal", 9181);
         // Map to new tuple: month, product, category, profit, count
         DataStream<Tuple5<String, String, String, Integer, Integer>> mappedSale = saleStream.map(new Splitter());
 
-        DataStream<Tuple5<String, String, String, Integer, Integer>>  reduced = mappedSale.keyBy(new GetMonthAsKey()).window(TumblingProcessingTimeWindows.of(Time.seconds(1)))
+        DataStream<Tuple5<String, String, String, Integer, Integer>>  reduced = mappedSale.keyBy(new GetMonthAsKey()).window(TumblingProcessingTimeWindows.of(Time.seconds(2)))
+        //.window(SlidingProcessingTimeWindows.of(Time.seconds(2), Time.seconds(1)))
         .reduce(new AccumulateProfitAndRecordCount());   
-        reduced.writeAsText("/home/my-flink/data/profitPerMonthWindowed.txt");
+        reduced.writeAsText("/home/my-flink/data/profitPerMonthWindowed.txt",WriteMode.OVERWRITE);
 		// execute program
 		env.execute("Avg Profit Per Month");
     }

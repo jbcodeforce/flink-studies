@@ -4,4 +4,4 @@
 
  ![1](https://ci.apache.org/projects/flink/flink-statefun-docs-release-2.1/fig/concepts/arch_overview.svg)
 
-The Flink worker processes (TaskManagers) receive the events from the ingress systems (Kafka, Kinesis, etc.) and route them to the target functions. They invoke the functions and route the resulting messages to the next respective target functions. Messages designated for egress are written to an egress system 
+The Flink worker processes (TaskManagers) receive the events from the ingress systems (Kafka, Kinesis, etc.) and route them to the target functions. They invoke the functions and route the resulting messages to the next respective target functions. Messages designated for egress are written to an egress system.
