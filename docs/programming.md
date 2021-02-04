@@ -164,9 +164,20 @@ java -cp target/my-flink-1.0.0-SNAPSHOT.jar jbcodeforce.sale.SaleDataServer
 
 ### Trigger
 
-[Trigger](https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/stream/operators/windows.html#triggers) determines when a window is ready to be processed. All windows have default trigger. Global window has explicit trigger. We can implement our own triggers by implementing the Trigger interface.
+[Trigger](https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/stream/operators/windows.html#triggers) determines when a window is ready to be processed. All windows have default trigger. For example tumbling window has a 2s trigger. Global window has explicit trigger. We can implement our own triggers by implementing the Trigger interface with different methods to implement: onElement(..), onEventTime(...), onProcessingTime(...)
+
+Default triggers:
+
+* EventTimeTrigger: fires based upon progress of event time
+* ProcessingTimeTrigger: fires based upon progress of processing time
+* CountTrigger: fires when # of element in a window > parameter
+* PurgingTrigger
 
 ### Eviction
+
+Evictor is used to remove elements from a window after the trigger fires and before or after the window function is applied. The logic to remove is app specific.
+
+The predefined evictors: CountEvictor, DeltaEvictor and TimeEvictor.
 
 ### Watermark
 

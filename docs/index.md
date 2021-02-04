@@ -16,13 +16,13 @@ Flink's streaming model is based on windowing and checkpointing, it uses control
 
 ### Clusters
 
-Use **session** cluster to run multiple jobs: we need a JobManager container. Job cluster is for as single job: the cluster and the job are deployed together.
+Use **session** cluster to run multiple jobs: we need a JobManager container. Job cluster is for a single job: the cluster and the job are deployed together.
 
 Different [deployment models](https://ci.apache.org/projects/flink/flink-docs-release-1.11/ops/deployment/) are supported:
 
-* Deploy on executing cluster, this is the **session mode**. There is a trade off to run multiple concurrent jobs in session mode.
+* Deploy on executing cluster, this is the **session mode**. (There is a trade off to run multiple concurrent jobs in session mode).
 * **Per job** mode, spin up a cluster per job submission. More k8s oriented. This provides better resource isolation.
-* **Application mode** creates a cluster per app with the main() executed on the JobManager. It can include multiple jobs but run inside the app. It allows for saving the CPU cycles required, but also save the bandwidth required for downloading the dependencies locally.
+* **Application mode** creates a cluster per app with the main() function executed on the JobManager. It can include multiple jobs but run inside the app. It allows for saving the CPU cycles required, but also save the bandwidth required for downloading the dependencies locally.
 
 ### Useful links
 
@@ -33,7 +33,7 @@ Different [deployment models](https://ci.apache.org/projects/flink/flink-docs-re
 
 ## Batch processing
 
-Process all the data in one job with bounded dataset. It is used when we need all the data for assessing trend, develop AI model, and with concerned about throughput than latency.
+Process all the data in one job with bounded dataset. It is used when we need all the data for assessing trend, develop AI model, and with more throughput concern than latency.
 
 Hadoop was designed to do batch processing.
 
@@ -43,7 +43,7 @@ In [Flink](https://ci.apache.org/projects/flink/flink-docs-release-1.11/learn-fl
 
  ![1](https://ci.apache.org/projects/flink/flink-docs-release-1.11/fig/program_dataflow.svg)
 
-It can consume from kafka, kinesis, queue, and any data source. A typical high level view of Flink app is presented as:
+Dataflow can consume from Kafka, kinesis, queue, and any data source. A typical high level view of Flink app is presented as:
 
  ![2](https://ci.apache.org/projects/flink/flink-docs-release-1.11/fig/flink-application-sources-sinks.png)
  *src: apache flink site*
@@ -54,7 +54,7 @@ Programs in Flink are inherently parallel and distributed. During execution, a s
  *src: apache flink site*
 
 A Flink application, can be stateful, run in parallel on a distributed cluster. The various parallel instances of a given operator will execute independently, in separate threads, and in general will be running on different machines.
-State is always accessed locally, which helps Flink applications achieve high throughput and low-latency. You can choose to keep state on the JVM heap, or if it is too large, in efficiently organized on-disk data structures.
+State is always accessed local, which helps Flink applications achieve high throughput and low-latency. You can choose to keep state on the JVM heap, or if it is too large, in efficiently organized on-disk data structures.
 
  ![4](https://ci.apache.org/projects/flink/flink-docs-release-1.11/fig/local-state.png)
 
@@ -62,7 +62,7 @@ This is the Job Manager component which parallelizes the job and distributes sli
 
  ![5](https://ci.apache.org/projects/flink/flink-docs-release-1.11/fig/distributed-runtime.svg)
 
-The Flink Dashboard [http://localhost:8081/#/overview](http://localhost:8081/#/overview) presents the execution reporting of those components:
+Once flink is started (for example with the docker image), Flink Dashboard [http://localhost:8081/#/overview](http://localhost:8081/#/overview) presents the execution reporting of those components:
 
  ![6](./images/flink-dashboard.png)
 
@@ -74,17 +74,18 @@ Spark is not a true real time processing while Fink is. Spark supports batch pro
 
 The goal is to develop a [Java main function with the process flow definition](https://ci.apache.org/projects/flink/flink-docs-release-1.11/dev/datastream_api.html#anatomy-of-a-flink-program). Build a jar and then send the jar as a job to the Job manager. For development we can use docker-compose to start a simple Flink session cluster or use a docker compose that starts a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image. 
 
-* Start Flink session cluster using the following: The docker compose mounts the local folder to /home in both the job manager and task manager containers so we can submit the job from the job manager (accessing the compiled jar) and access the data files in the task manager container. 
+* Start Flink session cluster using the following command: 
 
-```shell
-docker-compose up -d
-```
+  ```shell
+  docker-compose up -d
+  ```
 
-* Create a quarkus app: `mvn io.quarkus:quarkus-maven-plugin:1.10.3.Final:create -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`
+  The docker compose mounts the local folder to /home in both the job manager and task manager containers so we can submit the job from the job manager (accessing the compiled jar) and access the data files in the task manager container.
+* Create a Quarkus app: `mvn io.quarkus:quarkus-maven-plugin:1.10.3.Final:create -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`
 
 * Add the following [maven dependencies](https://mvnrepository.com/artifact/org.apache.flink) into pom.xml
 
-```
+```xml
 <!-- https://mvnrepository.com/artifact/org.apache.flink/flink-java -->
 <dependency>
     <groupId>org.apache.flink</groupId>
