@@ -1,0 +1,15 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: vaccine-reefer-simulator
+  labels:
+    app: vaccine-reefer-simulator
+spec:
+  path: /
+  to:
+    kind: Service
+    name: vaccine-reefer-simulator
+    weight: 100
+  port:
+    targetPort: 5000
+  wildcardPolicy: None

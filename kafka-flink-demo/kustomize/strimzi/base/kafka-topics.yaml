@@ -1,0 +1,9 @@
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: telemetries
+  labels:
+    strimzi.io/cluster: vaccine-kafka
+spec:
+  partitions: 1
+  replicas: 3

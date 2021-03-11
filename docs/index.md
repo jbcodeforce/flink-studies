@@ -8,7 +8,7 @@ Here is simple diagram of Flink architecture.
 
  ![Flink components](./images/arch.png)
 
-The run time can run on any common resource manager like hadoop Yarn, Mesos, or kubernetes. It can run on its own with two majors cluster types: Job manager and task manager. Two types of processing: data set or data stream. For development purpose we can use the docker images to deploy a **Session** or **Job cluster** in a containerized environment.
+The run time can run on any common resource manager like Hadoop Yarn, Mesos, or kubernetes. It can run on its own with two majors cluster types: Job manager and task manager. Two types of processing: data set or data stream. For development purpose we can use the docker images to deploy a **Session** or **Job cluster** in a containerized environment.
 
 Flink's streaming model is based on windowing and checkpointing, it uses controlled cyclic dependency graph as its execution engine.
 
@@ -22,57 +22,55 @@ Different [deployment models](https://ci.apache.org/projects/flink/flink-docs-re
 
 * Deploy on executing cluster, this is the **session mode**. (There is a trade off to run multiple concurrent jobs in session mode).
 * **Per job** mode, spin up a cluster per job submission. More k8s oriented. This provides better resource isolation.
-* **Application mode** creates a cluster per app with the main() function executed on the JobManager. It can include multiple jobs but run inside the app. It allows for saving the CPU cycles required, but also save the bandwidth required for downloading the dependencies locally.
-
-### Useful links
-
-* [Product documentation](https://flink.apache.org/flink-architecture.html). 
-* Base docker image is: [https://hub.docker.com/_/flink](https://hub.docker.com/_/flink)
-* [Flink docker setup](https://ci.apache.org/projects/flink/flink-docs-master/ops/deployment/docker.html) and the docker-compose on this repo.
-* [FAQ](https://wints.github.io/flink-web//faq.html)
+* **Application mode** creates a cluster per app with the main() function executed on the JobManager. It can include multiple jobs but they run inside the app. It allows for saving the required CPU cycles, but also save the bandwidth required for downloading the dependencies locally.
 
 ## Batch processing
 
-Process all the data in one job with bounded dataset. It is used when we need all the data for assessing trend, develop AI model, and with more throughput concern than latency.
+Process all the data in one job with bounded dataset. It is used when we need all the data for assessing trend, develop AI model, and with a focus on throughput instead of latency.
 
-Hadoop was designed to do batch processing.
+Hadoop was designed to do batch processing. Flink has capability to replace Hadoop map reduce processing.
 
 ## Stream processing concepts
 
-In [Flink](https://ci.apache.org/projects/flink/flink-docs-release-1.11/learn-flink/#stream-processing), applications are composed of streaming dataflows that may be transformed by user-defined operators. These dataflows form directed graphs that start with one or more sources, and end in one or more sinks.
+In [Flink](https://ci.apache.org/projects/flink/flink-docs-release-1.12/learn-flink/#stream-processing), applications are composed of streaming dataflows that may be transformed by user-defined operators. These dataflows form directed graphs that start with one or more sources, and end in one or more sinks. This figure from product documentation summarize the API to develop a data stream processing flow:
 
- ![1](https://ci.apache.org/projects/flink/flink-docs-release-1.11/fig/program_dataflow.svg)
+ ![1](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/program_dataflow.svg)
+ *src: apache Flink product doc*
 
-Dataflow can consume from Kafka, kinesis, queue, and any data source. A typical high level view of Flink app is presented as:
+As illustrated, some predefined connectors exist to connect to specific source and sink, like Kafka. As in Kafka Streams, transforms can be chained. 
 
- ![2](https://ci.apache.org/projects/flink/flink-docs-release-1.11/fig/flink-application-sources-sinks.png)
- *src: apache flink site*
+Dataflow can consume from Kafka, kinesis, queue, and any data source. A typical high level view of Flink app is presented in figure below:
+
+ ![2](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/flink-application-sources-sinks.png)
+
+ *src: apache Flink product doc*
 
 Programs in Flink are inherently parallel and distributed. During execution, a stream has one or more stream partitions, and each operator has one or more operator subtasks.
 
- ![3](https://ci.apache.org/projects/flink/flink-docs-release-1.11/fig/parallel_dataflow.svg)
- *src: apache flink site*
+ ![3](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/parallel_dataflow.svg)
+
+ *src: apache Flink site*
 
 A Flink application, can be stateful, run in parallel on a distributed cluster. The various parallel instances of a given operator will execute independently, in separate threads, and in general will be running on different machines.
 State is always accessed local, which helps Flink applications achieve high throughput and low-latency. You can choose to keep state on the JVM heap, or if it is too large, in efficiently organized on-disk data structures.
 
- ![4](https://ci.apache.org/projects/flink/flink-docs-release-1.11/fig/local-state.png)
+ ![4](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/local-state.png)
 
 This is the Job Manager component which parallelizes the job and distributes slices of [DataStream](https://ci.apache.org/projects/flink/flink-docs-stable/dev/datastream_api.html) flow you defined, to the Task Managers for execution. Each parallel slice of your job will be executed in a **task slot**.
 
- ![5](https://ci.apache.org/projects/flink/flink-docs-release-1.11/fig/distributed-runtime.svg)
+ ![5](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/distributed-runtime.svg)
 
-Once flink is started (for example with the docker image), Flink Dashboard [http://localhost:8081/#/overview](http://localhost:8081/#/overview) presents the execution reporting of those components:
+Once Flink is started (for example with the docker image), Flink Dashboard [http://localhost:8081/#/overview](http://localhost:8081/#/overview) presents the execution reporting of those components:
 
  ![6](./images/flink-dashboard.png)
 
 The execution is from one of the training examples, the number of task slot was set to 4, and one job is running.
 
-Spark is not a true real time processing while Fink is. Spark supports batch processing. 
+Spark is not a true real time processing while Fink is. Fink and Spark support batch processing too. 
 
 ## First app
 
-The goal is to develop a [Java main function with the process flow definition](https://ci.apache.org/projects/flink/flink-docs-release-1.11/dev/datastream_api.html#anatomy-of-a-flink-program). Build a jar and then send the jar as a job to the Job manager. For development we can use docker-compose to start a simple Flink session cluster or use a docker compose that starts a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image. 
+Each Flink app goal is to develop a [Java main function which defined the data flow to execute on a stream](https://ci.apache.org/projects/flink/flink-docs-release-1.12/dev/datastream_api.html#anatomy-of-a-flink-program). Build a jar and then send the jar as a job to the Job manager. For development we can use docker-compose to start a simple Flink session cluster or use a docker compose that starts a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image.
 
 * Start Flink session cluster using the following command: 
 
@@ -80,8 +78,8 @@ The goal is to develop a [Java main function with the process flow definition](h
   docker-compose up -d
   ```
 
-  The docker compose mounts the local folder to /home in both the job manager and task manager containers so we can submit the job from the job manager (accessing the compiled jar) and access the data files in the task manager container.
-* Create a Quarkus app: `mvn io.quarkus:quarkus-maven-plugin:1.10.3.Final:create -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`
+  The docker compose mounts the local folder to `/home` in both the job manager and task manager containers so we can submit the job from the job manager (accessing the compiled jar) and access the data files in the task manager container.
+* Create a Quarkus app: `mvn io.quarkus:quarkus-maven-plugin:1.12.1.Final:create -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`
 
 * Add the following [maven dependencies](https://mvnrepository.com/artifact/org.apache.flink) into pom.xml
 
@@ -106,6 +104,9 @@ The goal is to develop a [Java main function with the process flow definition](h
     * defined process flow
     * start the execution
 
+The code below used the [ParameterTool  class](https://ci.apache.org/projects/flink/flink-docs-stable/api/java/org/apache/flink/api/java/utils/ParameterTool.html) to process the program arguments. So most of the basic examples use `--input filename` and `--output filename` as java arguments. So `params` will have those arguments in a Map.
+
+
 ```java
 // Get execution context
   ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
@@ -126,21 +127,21 @@ JMC=$(docker ps --filter name=jobmanager --format={{.ID}})
 docker exec -ti $JMC flink run -d -c $CNAME /home/my-flink/target/my-flink-1.0.0-SNAPSHOT.jar --input file://home/my-flink/data/wc.text --output file://home/data/out.csv 
 ```
 
-In previous execution, `flink` is a CLI.
+In previous execution, `flink` is a CLI available inside the job-manager container.
 
-The file needs to be accessible from the Task manager container: so mounting the same filesystem to both container helps to access the jar for the java class and the potential file to be used to process the data.
+The file needs to be accessible from the Task manager container: so mounting the same filesystem to both containers, helps to access the jar for the java class and the potential file to be used to process the data.
 
-See [this programming note](#programming.md) for other dataflow examples. [Operators](https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/operators/)) transform one or more DataStreams into a new DataStream. Programs can combine multiple transformations into sophisticated dataflow topologies.
+See [this coding note](#programming.md) for other dataflow examples. [Operators](https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/operators/)) transform one or more DataStreams into a new DataStream. Programs can combine multiple transformations into sophisticated data flow topologies.
 
-## Example of standalone job compose file
+## Example of standalone job docker-compose file
 
-Change the parameter of the standalone-job command:
+Change the parameter of the standalone-job command within the docker-compose file:
 
 ```yaml
 version: "2.2"
 services:
   jobmanager:
-    image: flink:1.11.2-scala_2.11
+    image: flink:1.12.2-scala_2.11
     ports:
       - "8081:8081"
     command: standalone-job --job-classname com.job.ClassName [--job-id <job id>] [--fromSavepoint /path/to/savepoint [--allowNonRestoredState]] [job arguments]
@@ -153,7 +154,7 @@ services:
         parallelism.default: 2
 
   taskmanager:
-    image: flink:1.11.2-scala_2.11
+    image: flink:1.12.2-scala_2.11
     depends_on:
       - jobmanager
     command: taskmanager
@@ -170,7 +171,7 @@ services:
 
 ## Statefulness
 
-When using aggregates or windows operators states need to be kept. For fault tolerant Flink uses checkpoints and savepoints. Checkpoints represent a snapshot of where the input data stream is with the each operator's state. A streaming dataflow can be resumed from a checkpoint while maintaining consistency (exactly-once processing semantics) by restoring the state of the operators and replaying the records from the point of the checkpoint.
+When using aggregates or windows operators states need to be kept. For fault tolerant Flink uses checkpoints and savepoints. Checkpoints represent a snapshot of where the input data stream is with each operator's state. A streaming dataflow can be resumed from a checkpoint while maintaining consistency (exactly-once processing semantics) by restoring the state of the operators and replaying the records from the point of the checkpoint.
 
 In case of failure of a parallel execution Flink stops the stream flow, then restarts operators from the last checkpoints. When doing the reallocation of data partition for processing, states are reallocated too. States are saved on distributed file systems. When coupled with Kafka as data source, the committed read offset will be part of the checkpoint data.
 
@@ -189,5 +190,8 @@ For DataSet (Batch processing) there is no checkpoint, so in case of failure the
 
 ## Resources
 
-* Flink site with tutorial
-* Udemy Apache Flink a real time hands-on on flink. (2 stars for me)
+* [Product documentation](https://flink.apache.org/flink-architecture.html). 
+* Base docker image is: [https://hub.docker.com/_/flink](https://hub.docker.com/_/flink)
+* [Flink docker setup](https://ci.apache.org/projects/flink/flink-docs-master/ops/deployment/docker.html) and the docker-compose files in this repo.
+* [FAQ](https://wints.github.io/flink-web//faq.html)
+* Udemy Apache Flink a real time hands-on. (But a 2 stars enablement for me)

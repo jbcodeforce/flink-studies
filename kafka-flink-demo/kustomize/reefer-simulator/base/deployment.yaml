@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vaccine-reefer-simulator
+  labels:
+    app: vaccine-reefer-simulator
+spec:
+  selector:
+    matchLabels:
+      app: vaccine-reefer-simulator
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: vaccine-reefer-simulator
+    spec:
+      containers:
+      - name: vaccine-reefer-simulator
+        image: quay.io/ibmcase/vaccine-reefer-simulator:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+          protocol: TCP
+        envFrom:
+          - secretRef:
+              name: reefer-simul-secret
+          - configMapRef:
+              name: reefer-simul-cm
+        env:
+          - name: PYTHONUNBUFFERED
+            value: "yes"
+          - name: JSONIFY_PRETTYPRINT_REGULAR
+            value: "True"
+          - name: FLASK_DEBUG
+            value: "False"
+          - name: KAFKA_USER
+            value: scram-user
+          - name: KAFKA_CERT
+            value: /app/certs/ca.crt
+          - name: KAFKA_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: password
+                name: scram-user
+        expose: true
+        volumeMounts:
+        - name: eventstreams-pem
+          mountPath: /app/certs
+        livenessProbe:
+          failureThreshold: 12
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 2
+        monitoring:
+          labels:
+            k8s-app: vaccine-reefer-simulator
+        pullPolicy: Always
+        service:
+          annotations:
+            prometheus.io/scrape: "true"
+          port: 8080
+          type: NodePort
+        restartPolicy: Always
+        terminationGracePeriodSeconds: 30
+      volumes:
+      - name: eventstreams-pem
+        secret:
+          secretName: kafka-cluster-ca-cert

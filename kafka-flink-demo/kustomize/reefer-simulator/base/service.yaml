@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: vaccine-reefer-simulator
+  labels:
+    name: vaccine-reefer-simulator
+    app: vaccine-reefer-simulator
+spec:
+  ports:
+    - name: web
+      protocol: TCP
+      port: 5000
+      targetPort: 5000
+  selector:
+    app: vaccine-reefer-simulator
+  type: ClusterIP
+  sessionAffinity: None

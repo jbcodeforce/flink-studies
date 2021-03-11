@@ -1,0 +1,5 @@
+resources:
+  - ./base/configmap.yaml
+  - ./base/deployment.yaml
+  - ./base/service.yaml
+  - ./base/route.yaml

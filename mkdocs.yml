@@ -6,7 +6,7 @@ nav:
   - Kubernetes Deployment: k8s-deploy.md
   - Kafka Integration: kafka.md
   - Stateful function: stateful-func.md
- 
+  - return to main: https://jbcodeforce.github.io
 theme: 
   name: material
 extra_css: ["extra.css"]

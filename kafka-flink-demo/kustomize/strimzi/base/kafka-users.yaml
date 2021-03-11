@@ -1,0 +1,74 @@
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaUser
+metadata:
+  name: tls-user
+  labels:
+    strimzi.io/cluster: vaccine-kafka
+spec:
+  authentication:
+    type: tls
+  authorization:
+    type: simple
+    acls:
+      - host: '*'
+        resource:
+          type: topic
+          name: '*'
+          patternType: literal
+        operation: Write
+      - host: '*'
+        resource:
+          type: topic
+          name: '*'
+          patternType: literal
+        operation: Read
+      - host: '*'
+        resource:
+          type: topic
+          name: '*'
+          patternType: literal
+        operation: Create
+      - host: '*'
+        resource:
+          type: group
+          name: '*'
+          patternType: literal
+        operation: Read
+--- 
+
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaUser
+metadata:
+  name: scram-user
+  labels:
+    strimzi.io/cluster: vaccine-kafka
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    acls:
+      - host: '*'
+        resource:
+          type: topic
+          name: '*'
+          patternType: literal
+        operation: Write
+      - host: '*'
+        resource:
+          type: topic
+          name: '*'
+          patternType: literal
+        operation: Read
+      - host: '*'
+        resource:
+          type: topic
+          name: '*'
+          patternType: literal
+        operation: Create
+      - host: '*'
+        operation: Read
+        resource:
+          name: '*'
+          patternType: literal
+          type: group
+    type: simple

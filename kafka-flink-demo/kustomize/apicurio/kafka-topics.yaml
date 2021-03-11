@@ -1,0 +1,22 @@
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: storage-topic
+  labels:
+    strimzi.io/cluster: vaccine-kafka
+spec:
+  partitions: 1
+  replicas: 3
+
+---
+
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: global-id-topic
+  labels:
+    strimzi.io/cluster: vaccine-kafka
+spec:
+  partitions: 1
+  replicas: 3
+

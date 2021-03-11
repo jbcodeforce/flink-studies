@@ -2,17 +2,18 @@
 
 ## More Data set basic apps
 
-See first examples are in [my-flink project under the  p1 package](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1)
+See first examples are in [my-flink project under the  p1 package](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1):
 
-* [PersonFiltering.java](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/PersonFiltering.java) filter a persons datastream using person's age.
-* [InnerJoin](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/InnerJoin.java) Proceed two files and do an inner join by using the same key on both files. See next sectionfor details.
+* [PersonFiltering.java](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/PersonFiltering.java) filter a persons datastream using person's age to create a new "adult" output data stream. This example uses test data from a list of person and uses a filtering class which implements the filter method.
+* [InnerJoin](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/InnerJoin.java) Proceed two files and do an inner join by using the same key on both files. See next section for details.
 * [LeftOuterJoin](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/LeftOuterJoin.java) results will include matching records from both tuples and non matching from left so persons (`personSet.leftOuterJoin(locationSet)`).
 * [RightOuterJoin](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/RightOuterJoin.java) matching records from both data sets are present and non matching from the right.
 * [Full outer join](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/FullOuterJoin.java) when matching and non matching are present. See [fulljoinout.csv output file](https://github.com/jbcodeforce/flink-studies/tree/master/my-flink/data/fulljoinout.csv).
+* [Traditional word count from a text](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/WordCountMain.java) uses a filter function to keep line starting by a pattern (letter 'N'), then it uses a tokenizer function to build a tuple for each word with a count of 1. The last step of the flow is to groupBy word and sum the element. Not obvious.
 
 ### Inner join
 
-Need to read from two files and prepare them as tuples. Then process each record of the first tuple with second one using field 0 on both tuples as join key. The with() build the new tuple with combined values. With need a join function to implement the joining logic and attributes selection.
+Need to read from two files and prepare them as tuples. Then process each record of the first tuple with the second one using field 0 on both tuples as join key. The with() build the new tuple with combined values. With need a join function to implement the joining logic and attributes selection.
 
 ```java
  DataSet<Tuple3<Integer,String,String>> joinedSet = 
@@ -74,7 +75,7 @@ docker run -t --rm --network  flink-studies_default --name ncs -h ncshost subfuz
 
 The data set [avg.txt](https://github.com/jbcodeforce/flink-studies/tree/master/my-flink/data/avg.txt) represents transactions for a given product with its sale profit. The goal is to compute the average profit per product per month. The solution use Map - Reduce.
 
-* Input:
+* Input sample:
 
 ```
 01-06-2018,June,Category5,Bat,12
@@ -83,20 +84,39 @@ The data set [avg.txt](https://github.com/jbcodeforce/flink-studies/tree/master/
 
 * Output:
 
-In the class [ProfitAverageMR](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/datastream/ProfitAverageMR.java), t he DataStream used to load the input file using --input argument as done in previous examples and to use a splitter to get columns as tuple attributes.
+In the class [ProfitAverageMR](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/datastream/ProfitAverageMR.java), the DataStream loads the input file as specified in  `--input` argument and then splits to get columns as tuple attributes.
 
 ```java
  DataStream<String> saleStream = env.readTextFile(params.get("input"));
  // month, product, category, profit, count
- DataStream<Tuple5<String, String, String, Integer, Integer>> mapped = saleStream.map(new Splitter()); 
+ DataStream<Tuple5<String, String, String, Integer, Integer>> mappedSale = saleStream.map(new Splitter()); 
 ```
-Splitter is a user defined class that implements MapFunction which split the csv string and select the attributes needed to generate a tuple.
 
-A first reduce is used on the month as key accumulating profit and number of record:
+The `Splitter` class implements a MapFunction which splits the csv string and select the attributes needed to generate a tuple.
+
+A first reduce operation is used on the sale tuple where the key is a month (output from GetMonthAsKey) to accumulating profit and the number of record:
 
 ```java
- DataStream<Tuple5<String, String, String, Integer, Integer>> reduced = mappedSale.keyBy(new GetMonthAsKey()).reduce(new AccumulateProfitAndRecordCount()); 
-        DataStream<Tuple2<String, Double>> profitPerMonth = reduced.map(new MapOnMonth());
+DataStream<Tuple5<String, String, String, Integer, Integer>> reduced = 
+  mappedSale.keyBy(new GetMonthAsKey())
+  .reduce(new AccumulateProfitAndRecordCount()); 
+DataStream<Tuple2<String, Double>> profitPerMonth = reduced.map(new MapOnMonth());
+```
+
+here is the main reduce function: the field f3 is the profit, and f4 the number of sale.
+
+```java
+ public static class AccumulateProfitAndRecordCount implements ReduceFunction<Tuple5<String, String, String, Integer, Integer>> {
+
+    private static final long serialVersionUID = 1L;
+    @Override
+    public Tuple5<String, String, String, Integer, Integer> reduce(
+            Tuple5<String, String, String, Integer, Integer> current,
+            Tuple5<String, String, String, Integer, Integer> previous) throws Exception {
+        
+        return new Tuple5<String, String, String, Integer, Integer>(current.f0,current.f1,current.f2,current.f3 + previous.f3, current.f4 + previous.f4);
+    }
+}
 ```
 
 To run the example once the cluster is started use:
