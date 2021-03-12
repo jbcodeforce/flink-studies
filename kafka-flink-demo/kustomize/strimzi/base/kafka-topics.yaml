@@ -6,4 +6,4 @@ metadata:
     strimzi.io/cluster: vaccine-kafka
 spec:
   partitions: 1
-  replicas: 3
+  replicas: 1

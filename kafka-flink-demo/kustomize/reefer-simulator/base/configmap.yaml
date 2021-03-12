@@ -3,5 +3,6 @@ kind: ConfigMap
 metadata:
   name: reefer-simul-cm
 data:
-    KAFKA_MAIN_TOPIC: reefer.telemetries
+    KAFKA_MAIN_TOPIC: telemetries
+    KAFKA_BOOTSTRAP_SERVERS: jb-kafka-kafka-bootstrap.jbsandbox.svc:9092
     

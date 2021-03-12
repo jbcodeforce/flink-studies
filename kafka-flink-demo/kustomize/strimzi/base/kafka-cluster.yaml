@@ -6,6 +6,8 @@ spec:
   kafka:
     version: 2.6.0
     replicas: 1
+    authorization:
+      type: simple
     listeners:
       - name: plain
         port: 9092
@@ -14,19 +16,19 @@ spec:
       - name: external
         type: route
         port: 9094
-        tls: false 
+        tls: true 
         authentication:
           type: scram-sha-512
     config:
-      offsets.topic.replication.factor: 3
-      transaction.state.log.replication.factor: 3
-      transaction.state.log.min.isr: 2
-      log.message.format.version: "2.7"
-      inter.broker.protocol.version: "2.7"
+      offsets.topic.replication.factor: 1
+      transaction.state.log.replication.factor: 1
+      transaction.state.log.min.isr: 1
+      log.message.format.version: "2.6"
+      inter.broker.protocol.version: "2.6"
     storage:
       type: ephemeral
   zookeeper:
-    replicas: 2
+    replicas: 1
     storage:
       type: ephemeral
   entityOperator:

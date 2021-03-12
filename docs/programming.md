@@ -4,7 +4,7 @@
 
 See first examples are in [my-flink project under the  p1 package](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1):
 
-* [PersonFiltering.java](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/PersonFiltering.java) filter a persons datastream using person's age to create a new "adult" output data stream. This example uses test data from a list of person and uses a filtering class which implements the filter method.
+* [PersonFiltering.java](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/PersonFiltering.java) filter a persons datastream using person's age to create a new "adult" output data stream. This example uses test data from a list of person and uses a filtering class which implements the filter method. This code can execute in VSCode or any IDE
 * [InnerJoin](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/InnerJoin.java) Proceed two files and do an inner join by using the same key on both files. See next section for details.
 * [LeftOuterJoin](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/LeftOuterJoin.java) results will include matching records from both tuples and non matching from left so persons (`personSet.leftOuterJoin(locationSet)`).
 * [RightOuterJoin](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/RightOuterJoin.java) matching records from both data sets are present and non matching from the right.

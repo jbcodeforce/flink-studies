@@ -79,6 +79,7 @@ Each Flink app goal is to develop a [Java main function which defined the data f
   ```
 
   The docker compose mounts the local folder to `/home` in both the job manager and task manager containers so we can submit the job from the job manager (accessing the compiled jar) and access the data files in the task manager container.
+
 * Create a Quarkus app: `mvn io.quarkus:quarkus-maven-plugin:1.12.1.Final:create -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`
 
 * Add the following [maven dependencies](https://mvnrepository.com/artifact/org.apache.flink) into pom.xml
@@ -117,6 +118,7 @@ The code below used the [ParameterTool  class](https://ci.apache.org/projects/fl
   env.execute();
 ```
 
+* Be sure to set uber-jar generation (`quarkus.package.type=uber-jar`) in the `application.properties` to get all the dependencies in the jar sent to Flink.
 * package the jar with `mvn package`
 * Every Flink application needs an execution environment, `env` in previous example. To submit a job to a Session cluster use the following commands:
 
@@ -124,18 +126,27 @@ The code below used the [ParameterTool  class](https://ci.apache.org/projects/fl
 # One way with mounted files to task manager and job manager containers.
 CNAME="jbcodeforce.p1.WordCountMain"
 JMC=$(docker ps --filter name=jobmanager --format={{.ID}})
-docker exec -ti $JMC flink run -d -c $CNAME /home/my-flink/target/my-flink-1.0.0-SNAPSHOT.jar --input file://home/my-flink/data/wc.text --output file://home/data/out.csv 
+docker exec -ti $JMC flink run -d -c $CNAME /home/my-flink/target/my-flink-1.0.0-runner.jar --input file://home/my-flink/data/wc.text --output file://home/data/out.csv 
 ```
 
 In previous execution, `flink` is a CLI available inside the job-manager container.
 
 The file needs to be accessible from the Task manager container: so mounting the same filesystem to both containers, helps to access the jar for the java class and the potential file to be used to process the data.
 
-See [this coding note](#programming.md) for other dataflow examples. [Operators](https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/operators/)) transform one or more DataStreams into a new DataStream. Programs can combine multiple transformations into sophisticated data flow topologies.
+See [this coding note](#programming.md) for other dataflow examples.
+
+And the official [Operators documentation](https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/operators/) to understand how to transform one or more DataStreams into a new DataStream. Programs can combine multiple transformations into sophisticated data flow topologies.
+
+## Unit testing
+
+The data flow can be isolated in a static method within the main class, and then we can use  elements on the data streams to populate with expected test data.
+
+```java
+```
 
 ## Example of standalone job docker-compose file
 
-Change the parameter of the standalone-job command within the docker-compose file:
+Change the `--job-classname` parameter of the standalone-job command within the docker-compose file:
 
 ```yaml
 version: "2.2"
@@ -191,7 +202,9 @@ For DataSet (Batch processing) there is no checkpoint, so in case of failure the
 ## Resources
 
 * [Product documentation](https://flink.apache.org/flink-architecture.html). 
+* [Official training](https://ci.apache.org/projects/flink/flink-docs-release-1.12/learn-flink/)
 * Base docker image is: [https://hub.docker.com/_/flink](https://hub.docker.com/_/flink)
 * [Flink docker setup](https://ci.apache.org/projects/flink/flink-docs-master/ops/deployment/docker.html) and the docker-compose files in this repo.
 * [FAQ](https://wints.github.io/flink-web//faq.html)
+* [Cloudera flink stateful tutorial](https://github.com/cloudera/flink-tutorials/tree/master/flink-stateful-tutorial): very good example for inventory transaction and queries on item considered as stream
 * Udemy Apache Flink a real time hands-on. (But a 2 stars enablement for me)

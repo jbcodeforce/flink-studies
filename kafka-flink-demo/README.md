@@ -7,54 +7,36 @@ A simple quarkus app with Flink data flow to process telemetries event from Kafk
 * Added Telemetry, TelemetryEvents and Telemetry Deserialization to reflect what the Reefer Simulator is sending to Kafka
 * Add dependencies for Flink in maven: flink-java, flink-streaming-java_2.12, flink-connector-kafka_2.12, flink-clients_2.12
 * Add dependencies for quarkus-kafka-client for json serialization
+* Set `quarkus.package.type=uber-jar` in `application.properties`
 
 ## Running the application in dev mode
 
-Start the Kafka, zookeeper, simulator, and flink job manager locally with `docker-compose up -d` command.
-You can run your application in dev mode that enables live coding using:
+Start the Kafka, zookeeper, simulator, and Flink job manager locally with `docker-compose up -d` command. Then deploy as a job:
 
-```shell script
-./mvnw compile quarkus:dev
+```shell
+CNAME=jbcodeforce.kafka.TelemetryFlinkMain
+JMC=$(docker ps --filter name=jobmanager --format={{.ID}})
+docker exec -ti $JMC flink run -d -c $CNAME /home/target/kafka-flink-demo-1.0.0-runner.jar
 ```
+
+Use curl to send some record from the Reefer simulator:
+
+```shell
+curl -X POST "http://localhost:5000/control" -H "accept: application/json" -H "Content-Type: application-json" -d "{ \"containerID\": \"C02\", \"nb_of_records\": 20, \"product_id\": \"P01\", \"simulation\": \"tempgrowth\"}"
+```
+
+Go to the Flink Task manager UI: [http://localhost:8081/](http://localhost:8081/) and in the Running jobs, if needed use th `docker logs` on the Task manager container to see the flow trace (from print() function)
 
 > **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
 
-## Packaging and running the application
 
-The application can be packaged using:
-```shell script
-./mvnw package
+## Deploy on OpenShift
+
+* Create a project: `oc new -project sandbox`
+* Deploy Strimzi Kafka: `oc apply -k kustomize/strimzi`
+* Deploy Reefer Simulator: `oc apply -k kustomize/reefer-simulator/`
+* Deploy the flink app
+
 ```
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
-
-If you want to build an _über-jar_, execute the following command:
-```shell script
-./mvnw package -Dquarkus.package.type=uber-jar
+ ./flink run-application --target kubernetes-application -Dkubernetes.cluster-id=eda-ocp-app-cluster -Dkubernetes.container.image=quay.io/jbcodeforce/kafkaflinkdemo local:///opt/flink/usrlib/kafka-flink-demo-1.0.0-runner.jar
 ```
-
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
-
-## Creating a native executable
-
-You can create a native executable using: 
-```shell script
-./mvnw package -Pnative
-```
-
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using: 
-```shell script
-./mvnw package -Pnative -Dquarkus.native.container-build=true
-```
-
-You can then execute your native executable with: `./target/kafka-flink-demo2-1.0.0-SNAPSHOT-runner`
-
-If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.html.
-
-## Provided examples
-
-### RESTEasy JAX-RS example
-
-REST is easy peasy with this Hello World RESTEasy resource.
-
-[Related guide section...](https://quarkus.io/guides/getting-started#the-jax-rs-resources)

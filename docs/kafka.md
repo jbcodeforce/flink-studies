@@ -31,7 +31,7 @@ public class TelemetryDeserializationSchema implements DeserializationSchema<Tel
 }
 ```
 
-Then the creation of the kafka data source uses the traditional Kafka properties, and the following construct:
+Then the creation of the Kafka data source uses the traditional Kafka properties, and the following construct:
 
 ```java
 // better to use a separate class for config to be injected via CDI
