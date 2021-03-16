@@ -18,6 +18,7 @@
     <quarkus.platform.version>1.12.1.Final</quarkus.platform.version>
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
     <flink-version>1.12.2</flink-version>
+    <scala.binary.version>2.12</scala.binary.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -52,25 +53,31 @@
     <!-- https://mvnrepository.com/artifact/org.apache.flink/flink-streaming-java -->
     <dependency>
       <groupId>org.apache.flink</groupId>
-      <artifactId>flink-streaming-java_2.12</artifactId>
+      <artifactId>flink-streaming-java_${scala.binary.version}</artifactId>
       <version>${flink-version}</version>
       <scope>provided</scope>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.apache.flink/flink-clients -->
     <dependency>
       <groupId>org.apache.flink</groupId>
-      <artifactId>flink-clients_2.12</artifactId>
+      <artifactId>flink-clients_${scala.binary.version}</artifactId>
       <version>${flink-version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.flink</groupId>
-      <artifactId>flink-connector-kafka_2.11</artifactId>
+      <artifactId>flink-connector-kafka_${scala.binary.version}</artifactId>
       <version>${flink-version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.flink</groupId>
       <artifactId>flink-json</artifactId>
       <version>${flink-version}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.apache.flink</groupId>
+    <artifactId>flink-test-utils_${scala.binary.version}</artifactId>
+    <version>${flink-version}</version>
+    <scope>test</scope>
   </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>

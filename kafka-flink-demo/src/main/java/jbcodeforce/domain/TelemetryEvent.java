@@ -1,7 +1,6 @@
-package jbcodeforce.kafka;
+package jbcodeforce.domain;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import jbcodeforce.domain.Telemetry;
 
 @RegisterForReflection
 public class TelemetryEvent {

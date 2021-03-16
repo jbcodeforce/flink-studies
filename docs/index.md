@@ -198,6 +198,15 @@ KeyedStream is a key-value store. Key match the key in the stream, state update 
 
 For DataSet (Batch processing) there is no checkpoint, so in case of failure the stream is replayed.
 
+## Difference between Kafka Streams and Flink
+
+* Flink is a complete streaming computation system that supports HA, Fault-tolerance, self-monitoring, and a variety of deployment modes.. Kafka Streams within k8s will provide horizontal scaling. Resilience is ensure with Kafka topics
+* Flink has CEP capabilities
+* Flink supports data at rest or in motion, and multiple source and sink
+* Flink needs a custom implementation of `KafkaDeserializationSchema<T>` to read both key and value
+* Kakfa streams is easier to define a pipeline for Kafka records and do the consumer - process - produce loop. In Flink we need to code producer and consumer.
+* KStreams uses the Kafka Record time stamp, with Flink we need code to deserialize the KafkaRecord and get the timestamp.
+* Support of late arrival is easier with KStreams, and Flink uses the concept of side output stream.
 
 ## Resources
 
