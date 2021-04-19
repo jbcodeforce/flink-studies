@@ -65,7 +65,7 @@ The output can also be a stream as sink: writeAsText(),.. writeToSocket, addSink
 
 See example in `my-flink` project source [WordCountSocketStream](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/datastream/WordCountSocketStreaming.java), and to test it, use the `nc -l 9999` tool to open a socket on port 9999 and send text message.
 
-When using docker we need to open a socket in the same network as the flink task manager, so a command like:
+When using docker we need to open a socket in the same network as the Flink task manager, so a command like:
 
 ```shell
 docker run -t --rm --network  flink-studies_default --name ncs -h ncshost subfuzion/netcat -l 9999
@@ -201,7 +201,7 @@ The predefined evictors: CountEvictor, DeltaEvictor and TimeEvictor.
 
 ### Watermark
 
-[Watermark](https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/event_timestamps_watermarks.html) is the mechanism to keep how the event time has progressed: with windowing operator, event time stamp is used, but windows are define on elapse time, for example, 10 minutes, so watermark helps to track where the process is in this window.
+[Watermark](https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/event_timestamps_watermarks.html) is the mechanism to keep how the event time has progressed: with windowing operator, event time stamp is used, but windows are defined on elapse time, for example, 10 minutes, so watermark helps to track where the process is in this window.
 The Flink API expects a WatermarkStrategy that contains both a TimestampAssigner and WatermarkGenerator. A TimestampAssigner is a simple function that extracts a field from an event. A number of common strategies are available out of the box as static methods on WatermarkStrategy, so reference to the documentation and examples.
 
 Watermark is crucial for out of order events, and when dealing with multi sources. Kafka topic partitions can be a challenge without watermark. With IoT device and network latency, it is possible to get an event with an earlier timestamp, while the operator has already processed such event timestamp from other source.
