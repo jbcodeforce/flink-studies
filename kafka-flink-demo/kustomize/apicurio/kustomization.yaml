@@ -1,4 +1,5 @@
 resources:
   - ./kafka-topics.yaml
   - ./registry.yaml
+  - ./route.yaml
   

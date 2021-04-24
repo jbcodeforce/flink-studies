@@ -1,6 +1,6 @@
 # Programming guidances and examples
 
-## More Data set basic apps
+## Data set basic apps
 
 See first examples are in [my-flink project under the  p1 package](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1):
 
@@ -147,9 +147,18 @@ mapped.keyBy(( Tuple4<String, String, String, Integer> record) -> record.f0 ).ma
 
 [Windows](https://ci.apache.org/projects/flink/flink-docs-release-1.12/dev/stream/operators/windows.html) are buckets within a Stream and can be defined with times, or count of elements.
 
-* **Tumbling** window: a window every n seconds. Amount of the data vary in a window. `.keyBy(...).window(TumblingProcessingTimeWindows.of(Time.seconds(2)))`
-* **Sliding** window: same but windows can overlap. So there is a `window sliding time` parameter: `.keyBy(...).window(SlidingProcessingTimeWindows.of(Time.seconds(2), Time.seconds(1)))`
-* **Session** window: Starts when the data stream processes records and stop when there is inactivity, so the timer set this threshold: `.keyBy(...).window(ProcessingTimeSessionWindows.withGap(Time.seconds(5)))`. The operator creates one window for each data element received
+* **Tumbling** window assign events into nonoverlapping buckets of fixed size. When the window border is passed, all the events are sent to an evaluation function for processing. Count-based tumbling windows define how many events are collected before triggering evaluation. Time based timbling window define time interval of n seconds. Amount of the data vary in a window. `.keyBy(...).window(TumblingProcessingTimeWindows.of(Time.seconds(2)))`
+
+![](./images/tumbling.png)
+
+* **Sliding** window: same but windows can overlap. An event might belong to multiple buckets. So there is a `window sliding time` parameter: `.keyBy(...).window(SlidingProcessingTimeWindows.of(Time.seconds(2), Time.seconds(1)))`
+
+![](./images/sliding.png)
+
+* **Session** window: Starts when the data stream processes records and stop when there is inactivity, so the timer set this threshold: `.keyBy(...).window(ProcessingTimeSessionWindows.withGap(Time.seconds(5)))`. The operator creates one window for each data element received.
+
+![](./images/session.png)
+
 * **Global** window: one window per key and never close. The processing is done with Trigger:
 
     ```java
@@ -160,7 +169,7 @@ mapped.keyBy(( Tuple4<String, String, String, Integer> record) -> record.f0 ).ma
 
 KeyStream can help to run in parallel, each window will have the same key.
 
-The time is a parameter of the flow / environment:
+Time is central to the stream processing, and the time is a parameter of the flow / environment and can take different meanings:
 
 * `ProcessingTime` = system time of the machine executing the task: best performance and low latency
 * `EventTime` = the time at the source level, embedded in the record. Deliver consistent and deterministic results regardless of order 
@@ -201,12 +210,12 @@ The predefined evictors: CountEvictor, DeltaEvictor and TimeEvictor.
 
 ### Watermark
 
-[Watermark](https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/event_timestamps_watermarks.html) is the mechanism to keep how the event time has progressed: with windowing operator, event time stamp is used, but windows are defined on elapse time, for example, 10 minutes, so watermark helps to track where the process is in this window.
+[Watermark](https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/event_timestamps_watermarks.html) is the mechanism to keep how the event time has progressed: with windowing operator, event time stamp is used, but windows are defined on elapse time, for example, 10 minutes, so watermark helps to track te point of time where no more delayed events will arrive. 
 The Flink API expects a WatermarkStrategy that contains both a TimestampAssigner and WatermarkGenerator. A TimestampAssigner is a simple function that extracts a field from an event. A number of common strategies are available out of the box as static methods on WatermarkStrategy, so reference to the documentation and examples.
 
-Watermark is crucial for out of order events, and when dealing with multi sources. Kafka topic partitions can be a challenge without watermark. With IoT device and network latency, it is possible to get an event with an earlier timestamp, while the operator has already processed such event timestamp from other source.
+Watermark is crucial for out of order events, and when dealing with multi sources. Kafka topic partitions can be a challenge without watermark. With IoT device and network latency, it is possible to get an event with an earlier timestamp, while the operator has already processed such event timestamp from other sources.
 
-It is possible to configure to accept late event, with the `allowed lateness` time by which element can be late before being dropped. Flink keeps a state of Window until the allowed lateness time expires.
+It is possible to configure to accept late events, with the `allowed lateness` time by which element can be late before being dropped. Flink keeps a state of Window until the allowed lateness time expires.
 
 ## Taxi rides examples
 

@@ -4,6 +4,6 @@ metadata:
   name: eda-apicurioregistry
 spec:
   configuration:
-    persistence: "streams"
-    streams:
-      bootstrapServers: "vaccine-kafka-kafka-bootstrap.vaccine-order.svc:9092"
+    persistence: "kafka"
+    kafka:
+      bootstrapServers: "jb-kafka-kafka-bootstrap.kafka-strimzi.svc:9092"

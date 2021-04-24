@@ -3,7 +3,20 @@ kind: KafkaTopic
 metadata:
   name: telemetries
   labels:
-    strimzi.io/cluster: vaccine-kafka
+    strimzi.io/cluster: jb-kafka
 spec:
   partitions: 1
   replicas: 1
+
+---
+
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: bookings
+  labels:
+    strimzi.io/cluster: jb-kafka
+spec:
+  partitions: 1
+  replicas: 1
+
