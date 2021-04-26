@@ -2,8 +2,10 @@ site_name: Apache Flink Studies
 repo_url: https://github.com/jbcodeforce/flink-studies.git
 nav:
   - Introduction: index.md
-  - Programming model: programming.md
+  - Architecture: architecture.md
+  - Getting started: firstapp.md
   - Kubernetes Deployment: k8s-deploy.md
+  - More examples: programming.md
   - Kafka Integration: kafka.md
   - Stateful function: stateful-func.md
   - return to main: https://jbcodeforce.github.io

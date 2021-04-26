@@ -1,15 +1,13 @@
 # Flink Kubernetes Deployment
 
-Flink consists of Job Manager and Task Manager. The Job Manager coordinates the stream processing job, manages job submission and the job lifecycle then allocates work to Task Managers. Task Managers execute the actual stream processing logic. Only one active Job Manager and there can be n Task Managers (n replicas).
+Flink consists of Job Manager and Task Manager. The Job Manager coordinates the stream processing job, manages job submission and the job lifecycle then allocates work to Task Managers. Task Managers execute the actual stream processing logic. Only one Job Manager is active at a given point of time, and there may be n Task Managers (n replicas).
 Failures of Job Manager pods are handled by the Deployment Controller which will take care of spawning a new Job Manager.
-
-Flink uses **Checkpointing** to periodically store the state of the various stream processing operators on durable storage. When recovering from a failure, the stream processing job can resume from the latest checkpoint. Checkpointing is coordinated by the Job Manager, it knows the location of the latest completed checkpoint which will get important later on.
 
 A flow is a packaged as a jar, so need to be in a docker image with the Flink executable.
 
-The setup is describe in [the product doc](https://ci.apache.org/projects/flink/flink-docs-release-1.12/deployment/resource-providers/standalone/kubernetes.html) and can be summarized as:
+The kubernetes deployment is described in [the product documentation](https://ci.apache.org/projects/flink/flink-docs-release-1.12/deployment/resource-providers/standalone/kubernetes.html) and can be summarized as:
 
-* Select the execution mode: `application, session or job`. For production it is recommended to deploy in `application` mode for better isolation. We can just build a dockerfile for our application using also the Flink jars.
+* Select the execution mode: `application, session or job`. For production it is recommended to deploy in `application` mode for better isolation, and as a microservice approach. We can just build a dockerfile for our application using the Flink jars.
 * Deploy a config map to define the `log4j-console.properties` and other parameters for Flink (`flink-conf.yaml`)
 * Define the job manager service.
 
