@@ -3,7 +3,7 @@
 
 ## First app
 
-Each Flink app goal is to develop a [Java main function which defined the data flow to execute on a stream](https://ci.apache.org/projects/flink/flink-docs-release-1.12/dev/datastream_api.html#anatomy-of-a-flink-program). Build a jar and then send the jar as a job to the Job manager. For development we can use docker-compose to start a simple Flink session cluster or use a docker compose that starts a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image.
+Each Flink app is a [Java main function which defines the data flow to execute on a stream](https://ci.apache.org/projects/flink/flink-docs-release-1.12/dev/datastream_api.html#anatomy-of-a-flink-program). Once we build a jar, we use Flink CLI to send the jar as a job to the Job manager. During development, we can use docker-compose to start a simple Flink session cluster or use a docker compose that starts a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image.
 
 * Start Flink session cluster using the following command: 
 
@@ -50,9 +50,9 @@ Each Flink app goal is to develop a [Java main function which defined the data f
 
 The code above uses the [ParameterTool  class](https://ci.apache.org/projects/flink/flink-docs-stable/api/java/org/apache/flink/api/java/utils/ParameterTool.html) to process the program arguments. So most of the basic examples use `--input filename` and `--output filename` as java arguments. So `params` will have those arguments in a Map. 
 
-* Be sure to set uber-jar generation (`quarkus.package.type=uber-jar`) in the `application.properties` to get all the dependencies in the jar sent to Flink.
+* Be sure to set uber-jar generation (`quarkus.package.type=uber-jar`) in the `application.properties` to get all the dependencies in a unique jar to send to Flink.
 * package the jar with `mvn package`
-* Every Flink application needs an execution environment, `env` in previous example. To submit a job to a Session cluste,r use the following commands:
+* Every Flink application needs an execution environment, `env` in previous example. To submit a job to a Session cluster, use the following commands:
 
 ```shell
 # One way with mounted files to task manager and job manager containers.
