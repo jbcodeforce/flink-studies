@@ -1,14 +1,17 @@
 # Flink architecture
 
-The **JobManager** controls the execution of a single application. It receives an application for execution and builds a Task Execution Graph from the defined Job Graph. 
+Flink consists of a **Job Manager** and n **Task Managers**. 
+
+The **JobManager** controls the execution of a single application. It receives an application for execution and builds a Task Execution Graph from the defined Job Graph. It manages job submission and the job lifecycle then allocates work to Task Managers
 The **Resource Manager** manages Task Slots and leverages underlying orchestrator, like Kubernetes or Yarn.
 A **Task slot** is the unit of work executed on CPU.
-The **Task Manager** is where work is executed. There are multiple task managers running in a cluster. The number of slots limits the number of tasks a TaskManager can execute. After it has been started, a TaskManager registers its slots to the ResourceManager
+The **Task Managers** execute the actual stream processing logic. There are multiple task managers running in a cluster. The number of slots limits the number of tasks a TaskManager can execute. After it has been started, a TaskManager registers its slots to the ResourceManager
 
 ![](./images/flink-components.png)
 
 The **Disparcher** exposes API to submit applications for execution. It hosts the user interface too.
 
+Only one Job Manager is active at a given point of time, and there may be `n` Task Managers.
 
 There are different [deployment models](https://ci.apache.org/projects/flink/flink-docs-release-1.11/ops/deployment/): 
 

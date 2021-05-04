@@ -2,29 +2,29 @@
 
 ## The why
 
-In IT architecture we can see two types of data processing: transactional and analytics. The 'monolytics' application architecture the database system serves multiple applications that sometimes access the same database instances and tables. This approach cause problems to support evolution and scaling. Microservice architecture addresses part of those problems by isolating data storage per service. 
+In classical IT architecture, we can see two types of data processing: transactional and analytics. With 'monolytics' application design, the database system serves multiple applications which sometimes access the same database instances and tables. This approach cause problems to support evolution and scaling. Microservice architecture addresses part of those problems by isolating data storage per service. 
 
-To get insight from the data, the traditional approach is to develop data warehouse and ETL jobs to copy and transform data from the transactional systems to the warehouse. ETL process extracts data from a transactional database, transforms it into a common representation that might include validation, value normalization, encoding, deduplication, and schema transformation, and finally loads it into the analytical database. They are batchs and run periodically.
-From the datawarehouse, analysts build queries, metrics, and build reports or address specific business question with ad-hoc queries to support critical decision. Massive storage is needed with different protocol access: NFS, S3, HDFS...
+To get insight from the data, the traditional approach is to develop data warehouse and ETL jobs to copy and transform data from the transactional systems to the warehouse. ETL process extracts data from a transactional database, transforms data into a common representation that might include validation, value normalization, encoding, deduplication, and schema transformation, and finally loads it into the target analytical database. They are batchs and run periodically.
+From the datawarehouse, the analysts build queries, metrics, and dashboards / reports to address a specific business question. Massive storage is needed, which uses different protocol such as: NFS, S3, HDFS...
 
-But there is a new way to think about data by seeing they are created as continuous streams of events, which is the foundation for stateful stream processing application. 
+Today, there is a new way to think about data by seeing they are created as continuous streams of events, which can be processed in real time, and server as the foundation for stateful stream processing application: the analytics move to the real data stream.
 
 We can define three classes of applications implemented with stateful stream processing:
 
-1. Event-driven applications
-1. Data pipeline applications: replace ETL with low latency stream processing
+1. Event-driven applications: to adopt the reactive manifesto for scaling, resilience, responsive application, leveraging messaging as communication system.
+1. Data pipeline applications: replace ETL with low latency stream processing.
 1. Data analytics applications: immediately act on the data and query live updated reports. 
 
-For more use cases content see the [Flink forward site.](https://www.flink-forward.org/)
+For more real industry use cases content see the [Flink Forward web site.](https://www.flink-forward.org/)
 
 ## The What 
 
-[Apache Flink](https://flink.apache.org) (2016) is a framework and **distributed processing** engine for stateful computations over unbounded and bounded data streams. It is considered to be superior to Apache Spark and Hadoop. It supports batch (data set )and graph (data stream) processing. It is very good at:
+[Apache Flink](https://flink.apache.org) (2016) is a framework and **distributed processing** engine for stateful computations over unbounded and bounded data streams. Flink supports batch (data set )and graph (data stream) processing. It is very good at:
 
 * Very low latency processing event time semantics to get consistent and accurate results even in case of out of order events
 * Exactly once state consistency 
 * Millisecond latencies while processing millions of events per second
-* A lot of connectors to integrate with KAfka, Cassandra, Elastic Search, JDBC, S3...
+* A lot of connectors to integrate with Kafka, Cassandra, Elastic Search, JDBC, S3...
 * Support container and deployment on Kubernetes
 * Support updating the application code and migrate jobs to different Flink clusters without losing the state of the application
 * Also support batch processing
@@ -35,16 +35,18 @@ The figure below illustrates those different models combined with [Zepellin](htt
  ![Flink components](./images/arch.png)
 
 
-
 ## Stream processing concepts
 
-In [Flink](https://ci.apache.org/projects/flink/flink-docs-release-1.12/learn-flink/#stream-processing), applications are composed of streaming dataflows that may be transformed by user-defined operators. These dataflows form directed graphs that start with one or more sources, and end in one or more sinks. The data flows between operations. This figure from product documentation summarize the API to develop a data stream processing flow:
+In [Flink](https://ci.apache.org/projects/flink/flink-docs-release-1.12/learn-flink/#stream-processing), applications are composed of streaming dataflows that may be transformed by user-defined operators. These dataflows form directed graphs that start with one or more sources, and end in one or more sinks. The data flows between operations. 
+The figure below, from product documentation, summarizes the simple APIs used to develop a data stream processing flow:
 
  ![1](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/program_dataflow.svg)
  
  *src: apache Flink product doc*
 
-Stream processing includes a set of functions to transform data to produce a new output stream, or compute rolling aggregations like min, max, mean, or collect and buffer records in window to compute some metric on finite set of events. To properly define window operator semantics, we need to determine both how events are assigned to buckets and how often the window produces a result. Flink's streaming model is based on windowing and checkpointing, it uses controlled cyclic dependency graph as its execution engine.
+Stream processing includes a set of functions to transform data, to produce a new output stream. Intermediate steps compute rolling aggregations like min, max, mean, or collect and buffer records in time window to compute metrics on finite set of events. 
+To properly define window operator semantics, we need to determine both how events are assigned to buckets and how often the window produces a result. Flink's streaming model is based on windowing and checkpointing, it uses controlled cyclic dependency graph
+ as its execution engine.
 
 The following figure is showing integration of stream processing runtime with an append log system, like Kafka, with internal local state persistence and continuous checkpoint to remote storage as HA suport:
 
@@ -84,20 +86,23 @@ Once Flink is started (for example with the docker image), Flink Dashboard [http
 
 The execution is from one of the training examples, the number of task slot was set to 4, and one job is running.
 
-Spark is not a true real time processing while Fink is. Fink and Spark support batch processing too. 
+Spark is not a true real time processing while Flink is. Flink and Spark support batch processing too. 
 
 
 ## Statefulness
 
-When using aggregates or windows operators states need to be kept. For fault tolerant Flink uses checkpoints and savepoints. Checkpoints represent a snapshot of where the input data stream is with each operator's state. A streaming dataflow can be resumed from a checkpoint while maintaining consistency (exactly-once processing semantics) by restoring the state of the operators and replaying the records from the point of the checkpoint.
+When using aggregates or windows operators, states need to be kept. For fault tolerant Flink uses checkpoints and savepoints. 
+Checkpoints represent a snapshot of where the input data stream is with each operator's state. A streaming dataflow can be resumed from a checkpoint while maintaining consistency (exactly-once processing semantics) by restoring the state of the operators and by replaying the records from the point of the checkpoint.
 
-In case of failure of a parallel execution Flink stops the stream flow, then restarts operators from the last checkpoints. When doing the reallocation of data partition for processing, states are reallocated too. States are saved on distributed file systems. When coupled with Kafka as data source, the committed read offset will be part of the checkpoint data.
+In case of failure of a parallel execution, Flink stops the stream flow, then restarts operators from the last checkpoints. When doing the reallocation of data partition for processing, states are reallocated too. 
+States are saved on distributed file systems. When coupled with Kafka as data source, the committed read offset will be part of the checkpoint data.
 
-Flink uses the concept of `Checkpoint Barriers`, which represents a separation of records so records received since the last snapshot are part of the new snapshot. It can be seen as a mark, a tag in the data stream that close a snapshot. 
+Flink uses the concept of `Checkpoint Barriers`, which represents a separation of records, so records received since the last snapshot are part of the future snapshot. Barrier can be seen as a mark, a tag in the data stream that close a snapshot. 
 
  ![Checkpoints](./images/checkpoints.png)
 
-In Kafka it will be the last committed read offset. The barrier flows with the stream so can be distributed. Once a sink operator (the end of a streaming DAG) has received the barrier n from all of its input streams, it acknowledges that snapshot n to the checkpoint coordinator. After all sinks have acknowledged a snapshot, it is considered completed. Once snapshot n has been completed, the job will never ask the source for records before such snapshot.
+In Kafka, it will be the last committed read offset. The barrier flows with the stream so can be distributed. Once a sink operator (the end of a streaming DAG) has received the `barrier n` from all of its input streams, it acknowledges that `snapshot n` to the checkpoint coordinator. 
+After all sinks have acknowledged a snapshot, it is considered completed. Once `snapshot n` has been completed, the job will never ask the source for records before such snapshot.
 
 State snapshots are save in a state backend (in memory, HDFS, RockDB). 
 
@@ -107,13 +112,14 @@ For DataSet (Batch processing) there is no checkpoint, so in case of failure the
 
 ## Difference between Kafka Streams and Flink
 
-* Flink is a complete streaming computation system that supports HA, Fault-tolerance, self-monitoring, and a variety of deployment modes.. Kafka Streams within k8s will provide horizontal scaling. Resilience is ensure with Kafka topics
+* Flink is a complete streaming computation system that supports HA, Fault-tolerance, self-monitoring, and a variety of deployment modes.
+Kafka Streams within k8s will provide horizontal scaling. Resilience is ensured with Kafka topics.
 * Flink has CEP capabilities
-* Flink supports data at rest or in motion, and multiple source and sink
-* Flink needs a custom implementation of `KafkaDeserializationSchema<T>` to read both key and value
-* Kakfa streams is easier to define a pipeline for Kafka records and do the consumer - process - produce loop. In Flink we need to code producer and consumer.
-* KStreams uses the Kafka Record time stamp, with Flink we need code to deserialize the KafkaRecord and get the timestamp.
-* Support of late arrival is easier with KStreams, and Flink uses the concept of side output stream.
+* Flink supports data at rest or in motion, and multiple source and sink, no need to be Kafka.
+* Flink needs a custom implementation of `KafkaDeserializationSchema<T>` to read both key and value from Kafka topic.
+* Kafka streams is easier to define a pipeline for Kafka records and do the consumer - process - produce loop. In Flink we need to code producer and consumer.
+* KStreams uses the Kafka Record time stamp, with Flink we need to implement how to deserialize the KafkaRecord and get the timestamp from it.
+* Support of late arrival is easier with KStreams, while Flink uses the concept of side output stream.
 
 ## Resources
 
@@ -121,6 +127,7 @@ For DataSet (Batch processing) there is no checkpoint, so in case of failure the
 * [Official training](https://ci.apache.org/projects/flink/flink-docs-release-1.12/learn-flink/)
 * Base docker image is: [https://hub.docker.com/_/flink](https://hub.docker.com/_/flink)
 * [Flink docker setup](https://ci.apache.org/projects/flink/flink-docs-master/ops/deployment/docker.html) and the docker-compose files in this repo.
-* [FAQ](https://wints.github.io/flink-web//faq.html)
+* [FAQ](https://wints.github.io/flink-web/faq.html)
 * [Cloudera flink stateful tutorial](https://github.com/cloudera/flink-tutorials/tree/master/flink-stateful-tutorial): very good example for inventory transaction and queries on item considered as stream
+* [Building real-time dashboard applications with Apache Flink, Elasticsearch, and Kibana](https://www.elastic.co/blog/building-real-time-dashboard-applications-with-apache-flink-elasticsearch-and-kibana)
 * Udemy Apache Flink a real time hands-on. (But a 2 stars enablement for me)
