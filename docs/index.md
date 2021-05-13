@@ -48,7 +48,7 @@ Stream processing includes a set of functions to transform data, to produce a ne
 To properly define window operator semantics, we need to determine both how events are assigned to buckets and how often the window produces a result. Flink's streaming model is based on windowing and checkpointing, it uses controlled cyclic dependency graph
  as its execution engine.
 
-The following figure is showing integration of stream processing runtime with an append log system, like Kafka, with internal local state persistence and continuous checkpoint to remote storage as HA suport:
+The following figure is showing integration of stream processing runtime with an append log system, like Kafka, with internal local state persistence and continuous checkpoint to remote storage as HA support:
 
 ![](./images/flink-rt-processing.png)
 
@@ -110,16 +110,81 @@ KeyedStream is a key-value store. Key match the key in the stream, state update 
 
 For DataSet (Batch processing) there is no checkpoint, so in case of failure the stream is replayed.
 
-## Difference between Kafka Streams and Flink
 
-* Flink is a complete streaming computation system that supports HA, Fault-tolerance, self-monitoring, and a variety of deployment modes.
-Kafka Streams within k8s will provide horizontal scaling. Resilience is ensured with Kafka topics.
-* Flink has CEP capabilities
-* Flink supports data at rest or in motion, and multiple source and sink, no need to be Kafka.
-* Flink needs a custom implementation of `KafkaDeserializationSchema<T>` to read both key and value from Kafka topic.
-* Kafka streams is easier to define a pipeline for Kafka records and do the consumer - process - produce loop. In Flink we need to code producer and consumer.
-* KStreams uses the Kafka Record time stamp, with Flink we need to implement how to deserialize the KafkaRecord and get the timestamp from it.
-* Support of late arrival is easier with KStreams, while Flink uses the concept of side output stream.
+### Windowing
+
+[Windows](https://ci.apache.org/projects/flink/flink-docs-release-1.12/dev/stream/operators/windows.html) are buckets within a Stream and can be defined with times, or count of elements.
+
+* **Tumbling** window assign events into nonoverlapping buckets of fixed size. When the window border is passed, all the events are sent to an evaluation function for processing. Count-based tumbling windows define how many events are collected before triggering evaluation. Time based timbling window define time interval of n seconds. Amount of the data vary in a window. `.keyBy(...).window(TumblingProcessingTimeWindows.of(Time.seconds(2)))`
+
+![](./images/tumbling.png)
+
+* **Sliding** window: same but windows can overlap. An event might belong to multiple buckets. So there is a `window sliding time` parameter: `.keyBy(...).window(SlidingProcessingTimeWindows.of(Time.seconds(2), Time.seconds(1)))`
+
+![](./images/sliding.png)
+
+* **Session** window: Starts when the data stream processes records and stop when there is inactivity, so the timer set this threshold: `.keyBy(...).window(ProcessingTimeSessionWindows.withGap(Time.seconds(5)))`. The operator creates one window for each data element received.
+
+![](./images/session.png)
+
+* **Global** window: one window per key and never close. The processing is done with Trigger:
+
+    ```java
+    .keyBy(0)
+	.window(GlobalWindows.create())
+	.trigger(CountTrigger.of(5))
+    ```
+
+KeyStream can help to run in parallel, each window will have the same key.
+
+Time is central to the stream processing, and the time is a parameter of the flow / environment and can take different meanings:
+
+* `ProcessingTime` = system time of the machine executing the task: best performance and low latency
+* `EventTime` = the time at the source level, embedded in the record. Deliver consistent and deterministic results regardless of order 
+* `IngestionTime` = time when getting into Flink. 
+
+See example [TumblingWindowOnSale.java](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/windows/TumblingWindowOnSale.java) and to test it, do the following:
+
+```shell
+# Start the SaleDataServer that starts a server on socket 9181 and will read the avg.txt file and send each line to the socket
+java -cp target/my-flink-1.0.0-SNAPSHOT.jar jbcodeforce.sale.SaleDataServer
+# inside the job manager container start with 
+`flink run -d -c jbcodeforce.windows.TumblingWindowOnSale /home/my-flink/target/my-flink-1.0.0-SNAPSHOT.jar`.
+# The job creates the data/profitPerMonthWindowed.txt file with accumulated sale and number of record in a 2 seconds tumbling time window
+(June,Bat,Category5,154,6)
+(August,PC,Category5,74,2)
+(July,Television,Category1,50,1)
+(June,Tablet,Category2,142,5)
+(July,Steamer,Category5,123,6)
+...
+```
+
+### Trigger
+
+[Trigger](https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/stream/operators/windows.html#triggers) determines when a window is ready to be processed. All windows have default trigger. For example tumbling window has a 2s trigger. Global window has explicit trigger. We can implement our own triggers by implementing the Trigger interface with different methods to implement: onElement(..), onEventTime(...), onProcessingTime(...)
+
+Default triggers:
+
+* EventTimeTrigger: fires based upon progress of event time
+* ProcessingTimeTrigger: fires based upon progress of processing time
+* CountTrigger: fires when # of element in a window > parameter
+* PurgingTrigger
+
+### Eviction
+
+Evictor is used to remove elements from a window after the trigger fires and before or after the window function is applied. The logic to remove is app specific.
+
+The predefined evictors: CountEvictor, DeltaEvictor and TimeEvictor.
+
+### Watermark
+
+[Watermark](https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/event_timestamps_watermarks.html) is the mechanism to keep how the event time has progressed: with windowing operator, event time stamp is used, but windows are defined on elapse time, for example, 10 minutes, so watermark helps to track te point of time where no more delayed events will arrive. 
+The Flink API expects a WatermarkStrategy that contains both a TimestampAssigner and WatermarkGenerator. A TimestampAssigner is a simple function that extracts a field from an event. A number of common strategies are available out of the box as static methods on WatermarkStrategy, so reference to the documentation and examples.
+
+Watermark is crucial for out of order events, and when dealing with multi sources. Kafka topic partitions can be a challenge without watermark. With IoT device and network latency, it is possible to get an event with an earlier timestamp, while the operator has already processed such event timestamp from other sources.
+
+It is possible to configure to accept late events, with the `allowed lateness` time by which element can be late before being dropped. Flink keeps a state of Window until the allowed lateness time expires.
+
 
 ## Resources
 

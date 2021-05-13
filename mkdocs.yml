@@ -4,6 +4,7 @@ nav:
   - Introduction: index.md
   - Architecture: architecture.md
   - Getting started: firstapp.md
+  - Fit for purpose: fitforpurpose.md
   - Kubernetes Deployment: k8s-deploy.md
   - More examples: programming.md
   - Kafka Integration: kafka.md
