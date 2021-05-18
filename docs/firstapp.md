@@ -1,9 +1,11 @@
 # Getting started
 
-
 ## First app
 
-Each Flink app is a [Java main function which defines the data flow to execute on a stream](https://ci.apache.org/projects/flink/flink-docs-release-1.12/dev/datastream_api.html#anatomy-of-a-flink-program). Once we build a jar, we use Flink CLI to send the jar as a job to the Job manager. During development, we can use docker-compose to start a simple Flink session cluster or use a docker compose that starts a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image.
+Each Flink app is a [Java main function which defines the data flow to execute on a stream](https://ci.apache.org/projects/flink/flink-docs-release-1.12/dev/datastream_api.html#anatomy-of-a-flink-program). 
+Once we built the application jar file, we use Flink CLI to send the jar as a job to the Job manager. 
+During development, we can use docker-compose to start a simple `Flink session` cluster or use a docker compose which
+ starts a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image.
 
 * Start Flink session cluster using the following command: 
 
@@ -11,9 +13,10 @@ Each Flink app is a [Java main function which defines the data flow to execute o
   docker-compose up -d
   ```
 
-  The docker compose mounts the local folder to `/home` in both the job manager and task manager containers so we can submit the job from the job manager (accessing the compiled jar) and access the data files in the task manager container.
+  The docker compose mounts the local folder to `/home` in both the job manager and task manager containers 
+so that, we can submit the job from the job manager (accessing the compiled jar) and also access the input data files in the task manager container.
 
-* Create a Quarkus app: `mvn io.quarkus:quarkus-maven-plugin:1.13.2.Final:create -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`
+* Create a Quarkus app: `mvn io.quarkus:quarkus-maven-plugin:1.13.3.Final:create -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`
 
 * Add the following [maven dependencies](https://mvnrepository.com/artifact/org.apache.flink) into pom.xml
 
@@ -22,12 +25,12 @@ Each Flink app is a [Java main function which defines the data flow to execute o
 <dependency>
     <groupId>org.apache.flink</groupId>
     <artifactId>flink-java</artifactId>
-    <version>1.12.0</version>
+    <version>1.13.0</version>
 </dependency>
 <dependency>
     <groupId>org.apache.flink</groupId>
     <artifactId>flink-streaming-java_2.12</artifactId>
-    <version>1.12.0</version>
+    <version>1.13.0</version>
     <scope>provided</scope>
 </dependency>
 ```
@@ -52,7 +55,8 @@ The code above uses the [ParameterTool  class](https://ci.apache.org/projects/fl
 
 * Be sure to set uber-jar generation (`quarkus.package.type=uber-jar`) in the `application.properties` to get all the dependencies in a unique jar to send to Flink.
 * package the jar with `mvn package`
-* Every Flink application needs an execution environment, `env` in previous example. To submit a job to a Session cluster, use the following commands:
+* Every Flink application needs an execution environment (`env` in previous example). 
+* To submit a job to a Session cluster, use the following commands which use the `flink` cli inside the running container:
 
 ```shell
 # One way with mounted files to task manager and job manager containers.
@@ -63,15 +67,39 @@ docker exec -ti $JMC flink run -d -c $CNAME /home/my-flink/target/my-flink-1.0.0
 
 In previous execution, `flink` is a CLI available inside the job-manager container.
 
-The file needs to be accessible from the Task manager container: so mounting the same filesystem to both containers, helps to access the jar for the java class and the potential files to be used to process the data.
-
 See [this coding note](#programming.md) for other dataflow examples.
 
 And the official [Operators documentation](https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/operators/) to understand how to transform one or more DataStreams into a new DataStream. Programs can combine multiple transformations into sophisticated data flow topologies.
 
 ## Unit testing
 
-The data flow can be isolated in a static method within the main class, and then we can use elements on the data streams to populate with expected test data.
+There are three type of function to test:
+
+* Stateless
+* Stateful
+* Timed process
+
+For stateless the data flow can be isolated in static method within the main class, or as separate class and then the test instantiate the class and provide the data.
+
+For example testing a string to a tuple mapping is doing well (MapTrip() is the MapFunction(...)):
+
+```java
+ public void testMapToTuple() throws Exception {
+        MapTrip mapFunction = new MapTrip();
+        Tuple5<String,String,String, Boolean, Integer> t = mapFunction.map("id_4214,PB7526,Sedan,Wanda,yes,Sector 19,Sector 10,5");
+        assertEquals("Wanda",t.f0);
+        assertEquals("Sector 19",t.f1);
+        assertEquals("Sector 10",t.f2);
+        assertTrue(t.f3);
+        assertEquals(5,t.f4);
+    }
+```
+
+### Stateful
+
+The test needs to check whether the operator state is updated correctly and if it is cleaned up properly
+ along with the output of the operator.
+Flink provides TestHarness classes so that we don’t have to create the mock objects.
 
 ```java
 ```

@@ -1,0 +1,35 @@
+130288773617,2018-01-10 23:41:27,John,Under Process
+124460647673,2018-01-12 21:41:18,Allison,Investigating
+122018058677,2018-02-13 20:41:19,Arthur,Pending with customer
+128958965781,2018-03-24 22:21:29,Ana,Complaint registered
+127995058260,2018-01-14 12:51:30,Alex,Pending with customer
+129229140156,2018-01-16 01:41:27,Arlene,Under Process
+123783360767,2018-01-17 02:11:37,Alberto,Investigating
+122712105055,2018-02-17 11:31:47,Barry,Pending with customer
+128686230512,2018-02-23 12:41:57,Bertha,Complaint registered
+128910123774,2018-02-24 12:41:18,Bill,Under Process
+129975242776,2018-03-04 14:51:17,Bonnie,Investigating
+125759323954,2018-04-15 22:11:14,Bret,Pending with customer
+123425721510,2018-05-06 16:41:15,Beryl,Complaint registered
+129042045731,2018-02-07 22:21:17,Chantal,Complaint registered
+123924635879,2018-02-15 22:41:18,Cristobal,Pending with customer
+129443952326,2018-03-14 21:21:14,Abbott,Complaint registered
+123491665118,2018-06-14 21:41:16,Acevedo,Pending with customer
+122877223318,2018-05-24 17:31:19,Acosta,Complaint registered
+125302154460,2018-01-17 01:41:17,Adams,Under Process
+130106689671,2018-03-11 01:51:17,Adkins,Investigating
+128288563753,2018-04-12 03:41:18,Aguilar,Pending with customer
+125996645161,2018-04-18 04:21:17,Aguirre,Complaint registered
+129099786078,2018-02-19 09:41:17,Albert,Complaint registered
+125840274012,2018-03-19 10:41:37,Alexander,Pending with customer
+124455085358,2018-05-20 11:11:17,Alford,Under Process
+128608676284,2018-05-11 12:41:27,Allen,Investigating
+129193729594,2018-03-22 12:41:17,Allison,Pending with customer
+129520754457,2018-03-23 11:31:17,Alston,Complaint registered
+123634930333,2018-06-11 16:41:47,Alvarado,Complaint registered
+124268447198,2018-01-14 17:21:17,Abbott,Under Process
+127064009813,2018-01-14 18:41:57,Acevedo,Investigating
+131298016499,2018-02-18 19:41:17,Acosta,Pending with customer
+127043819666,2018-02-14 23:31:17,Adams,Complaint registered
+123004455061,2018-03-19 22:41:27,Adkins,Complaint registered
+128118037562,2018-02-14 23:11:17,Aguilar,Pending with customer
