@@ -7,6 +7,10 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+/**
+ * A small program that read csv input file and send
+ * each record to socket connected to the remote client
+ */
 public class SaleDataServer {
     public static final boolean AUTO_FLUSH = true;
     public static final int PORT = 9181;

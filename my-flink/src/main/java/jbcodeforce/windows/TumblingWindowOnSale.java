@@ -26,9 +26,11 @@ public class TumblingWindowOnSale {
         // Map to new tuple: month, product, category, profit, count
         DataStream<Tuple5<String, String, String, Integer, Integer>> mappedSale = saleStream.map(new Splitter());
 
-        DataStream<Tuple5<String, String, String, Integer, Integer>>  reduced = mappedSale.keyBy(new GetMonthAsKey()).window(TumblingProcessingTimeWindows.of(Time.seconds(2)))
-        //.window(SlidingProcessingTimeWindows.of(Time.seconds(2), Time.seconds(1)))
-        .reduce(new AccumulateProfitAndRecordCount());   
+        DataStream<Tuple5<String, String, String, Integer, Integer>>  reduced = mappedSale
+            .keyBy(new GetMonthAsKey())
+            .window(TumblingProcessingTimeWindows.of(Time.seconds(2)))
+            //.window(SlidingProcessingTimeWindows.of(Time.seconds(2), Time.seconds(1)))
+            .reduce(new AccumulateProfitAndRecordCount());   
         reduced.writeAsText("/home/my-flink/data/profitPerMonthWindowed.txt",WriteMode.OVERWRITE);
 		// execute program
 		env.execute("Avg Profit Per Month");

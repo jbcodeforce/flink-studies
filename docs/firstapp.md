@@ -2,14 +2,15 @@
 
 ## First app
 
-Each Flink app is a [Java main function which defines the data flow to execute on a stream](https://ci.apache.org/projects/flink/flink-docs-release-1.12/dev/datastream_api.html#anatomy-of-a-flink-program). 
-Once we built the application jar file, we use Flink CLI to send the jar as a job to the Job manager. 
+Each Flink app is a [Java main function which defines the data flow to execute on a stream](https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/datastream_api.html#anatomy-of-a-flink-program). 
+Once we build the application jar file, we use Flink CLI to send the jar as a job to the Job manager server. 
 During development, we can use docker-compose to start a simple `Flink session` cluster or use a docker compose which
  starts a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image.
 
 * Start Flink session cluster using the following command: 
 
   ```shell
+  # under this repository folder
   docker-compose up -d
   ```
 
@@ -51,11 +52,12 @@ so that, we can submit the job from the job manager (accessing the compiled jar)
   env.execute();
 ```
 
-The code above uses the [ParameterTool  class](https://ci.apache.org/projects/flink/flink-docs-stable/api/java/org/apache/flink/api/java/utils/ParameterTool.html) to process the program arguments. So most of the basic examples use `--input filename` and `--output filename` as java arguments. So `params` will have those arguments in a Map. 
+The code above uses the [ParameterTool  class](https://ci.apache.org/projects/flink/flink-docs-stable/api/java/org/apache/flink/api/java/utils/ParameterTool.html) to process the program arguments. 
+So most of the basic examples use `--input filename` and `--output filename` as java arguments. So `params` will have those arguments in a Map. 
 
-* Be sure to set uber-jar generation (`quarkus.package.type=uber-jar`) in the `application.properties` to get all the dependencies in a unique jar to send to Flink.
+* Be sure to set quarkus uber-jar generation (`quarkus.package.type=uber-jar`) in the `application.properties` to get all the dependencies in a unique jar: Flink needs all dependencies in classpath.
 * package the jar with `mvn package`
-* Every Flink application needs an execution environment (`env` in previous example). 
+* Every Flink application needs a reference to the execution environment (variable `env` in previous example). 
 * To submit a job to a Session cluster, use the following commands which use the `flink` cli inside the running container:
 
 ```shell
@@ -67,9 +69,11 @@ docker exec -ti $JMC flink run -d -c $CNAME /home/my-flink/target/my-flink-1.0.0
 
 In previous execution, `flink` is a CLI available inside the job-manager container.
 
-See [this coding note](#programming.md) for other dataflow examples.
+See [this coding practice summary](#programming.md) for other dataflow examples.
 
-And the official [Operators documentation](https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/operators/) to understand how to transform one or more DataStreams into a new DataStream. Programs can combine multiple transformations into sophisticated data flow topologies.
+And the official [operators documentation](https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/operators/) to understand 
+how to transform one or more DataStreams into a new DataStream. Programs can combine multiple transformations into sophisticated 
+data flow topologies.
 
 ## Unit testing
 
@@ -79,9 +83,12 @@ There are three type of function to test:
 * Stateful
 * Timed process
 
-For stateless the data flow can be isolated in static method within the main class, or as separate class and then the test instantiate the class and provide the data.
+### Stateless
 
-For example testing a string to a tuple mapping is doing well (MapTrip() is the MapFunction(...)):
+For stateless, the data flow can be isolated in static method within the main class, 
+or defined within a separate class. The test instantiates the class and provides the data.
+
+For example testing a string to a tuple mapping (MapTrip() is a MapFunction(...) extension):
 
 ```java
  public void testMapToTuple() throws Exception {

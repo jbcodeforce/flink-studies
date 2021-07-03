@@ -1,6 +1,6 @@
 # Kafka Flink Demo project
 
-A simple quarkus app with Flink data flow to process telemetries event from Kafka. See the [ReeferTelemetry project](https://github.com/ibm-cloud-architecture/vaccine-reefer-simulator)
+A simple quarkus app with Flink data flow to process telemetries event from Kafka. See the [ReeferTelemetry simulator project](https://github.com/ibm-cloud-architecture/vaccine-reefer-simulator)
 
 ## Code approach
 
@@ -11,7 +11,8 @@ A simple quarkus app with Flink data flow to process telemetries event from Kafk
 
 ## Running the application in dev mode
 
-Start the Kafka, zookeeper, simulator, and Flink job manager locally with `docker-compose up -d` command. Then deploy as a job:
+Start the Kafka, zookeeper, simulator, and Flink job manager locally with `docker-compose up -d` command. 
+Then deploy as a job:
 
 ```shell
 CNAME=jbcodeforce.kafka.TelemetryFlinkMain

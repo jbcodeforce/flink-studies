@@ -1,9 +1,8 @@
 version: "2.2"
 services:
   zookeeper:
-    image: strimzi/kafka:latest-kafka-2.7.0
+    image: quay.io/strimzi/kafka:latest-kafka-2.8.0
     container_name: zookeeper
-    hostname: zookeeper
     command: [
       "sh", "-c",
       "bin/zookeeper-server-start.sh config/zookeeper.properties"
@@ -12,25 +11,9 @@ services:
       - "2181:2181"
     environment:
       LOG_DIR: /tmp/logs
+
   kafka:
-    image: strimzi/kafka:latest-kafka-2.7.0
-    container_name: kafka
-    hostname: kafka
-    command: [
-      "sh", "-c",
-      "bin/kafka-server-start.sh config/server.properties --override listeners=$${KAFKA_LISTENERS} --override advertised.listeners=$${KAFKA_ADVERTISED_LISTENERS} --override zookeeper.connect=$${KAFKA_ZOOKEEPER_CONNECT}"
-    ]
-    depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
-    environment:
-      LOG_DIR: "/tmp/logs"
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      kafka:
-    image: strimzi/kafka:latest-kafka-2.7.0
+    image: quay.io/strimzi/kafka:latest-kafka-2.8.0
     container_name: kafka
     command: [
       "sh", "-c",
@@ -44,7 +27,6 @@ services:
       - zookeeper
     ports:
       - "9092:9092"
-      - "29092:9092"
     environment:
       LOG_DIR: "/tmp/logs"
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
@@ -63,7 +45,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_MAIN_TOPIC: telemetries
   jobmanager:
-    image: flink:1.12.2-scala_2.12-java11 
+    image: flink:scala_2.12-java11 
     hostname: jobmanager
     ports:
       - "8081:8081"
@@ -73,7 +55,7 @@ services:
     volumes:  
         - .:/home
   taskmanager:
-    image: flink:1.12.2-scala_2.12-java11 
+    image: flink:scala_2.12-java11 
     hostname: taskmanager
     depends_on:
       - jobmanager
