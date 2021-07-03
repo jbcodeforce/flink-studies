@@ -1,0 +1,791 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.1, mkdocs-material-7.1.9">
+    
+    
+      
+        <title>More examples - Apache Flink Studies</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.ca7ac06f.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.f1a3b89f.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font-family:"Roboto";--md-code-font-family:"Roboto Mono"}</style>
+      
+    
+    
+    
+      <link rel="stylesheet" href="extra.css">
+    
+    
+      
+
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="none" data-md-color-accent="none">
+  
+    
+    <script>function __prefix(e){return new URL(".",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#programming-guidances-and-examples" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="index.html" title="Apache Flink Studies" class="md-header__button md-logo" aria-label="Apache Flink Studies" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Apache Flink Studies
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              More examples
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/jbcodeforce/flink-studies.git/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="index.html" title="Apache Flink Studies" class="md-nav__button md-logo" aria-label="Apache Flink Studies" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    Apache Flink Studies
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/jbcodeforce/flink-studies.git/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="index.html" class="md-nav__link">
+        Introduction
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="architecture.html" class="md-nav__link">
+        Architecture
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="firstapp.html" class="md-nav__link">
+        Getting started
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="fitforpurpose.html" class="md-nav__link">
+        Fit for purpose
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="k8s-deploy.html" class="md-nav__link">
+        Kubernetes Deployment
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          More examples
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="programming.html" class="md-nav__link md-nav__link--active">
+        More examples
+      </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#data-set-basic-apps" class="md-nav__link">
+    Data set basic apps
+  </a>
+  
+    <nav class="md-nav" aria-label="Data set basic apps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#inner-join" class="md-nav__link">
+    Inner join
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#left-outer-join" class="md-nav__link">
+    Left outer join
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-stream-examples" class="md-nav__link">
+    Data Stream examples
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Stream examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#compute-average-profit-per-product" class="md-nav__link">
+    Compute average profit per product
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aggregates" class="md-nav__link">
+    Aggregates
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#taxi-rides-examples" class="md-nav__link">
+    Taxi rides examples
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="kafka.html" class="md-nav__link">
+        Kafka Integration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="stateful-func.html" class="md-nav__link">
+        Stateful function
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://jbcodeforce.github.io" class="md-nav__link">
+        return to main
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#data-set-basic-apps" class="md-nav__link">
+    Data set basic apps
+  </a>
+  
+    <nav class="md-nav" aria-label="Data set basic apps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#inner-join" class="md-nav__link">
+    Inner join
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#left-outer-join" class="md-nav__link">
+    Left outer join
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-stream-examples" class="md-nav__link">
+    Data Stream examples
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Stream examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#compute-average-profit-per-product" class="md-nav__link">
+    Compute average profit per product
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aggregates" class="md-nav__link">
+    Aggregates
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#taxi-rides-examples" class="md-nav__link">
+    Taxi rides examples
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/jbcodeforce/flink-studies.git/edit/master/docs/programming.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="programming-guidances-and-examples">Programming guidances and examples</h1>
+<h2 id="data-set-basic-apps">Data set basic apps</h2>
+<p>See first examples are in <a href="https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1">my-flink project under the  p1 package</a>:</p>
+<ul>
+<li><a href="https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/PersonFiltering.java">PersonFiltering.java</a> filter a persons datastream using person's age to create a new "adult" output data stream. This example uses test data from a list of person and uses a filtering class which implements the filter method. This code can execute in VSCode or any IDE</li>
+<li><a href="https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/InnerJoin.java">InnerJoin</a> Proceed two files and do an inner join by using the same key on both files. See next section for details.</li>
+<li><a href="https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/LeftOuterJoin.java">LeftOuterJoin</a> results will include matching records from both tuples and non matching from left so persons (<code>personSet.leftOuterJoin(locationSet)</code>).</li>
+<li><a href="https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/RightOuterJoin.java">RightOuterJoin</a> matching records from both data sets are present and non matching from the right.</li>
+<li><a href="https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/FullOuterJoin.java">Full outer join</a> when matching and non matching are present. See <a href="https://github.com/jbcodeforce/flink-studies/tree/master/my-flink/data/fulljoinout.csv">fulljoinout.csv output file</a>.</li>
+<li><a href="https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/WordCountMain.java">Traditional word count from a text</a> uses a filter function to keep line starting by a pattern (letter 'N'), then it uses a tokenizer function to build a tuple for each word with a count of 1. The last step of the flow is to groupBy word and sum the element. Not obvious.</li>
+</ul>
+<h3 id="inner-join">Inner join</h3>
+<p>Need to read from two files and prepare them as tuples. Then process each record of the first tuple with the second one using field 0 on both tuples as join key. The with() build the new tuple with combined values. With need a join function to implement the joining logic and attributes selection.</p>
+<div class="highlight"><pre><span></span><code> <span class="n">DataSet</span><span class="o">&lt;</span><span class="n">Tuple3</span><span class="o">&lt;</span><span class="n">Integer</span><span class="p">,</span><span class="n">String</span><span class="p">,</span><span class="n">String</span><span class="o">&gt;&gt;</span> <span class="n">joinedSet</span> <span class="o">=</span> 
+      <span class="n">personSet</span><span class="p">.</span><span class="na">join</span><span class="p">(</span><span class="n">locationSet</span><span class="p">)</span>
+      <span class="p">.</span><span class="na">where</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="c1">// indice of the field to be used to do join from first tuple</span>
+      <span class="p">.</span><span class="na">equalTo</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1">// to match the field in idx 0 of the second tuple</span>
+      <span class="p">.</span><span class="na">with</span><span class="p">(</span> <span class="k">new</span> <span class="n">JoinFunction</span><span class="o">&lt;</span><span class="n">Tuple2</span><span class="o">&lt;</span><span class="n">Integer</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;</span><span class="p">,</span> 
+                              <span class="n">Tuple2</span><span class="o">&lt;</span><span class="n">Integer</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;</span><span class="p">,</span> 
+                              <span class="n">Tuple3</span><span class="o">&lt;</span><span class="n">Integer</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;&gt;</span><span class="p">()</span> <span class="p">{</span>
+
+          <span class="kd">public</span> <span class="n">Tuple3</span><span class="o">&lt;</span><span class="n">Integer</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="nf">join</span><span class="p">(</span><span class="n">Tuple2</span><span class="o">&lt;</span><span class="n">Integer</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">person</span><span class="p">,</span>  <span class="n">Tuple2</span><span class="o">&lt;</span><span class="n">Integer</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">location</span><span class="p">)</span>  <span class="p">{</span>
+              <span class="k">return</span> <span class="k">new</span> <span class="n">Tuple3</span><span class="o">&lt;</span><span class="n">Integer</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;</span><span class="p">(</span><span class="n">person</span><span class="p">.</span><span class="na">f0</span><span class="p">,</span>   <span class="n">person</span><span class="p">.</span><span class="na">f1</span><span class="p">,</span>  <span class="n">location</span><span class="p">.</span><span class="na">f1</span><span class="p">);</span>
+          <span class="p">}</span>              
+      <span class="p">});</span>
+</code></pre></div>
+<p>Exec within the <code>JobManager</code> container.</p>
+<div class="highlight"><pre><span></span><code>flink run -d -c jbcodeforce.p1.InnerJoin /home/my-flink/target/my-flink-1.0.0-SNAPSHOT.jar --persons file:///home/my-flink/data/persons.txt --locations file:///home/my-flink/data/locations.txt --output file:///home/my-flink/data/joinout.csv 
+</code></pre></div>
+<h3 id="left-outer-join">Left outer join</h3>
+<p>The construct is the same except the results will include matching records from both tuples and non matching from left:</p>
+<div class="highlight"><pre><span></span><code> <span class="n">DataSet</span><span class="o">&lt;</span><span class="n">Tuple3</span><span class="o">&lt;</span><span class="n">Integer</span><span class="p">,</span><span class="n">String</span><span class="p">,</span><span class="n">String</span><span class="o">&gt;&gt;</span> <span class="n">joinedSet</span> <span class="o">=</span> 
+            <span class="n">personSet</span><span class="p">.</span><span class="na">leftOuterJoin</span><span class="p">(</span><span class="n">locationSet</span><span class="p">)</span>
+            <span class="p">....</span>
+
+      <span class="kd">public</span> <span class="n">Tuple3</span><span class="o">&lt;</span><span class="n">Integer</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="nf">join</span><span class="p">(</span>
+                        <span class="n">Tuple2</span><span class="o">&lt;</span><span class="n">Integer</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">person</span><span class="p">,</span>  
+                        <span class="n">Tuple2</span><span class="o">&lt;</span><span class="n">Integer</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">location</span><span class="p">)</span>  <span class="p">{</span>
+          <span class="k">if</span> <span class="p">(</span><span class="n">location</span> <span class="o">==</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+              <span class="k">return</span> <span class="k">new</span> <span class="n">Tuple3</span><span class="o">&lt;</span><span class="n">Integer</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;</span><span class="p">(</span><span class="n">person</span><span class="p">.</span><span class="na">f0</span><span class="p">,</span> <span class="n">person</span><span class="p">.</span><span class="na">f1</span><span class="p">,</span> <span class="s">&quot;NULL&quot;</span><span class="p">);</span>
+          <span class="p">}</span>
+          <span class="k">return</span> <span class="k">new</span> <span class="n">Tuple3</span><span class="o">&lt;</span><span class="n">Integer</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;</span><span class="p">(</span><span class="n">person</span><span class="p">.</span><span class="na">f0</span><span class="p">,</span>   <span class="n">person</span><span class="p">.</span><span class="na">f1</span><span class="p">,</span>  <span class="n">location</span><span class="p">.</span><span class="na">f1</span><span class="p">);</span>
+      <span class="p">}</span>  
+</code></pre></div>
+<h2 id="data-stream-examples">Data Stream examples</h2>
+<p><strong>Data stream</strong> API is used to get real time data. It can come from file with readFile with watching folder for new file to be read, socketTextStream or any streaming source (addSource) like Twitter, Kafka...</p>
+<p>The output can also be a stream as sink: writeAsText(),.. writeToSocket, addSink...</p>
+<p>See example in <code>my-flink</code> project source <a href="https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/datastream/WordCountSocketStreaming.java">WordCountSocketStream</a>, and to test it, use the <code>nc -l 9999</code> tool to open a socket on port 9999 and send text message.</p>
+<p>When using docker we need to open a socket in the same network as the Flink task manager, so a command like:</p>
+<div class="highlight"><pre><span></span><code>docker run -t --rm --network  flink-studies_default --name ncs -h ncshost subfuzion/netcat -l <span class="m">9999</span>
+</code></pre></div>
+<h3 id="compute-average-profit-per-product">Compute average profit per product</h3>
+<p>The data set <a href="https://github.com/jbcodeforce/flink-studies/tree/master/my-flink/data/avg.txt">avg.txt</a> represents transactions for a given product with its sale profit. The goal is to compute the average profit per product per month. The solution use Map - Reduce.</p>
+<ul>
+<li>Input sample:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>01-06-2018,June,Category5,Bat,12
+01-06-2108,June,Category4,Perfume,10
+</code></pre></div>
+<ul>
+<li>Output:</li>
+</ul>
+<p>In the class <a href="https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/datastream/ProfitAverageMR.java">ProfitAverageMR</a>, the DataStream loads the input file as specified in  <code>--input</code> argument and then splits to get columns as tuple attributes.</p>
+<div class="highlight"><pre><span></span><code> <span class="n">DataStream</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">saleStream</span> <span class="o">=</span> <span class="n">env</span><span class="p">.</span><span class="na">readTextFile</span><span class="p">(</span><span class="n">params</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="s">&quot;input&quot;</span><span class="p">));</span>
+ <span class="c1">// month, product, category, profit, count</span>
+ <span class="n">DataStream</span><span class="o">&lt;</span><span class="n">Tuple5</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Integer</span><span class="p">,</span> <span class="n">Integer</span><span class="o">&gt;&gt;</span> <span class="n">mappedSale</span> <span class="o">=</span> <span class="n">saleStream</span><span class="p">.</span><span class="na">map</span><span class="p">(</span><span class="k">new</span> <span class="n">Splitter</span><span class="p">());</span> 
+</code></pre></div>
+<p>The <code>Splitter</code> class implements a MapFunction which splits the csv string and select the attributes needed to generate a tuple.</p>
+<p>A first reduce operation is used on the sale tuple where the key is a month (output from GetMonthAsKey) to accumulating profit and the number of record:</p>
+<div class="highlight"><pre><span></span><code><span class="n">DataStream</span><span class="o">&lt;</span><span class="n">Tuple5</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Integer</span><span class="p">,</span> <span class="n">Integer</span><span class="o">&gt;&gt;</span> <span class="n">reduced</span> <span class="o">=</span> 
+  <span class="n">mappedSale</span><span class="p">.</span><span class="na">keyBy</span><span class="p">(</span><span class="k">new</span> <span class="n">GetMonthAsKey</span><span class="p">())</span>
+  <span class="p">.</span><span class="na">reduce</span><span class="p">(</span><span class="k">new</span> <span class="n">AccumulateProfitAndRecordCount</span><span class="p">());</span> 
+<span class="n">DataStream</span><span class="o">&lt;</span><span class="n">Tuple2</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">Double</span><span class="o">&gt;&gt;</span> <span class="n">profitPerMonth</span> <span class="o">=</span> <span class="n">reduced</span><span class="p">.</span><span class="na">map</span><span class="p">(</span><span class="k">new</span> <span class="n">MapOnMonth</span><span class="p">());</span>
+</code></pre></div>
+<p>here is the main reduce function: the field f3 is the profit, and f4 the number of sale.</p>
+<div class="highlight"><pre><span></span><code> <span class="kd">public</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">AccumulateProfitAndRecordCount</span> <span class="kd">implements</span> <span class="n">ReduceFunction</span><span class="o">&lt;</span><span class="n">Tuple5</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Integer</span><span class="p">,</span> <span class="n">Integer</span><span class="o">&gt;&gt;</span> <span class="p">{</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">long</span> <span class="n">serialVersionUID</span> <span class="o">=</span> <span class="mi">1L</span><span class="p">;</span>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="n">Tuple5</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Integer</span><span class="p">,</span> <span class="n">Integer</span><span class="o">&gt;</span> <span class="nf">reduce</span><span class="p">(</span>
+            <span class="n">Tuple5</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Integer</span><span class="p">,</span> <span class="n">Integer</span><span class="o">&gt;</span> <span class="n">current</span><span class="p">,</span>
+            <span class="n">Tuple5</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Integer</span><span class="p">,</span> <span class="n">Integer</span><span class="o">&gt;</span> <span class="n">previous</span><span class="p">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="p">{</span>
+
+        <span class="k">return</span> <span class="k">new</span> <span class="n">Tuple5</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Integer</span><span class="p">,</span> <span class="n">Integer</span><span class="o">&gt;</span><span class="p">(</span><span class="n">current</span><span class="p">.</span><span class="na">f0</span><span class="p">,</span><span class="n">current</span><span class="p">.</span><span class="na">f1</span><span class="p">,</span><span class="n">current</span><span class="p">.</span><span class="na">f2</span><span class="p">,</span><span class="n">current</span><span class="p">.</span><span class="na">f3</span> <span class="o">+</span> <span class="n">previous</span><span class="p">.</span><span class="na">f3</span><span class="p">,</span> <span class="n">current</span><span class="p">.</span><span class="na">f4</span> <span class="o">+</span> <span class="n">previous</span><span class="p">.</span><span class="na">f4</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>To run the example once the cluster is started use:</p>
+<div class="highlight"><pre><span></span><code> flink run -d -c jbcodeforce.datastream.ProfitAverageMR /home/my-flink/target/my-flink-1.0.0-SNAPSHOT.jar --input file:///home/my-flink/data/avg.txt 
+</code></pre></div>
+<h3 id="aggregates">Aggregates</h3>
+<p>See all the operators examples in <a href="https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/operators/">this note</a>.</p>
+<p>Examples of aggregate API to compute min, max... using field at index 3</p>
+<div class="highlight"><pre><span></span><code><span class="n">mapped</span><span class="p">.</span><span class="na">keyBy</span><span class="p">((</span> <span class="n">Tuple4</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Integer</span><span class="o">&gt;</span> <span class="n">record</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">record</span><span class="p">.</span><span class="na">f0</span> <span class="p">).</span><span class="na">sum</span><span class="p">(</span><span class="mi">3</span><span class="p">).</span><span class="na">writeAsText</span><span class="p">(</span><span class="s">&quot;/home/my-flink/data/out1&quot;</span><span class="p">);</span>
+
+<span class="n">mapped</span><span class="p">.</span><span class="na">keyBy</span><span class="p">((</span> <span class="n">Tuple4</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Integer</span><span class="o">&gt;</span> <span class="n">record</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">record</span><span class="p">.</span><span class="na">f0</span> <span class="p">).</span><span class="na">min</span><span class="p">(</span><span class="mi">3</span><span class="p">).</span><span class="na">writeAsText</span><span class="p">(</span><span class="s">&quot;/home/my-flink/data/out2&quot;</span><span class="p">);</span>
+
+<span class="n">mapped</span><span class="p">.</span><span class="na">keyBy</span><span class="p">((</span> <span class="n">Tuple4</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Integer</span><span class="o">&gt;</span> <span class="n">record</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">record</span><span class="p">.</span><span class="na">f0</span><span class="p">)</span> <span class="p">.</span><span class="na">minBy</span><span class="p">(</span><span class="mi">3</span><span class="p">).</span><span class="na">writeAsText</span><span class="p">(</span><span class="s">&quot;/home/my-flink/data/out3&quot;</span><span class="p">);</span>
+
+<span class="n">mapped</span><span class="p">.</span><span class="na">keyBy</span><span class="p">((</span> <span class="n">Tuple4</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Integer</span><span class="o">&gt;</span> <span class="n">record</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">record</span><span class="p">.</span><span class="na">f0</span> <span class="p">).</span><span class="na">max</span><span class="p">(</span><span class="mi">3</span><span class="p">).</span><span class="na">writeAsText</span><span class="p">(</span><span class="s">&quot;/home/my-flink/data/out4&quot;</span><span class="p">);</span>
+
+<span class="n">mapped</span><span class="p">.</span><span class="na">keyBy</span><span class="p">((</span> <span class="n">Tuple4</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Integer</span><span class="o">&gt;</span> <span class="n">record</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">record</span><span class="p">.</span><span class="na">f0</span> <span class="p">).</span><span class="na">maxBy</span><span class="p">(</span><span class="mi">3</span><span class="p">).</span><span class="na">writeAsText</span><span class="p">(</span><span class="s">&quot;/home/my-flink/data/out5&quot;</span><span class="p">);</span>
+</code></pre></div>
+<h2 id="taxi-rides-examples">Taxi rides examples</h2>
+<p>See <a href="https://github.com/apache/flink-training/tree/release-1.11">this flink-training github</a> for source.</p>
+<ul>
+<li><a href="https://github.com/apache/flink-training/tree/release-1.11/ride-cleansing">Lab 1- filter non NY taxi rides</a>, the process flow uses the <code>DataStream::filter</code> method. The NYCFilter is a class-filter-function.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="n">DataStream</span><span class="o">&lt;</span><span class="n">TaxiRide</span><span class="o">&gt;</span> <span class="n">filteredRides</span> <span class="o">=</span> <span class="n">rides</span>
+    <span class="c1">// keep only those rides and both start and end in NYC</span>
+    <span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="k">new</span> <span class="n">NYCFilter</span><span class="p">());</span>
+<span class="c1">// ...</span>
+
+<span class="kd">public</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">NYCFilter</span> <span class="kd">implements</span> <span class="n">FilterFunction</span><span class="o">&lt;</span><span class="n">TaxiRide</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">filter</span><span class="p">(</span><span class="n">TaxiRide</span> <span class="n">taxiRide</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">GeoUtils</span><span class="p">.</span><span class="na">isInNYC</span><span class="p">(</span><span class="n">taxiRide</span><span class="p">.</span><span class="na">startLon</span><span class="p">,</span> <span class="n">taxiRide</span><span class="p">.</span><span class="na">startLat</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
+                <span class="n">GeoUtils</span><span class="p">.</span><span class="na">isInNYC</span><span class="p">(</span><span class="n">taxiRide</span><span class="p">.</span><span class="na">endLon</span><span class="p">,</span> <span class="n">taxiRide</span><span class="p">.</span><span class="na">endLat</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>This exercise uses a lot of utility classes for data and tests which hide the complexity of the data preparation (see the common folder).</p>
+<ul>
+<li><a href="https://github.com/apache/flink-training/tree/release-1.11/rides-and-fares">Process ride and fare data streams for stateful enrichment</a>. The result should be a DataStream<Tuple2\<TaxiRide, TaxiFare>>, with one record for each distinct rideId. Each tuple should pair the TaxiRide START event for some rideId with its matching TaxiFare. There is no control over the order of arrival of the ride and fare records for each rideId.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="n">DataStream</span><span class="o">&lt;</span><span class="n">TaxiRide</span><span class="o">&gt;</span> <span class="n">rides</span> <span class="o">=</span> <span class="n">env</span>
+        <span class="p">.</span><span class="na">addSource</span><span class="p">(</span><span class="n">rideSourceOrTest</span><span class="p">(</span><span class="k">new</span> <span class="n">TaxiRideGenerator</span><span class="p">()))</span>
+        <span class="p">.</span><span class="na">filter</span><span class="p">((</span><span class="n">TaxiRide</span> <span class="n">ride</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ride</span><span class="p">.</span><span class="na">isStart</span><span class="p">)</span>
+        <span class="p">.</span><span class="na">keyBy</span><span class="p">((</span><span class="n">TaxiRide</span> <span class="n">ride</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ride</span><span class="p">.</span><span class="na">rideId</span><span class="p">);</span>
+
+<span class="n">DataStream</span><span class="o">&lt;</span><span class="n">TaxiFare</span><span class="o">&gt;</span> <span class="n">fares</span> <span class="o">=</span> <span class="n">env</span>
+        <span class="p">.</span><span class="na">addSource</span><span class="p">(</span><span class="n">fareSourceOrTest</span><span class="p">(</span><span class="k">new</span> <span class="n">TaxiFareGenerator</span><span class="p">()))</span>
+        <span class="p">.</span><span class="na">keyBy</span><span class="p">((</span><span class="n">TaxiFare</span> <span class="n">fare</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">fare</span><span class="p">.</span><span class="na">rideId</span><span class="p">);</span>
+
+<span class="c1">// Set a UID on the stateful flatmap operator so we can read its state using the State Processor API.</span>
+<span class="n">DataStream</span><span class="o">&lt;</span><span class="n">Tuple2</span><span class="o">&lt;</span><span class="n">TaxiRide</span><span class="p">,</span> <span class="n">TaxiFare</span><span class="o">&gt;&gt;</span> <span class="n">enrichedRides</span> <span class="o">=</span> <span class="n">rides</span>
+        <span class="p">.</span><span class="na">connect</span><span class="p">(</span><span class="n">fares</span><span class="p">)</span>
+        <span class="p">.</span><span class="na">flatMap</span><span class="p">(</span><span class="k">new</span> <span class="n">EnrichmentFunction</span><span class="p">())</span>
+        <span class="p">.</span><span class="na">uid</span><span class="p">(</span><span class="s">&quot;enrichment&quot;</span><span class="p">);</span>
+</code></pre></div>
+<p>The join and stateful implementation are done in the EnrichmentFunction as a <code>RichCoFlatMap</code>. A CoFlatMapFunction implements a flat-map transformation over two connected streams. The same instance of the transformation function is used to transform both of the connected streams. That way, the stream transformations can share state.</p>
+<p><a href="https://github.com/apache/flink-training/blob/ea4a66e97dd211bd8f8b8e415e3e427c30e4746b/rides-and-fares/src/solution/java/org/apache/flink/training/solutions/ridesandfares/RidesAndFaresSolution.java#L86-L116">RidesAndFaresSolution.java</a></p>
+<p><code>ValueState&lt;TaxiRide&gt; rideState</code> is a partitioned single-value state.</p>
+<p><code>flatMap1(TaxiRide ride, Collector&lt;Tuple2&lt;TaxiRide, TaxiFare&gt;&gt; out)</code> method is called for each element in the first of the connected streams. So here on a ride event, if there is a matching fare already computed then generate the output tuple, if not update keep the ride to be used for the fare event processing.</p>
+<p><code>flatMap2(TaxiFare fare, Collector&lt;Tuple2&lt;TaxiRide, TaxiFare&gt;&gt; out)</code> method is called on the second connected streams. When a fare event arrives, if there is a ride with the same key, join, if not keep the fare for future ride event.</p>
+<p>So one of the trick is in the ValueState class.</p>
+<ul>
+<li><a href="https://github.com/apache/flink-training/tree/master/hourly-tips">Hourly tips</a> is a <a href="https://ci.apache.org/projects/flink/flink-docs-release-1.11/learn-flink/streaming_analytics.html">time windowed analytics</a> to identify, for each hour, the driver earning the most tips. The approach is to use hour-long windows that compute the total tips for each driver during the hour, and then from that stream of window results, find the driver with the maximum tip total for each hour.</li>
+</ul>
+<p>The first data stream below applies a window on a keyed stream. Process is one of the function to use on the window. (reduce and aggregate are the others). </p>
+<div class="highlight"><pre><span></span><code>    <span class="n">DataStream</span><span class="o">&lt;</span><span class="n">Tuple3</span><span class="o">&lt;</span><span class="n">Long</span><span class="p">,</span> <span class="n">Long</span><span class="p">,</span> <span class="n">Float</span><span class="o">&gt;&gt;</span> <span class="n">hourlyTips</span> <span class="o">=</span> <span class="n">fares</span>
+            <span class="p">.</span><span class="na">keyBy</span><span class="p">((</span><span class="n">TaxiFare</span> <span class="n">fare</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">fare</span><span class="p">.</span><span class="na">driverId</span><span class="p">)</span>
+            <span class="p">.</span><span class="na">window</span><span class="p">(</span><span class="n">TumblingEventTimeWindows</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">Time</span><span class="p">.</span><span class="na">hours</span><span class="p">(</span><span class="mi">1</span><span class="p">)))</span>
+            <span class="p">.</span><span class="na">process</span><span class="p">(</span><span class="k">new</span> <span class="n">AddTips</span><span class="p">());</span>
+
+    <span class="n">DataStream</span><span class="o">&lt;</span><span class="n">Tuple3</span><span class="o">&lt;</span><span class="n">Long</span><span class="p">,</span> <span class="n">Long</span><span class="p">,</span> <span class="n">Float</span><span class="o">&gt;&gt;</span> <span class="n">hourlyMax</span> <span class="o">=</span> <span class="n">hourlyTips</span>
+            <span class="p">.</span><span class="na">windowAll</span><span class="p">(</span><span class="n">TumblingEventTimeWindows</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">Time</span><span class="p">.</span><span class="na">hours</span><span class="p">(</span><span class="mi">1</span><span class="p">)))</span>
+            <span class="p">.</span><span class="na">maxBy</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+</code></pre></div>
+<p>A process window has an iterable on the collection of events in the window to work with:</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">AddTips</span> <span class="kd">extends</span> <span class="n">ProcessWindowFunction</span><span class="o">&lt;</span>
+            <span class="n">TaxiFare</span><span class="p">,</span> <span class="n">Tuple3</span><span class="o">&lt;</span><span class="n">Long</span><span class="p">,</span> <span class="n">Long</span><span class="p">,</span> <span class="n">Float</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">Long</span><span class="p">,</span> <span class="n">TimeWindow</span><span class="o">&gt;</span> <span class="p">{</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">process</span><span class="p">(</span><span class="n">Long</span> <span class="n">key</span><span class="p">,</span> <span class="n">Context</span> <span class="n">context</span><span class="p">,</span> <span class="n">Iterable</span><span class="o">&lt;</span><span class="n">TaxiFare</span><span class="o">&gt;</span> <span class="n">fares</span><span class="p">,</span> <span class="n">Collector</span><span class="o">&lt;</span><span class="n">Tuple3</span><span class="o">&lt;</span><span class="n">Long</span><span class="p">,</span> <span class="n">Long</span><span class="p">,</span> <span class="n">Float</span><span class="o">&gt;&gt;</span> <span class="n">out</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">float</span> <span class="n">sumOfTips</span> <span class="o">=</span> <span class="mf">0F</span><span class="p">;</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">TaxiFare</span> <span class="n">f</span> <span class="p">:</span> <span class="n">fares</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">sumOfTips</span> <span class="o">+=</span> <span class="n">f</span><span class="p">.</span><span class="na">tip</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="n">out</span><span class="p">.</span><span class="na">collect</span><span class="p">(</span><span class="n">Tuple3</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">context</span><span class="p">.</span><span class="na">window</span><span class="p">().</span><span class="na">getEnd</span><span class="p">(),</span> <span class="n">key</span><span class="p">,</span> <span class="n">sumOfTips</span><span class="p">));</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Time windowing has limitations:</p>
+<ul>
+<li>can not correctly process historic data</li>
+<li>can not correctly handle out-of-order data</li>
+<li>
+<p>results will be non-deterministic</p>
+</li>
+<li>
+<p><a href="https://github.com/apache/flink-training/tree/release-1.11/long-ride-alerts">Long ride alert</a> is an example of <a href="https://ci.apache.org/projects/flink/flink-docs-release-1.11/learn-flink/event_driven.html">Event driven application</a> where alerts are created if a taxi ride started two hours ago is still ongoing. It uses event timestamp and <a href="https://ci.apache.org/projects/flink/flink-docs-release-1.11/learn-flink/streaming_analytics.html#watermarks">watermarks</a>.</p>
+</li>
+</ul>
+<p>The key is in the <a href="https://github.com/apache/flink-training/blob/ea4a66e97dd211bd8f8b8e415e3e427c30e4746b/long-ride-alerts/src/solution/java/org/apache/flink/training/solutions/longrides/LongRidesSolution.java#L66-L108">MatchFunction process function</a> implementation in which START or END events are kept in a value state, but a timer is set on the context, so the method may get a timer trigger with a processing event that will trigger the onTimer() callback method.</p>
+<div class="highlight"><pre><span></span><code><span class="n">context</span><span class="p">.</span><span class="na">timerService</span><span class="p">().</span><span class="na">registerEventTimeTimer</span><span class="p">(</span><span class="n">getTimerTime</span><span class="p">(</span><span class="n">ride</span><span class="p">));</span>
+</code></pre></div>
+<p>It generates to the output stream / sink only records from this onTimer.</p>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="k8s-deploy.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Kubernetes Deployment" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Kubernetes Deployment
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="kafka.html" class="md-footer__link md-footer__link--next" aria-label="Next: Kafka Integration" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Kafka Integration
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+        
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": ".", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "assets/javascripts/workers/search.477d984a.min.js", "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.82b56eb2.min.js"></script>
+      
+    
+  </body>
+</html>

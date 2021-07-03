@@ -1,0 +1,741 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.1, mkdocs-material-7.1.9">
+    
+    
+      
+        <title>Apache Flink Studies</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.ca7ac06f.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.f1a3b89f.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font-family:"Roboto";--md-code-font-family:"Roboto Mono"}</style>
+      
+    
+    
+    
+      <link rel="stylesheet" href="extra.css">
+    
+    
+      
+
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="none" data-md-color-accent="none">
+  
+    
+    <script>function __prefix(e){return new URL(".",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#apache-flink-studies" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="index.html" title="Apache Flink Studies" class="md-header__button md-logo" aria-label="Apache Flink Studies" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Apache Flink Studies
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Introduction
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/jbcodeforce/flink-studies.git/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="index.html" title="Apache Flink Studies" class="md-nav__button md-logo" aria-label="Apache Flink Studies" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    Apache Flink Studies
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/jbcodeforce/flink-studies.git/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Introduction
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="index.html" class="md-nav__link md-nav__link--active">
+        Introduction
+      </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-why" class="md-nav__link">
+    The why
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-what" class="md-nav__link">
+    The What
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stream-processing-concepts" class="md-nav__link">
+    Stream processing concepts
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#statefulness" class="md-nav__link">
+    Statefulness
+  </a>
+  
+    <nav class="md-nav" aria-label="Statefulness">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#windowing" class="md-nav__link">
+    Windowing
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trigger" class="md-nav__link">
+    Trigger
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eviction" class="md-nav__link">
+    Eviction
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watermark" class="md-nav__link">
+    Watermark
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resources" class="md-nav__link">
+    Resources
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="architecture.html" class="md-nav__link">
+        Architecture
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="firstapp.html" class="md-nav__link">
+        Getting started
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="fitforpurpose.html" class="md-nav__link">
+        Fit for purpose
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="k8s-deploy.html" class="md-nav__link">
+        Kubernetes Deployment
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="programming.html" class="md-nav__link">
+        More examples
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="kafka.html" class="md-nav__link">
+        Kafka Integration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="stateful-func.html" class="md-nav__link">
+        Stateful function
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://jbcodeforce.github.io" class="md-nav__link">
+        return to main
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-why" class="md-nav__link">
+    The why
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-what" class="md-nav__link">
+    The What
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stream-processing-concepts" class="md-nav__link">
+    Stream processing concepts
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#statefulness" class="md-nav__link">
+    Statefulness
+  </a>
+  
+    <nav class="md-nav" aria-label="Statefulness">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#windowing" class="md-nav__link">
+    Windowing
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trigger" class="md-nav__link">
+    Trigger
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eviction" class="md-nav__link">
+    Eviction
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watermark" class="md-nav__link">
+    Watermark
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resources" class="md-nav__link">
+    Resources
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/jbcodeforce/flink-studies.git/edit/master/docs/index.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="apache-flink-studies">Apache Flink Studies</h1>
+<h2 id="the-why">The why</h2>
+<p>In classical IT architecture, we can see two types of data processing: transactional and analytics. With 'monolytics' application design, the database system serves multiple applications which sometimes access the same database instances and tables. This approach cause problems to support evolution and scaling. Microservice architecture addresses part of those problems by isolating data storage per service. </p>
+<p>To get insight from the data, the traditional approach is to develop data warehouse and ETL jobs to copy and transform data from the transactional systems to the warehouse. ETL process extracts data from a transactional database, transforms data into a common representation that might include validation, value normalization, encoding, deduplication, and schema transformation, and finally loads it into the target analytical database. They are batchs and run periodically.
+From the datawarehouse, the analysts build queries, metrics, and dashboards / reports to address a specific business question. Massive storage is needed, which uses different protocol such as: NFS, S3, HDFS...</p>
+<p>Today, there is a new way to think about data by seeing they are created as continuous streams of events, which can be processed in real time, and server as the foundation for stateful stream processing application: the analytics move to the real data stream.</p>
+<p>We can define three classes of applications implemented with stateful stream processing:</p>
+<ol>
+<li>Event-driven applications: to adopt the reactive manifesto for scaling, resilience, responsive application, leveraging messaging as communication system.</li>
+<li>Data pipeline applications: replace ETL with low latency stream processing.</li>
+<li>Data analytics applications: immediately act on the data and query live updated reports. </li>
+</ol>
+<p>For more real industry use cases content see the <a href="https://www.flink-forward.org/">Flink Forward web site.</a></p>
+<h2 id="the-what">The What</h2>
+<p><a href="https://flink.apache.org">Apache Flink</a> (2016) is a framework and <strong>distributed processing</strong> engine for stateful computations over unbounded and bounded data streams. Flink supports batch (data set )and graph (data stream) processing. It is very good at:</p>
+<ul>
+<li>Very low latency processing event time semantics to get consistent and accurate results even in case of out of order events</li>
+<li>Exactly once state consistency </li>
+<li>Millisecond latencies while processing millions of events per second</li>
+<li>A lot of connectors to integrate with Kafka, Cassandra, Elastic Search, JDBC, S3...</li>
+<li>Support container and deployment on Kubernetes</li>
+<li>Support updating the application code and migrate jobs to different Flink clusters without losing the state of the application</li>
+<li>Also support batch processing</li>
+</ul>
+<p>The figure below illustrates those different models combined with <a href="https://zeppelin.apache.org/">Zepellin</a> as a multi purpose notebook to develop data analytic projects on top of Spark, Python or Flink.</p>
+<p><img alt="Flink components" src="images/arch.png" /></p>
+<h2 id="stream-processing-concepts">Stream processing concepts</h2>
+<p>In <a href="https://ci.apache.org/projects/flink/flink-docs-release-1.12/learn-flink/#stream-processing">Flink</a>, applications are composed of streaming dataflows that may be transformed by user-defined operators. These dataflows form directed graphs that start with one or more sources, and end in one or more sinks. The data flows between operations. 
+The figure below, from product documentation, summarizes the simple APIs used to develop a data stream processing flow:</p>
+<p><img alt="1" src="https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/program_dataflow.svg" /></p>
+<p><em>src: apache Flink product doc</em></p>
+<p>Stream processing includes a set of functions to transform data, to produce a new output stream. Intermediate steps compute rolling aggregations like min, max, mean, or collect and buffer records in time window to compute metrics on finite set of events. 
+To properly define window operator semantics, we need to determine both how events are assigned to buckets and how often the window produces a result. Flink's streaming model is based on windowing and checkpointing, it uses controlled cyclic dependency graph
+ as its execution engine.</p>
+<p>The following figure is showing integration of stream processing runtime with an append log system, like Kafka, with internal local state persistence and continuous checkpoint to remote storage as HA support:</p>
+<p><img alt="" src="images/flink-rt-processing.png" /></p>
+<p>As part of the checkpointing process, Flink saves the 'offset read commit' information of the append log, so in case of a failure, Flink recovers a stateful streaming application by restoring its state from a previous checkpoint and resetting the read position on the append log.</p>
+<p>The evolution of microservice is to become more event-driven, which are stateful streaming applications that ingest event streams and process the events with application-specific business logic. This logic can be done in flow defined in Flink and executed in the clustered runtime.</p>
+<p><img alt="" src="images/evt-app.png" /></p>
+<p>A lot of predefined connectors exist to connect to specific source and sink. Transform operators can be chained. Dataflow can consume from Kafka, Kinesis, Queue, and any data sources. A typical high level view of Flink app is presented in figure below:</p>
+<p><img alt="2" src="https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/flink-application-sources-sinks.png" /></p>
+<p><em>src: apache Flink product doc</em></p>
+<p>Programs in Flink are inherently parallel and distributed. During execution, a stream has one or more stream partitions, and each operator has one or more operator subtasks.</p>
+<p><img alt="3" src="https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/parallel_dataflow.svg" /></p>
+<p><em>src: apache Flink site</em></p>
+<p>A Flink application, can be stateful, run in parallel on a distributed cluster. The various parallel instances of a given operator will execute independently, in separate threads, and in general will be running on different machines.
+State is always accessed local, which helps Flink applications achieve high throughput and low-latency. You can choose to keep state on the JVM heap, or if it is too large, saves it in efficiently organized on-disk data structures.</p>
+<p><img alt="4" src="https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/local-state.png" /></p>
+<p>This is the Job Manager component which parallelizes the job and distributes slices of <a href="https://ci.apache.org/projects/flink/flink-docs-stable/dev/datastream_api.html">the Data Stream</a> flow, you defined, to the Task Managers for execution. Each parallel slice of your job will be executed in a <strong>task slot</strong>.</p>
+<p><img alt="5" src="https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/distributed-runtime.svg" /></p>
+<p>Once Flink is started (for example with the docker image), Flink Dashboard <a href="http://localhost:8081/#/overview">http://localhost:8081/#/overview</a> presents the execution reporting of those components:</p>
+<p><img alt="6" src="images/flink-dashboard.png" /></p>
+<p>The execution is from one of the training examples, the number of task slot was set to 4, and one job is running.</p>
+<p>Spark is not a true real time processing while Flink is. Flink and Spark support batch processing too. </p>
+<h2 id="statefulness">Statefulness</h2>
+<p>When using aggregates or windows operators, states need to be kept. For fault tolerant Flink uses checkpoints and savepoints. 
+Checkpoints represent a snapshot of where the input data stream is with each operator's state. A streaming dataflow can be resumed from a checkpoint while maintaining consistency (exactly-once processing semantics) by restoring the state of the operators and by replaying the records from the point of the checkpoint.</p>
+<p>In case of failure of a parallel execution, Flink stops the stream flow, then restarts operators from the last checkpoints. When doing the reallocation of data partition for processing, states are reallocated too. 
+States are saved on distributed file systems. When coupled with Kafka as data source, the committed read offset will be part of the checkpoint data.</p>
+<p>Flink uses the concept of <code>Checkpoint Barriers</code>, which represents a separation of records, so records received since the last snapshot are part of the future snapshot. Barrier can be seen as a mark, a tag in the data stream that close a snapshot. </p>
+<p><img alt="Checkpoints" src="images/checkpoints.png" /></p>
+<p>In Kafka, it will be the last committed read offset. The barrier flows with the stream so can be distributed. Once a sink operator (the end of a streaming DAG) has received the <code>barrier n</code> from all of its input streams, it acknowledges that <code>snapshot n</code> to the checkpoint coordinator. 
+After all sinks have acknowledged a snapshot, it is considered completed. Once <code>snapshot n</code> has been completed, the job will never ask the source for records before such snapshot.</p>
+<p>State snapshots are save in a state backend (in memory, HDFS, RockDB). </p>
+<p>KeyedStream is a key-value store. Key match the key in the stream, state update does not need transaction.</p>
+<p>For DataSet (Batch processing) there is no checkpoint, so in case of failure the stream is replayed.</p>
+<h3 id="windowing">Windowing</h3>
+<p><a href="https://ci.apache.org/projects/flink/flink-docs-release-1.12/dev/stream/operators/windows.html">Windows</a> are buckets within a Stream and can be defined with times, or count of elements.</p>
+<ul>
+<li><strong>Tumbling</strong> window assign events into nonoverlapping buckets of fixed size. When the window border is passed, all the events are sent to an evaluation function for processing. Count-based tumbling windows define how many events are collected before triggering evaluation. Time based timbling window define time interval of n seconds. Amount of the data vary in a window. <code>.keyBy(...).window(TumblingProcessingTimeWindows.of(Time.seconds(2)))</code></li>
+</ul>
+<p><img alt="" src="images/tumbling.png" /></p>
+<ul>
+<li><strong>Sliding</strong> window: same but windows can overlap. An event might belong to multiple buckets. So there is a <code>window sliding time</code> parameter: <code>.keyBy(...).window(SlidingProcessingTimeWindows.of(Time.seconds(2), Time.seconds(1)))</code></li>
+</ul>
+<p><img alt="" src="images/sliding.png" /></p>
+<ul>
+<li><strong>Session</strong> window: Starts when the data stream processes records and stop when there is inactivity, so the timer set this threshold: <code>.keyBy(...).window(ProcessingTimeSessionWindows.withGap(Time.seconds(5)))</code>. The operator creates one window for each data element received.</li>
+</ul>
+<p><img alt="" src="images/session.png" /></p>
+<ul>
+<li>
+<p><strong>Global</strong> window: one window per key and never close. The processing is done with Trigger:</p>
+<div class="highlight"><pre><span></span><code><span class="p">.</span><span class="na">keyBy</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="p">.</span><span class="na">window</span><span class="p">(</span><span class="n">GlobalWindows</span><span class="p">.</span><span class="na">create</span><span class="p">())</span>
+<span class="p">.</span><span class="na">trigger</span><span class="p">(</span><span class="n">CountTrigger</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+</code></pre></div>
+</li>
+</ul>
+<p>KeyStream can help to run in parallel, each window will have the same key.</p>
+<p>Time is central to the stream processing, and the time is a parameter of the flow / environment and can take different meanings:</p>
+<ul>
+<li><code>ProcessingTime</code> = system time of the machine executing the task: best performance and low latency</li>
+<li><code>EventTime</code> = the time at the source level, embedded in the record. Deliver consistent and deterministic results regardless of order </li>
+<li><code>IngestionTime</code> = time when getting into Flink. </li>
+</ul>
+<p>See example <a href="https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/windows/TumblingWindowOnSale.java">TumblingWindowOnSale.java</a> and to test it, do the following:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Start the SaleDataServer that starts a server on socket 9181 and will read the avg.txt file and send each line to the socket</span>
+java -cp target/my-flink-1.0.0-SNAPSHOT.jar jbcodeforce.sale.SaleDataServer
+<span class="c1"># inside the job manager container start with </span>
+<span class="sb">`</span>flink run -d -c jbcodeforce.windows.TumblingWindowOnSale /home/my-flink/target/my-flink-1.0.0-SNAPSHOT.jar<span class="sb">`</span>.
+<span class="c1"># The job creates the data/profitPerMonthWindowed.txt file with accumulated sale and number of record in a 2 seconds tumbling time window</span>
+<span class="o">(</span>June,Bat,Category5,154,6<span class="o">)</span>
+<span class="o">(</span>August,PC,Category5,74,2<span class="o">)</span>
+<span class="o">(</span>July,Television,Category1,50,1<span class="o">)</span>
+<span class="o">(</span>June,Tablet,Category2,142,5<span class="o">)</span>
+<span class="o">(</span>July,Steamer,Category5,123,6<span class="o">)</span>
+...
+</code></pre></div>
+<h3 id="trigger">Trigger</h3>
+<p><a href="https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/stream/operators/windows.html#triggers">Trigger</a> determines when a window is ready to be processed. All windows have default trigger. For example tumbling window has a 2s trigger. Global window has explicit trigger. We can implement our own triggers by implementing the Trigger interface with different methods to implement: onElement(..), onEventTime(...), onProcessingTime(...)</p>
+<p>Default triggers:</p>
+<ul>
+<li>EventTimeTrigger: fires based upon progress of event time</li>
+<li>ProcessingTimeTrigger: fires based upon progress of processing time</li>
+<li>CountTrigger: fires when # of element in a window &gt; parameter</li>
+<li>PurgingTrigger</li>
+</ul>
+<h3 id="eviction">Eviction</h3>
+<p>Evictor is used to remove elements from a window after the trigger fires and before or after the window function is applied. The logic to remove is app specific.</p>
+<p>The predefined evictors: CountEvictor, DeltaEvictor and TimeEvictor.</p>
+<h3 id="watermark">Watermark</h3>
+<p><a href="https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/event_timestamps_watermarks.html">Watermark</a> is the mechanism to keep how the event time has progressed: with windowing operator, event time stamp is used, but windows are defined on elapse time, for example, 10 minutes, so watermark helps to track te point of time where no more delayed events will arrive. 
+The Flink API expects a WatermarkStrategy that contains both a TimestampAssigner and WatermarkGenerator. A TimestampAssigner is a simple function that extracts a field from an event. A number of common strategies are available out of the box as static methods on WatermarkStrategy, so reference to the documentation and examples.</p>
+<p>Watermark is crucial for out of order events, and when dealing with multi sources. Kafka topic partitions can be a challenge without watermark. With IoT device and network latency, it is possible to get an event with an earlier timestamp, while the operator has already processed such event timestamp from other sources.</p>
+<p>It is possible to configure to accept late events, with the <code>allowed lateness</code> time by which element can be late before being dropped. Flink keeps a state of Window until the allowed lateness time expires.</p>
+<h2 id="resources">Resources</h2>
+<ul>
+<li><a href="https://flink.apache.org/flink-architecture.html">Product documentation</a>. </li>
+<li><a href="https://ci.apache.org/projects/flink/flink-docs-release-1.12/learn-flink/">Official training</a></li>
+<li>Base docker image is: <a href="https://hub.docker.com/_/flink">https://hub.docker.com/_/flink</a></li>
+<li><a href="https://ci.apache.org/projects/flink/flink-docs-master/ops/deployment/docker.html">Flink docker setup</a> and the docker-compose files in this repo.</li>
+<li><a href="https://wints.github.io/flink-web/faq.html">FAQ</a></li>
+<li><a href="https://github.com/cloudera/flink-tutorials/tree/master/flink-stateful-tutorial">Cloudera flink stateful tutorial</a>: very good example for inventory transaction and queries on item considered as stream</li>
+<li><a href="https://www.elastic.co/blog/building-real-time-dashboard-applications-with-apache-flink-elasticsearch-and-kibana">Building real-time dashboard applications with Apache Flink, Elasticsearch, and Kibana</a></li>
+<li>Udemy Apache Flink a real time hands-on. (But a 2 stars enablement for me)</li>
+</ul>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+      
+        
+        <a href="architecture.html" class="md-footer__link md-footer__link--next" aria-label="Next: Architecture" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Architecture
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+        
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": ".", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "assets/javascripts/workers/search.477d984a.min.js", "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.82b56eb2.min.js"></script>
+      
+    
+  </body>
+</html>
