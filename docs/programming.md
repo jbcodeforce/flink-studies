@@ -2,7 +2,7 @@
 
 ## Data set basic apps
 
-See first examples are in [my-flink project under the  p1 package](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1):
+See those examples directly in the [my-flink project under the  jbcodeforce.p1 package](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1):
 
 * [PersonFiltering.java](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/PersonFiltering.java) filter a persons datastream using person's age to create a new "adult" output data stream. This example uses test data from a list of person and uses a filtering class which implements the filter method. This code can execute in VSCode or any IDE
 * [InnerJoin](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/InnerJoin.java) Proceed two files and do an inner join by using the same key on both files. See next section for details.
@@ -13,7 +13,9 @@ See first examples are in [my-flink project under the  p1 package](https://githu
 
 ### Inner join
 
-Need to read from two files and prepare them as tuples. Then process each record of the first tuple with the second one using field 0 on both tuples as join key. The with() build the new tuple with combined values. With need a join function to implement the joining logic and attributes selection.
+Need to read from two files and prepare them as tuples. Then process each record of the first tuple with the second one 
+using field 0 on both tuples as join key. The `with()` build the new tuple with combined values. 
+`with()` need a join function to implement the joining logic and attributes selection.
 
 ```java
  DataSet<Tuple3<Integer,String,String>> joinedSet = 
@@ -38,7 +40,8 @@ flink run -d -c jbcodeforce.p1.InnerJoin /home/my-flink/target/my-flink-1.0.0-SN
 
 ### Left outer join
 
-The construct is the same except the results will include matching records from both tuples and non matching from left:
+The construct is the same as above, except the results will include matching records from both tuples and 
+non matching records coming from the left part of the join:
 
 ```java
 
@@ -59,13 +62,14 @@ The construct is the same except the results will include matching records from 
 
 ## Data Stream examples
 
-**Data stream** API is used to get real time data. It can come from file with readFile with watching folder for new file to be read, socketTextStream or any streaming source (addSource) like Twitter, Kafka...
+**Data stream** API is used to get real time data. It can come from file with readFile with watching folder for new file 
+to be read, or use `socketTextStream` or any streaming source (addSource) like Twitter, Kafka...
 
-The output can also be a stream as sink: writeAsText(),.. writeToSocket, addSink...
+The output can also be a stream (as sink): writeAsText(),.. writeToSocket, addSink...
 
 See example in `my-flink` project source [WordCountSocketStream](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/datastream/WordCountSocketStreaming.java), and to test it, use the `nc -l 9999` tool to open a socket on port 9999 and send text message.
 
-When using docker we need to open a socket in the same network as the Flink task manager, so a command like:
+When using docker we need to open a socket in the same network as the Flink task manager, so the command looks like:
 
 ```shell
 docker run -t --rm --network  flink-studies_default --name ncs -h ncshost subfuzion/netcat -l 9999
@@ -73,7 +77,9 @@ docker run -t --rm --network  flink-studies_default --name ncs -h ncshost subfuz
 
 ### Compute average profit per product
 
-The data set [avg.txt](https://github.com/jbcodeforce/flink-studies/tree/master/my-flink/data/avg.txt) represents transactions for a given product with its sale profit. The goal is to compute the average profit per product per month. The solution use Map - Reduce.
+The data set [avg.txt](https://github.com/jbcodeforce/flink-studies/tree/master/my-flink/data/avg.txt) represents transactions 
+for a given product with its sale profit. The goal is to compute the average profit per product per month. 
+The solution use Map - Reduce functions.
 
 * Input sample:
 
@@ -145,7 +151,9 @@ mapped.keyBy(( Tuple4<String, String, String, Integer> record) -> record.f0 ).ma
 
 ## Taxi rides examples
 
-See [this flink-training github](https://github.com/apache/flink-training/tree/release-1.11) for source.
+This is a more complex solution with a lot of good inspirations for utilities class and way to work on Java Beans.
+
+See [the flink-training github](https://github.com/apache/flink-training/tree/release-1.11) to access to the source code.
 
 * [Lab 1- filter non NY taxi rides](https://github.com/apache/flink-training/tree/release-1.11/ride-cleansing), the process flow uses the `DataStream::filter` method. The NYCFilter is a class-filter-function.
 
@@ -164,9 +172,13 @@ public static class NYCFilter implements FilterFunction<TaxiRide> {
 }
 ```
 
-This exercise uses a lot of utility classes for data and tests which hide the complexity of the data preparation (see the common folder).
+This exercise uses a lot of utility classes for data and tests which hide the complexity of the data preparation 
+(see the common folder within the training repository).
 
-* [Process ride and fare data streams for stateful enrichment](https://github.com/apache/flink-training/tree/release-1.11/rides-and-fares). The result should be a DataStream<Tuple2<TaxiRide, TaxiFare>>, with one record for each distinct rideId. Each tuple should pair the TaxiRide START event for some rideId with its matching TaxiFare. There is no control over the order of arrival of the ride and fare records for each rideId.
+* [Process ride and fare data streams for stateful enrichment](https://github.com/apache/flink-training/tree/release-1.11/rides-and-fares). 
+The result should be a DataStream<Tuple2<TaxiRide, TaxiFare>>, with one record for each distinct rideId. 
+Each tuple should pair the TaxiRide START event for some rideId with its matching TaxiFare. 
+There is no control over the order of arrival of the ride and fare records for each rideId.
 
 ```java
 DataStream<TaxiRide> rides = env
@@ -244,3 +256,20 @@ context.timerService().registerEventTimeTimer(getTimerTime(ride));
 ```
 
 It generates to the output stream / sink only records from this onTimer.
+
+## Fraud detection
+
+This example is based on traditional card transaction fraud detection evaluation. The logic  may need to support:
+
+* verify card is not already reported as lost or stolen
+* verify the customer is not already alerted (avoid over alerting)
+* multiple transactions in short time period
+* duplicate transactions from a specific merchant type
+* online transaction and in-person transaction followed in short time period
+* transaction location too far to be feasible in the time period
+
+For lost cards and customer alerted the lists are sent to each node processing the flow so the lookup / join is local
+and based on the card_id and customer_id. In an EDA implementation the sources will come from Kafka Topics. 
+
+To support the search for transaction.card_number being lost or not, we use the concepts of broadcast state and stream.
+The [BroadcastState](https://ci.apache.org/projects/flink/flink-docs-stable/api/java/org/apache/flink/api/common/state/BroadcastState.html)  the same elements are sent to all instances of an operator.

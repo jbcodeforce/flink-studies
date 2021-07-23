@@ -2,18 +2,27 @@
 
 ## The why
 
-In classical IT architecture, we can see two types of data processing: transactional and analytics. With 'monolytics' application design, the database system serves multiple applications which sometimes access the same database instances and tables. This approach cause problems to support evolution and scaling. Microservice architecture addresses part of those problems by isolating data storage per service. 
+In classical IT architecture, we can see two types of data processing: transactional and analytics. 
+With 'monolytics' application, the database system serves multiple applications which sometimes access the same database 
+instances and tables. This approach cause problems to support evolution and scaling. 
+Microservice architecture addresses part of those problems by isolating data storage per service. 
 
-To get insight from the data, the traditional approach is to develop data warehouse and ETL jobs to copy and transform data from the transactional systems to the warehouse. ETL process extracts data from a transactional database, transforms data into a common representation that might include validation, value normalization, encoding, deduplication, and schema transformation, and finally loads it into the target analytical database. They are batchs and run periodically.
-From the datawarehouse, the analysts build queries, metrics, and dashboards / reports to address a specific business question. Massive storage is needed, which uses different protocol such as: NFS, S3, HDFS...
+To get insight from the data, the traditional approach is to develop data warehouse and ETL jobs to copy and transform data 
+from the transactional systems to the warehouse. ETL process extracts data from a transactional database, transforms data 
+into a common representation that might include validation, value normalization, encoding, deduplication, and schema 
+transformation, and finally loads the new record into the target analytical database. They are batches and run periodically.
 
-Today, there is a new way to think about data by seeing they are created as continuous streams of events, which can be processed in real time, and server as the foundation for stateful stream processing application: the analytics move to the real data stream.
+From the data warehouse, the analysts build queries, metrics, and dashboards / reports to address a specific business question. 
+Massive storage is needed, which uses different protocol such as: NFS, S3, HDFS...
+
+Today, there is a new way to think about data by seeing they are created as continuous streams of events, which can be processed
+ in real time, and serve as the foundation for stateful stream processing application: the analytics move to the real data stream.
 
 We can define three classes of applications implemented with stateful stream processing:
 
-1. Event-driven applications: to adopt the reactive manifesto for scaling, resilience, responsive application, leveraging messaging as communication system.
-1. Data pipeline applications: replace ETL with low latency stream processing.
-1. Data analytics applications: immediately act on the data and query live updated reports. 
+1. **Event-driven applications**: to adopt the reactive manifesto for scaling, resilience, responsive application, leveraging messaging as communication system.
+1. **Data pipeline applications**: replace ETL with low latency stream processing.
+1. **Data analytics applications**: immediatly act on the data and query live updated reports. 
 
 For more real industry use cases content see the [Flink Forward web site.](https://www.flink-forward.org/)
 
@@ -24,6 +33,8 @@ For more real industry use cases content see the [Flink Forward web site.](https
 * Very low latency processing event time semantics to get consistent and accurate results even in case of out of order events
 * Exactly once state consistency 
 * Millisecond latencies while processing millions of events per second
+* Expressive and easy-to-use APIs: map, reduce, join, window, split, and connect.
+* fault tolerance, and high availability: supports worker and master failover, eliminating any single point of failure
 * A lot of connectors to integrate with Kafka, Cassandra, Elastic Search, JDBC, S3...
 * Support container and deployment on Kubernetes
 * Support updating the application code and migrate jobs to different Flink clusters without losing the state of the application

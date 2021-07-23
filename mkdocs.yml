@@ -6,9 +6,10 @@ nav:
   - Getting started: firstapp.md
   - Fit for purpose: fitforpurpose.md
   - Kubernetes Deployment: k8s-deploy.md
-  - More examples: programming.md
+  - Programming examples: programming.md
   - Kafka Integration: kafka.md
   - Stateful function: stateful-func.md
+  - Complex Event Processing: cep.md
   - return to main: https://jbcodeforce.github.io
 theme: 
   name: material
