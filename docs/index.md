@@ -1,6 +1,6 @@
 # Apache Flink Studies
 
-## The why
+## Why Flink?
 
 In classical IT architecture, we can see two types of data processing: transactional and analytics. 
 With 'monolytics' application, the database system serves multiple applications which sometimes access the same database 
@@ -196,7 +196,6 @@ Watermark is crucial for out of order events, and when dealing with multi source
 
 It is possible to configure to accept late events, with the `allowed lateness` time by which element can be late before being dropped. Flink keeps a state of Window until the allowed lateness time expires.
 
-
 ## Resources
 
 * [Product documentation](https://flink.apache.org/flink-architecture.html). 
@@ -206,4 +205,3 @@ It is possible to configure to accept late events, with the `allowed lateness` t
 * [FAQ](https://wints.github.io/flink-web/faq.html)
 * [Cloudera flink stateful tutorial](https://github.com/cloudera/flink-tutorials/tree/master/flink-stateful-tutorial): very good example for inventory transaction and queries on item considered as stream
 * [Building real-time dashboard applications with Apache Flink, Elasticsearch, and Kibana](https://www.elastic.co/blog/building-real-time-dashboard-applications-with-apache-flink-elasticsearch-and-kibana)
-* Udemy Apache Flink a real time hands-on. (But a 2 stars enablement for me)
