@@ -93,3 +93,45 @@ Visualize the cumulative number of unique visitors (UV). The approach:
     * And every latest point will be updated continuously until the next 10-minute point is generated.
 
 * to visualize, create a new index pattern using `data_str`, then a LINE GRAPH view 
+
+### Top Categories
+
+Build visualization to present the most popular categories in the e-commerce site.
+This is done by joining SQL table to Kafka stream
+
+* Use Flink JDBC connector to create a table view from MySQL table
+
+```sql
+CREATE TABLE category_dim (
+    sub_category_id BIGINT,
+    parent_category_name STRING
+) WITH (
+    'connector' = 'jdbc',
+    'url' = 'jdbc:mysql://mysql:3306/flink',
+    'table-name' = 'category',
+    'username' = 'root',
+    'password' = '123456',
+    'lookup.cache.max-rows' = '5000',
+    'lookup.cache.ttl' = '10min'
+);
+```
+
+The underlying JDBC connector implements the LookupTableSource interface, so the created JDBC table `category_dim` can be used as a temporal table
+in the data_enrichment.
+
+```sql
+CREATE VIEW rich_user_behavior AS
+SELECT U.user_id, U.item_id, U.behavior, C.parent_category_name as category_name
+FROM user_behavior AS U LEFT JOIN category_dim FOR SYSTEM_TIME AS OF U.proctime AS C
+ON U.category_id = C.sub_category_id;
+```
+
+* The Flink job: group the dimensional table by category name to count the number of buy events and write the result to Elasticsearch’s top_category index.
+
+```sql
+INSERT INTO top_category
+SELECT category_name, COUNT(*) buy_cnt
+FROM rich_user_behavior
+WHERE behavior = 'buy'
+GROUP BY category_name;
+```

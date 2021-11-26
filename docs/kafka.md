@@ -4,7 +4,6 @@ Flink has [a Kafka connector](https://ci.apache.org/projects/flink/flink-docs-re
 We need a connector jar, define Kafka server properties and then define the source for the stream.
 
 
-
 ## Consuming from Kafka
 
 So the product documentation is wrong (03/2021): here are some notes and read the code under kafka-flink-demo folder and the [TelemetryAggregate class](https://github.com/jbcodeforce/flink-studies/blob/master/kafka-flink-demo/src/main/java/jbcodeforce/kafka/TelemetryAggregate.java).
@@ -55,7 +54,20 @@ If no checkpointing is enabled then the consumer will periodically commit the of
 
 With Flink’s checkpointing enabled, the Flink Kafka Consumer will consume records from a topic and periodically checkpoint all its Kafka offsets, together with the state of other operations. 
 When the checkpoints are completed then it will commit offsets to kafka.
-In case of a job failure, Flink will restore the streaming program to the state of the latest checkpoint and re-consume the records from Kafka, starting from the offsets that were stored in the checkpoint.
+In case of a job failure, Flink will restore the streaming program to the state of the latest 
+checkpoint and re-consume the records from Kafka, starting from the offsets that were stored 
+in the checkpoint.
+
+![](./images/e2e-1.png)
+
+But when it reprocesses the records again it will generate duplicate at the consumer level. 
+![](./images/e2e-2.png)
+
+Therefore the Sink connector needs to support transactional producer, and
+uses the producer API to support avoid duplication with transaction id, idempotence
+and acknowledge on all replicas:
+
+![](./images/e2e-3.png)
 
 Partition discover should be enable by properties so Flink job can discover newly added partitions.
 

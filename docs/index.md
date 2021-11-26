@@ -99,27 +99,91 @@ The execution is from one of the training examples, the number of task slot was 
 
 Spark is not a true real time processing while Flink is. Flink and Spark support batch processing too. 
 
+## Stateless
+
+Some applications support data loss and expect fast recovery times in case of failure and 
+always consuming the latest incoming data. 
+Alerting applications where only low latency alerts are useful, or application where only the last
+data received is relevant. 
+
+When checkpointing is turned off Flink offers no inherent guarantees in case of failures. This means that you can
+ either have data loss or duplicate messages combined always with a loss of application state.
 
 ## Statefulness
 
 When using aggregates or windows operators, states need to be kept. For fault tolerant Flink uses checkpoints and savepoints. 
 Checkpoints represent a snapshot of where the input data stream is with each operator's state. A streaming dataflow can be resumed from a checkpoint while maintaining consistency (exactly-once processing semantics) by restoring the state of the operators and by replaying the records from the point of the checkpoint.
 
-In case of failure of a parallel execution, Flink stops the stream flow, then restarts operators from the last checkpoints. When doing the reallocation of data partition for processing, states are reallocated too. 
+In case of failure of a parallel execution, Flink stops the stream flow, then restarts operators from the last checkpoints. 
+When doing the reallocation of data partition for processing, states are reallocated too. 
 States are saved on distributed file systems. When coupled with Kafka as data source, the committed read offset will be part of the checkpoint data.
 
-Flink uses the concept of `Checkpoint Barriers`, which represents a separation of records, so records received since the last snapshot are part of the future snapshot. Barrier can be seen as a mark, a tag in the data stream that close a snapshot. 
+Flink uses the concept of `Checkpoint Barriers`, which represents a separation of records, 
+so records received since the last snapshot are part of the future snapshot. 
+Barrier can be seen as a mark, a tag in the data stream that close a snapshot. 
 
  ![Checkpoints](./images/checkpoints.png)
 
-In Kafka, it will be the last committed read offset. The barrier flows with the stream so can be distributed. Once a sink operator (the end of a streaming DAG) has received the `barrier n` from all of its input streams, it acknowledges that `snapshot n` to the checkpoint coordinator. 
-After all sinks have acknowledged a snapshot, it is considered completed. Once `snapshot n` has been completed, the job will never ask the source for records before such snapshot.
+In Kafka, it will be the last committed read offset. The barrier flows with the stream 
+so can be distributed. Once a sink operator (the end of a streaming DAG) has received 
+the `barrier n` from all of its input streams, it acknowledges that `snapshot n` to 
+the checkpoint coordinator. 
+After all sinks have acknowledged a snapshot, it is considered completed. 
+Once `snapshot n` has been completed, the job will never ask the source for records 
+before such snapshot.
 
 State snapshots are save in a state backend (in memory, HDFS, RockDB). 
 
 KeyedStream is a key-value store. Key match the key in the stream, state update does not need transaction.
 
 For DataSet (Batch processing) there is no checkpoint, so in case of failure the stream is replayed.
+
+When addressing exactly once processing it is very important to consider the following:
+
+1. the read from the source
+1. apply the processing logic like window aggregation
+1. generate the results to a sink
+
+1 and 2 can be done exactly once, using Flink source connector and checkpointing but generating one unique result to a sink is more complex and 
+is dependant of the target technology. 
+
+![](./images/e2e-1.png)
+
+After reading records from Kafka, do the processing and generate results, in case of failure
+Flink will reload the record from the read offset and may generate duplicate in the Sink. 
+
+![](./images/e2e-2.png)
+
+As duplicates will occur, we always need to assess idempotent support from downstream applications.
+A lot of distributed key-value storages support consistent result event after retries.
+
+To support end-to-end exactly one delivery we need to have a sink that supports transaction
+and two-phase commit.
+In case of failure we need to rollback the output generated. It is important to note 
+transactional output impacts latency.
+
+Flink takes checkpoints periodically, like every 10 seconds, which leads to the minimum latency
+we can expect at the sink level.
+
+
+For Kafka Sink connector, as kafka producer, we need to set the `transactionId`, and the delivery type:
+
+```java
+new KafkaSinkBuilder<String>()
+    .setBootstrapServers(bootstrapURL)
+    .setDeliverGuarantee(DeliveryGuarantee.EXACTLY_ONCE)
+    .setTransactionalIdPrefix("store-sol")
+```
+
+With transaction ID, a sequence number is sent by the kafka producer API to the broker, and so
+the partition leader will be able to remove duplicate retries.
+
+![](./images/e2e-3.png)
+
+When the checkpointing period is set, we need to also configure `transaction.max.timeout.ms`
+of the Kafka broker and `transaction.timeout.ms` for the producer (sink connector) to a higher
+timeout than the checkpointing interval plus the max expected Flink downtime. If not the Kafka broker
+will consider the connection has fail and will remove its state management.
 
 
 ### Windowing
