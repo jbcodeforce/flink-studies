@@ -3,6 +3,7 @@
 ## First app
 
 Each Flink app is a [Java main function which defines the data flow to execute on a stream](https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/datastream_api.html#anatomy-of-a-flink-program). 
+
 Once we build the application jar file, we use Flink CLI to send the jar as a job to the Job manager server. 
 During development, we can use docker-compose to start a simple `Flink session` cluster or use a docker compose which
  starts a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image.
@@ -26,12 +27,12 @@ so that, we can submit the job from the job manager (accessing the compiled jar)
 <dependency>
     <groupId>org.apache.flink</groupId>
     <artifactId>flink-java</artifactId>
-    <version>1.13.0</version>
+    <version>1.14.4</version>
 </dependency>
 <dependency>
     <groupId>org.apache.flink</groupId>
     <artifactId>flink-streaming-java_2.12</artifactId>
-    <version>1.13.0</version>
+    <version>1.14.4</version>
     <scope>provided</scope>
 </dependency>
 ```
@@ -56,7 +57,7 @@ The code above uses the [ParameterTool  class](https://ci.apache.org/projects/fl
 So most of the basic examples use `--input filename` and `--output filename` as java arguments. So `params` will have those arguments in a Map. 
 
 * Be sure to set quarkus uber-jar generation (`quarkus.package.type=uber-jar`) in the `application.properties` to get all the dependencies in a unique jar: Flink needs all dependencies in classpath.
-* package the jar with `mvn package`
+* Package the jar with `mvn package`
 * Every Flink application needs a reference to the execution environment (variable `env` in previous example). 
 * To submit a job to a Session cluster, use the following commands which use the `flink` cli inside the running container:
 
@@ -67,7 +68,7 @@ JMC=$(docker ps --filter name=jobmanager --format={{.ID}})
 docker exec -ti $JMC flink run -d -c $CNAME /home/my-flink/target/my-flink-1.0.0-runner.jar --input file://home/my-flink/data/wc.text --output file://home/data/out.csv 
 ```
 
-In previous execution, `flink` is a CLI available inside the job-manager container.
+In the execution above, `flink` is a CLI available inside the job-manager container.
 
 See [this coding practice summary](#programming.md) for other dataflow examples.
 
@@ -119,7 +120,7 @@ Change the `--job-classname` parameter of the standalone-job command within the 
 version: "2.2"
 services:
   jobmanager:
-    image: flink:1.12.2-scala_2.11
+    image: flink:1.14.4-scala_2.11
     ports:
       - "8081:8081"
     command: standalone-job --job-classname com.job.ClassName [--job-id <job id>] [--fromSavepoint /path/to/savepoint [--allowNonRestoredState]] [job arguments]
@@ -132,7 +133,7 @@ services:
         parallelism.default: 2
 
   taskmanager:
-    image: flink:1.12.2-scala_2.11
+    image: flink:1.14.4-scala_2.11
     depends_on:
       - jobmanager
     command: taskmanager

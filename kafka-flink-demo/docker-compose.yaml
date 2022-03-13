@@ -1,7 +1,7 @@
 version: "2.2"
 services:
   zookeeper:
-    image: quay.io/strimzi/kafka:latest-kafka-2.8.0
+    image: quay.io/strimzi/kafka:latest-kafka-3.1.0
     container_name: zookeeper
     command: [
       "sh", "-c",
@@ -13,7 +13,7 @@ services:
       LOG_DIR: /tmp/logs
 
   kafka:
-    image: quay.io/strimzi/kafka:latest-kafka-2.8.0
+    image: quay.io/strimzi/kafka:latest-kafka-3.1.0
     container_name: kafka
     command: [
       "sh", "-c",
@@ -45,7 +45,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_MAIN_TOPIC: telemetries
   jobmanager:
-    image: flink:scala_2.12-java11 
+    image: flink:scala_2.14-java11 
     hostname: jobmanager
     ports:
       - "8081:8081"
@@ -55,7 +55,7 @@ services:
     volumes:  
         - .:/home
   taskmanager:
-    image: flink:scala_2.12-java11 
+    image: flink:scala_2.14-java11 
     hostname: taskmanager
     depends_on:
       - jobmanager

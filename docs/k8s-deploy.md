@@ -5,18 +5,18 @@ Failures of Job Manager pods are handled by the Deployment Controller which will
 
 A flow is a packaged as a jar, so need to be in a docker image with the Flink executable.
 
-The kubernetes deployment is described in [the product documentation](https://ci.apache.org/projects/flink/flink-docs-release-1.12/deployment/resource-providers/standalone/kubernetes.html) and can be summarized as:
+The kubernetes deployment is described in [the product documentation](https://ci.apache.org/projects/flink/flink-docs-release-1.14/deployment/resource-providers/standalone/kubernetes.html) and can be summarized as:
 
-* Select the execution mode: `application, session or job`. For production it is recommended to deploy in `application` mode for better isolation, and as a microservice approach. We can just build a dockerfile for our application using the Flink jars.
+* Select the execution mode: `application, session or job`. For production it is recommended to deploy in `application` mode for better isolation, and usinh a cloud native approach. We can just build a dockerfile for our application using the Flink jars.
 * Deploy a config map to define the `log4j-console.properties` and other parameters for Flink (`flink-conf.yaml`)
 * Define the job manager service.
 
 The diagram below illustrates the standard deployment of a job on k8s with session mode:
 
- ![1](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/FlinkOnK8s.svg)
+ ![1](https://ci.apache.org/projects/flink/flink-docs-release-1.14/fig/FlinkOnK8s.svg)
  *src: apache Flink site*
  
-But there is a new way using [native kubernetes](https://ci.apache.org/projects/flink/flink-docs-release-1.12/deployment/resource-providers/native_kubernetes.html) to deploy an application. Flink is able to dynamically allocate and de-allocate TaskManagers depending on the required resources because it can directly talk to Kubernetes.
+But there is a new way using [native kubernetes](https://ci.apache.org/projects/flink/flink-docs-release-1.14/deployment/resource-providers/native_kubernetes.html) to deploy an application. Flink is able to dynamically allocate and de-allocate TaskManagers depending on the required resources because it can directly talk to Kubernetes.
 
 ## Flink Session
 

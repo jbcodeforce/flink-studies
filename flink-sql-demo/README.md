@@ -45,7 +45,6 @@ GROUP BY TUMBLE(ts, INTERVAL '1' HOUR);
 
 It uses the built-in HOUR function to extract the value for each hour in the day from a TIMESTAMP column
 
-
 * [Flink UI](http://localhost:8081/#/overview) to see the running job
 * [Kibana Dashboard](http://localhost:5601/app/kibana)
 

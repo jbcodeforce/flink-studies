@@ -13,7 +13,7 @@ services:
       MYSQL_HOST: mysql
       ES_HOST: elasticsearch
   jobmanager:
-    image: flink:1.11.0-scala_2.11
+    image: flink:1.14.0-scala_2.11
     ports:
       - "8081:8081"
     command: jobmanager
@@ -22,7 +22,7 @@ services:
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
   taskmanager:
-    image: flink:1.11.0-scala_2.11
+    image: flink:1.14.0-scala_2.11
     depends_on:
       - jobmanager
     command: taskmanager
@@ -46,27 +46,43 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD=123456
   zookeeper:
-    image: wurstmeister/zookeeper:3.4.6
+    image: quay.io/strimzi/kafka:latest-kafka-3.1.0
+    container_name: zookeeper
+    command: [
+      "sh", "-c",
+      "bin/zookeeper-server-start.sh config/zookeeper.properties"
+    ]
     ports:
       - "2181:2181"
+    environment:
+      LOG_DIR: /tmp/logs
+
   kafka:
-    image: wurstmeister/kafka:2.12-2.2.1
+    image: quay.io/strimzi/kafka:latest-kafka-3.1.0
+    container_name: kafka
+    command: [
+      "sh", "-c",
+      "bin/kafka-server-start.sh config/server.properties --override listeners=$${KAFKA_LISTENERS} \
+      --override advertised.listeners=$${KAFKA_ADVERTISED_LISTENERS} \
+      --override listener.security.protocol.map=$${KAFKA_LISTENER_SECURITY_PROTOCOL_MAP} \
+      --override inter.broker.listener.name=$${KAFKA_INTER_BROKER_LISTENER_NAME} \
+      --override zookeeper.connect=$${KAFKA_ZOOKEEPER_CONNECT}"
+    ]
+    depends_on:
+      - zookeeper
     ports:
       - "9092:9092"
       - "9094:9094"
-    depends_on:
-      - zookeeper
     environment:
-      - KAFKA_ADVERTISED_LISTENERS=INSIDE://:9094,OUTSIDE://localhost:9092
-      - KAFKA_LISTENERS=INSIDE://:9094,OUTSIDE://:9092
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
-      - KAFKA_INTER_BROKER_LISTENER_NAME=INSIDE
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_CREATE_TOPICS="user_behavior:1:1"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      LOG_DIR: "/tmp/logs"
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9094,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: EXTERNAL://0.0.0.0:9092,INTERNAL://kafka:9094
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.6.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.1
     environment:
       - cluster.name=docker-cluster
       - bootstrap.memory_lock=true
@@ -83,6 +99,6 @@ services:
         soft: 65536
         hard: 65536
   kibana:
-    image: docker.elastic.co/kibana/kibana:7.6.0
+    image: docker.elastic.co/kibana/kibana:7.17.1
     ports:
       - "5601:5601"

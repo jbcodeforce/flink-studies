@@ -8,15 +8,15 @@ instances and tables. This approach cause problems to support evolution and scal
 Microservice architecture addresses part of those problems by isolating data storage per service. 
 
 To get insight from the data, the traditional approach is to develop data warehouse and ETL jobs to copy and transform data 
-from the transactional systems to the warehouse. ETL process extracts data from a transactional database, transforms data 
+from the transactional systems to the warehouse. ETL processes extract data from a transactional database, transform data 
 into a common representation that might include validation, value normalization, encoding, deduplication, and schema 
-transformation, and finally loads the new record into the target analytical database. They are batches and run periodically.
+transformation, and finally load the new records into the target analytical database. They are batches and run periodically.
 
 From the data warehouse, the analysts build queries, metrics, and dashboards / reports to address a specific business question. 
 Massive storage is needed, which uses different protocol such as: NFS, S3, HDFS...
 
-Today, there is a new way to think about data by seeing they are created as continuous streams of events, which can be processed
- in real time, and serve as the foundation for stateful stream processing application: the analytics move to the real data stream.
+Today, there is a new way to think about data, by considering them, as continuous streams of events, which can be processed
+ in real time. Those event streams serve as the foundation for stateful stream processing application: the analytics move to the data.
 
 We can define three classes of applications implemented with stateful stream processing:
 
@@ -33,9 +33,9 @@ For more real industry use cases content see the [Flink Forward web site.](https
 * Very low latency processing event time semantics to get consistent and accurate results even in case of out of order events
 * Exactly once state consistency 
 * Millisecond latencies while processing millions of events per second
-* Expressive and easy-to-use APIs: map, reduce, join, window, split, and connect.
-* fault tolerance, and high availability: supports worker and master failover, eliminating any single point of failure
-* A lot of connectors to integrate with Kafka, Cassandra, Elastic Search, JDBC, S3...
+* Expressive and easy-to-use APIs: map, reduce, join, window, split, and connect...
+* Fault tolerance, and high availability: supports worker and master failover, eliminating any single point of failure
+* A lot of connectors to integrate with Kafka, Cassandra, Pulsar, Elastic Search, JDBC, S3...
 * Support container and deployment on Kubernetes
 * Support updating the application code and migrate jobs to different Flink clusters without losing the state of the application
 * Also support batch processing
@@ -59,7 +59,7 @@ Stream processing includes a set of functions to transform data, to produce a ne
 To properly define window operator semantics, we need to determine both how events are assigned to buckets and how often the window produces a result. Flink's streaming model is based on windowing and checkpointing, it uses controlled cyclic dependency graph
  as its execution engine.
 
-The following figure is showing integration of stream processing runtime with an append log system, like Kafka, with internal local state persistence and continuous checkpoint to remote storage as HA support:
+The following figure is showing integration of stream processing runtime with an append log system, like Kafka, with internal local state persistence and continuous checkpointing to remote storage as HA support:
 
 ![](./images/flink-rt-processing.png)
 
@@ -69,12 +69,11 @@ The evolution of microservice is to become more event-driven, which are stateful
 
 ![](./images/evt-app.png)
 
-A lot of predefined connectors exist to connect to specific source and sink. Transform operators can be chained. Dataflow can consume from Kafka, Kinesis, Queue, and any data sources. A typical high level view of Flink app is presented in figure below:
+Transform operators can be chained. Dataflow can consume from Kafka, Kinesis, Queue, and any data sources. A typical high level view of Flink app is presented in figure below:
 
  ![2](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/flink-application-sources-sinks.png)
 
  *src: apache Flink product doc*
-
 
 Programs in Flink are inherently parallel and distributed. During execution, a stream has one or more stream partitions, and each operator has one or more operator subtasks.
 
@@ -83,7 +82,7 @@ Programs in Flink are inherently parallel and distributed. During execution, a s
  *src: apache Flink site*
 
 A Flink application, can be stateful, run in parallel on a distributed cluster. The various parallel instances of a given operator will execute independently, in separate threads, and in general will be running on different machines.
-State is always accessed local, which helps Flink applications achieve high throughput and low-latency. You can choose to keep state on the JVM heap, or if it is too large, saves it in efficiently organized on-disk data structures.
+State is always accessed locally, which helps Flink applications achieve high throughput and low-latency. You can choose to keep state on the JVM heap, or if it is too large, saves it in efficiently organized on-disk data structures.
 
  ![4](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/local-state.png)
 
@@ -91,20 +90,18 @@ This is the Job Manager component which parallelizes the job and distributes sli
 
  ![5](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/distributed-runtime.svg)
 
-Once Flink is started (for example with the docker image), Flink Dashboard [http://localhost:8081/#/overview](http://localhost:8081/#/overview) presents the execution reporting of those components:
+Once Flink is started (for example with the docker image), Flink Dashboard [http://localhost:8081/#/overview](http://localhost:8081/#/overview) presents the execution reporting:
 
  ![6](./images/flink-dashboard.png)
 
 The execution is from one of the training examples, the number of task slot was set to 4, and one job is running.
 
-Spark is not a true real time processing while Flink is. Flink and Spark support batch processing too. 
+Spark is not a true real-time processing while Flink is. Both Flink and Spark support batch processing. 
 
 ## Stateless
 
-Some applications support data loss and expect fast recovery times in case of failure and 
-always consuming the latest incoming data. 
-Alerting applications where only low latency alerts are useful, or application where only the last
-data received is relevant. 
+Some applications support data loss and expect fast recovery times in case of failure and are
+always consuming the latest incoming data: Alerting applications where only low latency alerts are useful, fit into this category. As well as applications where only the last data received is relevant. 
 
 When checkpointing is turned off Flink offers no inherent guarantees in case of failures. This means that you can
  either have data loss or duplicate messages combined always with a loss of application state.
@@ -120,12 +117,12 @@ States are saved on distributed file systems. When coupled with Kafka as data so
 
 Flink uses the concept of `Checkpoint Barriers`, which represents a separation of records, 
 so records received since the last snapshot are part of the future snapshot. 
-Barrier can be seen as a mark, a tag in the data stream that close a snapshot. 
+Barrier can be seen as a mark, a tag in the data stream that closes a snapshot. 
 
  ![Checkpoints](./images/checkpoints.png)
 
 In Kafka, it will be the last committed read offset. The barrier flows with the stream 
-so can be distributed. Once a sink operator (the end of a streaming DAG) has received 
+so it can be distributed. Once a sink operator (the end of a streaming DAG) has received 
 the `barrier n` from all of its input streams, it acknowledges that `snapshot n` to 
 the checkpoint coordinator. 
 After all sinks have acknowledged a snapshot, it is considered completed. 
@@ -134,27 +131,26 @@ before such snapshot.
 
 State snapshots are save in a state backend (in memory, HDFS, RockDB). 
 
-KeyedStream is a key-value store. Key match the key in the stream, state update does not need transaction.
+KeyedStream is a key-value store. Key matches the key in the stream, state update does not need transaction.
 
-For DataSet (Batch processing) there is no checkpoint, so in case of failure the stream is replayed.
+For DataSet (Batch processing) there is no checkpoint, so in case of failure the stream is replayed from te beginning.
 
 When addressing exactly once processing it is very important to consider the following:
 
-1. the read from the source
+1. the read operation from the source
 1. apply the processing logic like window aggregation
 1. generate the results to a sink
 
-1 and 2 can be done exactly once, using Flink source connector and checkpointing but generating one unique result to a sink is more complex and 
-is dependant of the target technology. 
+1 and 2 can be done exactly once, using Flink source connector and checkpointing but generating one unique result to a sink is more complex and is dependant of the target technology. 
 
 ![](./images/e2e-1.png)
 
 After reading records from Kafka, do the processing and generate results, in case of failure
-Flink will reload the record from the read offset and may generate duplicate in the Sink. 
+Flink will reload the record from the read offset and may generate duplicates in the Sink. 
 
 ![](./images/e2e-2.png)
 
-As duplicates will occur, we always need to assess idempotent support from downstream applications.
+As duplicates will occur, we always need to assess how downstream applications support idempotence.
 A lot of distributed key-value storages support consistent result event after retries.
 
 To support end-to-end exactly one delivery we need to have a sink that supports transaction
@@ -218,7 +214,7 @@ Time is central to the stream processing, and the time is a parameter of the flo
 * `EventTime` = the time at the source level, embedded in the record. Deliver consistent and deterministic results regardless of order 
 * `IngestionTime` = time when getting into Flink. 
 
-See example [TumblingWindowOnSale.java](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/windows/TumblingWindowOnSale.java) and to test it, do the following:
+See example [TumblingWindowOnSale.java](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/windows/TumblingWindowOnSale.java) in my-fink folder and to test it, do the following:
 
 ```shell
 # Start the SaleDataServer that starts a server on socket 9181 and will read the avg.txt file and send each line to the socket

@@ -13,7 +13,7 @@ The **Disparcher** exposes API to submit applications for execution. It hosts th
 
 Only one Job Manager is active at a given point of time, and there may be `n` Task Managers.
 
-There are different [deployment models](https://ci.apache.org/projects/flink/flink-docs-release-1.11/ops/deployment/): 
+There are different [deployment models](https://ci.apache.org/projects/flink/flink-docs-release-1.14/ops/deployment/): 
 
 * Deploy on executing cluster, this is the **session mode**. Use **session** cluster to run multiple jobs: we need a JobManager container. 
 * **Per job** mode, spin up a cluster per job submission. More k8s oriented. This provides better resource isolation. 

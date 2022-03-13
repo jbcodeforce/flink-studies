@@ -1,6 +1,6 @@
 # Integration with Kafka
 
-Flink has [a Kafka connector](https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/connectors/kafka.html) for consuming and producing messages. 
+Flink has [a Kafka connector](https://ci.apache.org/projects/flink/flink-docs-release-1.14/dev/connectors/kafka.html) for consuming and producing messages. 
 We need a connector jar, define Kafka server properties and then define the source for the stream.
 
 
@@ -61,6 +61,7 @@ in the checkpoint.
 ![](./images/e2e-1.png)
 
 But when it reprocesses the records again it will generate duplicate at the consumer level. 
+
 ![](./images/e2e-2.png)
 
 Therefore the Sink connector needs to support transactional producer, and
