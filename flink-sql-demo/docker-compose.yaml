@@ -13,7 +13,7 @@ services:
       MYSQL_HOST: mysql
       ES_HOST: elasticsearch
   jobmanager:
-    image: flink:1.14.0-scala_2.11
+    image: flink:1.11.0-scala_2.11
     ports:
       - "8081:8081"
     command: jobmanager
@@ -22,7 +22,7 @@ services:
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
   taskmanager:
-    image: flink:1.14.0-scala_2.11
+    image: flink:1.11.0-scala_2.11
     depends_on:
       - jobmanager
     command: taskmanager
@@ -33,7 +33,7 @@ services:
         taskmanager.numberOfTaskSlots: 10
   datagen:
     image: jark/datagen:0.2
-    command: "java -classpath /opt/datagen/flink-sql-demo.jar myflink.SourceGenerator --input /opt/datagen/user_behavior.log --output kafka kafka:9094 --speedup 2000"
+    command: "java -classpath /opt/datagen/flink-sql-demo.jar myflink.SourceGenerator --input /opt/datagen/user_behavior.log --output kafka kafka:29092 --speedup 2000"
     depends_on:
       - kafka
     environment:
@@ -46,7 +46,7 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD=123456
   zookeeper:
-    image: quay.io/strimzi/kafka:latest-kafka-3.1.0
+    image: quay.io/strimzi/kafka:latest-kafka-2.8.1
     container_name: zookeeper
     command: [
       "sh", "-c",
@@ -56,10 +56,14 @@ services:
       - "2181:2181"
     environment:
       LOG_DIR: /tmp/logs
-
   kafka:
-    image: quay.io/strimzi/kafka:latest-kafka-3.1.0
+    image: quay.io/strimzi/kafka:latest-kafka-2.8.1
     container_name: kafka
+    ports:
+      - "9092:9092"
+      - "29092:9092"
+    depends_on:
+      - zookeeper
     command: [
       "sh", "-c",
       "bin/kafka-server-start.sh config/server.properties --override listeners=$${KAFKA_LISTENERS} \
@@ -68,21 +72,21 @@ services:
       --override inter.broker.listener.name=$${KAFKA_INTER_BROKER_LISTENER_NAME} \
       --override zookeeper.connect=$${KAFKA_ZOOKEEPER_CONNECT}"
     ]
-    depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
-      - "9094:9094"
     environment:
       LOG_DIR: "/tmp/logs"
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9094,EXTERNAL://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_LISTENERS: EXTERNAL://0.0.0.0:9092,INTERNAL://kafka:9094
+      KAFKA_LISTENERS: EXTERNAL://0.0.0.0:9092,INTERNAL://kafka:29092
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  addTopics:
+    image:  quay.io/strimzi/kafka:latest-kafka-2.8.1
+    depends_on:
+      - kafka
+    entrypoint: [ "bash",  "-c", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:29092 --create  --if-not-exists --replication-factor 1 --partitions 1 --topic user_behavior"] 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.1
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.6.0
     environment:
       - cluster.name=docker-cluster
       - bootstrap.memory_lock=true
@@ -99,6 +103,6 @@ services:
         soft: 65536
         hard: 65536
   kibana:
-    image: docker.elastic.co/kibana/kibana:7.17.1
+    image: docker.elastic.co/kibana/kibana:7.6.0
     ports:
       - "5601:5601"

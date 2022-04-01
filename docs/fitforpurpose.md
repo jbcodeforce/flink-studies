@@ -7,7 +7,7 @@
 * Flink has Complex Event Processing capabilities to search for pattern of event occurences.
 * Flink supports data at rest or in motion, and multiple sources and sinks, no need to be Kafka.
 * Flink needs a custom implementation of `KafkaDeserializationSchema<T>` to read both key and value from Kafka topic.
-* Kafka streams is easier to define a pipeline for Kafka records and do the `consume - process - produce` loop. 
+* Kafka streams is easier to define a pipeline for Kafka records and to do the `consume - process - produce` loop. 
 In Flink we need to code producer and consumer.
 * KStreams uses the Kafka Record time stamp, while with Flink we need to implement how to deserialize the KafkaRecord 
 and get the timestamp from it.
