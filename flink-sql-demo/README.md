@@ -12,7 +12,7 @@ Source code is [wuchong/flink-sql-demo](https://github.com/wuchong/flink-sql-dem
 GenCode component writes events to Kafka, as user's behaviors including “click”, “like”, “purchase” and “add to shopping cart” events.
 The dataset is from the Alibaba Cloud Tianchi public dataset.
 
-As of 11/02/2021, there some differences with the commands explained in the demo
+As of 11/02/2021, there some differences with the commands explained in the demo documentation:
 
 * Access to client SQL
 
@@ -26,6 +26,7 @@ docker-compose exec sql-client ./sql-client.sh
 ```sh
  ./console-consumer.sh 
 ```
+
 * In order to make the events in the Kafka topic accessible to [Flink SQL](https://nightlies.apache.org/flink/flink-docs-release-1.11/dev/table/sql/create.html#create-table), we create a table that connects to the topic:
 
     ```sql
@@ -88,8 +89,9 @@ It uses the built-in HOUR function to extract the value for each hour in the day
 * [Flink UI](http://localhost:8081/#/overview) to see the running job
 * [Kibana Dashboard](http://localhost:5601/app/kibana)
 
-  Configure an index pattern by clicking “Management” in the left-side toolbar and find “Index Patterns”. Next, click “Create Index Pattern” button and enter the full index name buy_cnt_per_hour to create the index pattern
-  Add Dashboard > Add a Visualization > Area >  with Y axes as Max `Cnt_buy` and X as `Term`, Field: hour_of_the_day, Order by Alphabetical, Ascending size: 24. Use the Run button to see the diagram.
+  * Configure an index pattern by clicking “Management” in the left-side toolbar and find “Index Patterns”. 
+  * Next, click “Create Index Pattern” button and enter the full index name buy_cnt_per_hour to create the index pattern
+  * Add Dashboard > Add a Visualization > Area >  with Y axes as Max `Cnt_buy` and X as `Term`, Field: hour_of_the_day, Order by Alphabetical, Ascending size: 24. Use the Run button to see the diagram.
 
   We can see that during the early morning hours the number of transactions have the lowest value for the entire day.
 
@@ -171,8 +173,7 @@ CREATE TABLE top_category (
 );
 ```
 
-The underlying JDBC connector implements the LookupTableSource interface, so the created JDBC table `category_dim` can be used as a temporal table
-in the data_enrichment.
+The underlying JDBC connector implements the LookupTableSource interface, so the created JDBC table `category_dim` can be used as a temporal table in the data_enrichment.
 
 CREATE VIEW syntax is used to register the query as a logical view, allowing us to easily reference this query in subsequent queries and simplify nested queries. Please note that creating a logical view does not trigger the execution of the job and the view results are not persisted. Therefore, this statement is lightweight and does not have additional overhead.
 

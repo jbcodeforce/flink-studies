@@ -18,11 +18,11 @@ Massive storage is needed, which uses different protocol such as: NFS, S3, HDFS.
 Today, there is a new way to think about data, by considering them, as continuous streams of events, which can be processed
  in real time. Those event streams serve as the foundation for stateful stream processing application: the analytics move to the data.
 
-We can define three classes of applications implemented with stateful stream processing:
+We can define three classes of application implemented with stateful stream processing:
 
 1. **Event-driven applications**: to adopt the reactive manifesto for scaling, resilience, responsive application, leveraging messaging as communication system.
 1. **Data pipeline applications**: replace ETL with low latency stream processing.
-1. **Data analytics applications**: immediatly act on the data and query live updated reports. 
+1. **Data analytics applications**: immediately act on the data and query live updated reports. 
 
 For more real industry use cases content see the [Flink Forward web site.](https://www.flink-forward.org/)
 
@@ -90,6 +90,8 @@ This is the Job Manager component which parallelizes the job and distributes sli
 
  ![5](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/distributed-runtime.svg)
 
+???- "Parameters"
+    *  taskmanager.numberOfTaskSlots: 2
 Once Flink is started (for example with the docker image), Flink Dashboard [http://localhost:8081/#/overview](http://localhost:8081/#/overview) presents the execution reporting:
 
  ![6](./images/flink-dashboard.png)

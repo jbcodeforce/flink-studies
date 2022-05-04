@@ -12,6 +12,7 @@ public class PersonFiltering {
         DataStream<Person> persons = env.fromElements(
                 new Person("Fred", 35),
                 new Person("Wilma", 35),
+                new Person("Bill", 17),
                 new Person("Pebbles", 2));
 
         DataStream<Person> adults = persons.filter(new FilterFunction<Person>() {

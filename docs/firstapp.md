@@ -5,8 +5,7 @@
 Each Flink app is a [Java main function which defines the data flow to execute on a stream](https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/datastream_api.html#anatomy-of-a-flink-program). 
 
 Once we build the application jar file, we use Flink CLI to send the jar as a job to the Job manager server. 
-During development, we can use docker-compose to start a simple `Flink session` cluster or use a docker compose which
- starts a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image.
+During development, we can use docker-compose to start a simple `Flink session` cluster or use a docker compose which starts a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image.
 
 * Start Flink session cluster using the following command: 
 
@@ -18,7 +17,7 @@ During development, we can use docker-compose to start a simple `Flink session` 
   The docker compose mounts the local folder to `/home` in both the job manager and task manager containers 
 so that, we can submit the job from the job manager (accessing the compiled jar) and also access the input data files in the task manager container.
 
-* Create a Quarkus app: `mvn io.quarkus:quarkus-maven-plugin:1.13.3.Final:create -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`
+* Create a Quarkus app: `mvn io.quarkus:quarkus-maven-plugin:1.13.3.Final:create -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`. See code under `my-flink` folder.
 
 * Add the following [maven dependencies](https://mvnrepository.com/artifact/org.apache.flink) into pom.xml
 
@@ -65,16 +64,14 @@ So most of the basic examples use `--input filename` and `--output filename` as 
 # One way with mounted files to task manager and job manager containers.
 CNAME="jbcodeforce.p1.WordCountMain"
 JMC=$(docker ps --filter name=jobmanager --format={{.ID}})
-docker exec -ti $JMC flink run -d -c $CNAME /home/my-flink/target/my-flink-1.0.0-runner.jar --input file://home/my-flink/data/wc.text --output file://home/data/out.csv 
+docker exec -ti $JMC flink run -d -c $CNAME /home/my-flink/target/my-flink-1.0.0-runner.jar --input file:///home/my-flink/data/wc.txt --output file:///home/my-flink/data/out.csv 
 ```
 
 In the execution above, `flink` is a CLI available inside the job-manager container.
 
-See [this coding practice summary](#programming.md) for other dataflow examples.
+See [the coding practice summary](#programming.md) for other dataflow examples.
 
-And the official [operators documentation](https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/operators/) to understand 
-how to transform one or more DataStreams into a new DataStream. Programs can combine multiple transformations into sophisticated 
-data flow topologies.
+And the official [operators documentation](https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/operators/) to understand how to transform one or more DataStreams into a new DataStream. Programs can combine multiple transformations into sophisticated data flow topologies.
 
 ## Unit testing
 

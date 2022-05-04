@@ -45,7 +45,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_MAIN_TOPIC: telemetries
   jobmanager:
-    image: flink:scala_2.14-java11 
+    image: flink:scala_2.12-java11 
     hostname: jobmanager
     ports:
       - "8081:8081"
@@ -55,16 +55,16 @@ services:
     volumes:  
         - .:/home
   taskmanager:
-    image: flink:scala_2.14-java11 
+    image: flink:scala_2.12-java11 
     hostname: taskmanager
     depends_on:
       - jobmanager
     command: taskmanager
-    scale: 1
+    scale: 2
     volumes:
         - .:/home
     environment:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
-        taskmanager.numberOfTaskSlots: 2
+        taskmanager.numberOfTaskSlots: 8

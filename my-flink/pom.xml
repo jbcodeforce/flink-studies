@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>jbcodeforce</groupId>
   <artifactId>my-flink</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0</version>
   <properties>
     <compiler-plugin.version>3.8.1</compiler-plugin.version>
     <maven.compiler.parameters>true</maven.compiler.parameters>
@@ -16,6 +16,7 @@
     <quarkus.platform.version>2.7.4.Final</quarkus.platform.version>
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
     <flink-version>1.14.4</flink-version>
+    <scala.binary.version>2.14</scala.binary.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -46,19 +47,19 @@
     <!-- https://mvnrepository.com/artifact/org.apache.flink/flink-streaming-java -->
     <dependency>
       <groupId>org.apache.flink</groupId>
-      <artifactId>flink-streaming-java_2.12</artifactId>
+      <artifactId>flink-streaming-java_${scala.binary.version}</artifactId>
       <version>${flink-version}</version>
       <scope>provided</scope>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.apache.flink/flink-clients -->
     <dependency>
       <groupId>org.apache.flink</groupId>
-      <artifactId>flink-clients_2.12</artifactId>
+      <artifactId>flink-clients_${scala.binary.version}</artifactId>
       <version>${flink-version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.flink</groupId>
-      <artifactId>flink-connector-kafka_2.12</artifactId>
+      <artifactId>flink-connector-kafka_${scala.binary.version}</artifactId>
       <version>${flink-version}</version>
     </dependency>
     <dependency>

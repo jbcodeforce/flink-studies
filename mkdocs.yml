@@ -20,3 +20,9 @@ markdown_extensions:
   - footnotes
   - pymdownx.smartsymbols
   - pymdownx.superfences
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.tabbed
+  - pymdownx.highlight
+  - pymdownx.details

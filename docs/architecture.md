@@ -16,12 +16,14 @@ Only one Job Manager is active at a given point of time, and there may be `n` Ta
 There are different [deployment models](https://ci.apache.org/projects/flink/flink-docs-release-1.14/ops/deployment/): 
 
 * Deploy on executing cluster, this is the **session mode**. Use **session** cluster to run multiple jobs: we need a JobManager container. 
-* **Per job** mode, spin up a cluster per job submission. More k8s oriented. This provides better resource isolation. 
+* **Per job** mode, spin up a cluster per job submission. This provides better resource isolation. 
 * **Application mode** creates a cluster per app with the main() function executed on the JobManager. It can include multiple jobs but they run inside the app. It allows for saving the required CPU cycles, but also save the bandwidth required for downloading the dependencies locally.
 
 Flink can run on any common resource manager like Hadoop Yarn, Mesos, or Kubernetes. For development purpose, we can use docker images to deploy a **Session** or **Job cluster**.
 
 See also [deployment to Kubernetes](./k8s-deploy.md)
+
+The new K8s operator, deploys and monitors Flink Application and Session deployments.
 
 ! add screen shot of k8s deployment
 
