@@ -1,7 +1,7 @@
-version: '2.1'
+version: '3.8'
 services:
   sql-client:
-    image: jark/demo-sql-client:0.2
+    image: jark/demo-sql-client
     depends_on:
       - kafka
       - jobmanager
@@ -13,7 +13,7 @@ services:
       MYSQL_HOST: mysql
       ES_HOST: elasticsearch
   jobmanager:
-    image: flink:scala_2.12-java11 
+    image: flink:latest
     ports:
       - "8081:8081"
     command: jobmanager
@@ -22,7 +22,7 @@ services:
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
   taskmanager:
-    image: flink:scala_2.12-java11 
+    image: flink:latest
     depends_on:
       - jobmanager
     command: taskmanager
@@ -33,7 +33,7 @@ services:
         jobmanager.rpc.address: jobmanager
         taskmanager.numberOfTaskSlots: 10
   datagen:
-    image: jark/datagen:0.2
+    image: jark/datagen:latest
     command: "java -classpath /opt/datagen/flink-sql-demo.jar myflink.SourceGenerator --input /opt/datagen/user_behavior.log --output kafka kafka:29092 --speedup 2000"
     depends_on:
       - kafka
@@ -47,7 +47,7 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD=123456
   zookeeper:
-    image: quay.io/strimzi/kafka:latest-kafka-2.8.1
+    image: quay.io/strimzi/kafka:latest-kafka-3.2.0
     container_name: zookeeper
     command: [
       "sh", "-c",
@@ -58,7 +58,7 @@ services:
     environment:
       LOG_DIR: /tmp/logs
   kafka:
-    image: quay.io/strimzi/kafka:latest-kafka-2.8.1
+    image: quay.io/strimzi/kafka:latest-kafka-3.2.0
     container_name: kafka
     ports:
       - "9092:9092"
@@ -82,7 +82,7 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
   addTopics:
-    image:  quay.io/strimzi/kafka:latest-kafka-2.8.1
+    image:  quay.io/strimzi/kafka:latest-kafka-3.2.0
     depends_on:
       - kafka
     entrypoint: [ "bash",  "-c", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:29092 --create  --if-not-exists --replication-factor 1 --partitions 1 --topic user_behavior"] 

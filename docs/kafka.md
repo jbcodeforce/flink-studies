@@ -75,4 +75,3 @@ Partition discover should be enable by properties so Flink job can discover newl
 ### TimeStamp and Watermark
 
 Timestamp can be in the ConsumerRecord or in the payload itself. so the app needs to specify how to extract the timestamp to be used for time window logic.
-So the consumer needs to define 

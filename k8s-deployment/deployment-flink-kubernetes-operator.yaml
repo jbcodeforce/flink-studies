@@ -1,0 +1,121 @@
+﻿kind: Deployment
+apiVersion: apps/v1
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: '3'
+    meta.helm.sh/release-name: flink-kubernetes-operator
+    meta.helm.sh/release-namespace: flink-demo
+  name: flink-kubernetes-operator
+  namespace: flink-demo
+  labels:
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: flink-kubernetes-operator
+    app.kubernetes.io/version: 1.0.1
+    helm.sh/chart: flink-kubernetes-operator-1.0.1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: flink-kubernetes-operator
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/name: flink-kubernetes-operator
+      annotations:
+        kubectl.kubernetes.io/default-container: flink-kubernetes-operator
+    spec:
+      restartPolicy: Always
+      serviceAccountName: flink-operator
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+      containers:
+        - resources: {}
+          terminationMessagePath: /dev/termination-log
+          name: flink-kubernetes-operator
+          command:
+            - /docker-entrypoint.sh
+            - operator
+          env:
+            - name: OPERATOR_NAMESPACE
+              value: flink-demo
+            - name: OPERATOR_NAME
+              value: flink-kubernetes-operator
+            - name: FLINK_CONF_DIR
+              value: /opt/flink/conf
+            - name: FLINK_PLUGINS_DIR
+              value: /opt/flink/plugins
+            - name: LOG_CONFIG
+              value: >-
+                -Dlog4j.configurationFile=/opt/flink/conf/log4j-operator.properties
+            - name: JVM_ARGS
+            - name: FLINK_OPERATOR_WATCH_NAMESPACES
+          securityContext: {}
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: flink-operator-config-volume
+              mountPath: /opt/flink/conf
+          terminationMessagePolicy: File
+          image: 'ghcr.io/apache/flink-kubernetes-operator'
+        - resources: {}
+          terminationMessagePath: /dev/termination-log
+          name: flink-webhook
+          command:
+            - /docker-entrypoint.sh
+            - webhook
+          env:
+            - name: WEBHOOK_KEYSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: flink-operator-webhook-secret
+                  key: password
+            - name: WEBHOOK_KEYSTORE_FILE
+              value: /certs/keystore.p12
+            - name: WEBHOOK_KEYSTORE_TYPE
+              value: pkcs12
+            - name: WEBHOOK_SERVER_PORT
+              value: '9443'
+            - name: LOG_CONFIG
+              value: >-
+                -Dlog4j.configurationFile=/opt/flink/conf/log4j-operator.properties
+            - name: JVM_ARGS
+            - name: FLINK_CONF_DIR
+              value: /opt/flink/conf
+            - name: FLINK_PLUGINS_DIR
+              value: /opt/flink/plugins
+            - name: OPERATOR_NAMESPACE
+              value: flink-demo
+            - name: FLINK_OPERATOR_WATCH_NAMESPACES
+          securityContext: {}
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: keystore
+              readOnly: true
+              mountPath: /certs
+            - name: flink-operator-config-volume
+              mountPath: /opt/flink/conf
+          terminationMessagePolicy: File
+          image: 'ghcr.io/apache/flink-kubernetes-operator'
+      serviceAccount: flink-operator
+      volumes:
+        - name: flink-operator-config-volume
+          configMap:
+            name: flink-operator-config
+            items:
+              - key: flink-conf.yaml
+                path: flink-conf.yaml
+              - key: log4j-operator.properties
+                path: log4j-operator.properties
+            defaultMode: 420
+        - name: keystore
+          secret:
+            secretName: webhook-server-cert
+            items:
+              - key: keystore.p12
+                path: keystore.p12
+            defaultMode: 420
+      dnsPolicy: ClusterFirst
+  strategy:
+    type: Recreate
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600

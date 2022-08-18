@@ -15,8 +15,8 @@ import org.apache.flink.core.fs.FileSystem.WriteMode;
 
 /**
  * Compute the most popular destination Taxi ride from file cab_rides.txt in the
- * form: 0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 # cab id, cab number plate, cab type, cab
- * driver name, ongoing trip/not, pickup location, destination, passenger count
+ * form: 0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 
+ * # cab id, cab number plate, cab type, cab driver name, ongoing trip/not, pickup location, destination, passenger count
  * 
  * The Average passenger per trip: place to pickup most passenger
  * 
@@ -46,8 +46,8 @@ public class TaxiStatistics {
     }
 
     /**
-     * key on destination sum on the count and max it. attributes are cab driver
-     * name, pickup location, destination, passenger count
+     * key on destination sum on the count and max it. attributes are 
+     * 0: cab driver name, 1: pickup location, 2: destination, 3: passenger count
      */
     public static DataSet<Tuple5<String, String, String, Boolean, Integer>> mostPopularDestination(
             DataSet<Tuple5<String, String, String, Boolean, Integer>> taxiRides) {

@@ -5,9 +5,73 @@ Failures of Job Manager pods are handled by the Deployment Controller which will
 
 A flow is a packaged as a jar, so need to be in a docker image with the Flink executable.
 
-The kubernetes deployment is described in [the product documentation](https://ci.apache.org/projects/flink/flink-docs-release-1.14/deployment/resource-providers/standalone/kubernetes.html) and can be summarized as:
+Flink offers [now a k8s Operator](https://flink.apache.org/news/2022/04/03/release-kubernetes-operator-0.1.0.html) to deploy and manage applications. This note summarize how to use this operator, with basic getting started yaml files.
 
-* Select the execution mode: `application, session or job`. For production it is recommended to deploy in `application` mode for better isolation, and usinh a cloud native approach. We can just build a dockerfile for our application using the Flink jars.
+The operator takes care of submitting, savepointing, upgrading and generally managing Flink jobs using the built-in Flink Kubernetes integration.
+
+## Deploy operator
+
+* Install [helm cli](https://github.com/helm/helm/releases).
+
+    ```sh
+    helm version
+    # version.BuildInfo{Version:"v3.9.0", GitCommit:"7ceeda6c585217a19a1131663d8cd1f7d641b2a7", GitTreeState:"clean", GoVersion:"go1.17.5"}
+    ```
+* Verify helm on the OpenShift cluster has access to repository
+
+    ```sh
+    helm repo add stable https://charts.helm.sh/stable 
+    # update repo
+    helm repo update
+    ```
+* Add Flink repository
+
+    ```sh
+    helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.0.1/
+    # Verify help repo entry exist
+    helm repo list
+    # Be sure to change the repo as the URL may not be valid anymore
+    helm repo remove  flink-operator-repo
+    # try to update repo content
+    helm repo update
+    ```
+
+* Install operator:
+
+```sh
+helm install flink-kubernetes-operator flink-operator-repo/flink-kubernetes-operator
+# output
+NAME: flink-kubernetes-operator
+LAST DEPLOYED: Thu Jul 28 19:00:31 2022
+NAMESPACE: flink-demo
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+# change the user to be one supported by OpenShift
+
+# then verify deployment with 
+helm list
+NAME                      NAMESPACE   REVISION  UPDATED                            STATUS  CHART APP VERSION
+flink-kubernetes-operator flink-demo  1    	2022-07-28 19:00:31.459524 -0700 PDT	deployed flink-kubernetes-operator-1.0.1	1.0.1
+```
+
+* If the pod is not running verify in the deployment the condition, we may need to add
+
+```sh
+ oc adm policy add-scc-to-user privileged -z default
+```
+
+and remove runAs elements in the deployment.yaml.
+
+To remove the operator
+
+```sh
+helm uninstall flink-kubernetes-operator
+```
+
+## Submit flink job
+
+* Select the execution mode: `application, session or job`. For production it is recommended to deploy in `application` mode for better isolation, and using a cloud native approach. We can just build a dockerfile for our application using the Flink jars.
 * Deploy a config map to define the `log4j-console.properties` and other parameters for Flink (`flink-conf.yaml`)
 * Define the job manager service.
 

@@ -14,32 +14,61 @@ During development, we can use docker-compose to start a simple `Flink session` 
   docker-compose up -d
   ```
 
-  The docker compose mounts the local folder to `/home` in both the job manager and task manager containers 
-so that, we can submit the job from the job manager (accessing the compiled jar) and also access the input data files in the task manager container.
 
-* Create a Quarkus app: `mvn io.quarkus:quarkus-maven-plugin:1.13.3.Final:create -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`. See code under `my-flink` folder.
+```yaml
+version: "3.8"
+services:
+  jobmanager:
+    image: flink:latest
+    hostname: jobmanager
+    ports:
+      - "8081:8081"
+    command: jobmanager
+    environment:
+      FLINK_PROPERTIES: "jobmanager.rpc.address: jobmanager"
+    volumes:  
+        - .:/home
+  taskmanager:
+    image: flink:latest 
+    hostname: taskmanager
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    scale: 2
+    volumes:
+        - .:/home
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 4
+```
 
-* Add the following [maven dependencies](https://mvnrepository.com/artifact/org.apache.flink) into pom.xml
+The docker compose mounts the local folder to `/home` in both the job manager and task manager containers so that, we can submit the job from the job manager (accessing the compiled jar) and also access the input data files in the task manager container.
+
+* Create a Quarkus app: `quarkus create app -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`. See code example under `my-flink` folder.
+
+* Add the following [maven dependencies](https://mvnrepository.com/artifact/org.apache.flink) into the `pom.xml`
 
 ```xml
 <!-- https://mvnrepository.com/artifact/org.apache.flink/flink-java -->
 <dependency>
     <groupId>org.apache.flink</groupId>
     <artifactId>flink-java</artifactId>
-    <version>1.14.4</version>
+    <version>${flink-version}</version>
 </dependency>
 <dependency>
     <groupId>org.apache.flink</groupId>
-    <artifactId>flink-streaming-java_2.12</artifactId>
-    <version>1.14.4</version>
+    <artifactId>flink-streaming-java</artifactId>
+    <version>${flink-version}</version>
     <scope>provided</scope>
 </dependency>
 ```
 
-* Build the main function with the following code structure:
+* Create a Java Class with a main function and the following code structure:
 
     * get Flink execution context
-    * defined process flow to apply to the stream
+    * defined process flow to apply to the data stream
     * start the execution
 
 ```java
@@ -55,7 +84,7 @@ so that, we can submit the job from the job manager (accessing the compiled jar)
 The code above uses the [ParameterTool  class](https://ci.apache.org/projects/flink/flink-docs-stable/api/java/org/apache/flink/api/java/utils/ParameterTool.html) to process the program arguments. 
 So most of the basic examples use `--input filename` and `--output filename` as java arguments. So `params` will have those arguments in a Map. 
 
-* Be sure to set quarkus uber-jar generation (`quarkus.package.type=uber-jar`) in the `application.properties` to get all the dependencies in a unique jar: Flink needs all dependencies in classpath.
+* Be sure to set quarkus uber-jar generation (`quarkus.package.type=uber-jar`) in the `application.properties` to get all the dependencies in a unique jar: Flink needs all dependencies in the classpath.
 * Package the jar with `mvn package`
 * Every Flink application needs a reference to the execution environment (variable `env` in previous example). 
 * To submit a job to a Session cluster, use the following commands which use the `flink` cli inside the running container:
@@ -117,7 +146,7 @@ Change the `--job-classname` parameter of the standalone-job command within the 
 version: "2.2"
 services:
   jobmanager:
-    image: flink:1.14.4-scala_2.11
+    image: flink:latest
     ports:
       - "8081:8081"
     command: standalone-job --job-classname com.job.ClassName [--job-id <job id>] [--fromSavepoint /path/to/savepoint [--allowNonRestoredState]] [job arguments]
@@ -130,7 +159,7 @@ services:
         parallelism.default: 2
 
   taskmanager:
-    image: flink:1.14.4-scala_2.11
+    image: flink:latest
     depends_on:
       - jobmanager
     command: taskmanager

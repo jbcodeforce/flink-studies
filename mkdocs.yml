@@ -8,6 +8,7 @@ nav:
   - Kubernetes Deployment: k8s-deploy.md
   - Programming examples: programming.md
   - Kafka Integration: kafka.md
+  - Flink SQL: flink-sql.md
   - Stateful function: stateful-func.md
   - Complex Event Processing: cep.md
   - return to main: https://jbcodeforce.github.io

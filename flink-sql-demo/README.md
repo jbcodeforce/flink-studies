@@ -5,6 +5,8 @@ It integrates Kafka, MySQL, Elasticsearch, and Kibana with Flink SQL to analyze 
 
 The demo explanation is [here](https://flink.apache.org/2020/07/28/flink-sql-demo-building-e2e-streaming-application.html).
 
+![](https://flink.apache.org/img/blog/2020-07-28-flink-sql-demo/image1.gif)
+
 Source code is [wuchong/flink-sql-demo](https://github.com/wuchong/flink-sql-demo/)
 
 ## Demo summary and updates
@@ -50,7 +52,7 @@ docker-compose exec sql-client ./sql-client.sh
     * PROCTIME() function to declare a virtual column that generates the processing-time attribute
     * WATERMARK function to declare the watermark strategy on the ts field (tolerate 5-seconds out-of-order).
 
-* See created table:
+* See created tables:
 
 ```sql
  SHOW TABLES;
@@ -59,7 +61,7 @@ docker-compose exec sql-client ./sql-client.sh
 
 ### Hourly trading volume
 
-Compute the number of buy per hour of a day. The following table is in Elastic Search. Elasticsearch will automatically create the index if it does not exist.
+Compute the number of buy per hour of a day. The following table is in ElasticSearch. ElasticSearch will automatically create the index if it does not exist.
 
 ```sql
 CREATE TABLE buy_cnt_per_hour (
@@ -73,8 +75,8 @@ CREATE TABLE buy_cnt_per_hour (
 ```
 
 The following query is sent by the client SQL to the Flink cluster, which will start
-a job that continuously writing results into Elasticsearch `buy_cnt_per_hour` index. The TUMBLE window function assigns data 
-into hourly windows. use COUNT(*) to count all rows in the time window.
+a job that is continuously writing results into ElasticSearch `buy_cnt_per_hour` index. The TUMBLE window function assigns data 
+into hourly windows. use COUNT(*) to count all rows in the 1 hour time window.
 
 ```sql
 INSERT INTO buy_cnt_per_hour
@@ -136,7 +138,7 @@ a table with a row = 10 mn time + uv = count of distinct userids.
     * As the maximum time is also a part of the primary key of the sink, the final result is that we will insert a new point into the elasticsearch every 10 minute. 
     * And every latest point will be updated continuously until the next 10-minute point is generated.
 
-* to visualize, create a new index pattern in Kibana to match the cummulative_uv collection of Elasticsearch, using `data_str`, then add a LINE GRAPH view to the dashboard. The view is defined as: Y axis as Aggregation: Max Filed: uv, and Bucket: X axis, with Aggregation: terms of time_str:keyword, Order by alphabetical, ascending of size 150.
+* to visualize, create a new index pattern in Kibana to match the `cummulative_uv` collection of Elasticsearch, using `data_str`, then add a LINE GRAPH view to the dashboard. The view is defined as: Y axis as Aggregation: Max Filed: uv, and Bucket: X axis, with Aggregation: terms of time_str:keyword, Order by alphabetical, ascending of size 150.
 
 ### Top Categories
 

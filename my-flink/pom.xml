@@ -13,9 +13,9 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-    <quarkus.platform.version>2.7.4.Final</quarkus.platform.version>
-    <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
-    <flink-version>1.14.4</flink-version>
+    <quarkus.platform.version>2.11.2.Final</quarkus.platform.version>
+    <surefire-plugin.version>3.0.0-M7</surefire-plugin.version>
+    <flink-version>1.15.1</flink-version>
     <scala.binary.version>2.14</scala.binary.version>
   </properties>
   <dependencyManagement>
@@ -47,19 +47,19 @@
     <!-- https://mvnrepository.com/artifact/org.apache.flink/flink-streaming-java -->
     <dependency>
       <groupId>org.apache.flink</groupId>
-      <artifactId>flink-streaming-java_${scala.binary.version}</artifactId>
+      <artifactId>flink-streaming-java</artifactId>
       <version>${flink-version}</version>
       <scope>provided</scope>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.apache.flink/flink-clients -->
     <dependency>
       <groupId>org.apache.flink</groupId>
-      <artifactId>flink-clients_${scala.binary.version}</artifactId>
+      <artifactId>flink-clients</artifactId>
       <version>${flink-version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.flink</groupId>
-      <artifactId>flink-connector-kafka_${scala.binary.version}</artifactId>
+      <artifactId>flink-connector-kafka</artifactId>
       <version>${flink-version}</version>
     </dependency>
     <dependency>
