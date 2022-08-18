@@ -8,6 +8,7 @@ import static org.apache.flink.table.api.Expressions.timestampDiff;
 
 import java.time.LocalDate;
 
+import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.JsonOnNull;
 import org.apache.flink.table.api.Table;
@@ -17,6 +18,7 @@ import org.apache.flink.table.expressions.TimePointUnit;
 public class TableToJson {
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment streamEnv = StreamExecutionEnvironment.getExecutionEnvironment();
+        streamEnv.setRuntimeMode(RuntimeExecutionMode.BATCH);
         StreamTableEnvironment tableEnv = StreamTableEnvironment.create(streamEnv);
 
         final Table t = tableEnv.fromValues(

@@ -4,8 +4,28 @@ Flink’s SQL support is based on [Apache Calcite](https://calcite.apache.org/) 
 
 The [Table API](https://nightlies.apache.org/flink/flink-docs-release-1.15/docs/dev/table/tableapi/) is a language-integrated query API for Java, Scala, and Python that allows the composition of queries from relational operators such as selection, filter, and join.
 
-The Table API can deal with bounded and unbounded streams in a unified and highly optimized ecosystem inspired by databases and SQL
+The Table API can deal with bounded and unbounded streams in a unified and highly optimized ecosystem inspired by databases and SQL.
 
+It is possible to code the SQL and Table API in a java, scala or Python program or use SQL client, which is an interactive client to submit SQL queries to Flink and visualize the results.
+
+Stream or bounded data are mapped to Table, the following command will load data from a csv file and create a dynamic table in Flink
+
+```sql
+CREATE TABLE employee_information (
+    cab_number INT,
+    plate VARCHAR, 
+    cab_type VARCHAR,
+    driver_name VARCHAR, 
+    ongoing_trip VARCHAR, 
+    pickup_location VARCHAR, 
+    destination VARCHAR, 
+    passenger_count INT
+) WITH ( 
+    'connector' = 'filesystem',
+    'path' = '/home/data/cab_rides.txt',
+    'format' = 'csv'
+);
+```
 ## Programming model
 
 * Start by creating a java application (quarkus create app for example) and a Main class. See code in [flink-sql-quarkus]() folder.
@@ -43,12 +63,25 @@ public class FirstSQLApp {
 
 A TableEnvironment maintains a map of catalogs of tables which are created with an identifier. Each identifier consists of 3 parts: catalog name, database name and object name.
 
+```java
+    // build a dynamic view from a stream and specifies the fields. here one field only
+    Table inputTable = tableEnv.fromDataStream(dataStream).as("name");
+
+    // register the Table object in default catalog and database, as a view and query it
+    tableEnv.createTemporaryView("clickStreamsView", inputTable);
+```
+
+![](./images/sql-concepts.png)
+
+
 Tables may either be temporary, and tied to the lifecycle of a single Flink session, or permanent, and visible across multiple Flink sessions and clusters.
+
+Queries such as SELECT ... FROM ... WHERE which only consist of field projections or filters are usually stateless pipelines. However, operations such as joins, aggregations, or deduplications require keeping intermediate results in a fault-tolerant storage for which Flink’s state abstractions are used.
 
 
 ### ETL with Table API
 
-See code: [TableToJson]()
+See code: [TableToJson](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql-quarkus/src/test/java/org/acme/TableToJson.java)
 
 ```java
 public static void main(String[] args) throws Exception {
@@ -74,6 +107,25 @@ public static void main(String[] args) throws Exception {
         tableEnv.toChangelogStream(t).print();
         streamEnv.execute();
     }
+```
+
+### Join with a kafka streams
+
+Join transactions coming from Kafka topic with customer information.
+
+```java
+    // customers is reference data loaded from file or DB connector
+    tableEnv.createTemporaryView("Customers", customerStream);
+    // transactions come from kafka
+    DataStream<Transaction> transactionStream =
+        env.fromSource(transactionSource, WatermarkStrategy.noWatermarks(), "Transactions");
+    tableEnv.createTemporaryView("Transactions", transactionStream
+    tableEnv
+        .executeSql(
+            "SELECT c_name, CAST(t_amount AS DECIMAL(5, 2))\n"
+                + "FROM Customers\n"
+                + "JOIN (SELECT DISTINCT * FROM Transactions) ON c_id = t_customer_id")
+        .print();
 ```
 
 ## SQL Client
