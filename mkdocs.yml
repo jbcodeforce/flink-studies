@@ -11,7 +11,7 @@ nav:
   - Flink SQL: flink-sql.md
   - Stateful function: stateful-func.md
   - Complex Event Processing: cep.md
-  - return to main: https://jbcodeforce.github.io
+  - Return to main: https://jbcodeforce.github.io
 theme: 
   name: material
 extra_css: ["extra.css"]
