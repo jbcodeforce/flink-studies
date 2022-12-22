@@ -152,9 +152,9 @@ mapped.keyBy(( Tuple4<String, String, String, Integer> record) -> record.f0 ).ma
 
 This is a more complex solution with a lot of good inspirations for utilities class and way to work on Java Beans.
 
-See [the flink-training github](https://github.com/apache/flink-training/tree/release-1.11) to access to the source code.
+See [the flink-training github](https://github.com/apache/flink-training/tree/release-1.15) to access to the source code.
 
-* [Lab 1- filter non NY taxi rides](https://github.com/apache/flink-training/tree/release-1.11/ride-cleansing), the process flow uses the `DataStream::filter` method. The NYCFilter is a class-filter-function.
+* [Lab 1- filter non NY taxi rides](https://github.com/apache/flink-training/tree/release-1.15/ride-cleansing), the process flow uses the `DataStream::filter` method. The NYCFilter is a class-filter-function.
 
 ```Java
 DataStream<TaxiRide> filteredRides = rides
@@ -174,7 +174,7 @@ public static class NYCFilter implements FilterFunction<TaxiRide> {
 This exercise uses a lot of utility classes for data and tests which hide the complexity of the data preparation 
 (see the common folder within the training repository).
 
-* [Process ride and fare data streams for stateful enrichment](https://github.com/apache/flink-training/tree/release-1.11/rides-and-fares). 
+* [Process ride and fare data streams for stateful enrichment](https://github.com/apache/flink-training/tree/release-1.15/rides-and-fares). 
 The result should be a DataStream<Tuple2<TaxiRide, TaxiFare>>, with one record for each distinct rideId. 
 Each tuple should pair the TaxiRide START event for some rideId with its matching TaxiFare. 
 There is no control over the order of arrival of the ride and fare records for each rideId.
@@ -202,7 +202,7 @@ The join and stateful implementation are done in the EnrichmentFunction as a `Ri
 
 `ValueState<TaxiRide> rideState` is a partitioned single-value state.
 
- `flatMap1(TaxiRide ride, Collector<Tuple2<TaxiRide, TaxiFare>> out) ` method is called for each element in the first of the connected streams. So here on a ride event, if there is a matching fare already computed then generate the output tuple, if not update keep the ride to be used for the fare event processing.
+ `flatMap1(TaxiRide ride, Collector<Tuple2<TaxiRide, TaxiFare>> out)` method is called for each element in the first of the connected streams. So here on a ride event, if there is a matching fare already computed then generate the output tuple, if not update keep the ride to be used for the fare event processing.
 
 `flatMap2(TaxiFare fare, Collector<Tuple2<TaxiRide, TaxiFare>> out)` method is called on the second connected streams. When a fare event arrives, if there is a ride with the same key, join, if not keep the fare for future ride event.
  
@@ -246,7 +246,7 @@ Time windowing has limitations:
 * can not correctly handle out-of-order data
 * results will be non-deterministic
 
-* [Long ride alert](https://github.com/apache/flink-training/tree/release-1.11/long-ride-alerts) is an example of [Event driven application](https://ci.apache.org/projects/flink/flink-docs-release-1.11/learn-flink/event_driven.html) where alerts are created if a taxi ride started two hours ago is still ongoing. It uses event timestamp and [watermarks](https://ci.apache.org/projects/flink/flink-docs-release-1.11/learn-flink/streaming_analytics.html#watermarks).
+* [Long ride alert](https://github.com/apache/flink-training/tree/release-1.15/long-ride-alerts) is an example of [Event driven application](https://ci.apache.org/projects/flink/flink-docs-release-1.15/learn-flink/event_driven.html) where alerts are created if a taxi ride started two hours ago is still ongoing. It uses event timestamp and [watermarks](https://ci.apache.org/projects/flink/flink-docs-release-1.15/learn-flink/streaming_analytics.html#watermarks).
 
 The key is in the [MatchFunction process function](https://github.com/apache/flink-training/blob/ea4a66e97dd211bd8f8b8e415e3e427c30e4746b/long-ride-alerts/src/solution/java/org/apache/flink/training/solutions/longrides/LongRidesSolution.java#L66-L108) implementation in which START or END events are kept in a value state, but a timer is set on the context, so the method may get a timer trigger with a processing event that will trigger the onTimer() callback method.
 

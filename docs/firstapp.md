@@ -2,7 +2,14 @@
 
 ## First app
 
-Each Flink app is a [Java main function which defines the data flow to execute on a stream](https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/datastream_api.html#anatomy-of-a-flink-program). 
+Each Flink app is a [Java main function which defines the data flow to execute on a stream](https://ci.apache.org/projects/flink/flink-docs-release-1.15/dev/datastream_api.html#anatomy-of-a-flink-program):
+
+1. Obtain an execution environment,
+1. Load/create the initial data,
+1. Specify transformations on this data,
+1. Specify where to put the results of your computations,
+1. Trigger the program execution
+
 
 Once we build the application jar file, we use Flink CLI to send the jar as a job to the Job manager server. 
 During development, we can use docker-compose to start a simple `Flink session` cluster or use a docker compose which starts a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image.
@@ -46,7 +53,7 @@ services:
 
 The docker compose mounts the local folder to `/home` in both the job manager and task manager containers so that, we can submit the job from the job manager (accessing the compiled jar) and also access the input data files in the task manager container.
 
-* Create a Quarkus app: `quarkus create app -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`. See code example under `my-flink` folder.
+* Create a Quarkus app: `quarkus create app -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`. See code examples under `my-flink` folder and `jbcodeforce.p1` package.
 
 * Add the following [maven dependencies](https://mvnrepository.com/artifact/org.apache.flink) into the `pom.xml`
 
@@ -74,6 +81,7 @@ The docker compose mounts the local folder to `/home` in both the job manager an
 ```java
 // Get execution context
   ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+  // use file as input so use program arguments to get file name
   ParameterTool params = ParameterTool.fromArgs(args);
   env.getConfig().setGlobalJobParameters(params);
   // Define data flow processing...
@@ -87,7 +95,7 @@ So most of the basic examples use `--input filename` and `--output filename` as 
 * Be sure to set quarkus uber-jar generation (`quarkus.package.type=uber-jar`) in the `application.properties` to get all the dependencies in a unique jar: Flink needs all dependencies in the classpath.
 * Package the jar with `mvn package`
 * Every Flink application needs a reference to the execution environment (variable `env` in previous example). 
-* To submit a job to a Session cluster, use the following commands which use the `flink` cli inside the running container:
+* To submit a job to a Session cluster, use the following command which uses the `flink` cli inside the running `JobManagwe` container:
 
 ```shell
 # One way with mounted files to task manager and job manager containers.
