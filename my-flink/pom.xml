@@ -15,7 +15,8 @@
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.2.5</surefire-plugin.version>
   
-    <flink-version>1.19.1</flink-version>  </properties>
+        <flink-version>1.19.1</flink-version>  
+    /properties>
   <dependencyManagement>
     <dependencies>
       <dependency>

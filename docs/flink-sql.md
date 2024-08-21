@@ -1,14 +1,18 @@
 # Flink SQL and Table API
 
-Flink’s SQL support is based on [Apache Calcite](https://calcite.apache.org/) to support SQL based streaming logic implementation. 
+Flink SQL is a compliant standard SQL engine for processing batch or streaming data on top of distributed computing of Flink.
 
-The [Table API](https://nightlies.apache.org/flink/flink-docs-release-1.15/docs/dev/table/tableapi/) is a language-integrated query API for Java, Scala, and Python that allows the composition of queries from relational operators such as selection, filter, and join.
+Flink’s SQL support is based on [Apache Calcite](https://calcite.apache.org/) to support SQL based streaming logic implementation. It is using the [Table API](https://nightlies.apache.org/flink/flink-docs-release-1.19/docs/dev/table/tableapi/) which is a language-integrated query API for Java, Scala, and Python that allows the composition of queries from relational operators such as selection, filter, and join.
 
 The Table API can deal with bounded and unbounded streams in a unified and highly optimized ecosystem inspired by databases and SQL.
 
-It is possible to code the SQL and Table API in a java, scala or Python program or use SQL client, which is an interactive client to submit SQL queries to Flink and visualize the results.
+Table and SQL are implemented on top of low level stream operator API, which itself runs on the dataflow runtime:
 
-Stream or bounded data are mapped to Table, the following command will load data from a csv file and create a dynamic table in Flink
+![](./diagrams/flink-apis.drawio.png){ width=400}
+
+It is possible to code the SQL and Table API in a Java, Scala or Python or use SQL client, which is an interactive client to submit SQL queries to Flink and visualize the results.
+
+Stream or bounded data are mapped to Table, the following command will load data from a csv file and create a dynamic table in Flink:
 
 ```sql
 CREATE TABLE employee_information (
@@ -26,9 +30,16 @@ CREATE TABLE employee_information (
     'format' = 'csv'
 );
 ```
+
+They are dynamic, because they change overtime, and some tables are more a changelog stream than static tables. Grouping statement create tables with update row semantic.
+
+![](./diagrams/sql-table-stream.drawio.png)
+
+Dynamic Table can also being persisted in Kafka Topic. 
+
 ## Programming model
 
-* Start by creating a java application (quarkus create app for example) and a Main class. See code in [flink-sql-quarkus]() folder.
+* Start by creating a java application (quarkus create app for example) and a Main class. See code in [flink-sql-quarkus](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql-quarkus/) folder.
 * Add dependencies in the pom
 
 ```xml
@@ -51,7 +62,7 @@ CREATE TABLE employee_information (
       </dependency>
 ```
 
-The `TableEnvironment` is the entrypoint for Table API and SQL integration. See [Create Table environment](https://nightlies.apache.org/flink/flink-docs-release-1.15/docs/dev/table/common/#create-a-tableenvironment)
+The `TableEnvironment` is the entrypoint for Table API and SQL integration. See [Create Table environment](https://nightlies.apache.org/flink/flink-docs-release-1.19/docs/dev/table/common/#create-a-tableenvironment)
 
 ```java
 
@@ -71,7 +82,7 @@ A TableEnvironment maintains a map of catalogs of tables which are created with 
     tableEnv.createTemporaryView("clickStreamsView", inputTable);
 ```
 
-![](./images/sql-concepts.png)
+![](./diagrams/sql-concepts.drawio.png)
 
 
 Tables may either be temporary, and tied to the lifecycle of a single Flink session, or permanent, and visible across multiple Flink sessions and clusters.
@@ -153,7 +164,7 @@ docker exec -ti sql-client bash
 
 ## Challenges
 
-* We cannot express everything in SQL but we can mix stream and Table APIs
+* We cannot express everything in SQL but we can mix Flink Stream and Table APIs
 
 ## Read more
 

@@ -6,16 +6,16 @@
   <artifactId>flink-sql-quarkus</artifactId>
   <version>1.0.0</version>
   <properties>
-    <compiler-plugin.version>3.8.1</compiler-plugin.version>
+    <compiler-plugin.version>3.11.0</compiler-plugin.version>
     <maven.compiler.release>11</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-    <quarkus.platform.version>2.11.2.Final</quarkus.platform.version>
-    <flink-version>1.15.1</flink-version>
+    <quarkus.platform.version>3.2.12.Final</quarkus.platform.version>
+    <flink-version>1.19.1</flink-version>
     <skipITs>true</skipITs>
-    <surefire-plugin.version>3.0.0-M7</surefire-plugin.version>
+    <surefire-plugin.version>3.2.5</surefire-plugin.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -83,7 +83,7 @@
       <dependency>
         <groupId>org.apache.flink</groupId>
         <artifactId>flink-connector-kafka</artifactId>
-        <version>${flink-version}</version>
+        <version>3.2.0-1.19</version>
         <scope>provided</scope>
       </dependency>
     

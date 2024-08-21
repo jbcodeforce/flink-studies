@@ -28,13 +28,23 @@ For more real industry use cases content see the [Flink Forward web site.](https
 
 ## The What 
 
-[Apache Flink](https://flink.apache.org) (2016) is a framework and **distributed processing** engine for stateful computations over unbounded and bounded data streams. Flink supports batch (data set) and graph (data stream) processing. It is very good at:
+[Apache Flink](https://flink.apache.org) (2016) is a framework and **distributed processing** engine for stateful computations over unbounded and bounded data streams. Flink supports batch (data set) and graph (data stream) processing. Since few years it becomes standard for its performance and rich feature set. 
+
+It is based on four important capabilities:
+
+* Streaming
+* State
+* Time
+* Checkpoint
+
+Flink is very good at:
 
 * Very low latency processing with event time semantics to get consistent and accurate results even in case of out of order events.
 * Exactly once state consistency. 
 * Millisecond latencies while processing millions of events per second
 * Expressive and easy-to-use APIs: map, reduce, join, window, split, and connect...
 * Fault tolerance, and high availability: supports worker and master failover, eliminating any single point of failure
+* Support Java, Scala, Python and SQL to implement the streaming logic.
 * A lot of connectors to integrate with Kafka, Cassandra, Pulsar, Elastic Search, JDBC, S3...
 * Support container and deployment on Kubernetes
 * Support updating the application code and migrate jobs to different Flink clusters without losing the state of the application
@@ -48,17 +58,37 @@ The figure below illustrates those different models combined with [Zepellin](htt
 
 ## Stream processing concepts
 
-In [Flink](https://ci.apache.org/projects/flink/flink-docs-release-1.12/learn-flink/#stream-processing), applications are composed of streaming dataflows that may be transformed by user-defined operators. These dataflows form directed graphs that start with one or more sources, and end in one or more sinks. The data flows between operations. 
+A Stream is a sequence of events, bounded or unbounded:
+
+![](./diagrams/streaming.drawio.png)
+
+In [Flink](https://ci.apache.org/projects/flink/flink-docs-release-1.12/learn-flink/#stream-processing), applications are composed of streaming dataflows that may be transformed by user-defined operators. Each step of the graph is executed by an operator. These dataflows form directed graphs that start with one or more sources, and end in one or more sinks. The data, flows, between operations. 
 
 The figure below, from the product documentation, summarizes the APIs used to develop a data stream processing flow:
 
- ![1](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/program_dataflow.svg)
+ ![1](https://ci.apache.org/projects/flink/flink-docs-release-1.19/fig/program_dataflow.svg)
  
  *src: apache Flink product doc*
 
-Stream processing includes a set of functions to transform data, to produce a new output stream. Intermediate steps compute rolling aggregations like min, max, mean, or collect and buffer records in time window to compute metrics on a finite set of events. 
 
-To properly define window operator semantics, we need to determine both how events are assigned to buckets and how often the window produces a result. Flink's streaming model is based on windowing and checkpointing, it uses controlled cyclic dependency graph as its execution engine.
+Stream processing includes a set of functions to transform data, and to produce a new output stream. Intermediate steps compute rolling aggregations like min, max, mean, or collect and buffer records in time window to compute metrics on a finite set of events. 
+
+To improve throughput the data is partitionned so operators can run in parallel. Programs in Flink are inherently parallel and distributed. During execution, a stream has one or more stream partitions, and each operator has one or more operator subtasks.
+
+ ![3](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/parallel_dataflow.svg)
+
+ *src: apache Flink site*
+
+Some operations, such `group-by`,  may reshuffle or repartition the data. This is a costly operation, that involve serialization and sending data over the network. Finally events can be assigned to one sink via rebalancing from multiple streams to one. Here is an example of SQL streaming logic with where statement can be run in parallel; while grouping, repartition the streams and then rebalance to one sink:
+
+```sql
+INSERT INTO results
+SELECT color, COUNT(*) FROM events
+WHERE color <> orange
+GROUP BY color;
+```
+
+To properly define window operator semantics, developers need to determine both how events are assigned to buckets and how often the window produces a result. Flink's streaming model is based on windowing and checkpointing, it uses controlled cyclic dependency graph as its execution engine.
 
 The following figure is showing integration of stream processing runtime with an append log system, like Kafka, with internal local state persistence and continuous checkpointing to remote storage as HA support:
 
@@ -76,11 +106,7 @@ Transform operators can be chained. Dataflow can consume from Kafka, Kinesis, Qu
 
  *src: apache Flink product doc*
 
-Programs in Flink are inherently parallel and distributed. During execution, a stream has one or more stream partitions, and each operator has one or more operator subtasks.
 
- ![3](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/parallel_dataflow.svg)
-
- *src: apache Flink site*
 
 A Flink application, can be stateful, runs in parallel on a distributed cluster. The various parallel instances of a given operator execute independently, in separate threads, and in general run on different machines.
 

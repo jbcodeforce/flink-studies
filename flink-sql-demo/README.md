@@ -12,6 +12,7 @@ Source code is [wuchong/flink-sql-demo](https://github.com/wuchong/flink-sql-dem
 ## Demo summary and updates
 
 GenCode component writes events to Kafka, as user's behaviors including “click”, “like”, “purchase” and “add to shopping cart” events.
+
 The dataset is from the Alibaba Cloud Tianchi public dataset.
 
 As of 11/02/2021, there some differences with the commands explained in the demo documentation:

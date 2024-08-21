@@ -117,7 +117,7 @@ flink run -d -c jbcodeforce.p1.WordCountMain /home/my-flink/target/my-flink-
 
 In the execution above, `flink` is a CLI available inside the job-manager container.
 
-See [the coding practice summary](#programming.md) for other dataflow examples.
+See [the coding practice summary](./programming.md) for other dataflow examples.
 
 And the official [operators documentation](https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/operators/) to understand how to transform one or more DataStreams into a new DataStream. Programs can combine multiple transformations into sophisticated data flow topologies.
 
