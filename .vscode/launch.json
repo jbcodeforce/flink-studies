@@ -108,7 +108,8 @@
             "name": "Debug (Launch)-WordCountMain<my-flink>",
             "request": "launch",
             "mainClass": "jbcodeforce.p1.WordCountMain",
-            "projectName": "my-flink"
+            "projectName": "my-flink",
+            "args": ["--input", "./my-flink/data/wc.txt", "--ouput", "count.csv"]
         },
         {
             "type": "java",

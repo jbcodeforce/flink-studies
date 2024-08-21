@@ -1,17 +1,23 @@
 # Getting started
 
+???- info "Update"
+    Created 2018 Updated 08/2024
+    Flink supports Java 11 so Quarkus code needs to be limited to quarkus 3.2.12_Final and maven should compile in JDK 11.
+    Use jbang to install jdk 11. WSL ubuntu has OpenJDK 11 and 17.
+
 ## First app
 
-Each Flink app is a [Java main function which defines the data flow to execute on a stream](https://ci.apache.org/projects/flink/flink-docs-release-1.15/dev/datastream_api.html#anatomy-of-a-flink-program):
+Each Flink app is a [Java main function which defines the data flow to execute on a stream](https://ci.apache.org/projects/flink/flink-docs-release-1.19/dev/datastream_api.html#anatomy-of-a-flink-program). The structure follows the steps below:
 
 1. Obtain an execution environment,
 1. Load/create the initial data,
 1. Specify transformations on this data,
-1. Specify where to put the results of your computations,
+1. Specify where to put the results of the computations,
 1. Trigger the program execution
 
 
 Once we build the application jar file, we use Flink CLI to send the jar as a job to the Job manager server. 
+
 During development, we can use docker-compose to start a simple `Flink session` cluster or use a docker compose which starts a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image.
 
 * Start Flink session cluster using the following command: 
@@ -21,6 +27,7 @@ During development, we can use docker-compose to start a simple `Flink session` 
   docker-compose up -d
   ```
 
+The docker compose looks like:
 
 ```yaml
 version: "3.8"
@@ -95,13 +102,17 @@ So most of the basic examples use `--input filename` and `--output filename` as 
 * Be sure to set quarkus uber-jar generation (`quarkus.package.type=uber-jar`) in the `application.properties` to get all the dependencies in a unique jar: Flink needs all dependencies in the classpath.
 * Package the jar with `mvn package`
 * Every Flink application needs a reference to the execution environment (variable `env` in previous example). 
-* To submit a job to a Session cluster, use the following command which uses the `flink` cli inside the running `JobManagwe` container:
+* To submit a job to a Session cluster, use the following command which uses the `flink` cli inside the running `JobManager` container:
 
 ```shell
 # One way with mounted files to task manager and job manager containers.
 CNAME="jbcodeforce.p1.WordCountMain"
 JMC=$(docker ps --filter name=jobmanager --format={{.ID}})
 docker exec -ti $JMC flink run -d -c $CNAME /home/my-flink/target/my-flink-1.0.0-runner.jar --input file:///home/my-flink/data/wc.txt --output file:///home/my-flink/data/out.csv 
+
+# inside the jobmanager
+flink run -d -c jbcodeforce.p1.WordCountMain /home/my-flink/target/my-flink-
+1.0.0-runner.jar --input file:///home/my-flink/data/wc.txt --output file:///home/my-flink/data/out.csv
 ```
 
 In the execution above, `flink` is a CLI available inside the job-manager container.
@@ -139,7 +150,7 @@ For example testing a string to a tuple mapping (MapTrip() is a MapFunction(...)
 
 ### Stateful
 
-The test needs to check whether the operator state is updated correctly and if it is cleaned up properly
+The test needs to check whether the operator state is updated correctly and if it is cleaned up properly,
  along with the output of the operator.
 Flink provides TestHarness classes so that we don’t have to create the mock objects.
 

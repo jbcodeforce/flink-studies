@@ -2,10 +2,12 @@
 
 Flink consists of a **Job Manager** and n **Task Managers**. 
 
-The **JobManager** controls the execution of a single application. It receives an application for execution and builds a Task Execution Graph from the defined Job Graph. It manages job submission and the job lifecycle then allocates work to Task Managers
+The **JobManager** controls the execution of a single application. It receives an application for execution and builds a Task Execution Graph from the defined Job Graph. It manages job submission and the job lifecycle then allocates work to Task Managers.
+
 The **Resource Manager** manages Task Slots and leverages underlying orchestrator, like Kubernetes or Yarn.
+
 A **Task slot** is the unit of work executed on CPU.
-The **Task Managers** execute the actual stream processing logic. There are multiple task managers running in a cluster. The number of slots limits the number of tasks a TaskManager can execute. After it has been started, a TaskManager registers its slots to the ResourceManager
+The **Task Managers** execute the actual stream processing logic. There are multiple task managers running in a cluster. The number of slots limits the number of tasks a TaskManager can execute. After it has been started, a TaskManager registers its slots to the ResourceManager:
 
 ![](./images/flink-components.png)
 
@@ -36,7 +38,7 @@ Hadoop was designed to do batch processing. Flink has capability to replace Hado
 ## High Availability
 
 
-With Task managers running in parallel, if one fails the number of available slots drops by the JobManager asks the Resource Manager to get new processing slots. The application's restart strategy determines how often the JobManager restarts the application and how long it waits between restarts.
+With Task managers running in parallel, if one fails the number of available slots drops, and the JobManager asks the Resource Manager to get new processing slots. The application's restart strategy determines how often the JobManager restarts the application and how long it waits between restarts.
 
 Flink uses Zookeeper to manage multiple JobManagers and select the leader to control the execution of the streaming application. Application's tasks checkpoints and other states are saved in a remote storage, but metadata are saved in Zookeeper. When a JobManager fails, all tasks that belong to its application are automatically cancelled. A new JobManager that takes over the work by getting information of the storage from Zookeeper, and then restarts the process with the JobManager.
 
@@ -44,7 +46,7 @@ Flink uses Zookeeper to manage multiple JobManagers and select the leader to con
 
 * All data maintained by a task and used to compute the results of a function belong to the state of the task.
 * While processing the data, the task can read and update its state and compute its result based on its input data and state.
-* State management includes address very large states, and no state is lost in case of failures.
+* State management may address very large states, and no state is lost in case of failures.
 * Each operator needs to register its state.
 * **Operator State** is scoped to an operator task: all records processed by the same parallel task have access to the same state
 * **Keyed state** is maintained and accessed with respect to a key defined in the records of an operator’s input stream. Flink maintains one state instance per key value and Flink partitions all records with the same key to the operator task that maintains the state for this key. The key-value map is sharded across all parallel tasks:
