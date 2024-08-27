@@ -15,8 +15,8 @@ It is possible to code the SQL and Table API in a Java, Scala or Python or use S
 Stream or bounded data are mapped to Table, the following command will load data from a csv file and create a dynamic table in Flink:
 
 ```sql
-CREATE TABLE employee_information (
-    cab_number INT,
+CREATE TABLE car_rides (
+    cab_number VARCHAR,
     plate VARCHAR, 
     cab_type VARCHAR,
     driver_name VARCHAR, 
@@ -26,20 +26,33 @@ CREATE TABLE employee_information (
     passenger_count INT
 ) WITH ( 
     'connector' = 'filesystem',
-    'path' = '/home/data/cab_rides.txt',
+    'path' = '/home/flink-sql-quarkus/data/cab_rides.txt',
     'format' = 'csv'
 );
 ```
 
-They are dynamic, because they change overtime, and some tables are more a changelog stream than static tables. Grouping statement create tables with update row semantic.
+They are dynamic, because they change overtime, and some tables are more a changelog stream than static tables. Grouping statement creates tables with update row semantic.
+
+The following diagram illustrates the main concepts: the `shipments` table keeps track of good shipments while the `inventory` keeps the current quantity of each item. The insert statement is the stream processing to update the inventory from the new shipment records. This SQL statement uses the sum aggregator operation on the count for each item. The items are shuffled to group them by item.
 
 ![](./diagrams/sql-table-stream.drawio.png)
 
-Dynamic Table can also being persisted in Kafka Topic. 
+The SQL is applied to the stream of data, data is not stored in Flink. The events can be insert, update or delete record in the table. The diagram illustrates that on the sink level a first event is created to remove the Card item stock and send a new message with the new count. 
+
+
+Dynamic Table can also being persisted in Kafka Topic, so table definition includes statement on how to connect to Kafka. When doing batch processing the sink can be a table in database or a csv file on the filesystems.
+
+Note that SQL Client executes each INSERT INTO statement as a single Flink job. `STATEMENT SET` can be used to group insert statements. It executes statements asynchronously, the job manager schedules the job to the task managers. While for batch processing; developer can set `set table.dml-sync option to true` 
+
+With streaming, the "ORDER BY" is one time ascending order, with batch it can apply to anything.
+
+SQL client can intract in interactive mode or [using a SQL file)(https://nightlies.apache.org/flink/flink-docs-release-1.19/docs/dev/table/sqlclient/#execute-sql-files) to process to the server. 
 
 ## Programming model
 
-* Start by creating a java application (quarkus create app for example) and a Main class. See code in [flink-sql-quarkus](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql-quarkus/) folder.
+* Start Flink server using docker ([start with docker compose](./firstapp/#docker-compose-for-dev-environment))
+* If not done yet, create the SQL client docker image ([]())
+* Start by creating a java application (quarkus create app for example or using maven) and a Main class. See code in [flink-sql-quarkus](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql-quarkus/) folder.
 * Add dependencies in the pom
 
 ```xml
@@ -141,27 +154,9 @@ Join transactions coming from Kafka topic with customer information.
 
 ## SQL Client
 
-The SQL Client aims to provide an easy way of writing, debugging, and submitting table programs to a Flink cluster without a single line of code in programming language. Add the following declaration in docker compose file to get a new process
+The SQL Client aims to provide an easy way of writing, debugging, and submitting table programs to a Flink cluster without a single line of code in any programming language. See [this note](./firstapp.md/#sql-client) for how to use an SQL client with docker.
 
-```yaml
-services:
-  sql-client:
-    image: jbcodeforce/flink-sql-client
-    container_name: sql-client
-    depends_on:
-      - jobmanager
-    environment:
-      FLINK_JOBMANAGER_HOST: jobmanager
-```
-
-Then use a command like:
-
-```sh
-docker exec -ti sql-client bash
-#
-./sql-client.sh 
-```
-
+As a quick tests on the car_rides table 
 ## Challenges
 
 * We cannot express everything in SQL but we can mix Flink Stream and Table APIs

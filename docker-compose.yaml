@@ -7,10 +7,11 @@ services:
     ports:
       - "8081:8081"
     command: jobmanager
+    user: "flink:flink"
     environment:
       FLINK_PROPERTIES: "jobmanager.rpc.address: jobmanager"
     volumes:  
-        - .:/home
+      - .:/home:rw
   taskmanager:
     image: flink:latest 
     hostname: taskmanager
@@ -19,10 +20,23 @@ services:
       - jobmanager
     command: taskmanager
     scale: 1
+    user: "flink:flink"
     volumes:
-        - .:/home:rw
+      - .:/home:rw
     environment:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
         taskmanager.numberOfTaskSlots: 4
+  sql-client:
+    image: jbcodeforce/flink-sql-client
+    container_name: sql-client
+    depends_on:
+      - jobmanager
+    volumes:
+      - .:/home:rw
+    environment:
+       - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        rest.address: jobmanager   

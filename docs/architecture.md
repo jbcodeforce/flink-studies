@@ -31,10 +31,14 @@ The new K8s operator, deploys and monitors Flink Application and Session deploym
 
 ## Batch processing
 
-Process all the data in one job with bounded dataset. It is used when we need all the data for assessing trend, develop AI model, and with a focus on throughput instead of latency.
+Process all the data in one job with bounded dataset. It is used when we need all the data, to assess trend, develop AI model, and with a focus on throughput instead of latency. Jobs are run when needed, on input that can be pre-sorted by time or by any other key.
 
-Hadoop was designed to do batch processing. Flink has capability to replace Hadoop map reduce processing.
+The results are reported at the end of the job execution. Any failure means to do of full restart of the job.
 
+Hadoop was designed to do batch processing. Flink has capability to replace the Hadoop map-reduce processing.
+
+When latency is a major requirements, like monitoring and alerting, fraud detection then streaming is the only choice.
+ 
 ## High Availability
 
 

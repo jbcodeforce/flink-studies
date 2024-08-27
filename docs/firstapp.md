@@ -18,6 +18,8 @@ Each Flink app is a [Java main function which defines the data flow to execute o
 
 Once we build the application jar file, we use Flink CLI to send the jar as a job to the Job manager server. 
 
+### Docker compose for dev environment
+
 During development, we can use docker-compose to start a simple `Flink session` cluster or use a docker compose which starts a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image.
 
 * Start Flink session cluster using the following command: 
@@ -59,6 +61,8 @@ services:
 ```
 
 The docker compose mounts the local folder to `/home` in both the job manager and task manager containers so that, we can submit the job from the job manager (accessing the compiled jar) and also access the input data files in the task manager container.
+
+### Create a java app
 
 * Create a Quarkus app: `quarkus create app -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`. See code examples under `my-flink` folder and `jbcodeforce.p1` package.
 
@@ -102,6 +106,9 @@ So most of the basic examples use `--input filename` and `--output filename` as 
 * Be sure to set quarkus uber-jar generation (`quarkus.package.type=uber-jar`) in the `application.properties` to get all the dependencies in a unique jar: Flink needs all dependencies in the classpath.
 * Package the jar with `mvn package`
 * Every Flink application needs a reference to the execution environment (variable `env` in previous example). 
+
+### Submit job to Flink
+
 * To submit a job to a Session cluster, use the following command which uses the `flink` cli inside the running `JobManager` container:
 
 ```shell
@@ -120,6 +127,27 @@ In the execution above, `flink` is a CLI available inside the job-manager contai
 See [the coding practice summary](./programming.md) for other dataflow examples.
 
 And the official [operators documentation](https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/operators/) to understand how to transform one or more DataStreams into a new DataStream. Programs can combine multiple transformations into sophisticated data flow topologies.
+
+## SQL Client
+
+Build the image within the sql-client folder using the dockerfile. Modify the flink version as needed.
+
+```shell
+#under sql-client folder
+docker build -t jbcodeforce/flink-sql-client .
+```
+
+Then to interact with Flink using the SQL client open a bash in the running container
+
+```sh
+docker exec -ti sql-client bash
+# in the shell
+./sql-client.sh
+```
+
+Then use CLI commands. ([See documentation for sqlclient](https://nightlies.apache.org/flink/flink-docs-release-1.19/docs/dev/table/sqlclient/)).
+
+See [this folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demo/basic-sql) to get some simple examples.
 
 ## Unit testing
 
