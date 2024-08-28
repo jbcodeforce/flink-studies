@@ -21,7 +21,7 @@ public class FirstSQLApp {
     StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
     StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env);
     // load data from input file
-    DataStream<String> dataStream = env.fromElements("Alice", "Bob", "John", "Alice"); 
+    DataStream<String> dataStream = env.fromData("Alice", "Bob", "John", "Alice"); 
     //map stream to table with column name
     Table inputTable = tableEnv.fromDataStream(dataStream).as("name");
 

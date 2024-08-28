@@ -7,12 +7,13 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.TableEnvironment;
 import static org.apache.flink.table.api.Expressions.row;
+
 public class LoadDataToPrint {
     
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setRuntimeMode(RuntimeExecutionMode.BATCH);
-        env.fromElements(ExampleData.CUSTOMERS)
+        env.fromData(ExampleData.CUSTOMERS)
         .executeAndCollect()
         .forEachRemaining(System.out::println);
 

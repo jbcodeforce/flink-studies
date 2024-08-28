@@ -272,3 +272,8 @@ and based on the card_id and customer_id. In an EDA implementation the sources w
 
 To support the search for transaction.card_number being lost or not, we use the concepts of broadcast state and stream.
 The [BroadcastState](https://ci.apache.org/projects/flink/flink-docs-stable/api/java/org/apache/flink/api/common/state/BroadcastState.html)  the same elements are sent to all instances of an operator.
+
+
+## Interesting articles
+
+* [Event Driven File Ingestion using Flink Source API](https://medium.com/datareply/event-driven-file-ingestion-using-flink-source-api-cfe45e43f88b)

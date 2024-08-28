@@ -1,4 +1,4 @@
-# Flink SQL some basic example
+# Flink SQL some basic examples
 
 Start the docker-compose in root folder of this project.
 
@@ -9,6 +9,8 @@ The employee.csv has 15 records.
 The job is a batch processing: use the following DDL to create the table from the file. 
 
 ```sql
+SET execution.runtime-mode=BATCH;
+
 CREATE TABLE employee_info (
     emp_id INT,
     name VARCHAR,

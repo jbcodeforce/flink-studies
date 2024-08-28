@@ -12,6 +12,7 @@ A simple quarkus app with Flink data flow to process telemetries event from Kafk
 ## Running the application in dev mode
 
 Start the Kafka, zookeeper, simulator, and Flink job manager locally with `docker-compose up -d` command. 
+
 Then deploy the app as a job:
 
 ```shell
