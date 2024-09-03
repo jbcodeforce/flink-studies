@@ -50,7 +50,7 @@ SQL client can intract in interactive mode or [using a SQL file)(https://nightli
 
 ## Programming model
 
-* Start Flink server using docker ([start with docker compose](./firstapp/#docker-compose-for-dev-environment))
+* Start Flink server using docker ([start with docker compose](./firstapp.md/#docker-compose-for-dev-environment))
 * If not done yet, create the SQL client docker image ([]())
 * Start by creating a java application (quarkus create app for example or using maven) and a Main class. See code in [flink-sql-quarkus](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql-quarkus/) folder.
 * Add dependencies in the pom

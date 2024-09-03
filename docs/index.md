@@ -58,11 +58,22 @@ The figure below illustrates those different models combined with [Zepellin](htt
 
 ## Stream processing concepts
 
+### Bounded and unbounded data
+
 A Stream is a sequence of events, bounded or unbounded:
 
 ![](./diagrams/streaming.drawio.png)
 
-In [Flink](https://ci.apache.org/projects/flink/flink-docs-release-1.12/learn-flink/#stream-processing), applications are composed of streaming dataflows that may be transformed by user-defined operators. Each step of the graph is executed by an operator. These dataflows form directed graphs that start with one or more sources, and end in one or more sinks. The data, flows, between operations. 
+### Dataflow
+
+
+In [Flink](https://ci.apache.org/projects/flink/flink-docs-release-1.12/learn-flink/#stream-processing), applications are composed of streaming dataflows. Dataflow can consume from Kafka, Kinesis, Queue, and any data sources. A typical high level view of Flink app is presented in figure below:
+
+ ![2](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/flink-application-sources-sinks.png)
+
+ *src: apache Flink product doc*
+
+Dataflows may be transformed by user-defined operators. Each step of the graph is executed by an operator. These dataflows form directed graphs that start with one or more sources, and end in one or more sinks. The data, flows, between operations. 
 
 The figure below, from the product documentation, summarizes the APIs used to develop a data stream processing flow:
 
@@ -72,6 +83,8 @@ The figure below, from the product documentation, summarizes the APIs used to de
 
 
 Stream processing includes a set of functions to transform data, and to produce a new output stream. Intermediate steps compute rolling aggregations like min, max, mean, or collect and buffer records in time window to compute metrics on a finite set of events. 
+
+### Distributed platform
 
 To improve throughput the data is partitionned so operators can run in parallel. Programs in Flink are inherently parallel and distributed. During execution, a stream has one or more stream partitions, and each operator has one or more operator subtasks.
 
@@ -94,32 +107,30 @@ The following figure is showing integration of stream processing runtime with an
 
 ![](./images/flink-rt-processing.png)
 
+
+### Checkpointing
+
 As part of the checkpointing process, Flink saves the 'offset read commit' information of the append log, so in case of a failure, Flink recovers a stateful streaming application by restoring its state from a previous checkpoint and resetting the read position on the append log.
 
 The evolution of microservice is to become more event-driven, which are stateful streaming applications that ingest event streams and process the events with application-specific business logic. This logic can be done in flow defined in Flink and executed in the clustered runtime.
 
 ![](./images/evt-app.png)
 
-Transform operators can be chained. Dataflow can consume from Kafka, Kinesis, Queue, and any data sources. A typical high level view of Flink app is presented in figure below:
+Transform operators can be chained. 
 
- ![2](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/flink-application-sources-sinks.png)
+A Flink application, may be stateful, runs in parallel on a distributed cluster. The various parallel instances of a given operator execute independently, in separate threads, and in general run on different machines.
 
- *src: apache Flink product doc*
-
-
-
-A Flink application, can be stateful, runs in parallel on a distributed cluster. The various parallel instances of a given operator execute independently, in separate threads, and in general run on different machines.
-
-State is always accessed locally, which helps Flink applications achieve high throughput and low-latency. DEvelopers can choose to keep state on the JVM heap, or if it is too large, save it on-disk.
+State is always accessed locally, which helps Flink applications achieve high throughput and low-latency. Developers can choose to keep state on the JVM heap, or if it is too large, save it on-disk.
 
  ![4](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/local-state.png)
 
-This is the Job Manager component which parallelizes the job and distributes slices of [the Data Stream](https://ci.apache.org/projects/flink/flink-docs-stable/dev/datastream_api.html) flow, developers defined, to the Task Managers for execution. Each parallel slice of the job is executed in a **task slot**.
+This is the Job Manager component which parallelizes the job and distributes slices of [the Data Stream](https://ci.apache.org/projects/flink/flink-docs-stable/dev/datastream_api.html) flow, the developers have defined. Each parallel slice of the job is executed in a **task slot**.
 
  ![5](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/distributed-runtime.svg)
 
 ???- "Parameters"
     *  taskmanager.numberOfTaskSlots: 2
+
 Once Flink is started (for example with the docker image), Flink Dashboard [http://localhost:8081/#/overview](http://localhost:8081/#/overview) presents the execution reporting:
 
  ![6](./images/flink-dashboard.png)

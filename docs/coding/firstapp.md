@@ -11,22 +11,22 @@ Each Flink app is a [Java main function which defines the data flow to execute o
 
 1. Obtain an execution environment,
 1. Load/create the initial data,
-1. Specify transformations on this data,
+1. Specify transformations on the data,
 1. Specify where to put the results of the computations,
 1. Trigger the program execution
 
 
-Once we build the application jar file, we use Flink CLI to send the jar as a job to the Job manager server. 
+Once developers build the application jar file, they use Flink CLI to send the jar as a job to the Job manager server. 
 
 ### Docker compose for dev environment
 
-During development, we can use docker-compose to start a simple `Flink session` cluster or use a docker compose which starts a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image.
+During development, we can use docker-compose to start a simple `Flink session` cluster or a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image.
 
 * Start Flink session cluster using the following command: 
 
   ```shell
   # under this repository folder
-  docker-compose up -d
+  docker compose up -d
   ```
 
 The docker compose looks like:

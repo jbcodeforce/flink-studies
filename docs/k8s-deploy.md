@@ -5,7 +5,7 @@ Failures of Job Manager pods are handled by the Deployment Controller which will
 
 A flow is a packaged as a jar, so need to be in a docker image with the Flink executable.
 
-Flink offers [now a k8s Operator](https://flink.apache.org/news/2022/04/03/release-kubernetes-operator-0.1.0.html) to deploy and manage applications. This note summarize how to use this operator, with basic getting started yaml files.
+Flink offers [a k8s Operator](https://flink.apache.org/news/2022/04/03/release-kubernetes-operator-0.1.0.html) to deploy and manage applications. This note summarize how to use this operator, with basic getting started yaml files.
 
 The operator takes care of submitting, savepointing, upgrading and generally managing Flink jobs using the built-in Flink Kubernetes integration.
 
