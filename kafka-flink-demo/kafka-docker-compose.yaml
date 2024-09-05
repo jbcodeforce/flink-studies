@@ -1,6 +1,6 @@
 services:
   zookeeper:
-    image: quay.io/strimzi/kafka:latest-kafka-3.7.1-arm64
+    image: quay.io/strimzi/kafka:latest-kafka-3.7.1-amd64
     container_name: zookeeper
     command: [
       "sh", "-c",
@@ -12,7 +12,7 @@ services:
       LOG_DIR: /tmp/logs
 
   kafka:
-    image: quay.io/strimzi/kafka:latest-kafka-3.7.1-arm64
+    image: quay.io/strimzi/kafka:latest-kafka-3.7.1-amd64
     container_name: kafka
     command: [
       "sh", "-c",

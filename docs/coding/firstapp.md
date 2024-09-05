@@ -1,11 +1,9 @@
-# Getting started
+# First Applications
 
 ???- info "Update"
     Created 2018 Updated 08/2024
     Flink supports Java 11 so Quarkus code needs to be limited to quarkus 3.2.12_Final and maven should compile in JDK 11.
     Use jbang to install jdk 11. WSL ubuntu has OpenJDK 11 and 17.
-
-## First app
 
 Each Flink app is a [Java main function which defines the data flow to execute on a stream](https://ci.apache.org/projects/flink/flink-docs-release-1.19/dev/datastream_api.html#anatomy-of-a-flink-program). The structure follows the steps below:
 
@@ -15,54 +13,31 @@ Each Flink app is a [Java main function which defines the data flow to execute o
 1. Specify where to put the results of the computations,
 1. Trigger the program execution
 
-
 Once developers build the application jar file, they use Flink CLI to send the jar as a job to the Job manager server. 
 
-### Docker compose for dev environment
+### Create a Java quickstart with maven
 
-During development, we can use docker-compose to start a simple `Flink session` cluster or a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image.
+[See product documentation which can be summarized as:](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/configuration/overview/)
 
-* Start Flink session cluster using the following command: 
+1. Create squeleton
 
-  ```shell
-  # under this repository folder
-  docker compose up -d
+  ```sh
+  curl https://flink.apache.org/q/quickstart.sh | bash -s 1.20.0
   ```
 
-The docker compose looks like:
+1. Add kafka connector dependencies in pom.xml
 
-```yaml
-version: "3.8"
-services:
-  jobmanager:
-    image: flink:latest
-    hostname: jobmanager
-    ports:
-      - "8081:8081"
-    command: jobmanager
-    environment:
-      FLINK_PROPERTIES: "jobmanager.rpc.address: jobmanager"
-    volumes:  
-        - .:/home
-  taskmanager:
-    image: flink:latest 
-    hostname: taskmanager
-    depends_on:
-      - jobmanager
-    command: taskmanager
-    scale: 2
-    volumes:
-        - .:/home
-    environment:
-      - |
-        FLINK_PROPERTIES=
-        jobmanager.rpc.address: jobmanager
-        taskmanager.numberOfTaskSlots: 4
-```
+  ```xml
+      <dependency>
+        <groupId>org.apache.flink</groupId>
+        <artifactId>flink-connector-kafka</artifactId>
+        <version>3.0.0-1.17</version>
+      </dependency>
+  ```
 
-The docker compose mounts the local folder to `/home` in both the job manager and task manager containers so that, we can submit the job from the job manager (accessing the compiled jar) and also access the input data files in the task manager container.
+1. Implement the process logic and the event mapping, flitering logic.
 
-### Create a java app
+### Create a Quarkus java app
 
 * Create a Quarkus app: `quarkus create app -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`. See code examples under `my-flink` folder and `jbcodeforce.p1` package.
 
@@ -128,26 +103,7 @@ See [the coding practice summary](./programming.md) for other dataflow examples.
 
 And the official [operators documentation](https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/operators/) to understand how to transform one or more DataStreams into a new DataStream. Programs can combine multiple transformations into sophisticated data flow topologies.
 
-## SQL Client
 
-Build the image within the sql-client folder using the dockerfile. Modify the flink version as needed.
-
-```shell
-#under sql-client folder
-docker build -t jbcodeforce/flink-sql-client .
-```
-
-Then to interact with Flink using the SQL client open a bash in the running container
-
-```sh
-docker exec -ti sql-client bash
-# in the shell
-./sql-client.sh
-```
-
-Then use CLI commands. ([See documentation for sqlclient](https://nightlies.apache.org/flink/flink-docs-release-1.19/docs/dev/table/sqlclient/)).
-
-See [this folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demo/basic-sql) to get some simple examples.
 
 ## Unit testing
 

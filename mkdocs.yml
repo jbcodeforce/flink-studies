@@ -1,22 +1,27 @@
 site_name: Apache Flink Studies
 repo_url: https://github.com/jbcodeforce/flink-studies.git
+site_url: https://jeromeboyer.net/flink-studies
+copyright: Copyright &copy; 2018 - 2024 Jerome Boyer
 nav:
-  - Introduction: index.md
+  - Introduction: 
+    - Concepts: index.md
+    - Getting started: coding/getting-started.md
   - Architecture: 
     - Key concepts: architecture/index.md
     - Fit for purpose: architecture/fitforpurpose.md
+    - Kafka Integration: kafka.md
+    - Kubernetes Deployment: k8s-deploy.md
   - Coding:
-    - Getting started: coding/firstapp.md
+    - First Apps: coding/firstapp.md
     - Programming examples: coding/programming.md
     - Flink SQL: coding/flink-sql.md
     - Stateful function: coding/stateful-func.md
     - Complex Event Processing: coding/cep.md
-  - Kubernetes Deployment: k8s-deploy.md
-  - Kafka Integration: kafka.md
-
-  - Return to main: https://jbcodeforce.github.io
+  - Back home: https://jbcodeforce.github.io
 theme: 
   name: material
+  logo: images/logo.drawio.png
+  favicon: images/logo-blue.drawio.png
   palette:
     scheme: default
   language: en
@@ -32,7 +37,7 @@ theme:
       - navigation.instant
       - navigation.tracking
       - navigation.sections
-      #- navigation.expand
+      - navigation.expand
       - navigation.top
       - navigation.footer
 extra_css: ["extra.css"]
@@ -56,7 +61,6 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.inlinehilite
   - pymdownx.snippets
-  - pymdownx.details
   - pymdownx.tasklist:
       custom_checkbox: true
 extra:

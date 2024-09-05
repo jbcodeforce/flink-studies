@@ -11,7 +11,7 @@ services:
     environment:
       FLINK_PROPERTIES: "jobmanager.rpc.address: jobmanager"
     volumes:  
-      - .:/home:rw
+      - ../..:/home:rw
   taskmanager:
     image: flink:latest 
     hostname: taskmanager
@@ -20,9 +20,8 @@ services:
       - jobmanager
     command: taskmanager
     scale: 1
-    user: "flink:flink"
     volumes:
-      - .:/home:rw
+      - ../..:/home:rw
     environment:
       - |
         FLINK_PROPERTIES=
@@ -34,7 +33,7 @@ services:
     depends_on:
       - jobmanager
     volumes:
-      - .:/home:rw
+      - ../..:/home:rw
     environment:
        - |
         FLINK_PROPERTIES=

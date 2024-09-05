@@ -1,0 +1,90 @@
+services:
+  zookeeper:
+    image: quay.io/strimzi/kafka:latest-kafka-3.7.1-amd64
+    container_name: zookeeper
+    hostname: zookeeper
+    command: [
+      "sh", "-c",
+      "bin/zookeeper-server-start.sh config/zookeeper.properties"
+    ]
+    ports:
+      - "2181:2181"
+    environment:
+      LOG_DIR: /tmp/logs
+
+  kafka:
+    image: quay.io/strimzi/kafka:latest-kafka-3.7.1-amd64
+    container_name: kafka
+    hostname: kafka
+    command: [
+      "sh", "-c",
+      "bin/kafka-server-start.sh config/server.properties --override listeners=$${KAFKA_LISTENERS} \
+      --override advertised.listeners=$${KAFKA_ADVERTISED_LISTENERS} \
+      --override listener.security.protocol.map=$${KAFKA_LISTENER_SECURITY_PROTOCOL_MAP} \
+      --override inter.broker.listener.name=$${KAFKA_INTER_BROKER_LISTENER_NAME} \
+      --override zookeeper.connect=$${KAFKA_ZOOKEEPER_CONNECT}"
+    ]
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      LOG_DIR: "/tmp/logs"
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: EXTERNAL://0.0.0.0:9092,INTERNAL://kafka:29092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    container_name: kafdrop
+    restart: "no"
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: "kafka:29092"
+    depends_on:
+      - kafka
+  addTopics:
+    image:  quay.io/strimzi/kafka:latest-kafka-3.7.1-amd64
+    depends_on:
+      - kafka
+    entrypoint: [ "bash",  "-c", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:29092 --create  --replication-factor 1 --partitions 1 --topic ecommerce_events"]
+ 
+  jobmanager:
+    image: flink:latest
+    hostname: jobmanager
+    ports:
+      - "8081:8081"
+    command: jobmanager
+    environment:
+      FLINK_PROPERTIES: "jobmanager.rpc.address: jobmanager"
+    volumes:  
+        - ../..:/home
+  taskmanager:
+    image: flink:latest
+    hostname: taskmanager
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    scale: 1
+    volumes:
+        - ../..:/home
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 8
+  sql-client:
+    image: jbcodeforce/flink-sql-client
+    container_name: sql-client
+    depends_on:
+      - jobmanager
+    volumes:
+      - ../..:/home:rw
+    environment:
+       - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        rest.address: jobmanager  
