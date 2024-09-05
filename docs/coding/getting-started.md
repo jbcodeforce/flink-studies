@@ -83,10 +83,10 @@ docker compose -f kafka-docker-compose.yaml up -d
 The SQL client can be used to compute some aggregation on the sale events created by the `E-commerce simulator`. To start the simluator using a Python virtual environment do:
 
 ```sh 
-pip installl -r requirements.txt
+pip install -r requirements.txt
 python simulator.py
 ```
-The application send event like the following
+The application sends events like the following:
 
 ```json
 {'event_type': 'user_action', 
@@ -98,7 +98,7 @@ The application send event like the following
 }
 ```
 
-* The [Kafdrop interface to verify the messages in the topic](http://localhost:9000/topic/ecommerce_events)
+* Use the [Kafdrop interface to verify the messages in the topic](http://localhost:9000/topic/ecommerce_events)
 * Connect to SQL client container
 
 ```sh

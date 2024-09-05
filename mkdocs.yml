@@ -17,7 +17,7 @@ nav:
     - Flink SQL: coding/flink-sql.md
     - Stateful function: coding/stateful-func.md
     - Complex Event Processing: coding/cep.md
-  - Back home: https://jbcodeforce.github.io
+  - EDA: https://jbcodeforce.github.io/eda-studies
 theme: 
   name: material
   logo: images/logo.drawio.png
