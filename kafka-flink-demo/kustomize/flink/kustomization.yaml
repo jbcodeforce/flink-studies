@@ -1,7 +1,0 @@
-resources:
-  - ./flink-configmap.yam;
-  - ./jobmanager-application.yaml
-  - ./taskmanager-job-deployment.yaml
-  - ./jobmanager-service.yaml
-  - ./optional-service.yaml
- 

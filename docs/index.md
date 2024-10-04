@@ -2,7 +2,7 @@
 
 
 ???- info "Update"
-    Created 2018 Updated 08/2024
+    Created 2018 Updated 10/2024
     
 ## Why Flink?
 
@@ -58,6 +58,19 @@ The figure below illustrates those different models combined with [Zepellin](htt
 
 ## Stream processing concepts
 
+* A Flink application is run as a **job** and represents a topology of nodes, which is a processing pipeline. It is also named Dataflow.
+* Dataflows may be transformed by user-defined operators. Each step of the graph is executed by an operator. These dataflows form directed acyclic graphs that start with one or more sources, and end in one or more sinks.
+* Sources get data from a stream, like Kafka topic/partition.
+
+![](./diagrams/dag.drawio.png)
+
+* The source operator forwards records to the downstream operators
+* The graph can run in parellel while consuming from different partitions
+* Operator can filter records out of the streams or do enrichments
+* Operators can also run in parallel after data redistribution.
+* Some operators, like **Group by**, need to do reshuffling or repartitioning of the data to the operator, or do a reblancing to merge streams.
+
+
 ### Bounded and unbounded data
 
 A Stream is a sequence of events, bounded or unbounded:
@@ -72,8 +85,6 @@ In [Flink](https://ci.apache.org/projects/flink/flink-docs-release-1.12/learn-fl
  ![2](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/flink-application-sources-sinks.png)
 
  *src: apache Flink product doc*
-
-Dataflows may be transformed by user-defined operators. Each step of the graph is executed by an operator. These dataflows form directed graphs that start with one or more sources, and end in one or more sinks. The data, flows, between operations. 
 
 The figure below, from the product documentation, summarizes the APIs used to develop a data stream processing flow:
 
@@ -97,7 +108,7 @@ Some operations, such `group-by`,  may reshuffle or repartition the data. This i
 ```sql
 INSERT INTO results
 SELECT color, COUNT(*) FROM events
-WHERE color <> orange
+WHERE color <> blue
 GROUP BY color;
 ```
 

@@ -5,6 +5,7 @@
     Flink supports Java 11 so Quarkus code needs to be limited to quarkus 3.2.12_Final and maven should compile in JDK 11.
     Use jbang to install jdk 11. WSL ubuntu has OpenJDK 11 and 17.
 
+
 ## Docker compose for dev environment
 
 During development, we can use docker-compose to start a simple `Flink session` cluster or a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image.
@@ -151,4 +152,6 @@ The results
 
 ![](./images/query_result.png)
 
+## Kubernetes deployment
 
+[See dedicated chapter](./k8s-deploy.md)

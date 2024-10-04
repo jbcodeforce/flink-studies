@@ -10,9 +10,9 @@ nav:
     - Key concepts: architecture/index.md
     - Fit for purpose: architecture/fitforpurpose.md
     - Kafka Integration: kafka.md
-    - Kubernetes Deployment: k8s-deploy.md
   - Coding:
     - First Apps: coding/firstapp.md
+    - Kubernetes Deployment: coding/k8s-deploy.md
     - Programming examples: coding/programming.md
     - Flink SQL: coding/flink-sql.md
     - Stateful function: coding/stateful-func.md
