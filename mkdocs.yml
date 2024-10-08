@@ -6,6 +6,7 @@ nav:
   - Introduction: 
     - Concepts: index.md
     - Getting started: coding/getting-started.md
+    - Flink SQL: coding/flink-sql.md
   - Architecture: 
     - Key concepts: architecture/index.md
     - Fit for purpose: architecture/fitforpurpose.md

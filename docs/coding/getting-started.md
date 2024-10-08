@@ -5,10 +5,20 @@
     Flink supports Java 11 so Quarkus code needs to be limited to quarkus 3.2.12_Final and maven should compile in JDK 11.
     Use jbang to install jdk 11. WSL ubuntu has OpenJDK 11 and 17.
 
+## Pre-requisites
+
+* Need a docker engine, with docker and docker compose CLIs
+* Clone this repository.
 
 ## Docker compose for dev environment
 
-During development, we can use docker-compose to start a simple `Flink session` cluster or a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image.
+During development, we can use docker-compose to start a simple `Flink session` cluster or a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image. We can use this same environment to do SQL based Flink apps. Therefore there is a SQL client container that may need to be built
+
+* Build SQL client, go under `sql-client` folder
+
+```sh
+docker build -t jbcodeforce/flink-sql-client .
+```
 
 * Start Flink session cluster using the following command: 
 
@@ -20,7 +30,6 @@ During development, we can use docker-compose to start a simple `Flink session` 
 The docker compose starts one job manager and one task manager server:
 
 ```yaml
-version: "3.8"
 services:
   jobmanager:
     image: flink:latest
@@ -54,6 +63,8 @@ The docker compose mounts the local folder to `/home` in both the job manager an
 
 ## SQL Client
 
+The SQL Client aims to provide an easy way of writing, debugging, and submitting table programs to a Flink cluster without a single line of code in any programming language.
+
 Build the image within the sql-client folder using the dockerfile. Modify the flink version as needed.
 
 ```shell
@@ -69,9 +80,11 @@ docker exec -ti sql-client bash
 ./sql-client.sh
 ```
 
-Then use Flink CLI commands. ([See documentation for sqlclient](https://nightlies.apache.org/flink/flink-docs-release-1.19/docs/dev/table/sqlclient/)).
+Then use Flink SQL CLI commands. ([See documentation for sqlclient](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sqlclient/)).
 
-See [this folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demo/basic-sql) to get some simple examples.
+See [this folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/00-basic-sql) to get some examples.
+
+
 
 ## Docker compose with Kafka and Flink
 

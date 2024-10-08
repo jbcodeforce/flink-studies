@@ -3,6 +3,7 @@
 ???- Info "Updates"
     Created 02/2021 Modified 10/24
 
+## Introduction
 
 Flink SQL is a compliant standard SQL engine for processing batch or streaming data on top of distributed computing server managed by Flink.
 
@@ -35,6 +36,10 @@ CREATE TABLE car_rides (
 );
 ```
 
+[See the getting started](./getting-started.md) to run locally with a sql client.
+
+## SQL programming samples
+
 Those tables are dynamic, because they change overtime, and some tables are more a changelog stream than static tables. 
 
 The following diagram illustrates the main processing concepts: the `shipments` table keeps track of product shipments while the `inventory` keeps the current quantity of each item. The insert statement is the stream processing to update the inventory from the new shipment records. This SQL statement uses the sum aggregator operation on the count for each item. The items are shuffled to group them by item.
@@ -45,16 +50,104 @@ The SQL is applied to the stream of data, data is not stored in Flink. The event
 
 Dynamic Table can also being persisted in Kafka Topic, so table definition includes statement on how to connect to Kafka. When doing batch processing the sink can be a table in database or a csv file on the filesystems.
 
-Note that SQL Client executes each INSERT INTO statement as a single Flink job. `STATEMENT SET` can be used to group insert statements (into a set). As the  job manager schedules the job to the task managers, SQL statements are executed asynchronously. While for batch processing; developer can set `set table.dml-sync option to true` 
+Note that SQL Client executes each **INSERT INTO** statement as a single Flink job. `STATEMENT SET` can be used to group insert statements (into a set). As the  job manager schedules the job to the task managers, SQL statements are executed asynchronously. While for batch processing; developer can set `set table.dml-sync option to true` 
 
 With streaming, the "ORDER BY" is one time ascending order, with batch it can apply to anything. In Streaming, SQL `ORDER BY` is only based on time ascending sorting.
 
-SQL client can intract in interactive mode or [using a SQL file](https://nightlies.apache.org/flink/flink-docs-release-1.19/docs/dev/table/sqlclient/#execute-sql-files) to process to the server. 
+SQL client can intract in interactive mode or [using a SQL file](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sqlclient/#execute-sql-files) to process to the server. 
 
-## Programming model
 
-* Start Flink server using docker ([start with docker compose](./firstapp.md/#docker-compose-for-dev-environment) or on [k8s](./k8s-deploy.md)). 
-* If not done yet, create the SQL client docker image ([]())
+
+### How to
+
+???- question "How to load data from a csv file using filesystem connector"
+    Enter the following statement in a SQL client session:
+
+    ```sql
+    SET execution.runtime-mode=BATCH;
+    ```
+    Create a table from the content of the file
+
+    ```sql
+    CREATE TABLE employee_info (
+        emp_id INT,
+        name VARCHAR,
+        dept_id INT
+    ) WITH ( 
+        'connector' = 'filesystem',
+        'path' = '/home/flink-sql-demos/00-basic-sql/data/employes.csv',
+        'format' = 'csv'
+    );
+    ```
+
+    Show tables and list some elements within the table.
+    ```sql
+    SHOW TABLES;
+
+    SELECT * from employee_info WHERE dept_id = 101;
+    ```
+
+    [See complete example in the readme](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/00-basic-sql)
+
+
+??? - question "How to generate data using [Flink Faker](https://github.com/knaufk/flink-faker)?"
+    Create at table with records generated with `faker` connector using the [DataFaker expressions.](https://github.com/datafaker-net/datafaker). 
+
+    ```sql
+    CREATE TABLE `bounded_pageviews` (
+      `url` STRING,
+      `user_id` STRING,
+      `browser` STRING,
+      `ts` TIMESTAMP(3)
+    )
+    WITH (
+      'connector' = 'faker',
+      'number-of-rows' = '500',
+      'rows-per-second' = '100',
+      'fields.url.expression' = '/#{GreekPhilosopher.name}.html',
+      'fields.user_id.expression' = '#{numerify ''user_##''}',
+      'fields.browser.expression' = '#{Options.option ''chrome'', ''firefox'', ''safari'')}',
+      'fields.ts.expression' =  '#{date.past ''5'',''1'',''SECONDS''}'
+    );
+    ```
+
+???- question "The different execution mode"
+
+    Using previous question table and counting the element in the table using
+
+    ```sql
+    select count(*) AS `count` from pageviews;
+    ```
+
+    we get different behavior depending of the execution mode:
+
+    ```sql
+    set 'execution.runtime-mode' = 'batch';
+    # default one
+    set 'execution.runtime-mode' = 'streaming';
+
+    set 'sql-client.execution.result-mode' = 'table';
+    ```
+
+    In changelog mode, the SQL Client doesn't just update the count in place, but instead displays each message in the stream of updates it's receiving from the Flink SQL runtime.
+    
+    ```sql
+    set 'sql-client.execution.result-mode' = 'changelog';
+    ```
+
+    ![](./images/changelog-exec-mode.png)
+
+???- question "Running Confluent Cloud Kafka with local Flink"
+    The goal is to demonstrate how to get a cluster created in an existing Confluent Cloud environment and then send message via FlinkFaker using local table. to Kafka topic:
+    
+    ![](./diagrams/flaker-to-kafka.drawio.png)
+
+    The [scripts and readme](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/01-confluent-kafka-local-flink) .
+
+
+## Lower level Java based programming model
+
+* Start Flink server using docker ([start with docker compose](./getting-started.md/#docker-compose-for-dev-environment) or on [k8s](./k8s-deploy.md)). 
 * Start by creating a java application (quarkus create app for example or using maven) and a Main class. See code in [flink-sql-quarkus](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql-quarkus/) folder.
 * Add dependencies in the pom
 
@@ -155,11 +248,6 @@ Join transactions coming from Kafka topic with customer information.
         .print();
 ```
 
-## SQL Client
-
-The SQL Client aims to provide an easy way of writing, debugging, and submitting table programs to a Flink cluster without a single line of code in any programming language. See [this note](./firstapp.md/#sql-client) for how to use an SQL client with docker.
-
-As a quick tests on the car_rides table 
 ## Challenges
 
 * We cannot express everything in SQL but we can mix Flink Stream and Table APIs

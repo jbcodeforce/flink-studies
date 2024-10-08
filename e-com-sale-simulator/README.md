@@ -1,12 +1,12 @@
 # E-commerce rela-time analytics
 
-This demonstration, is to presnet a real-time data processing with Kafka combine with Flink analytics capabilities.
+This demonstration, is to present a real-time data processing with Kafka combined with Flink analytics capabilities.
 
 An online retail company wants to analyze customer behavior and sales performance in real-time. They need to track user actions, purchases, and inventory levels to make quick business decisions and optimize their operations.
 
 Data to generate:
 
-* User actions (page views, product clicks, add to cart)
+* User actions (page views, product clicks, add to cart events)
 * Purchases
 * Inventory updates
 
