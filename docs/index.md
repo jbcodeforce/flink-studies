@@ -103,7 +103,7 @@ To improve throughput the data is partitionned so operators can run in parallel.
 
  *src: apache Flink site*
 
-Some operations, such `group-by`,  may reshuffle or repartition the data. This is a costly operation, that involve serialization and sending data over the network. Finally events can be assigned to one sink via rebalancing from multiple streams to one. Here is an example of SQL streaming logic with where statement can be run in parallel; while grouping, repartition the streams and then rebalance to one sink:
+Some operations, such `group-by` or `count`,  may reshuffle or repartition the data. This is a costly operation, that involves serialization and sending data over the network. Finally events can be assigned to one sink via rebalancing from multiple streams to one. Here is an example of SQL streaming logic with where statement can be run in parallel; while grouping, repartition the streams and then rebalance to one sink:
 
 ```sql
 INSERT INTO results
@@ -117,6 +117,8 @@ To properly define window operator semantics, developers need to determine both 
 The following figure is showing integration of stream processing runtime with an append log system, like Kafka, with internal local state persistence and continuous checkpointing to remote storage as HA support:
 
 ![](./diagrams/flink-rt-processing.drawio.png)
+
+Using a local state persistence, improves latency, while adopting a remote backup storage increases fault tolerance.
 
 
 ### Checkpointing
@@ -162,11 +164,9 @@ Spark Streamin is using microbatching which is not a true real-time processing w
 
 ## Stateless
 
-Some applications support data loss and expect fast recovery times in case of failure and are
-always consuming the latest incoming data: Alerting applications where only low latency alerts are useful, fit into this category. As well as applications where only the last data received is relevant. 
+Some applications support data loss and expect fast recovery times in case of failure and are always consuming the latest incoming data: Alerting applications where only low latency alerts are useful, fit into this category. As well as applications where only the last data received is relevant. 
 
-When checkpointing is turned off Flink offers no inherent guarantees in case of failures. This means that you can
- either have data loss or duplicate messages combined always with a loss of application state.
+When checkpointing is turned off Flink offers no inherent guarantees in case of failures. This means that you may either have data loss or duplicate messages combined always with a loss of application state.
 
 ## Statefulness
 
@@ -178,19 +178,15 @@ In case of failure of a parallel execution, Flink stops the stream flow, then re
 When doing the reallocation of data partition for processing, states are reallocated too. 
 States are saved on distributed file systems. When coupled with Kafka as data source, the committed read offset will be part of the checkpoint data.
 
-Flink uses the concept of `Checkpoint Barriers`, which represents a separation of records, 
-so records received since the last snapshot are part of the future snapshot. 
+Flink uses the concept of `Checkpoint Barriers`, which represents a separation of records, so records received since the last snapshot are part of the future snapshot. 
+
 Barrier can be seen as a mark, a tag, in the data stream that closes a snapshot. 
 
  ![Checkpoints](./images/checkpoints.png)
 
-In Kafka, it will be the last committed read offset. The barrier flows with the stream 
-so it can be distributed. Once a sink operator (the end of a streaming DAG) has received 
-the `barrier n` from all of its input streams, it acknowledges that `snapshot n` to 
-the checkpoint coordinator. 
+In Kafka, it will be the last committed read offset. The barrier flows with the stream so it can be distributed. Once a sink operator (the end of a streaming DAG) has received the `barrier n` from all of its input streams, it acknowledges that `snapshot n` to the checkpoint coordinator. 
 After all sinks have acknowledged a snapshot, it is considered completed. 
-Once `snapshot n` has been completed, the job will never ask the source for records 
-before such snapshot.
+Once `snapshot n` has been completed, the job will never ask the source for records before such snapshot.
 
 State snapshots are saved in a state backend (in memory, HDFS, RockDB). 
 
@@ -208,21 +204,17 @@ When addressing exactly once processing it is very important to consider the fol
 
 ![](./images/e2e-1.png)
 
-After reading records from Kafka, do the processing and generate results, in case of failure
-Flink will reload the record from the read offset and may generate duplicates in the Sink. 
+After reading records from Kafka, do the processing and generate results, in case of failure, Flink will reload the record from the read offset and may generate duplicates in the Sink. 
 
 ![](./images/e2e-2.png)
 
 As duplicates will occur, we always need to assess how downstream applications support idempotence.
 A lot of distributed key-value storages support consistent result even after retries.
 
-To support end-to-end exactly one delivery, we need to have a sink that supports transaction
-and two-phase commit.
-In case of failure we need to rollback the output generated. It is important to note 
-transactional output impacts latency.
+To support end-to-end exactly one delivery, we need to have a sink that supports transaction and two-phase commit.
+In case of failure we need to rollback the output generated. It is important to note transactional output impacts latency.
 
-Flink takes checkpoints periodically, like every 10 seconds, which leads to the minimum latency
-we can expect at the sink level.
+Flink takes checkpoints periodically, like every 10 seconds, which leads to the minimum latency, we can expect at the sink level.
 
 For Kafka Sink connector, as kafka producer, we need to set the `transactionId`, and the delivery type:
 
@@ -270,13 +262,45 @@ will consider the connection has fail and will remove its state management.
 
 KeyStream can help to run in parallel, each window will have the same key.
 
+## Event time
+
 Time is central to the stream processing, and the time is a parameter of the flow / environment and can take different meanings:
 
 * `ProcessingTime` = system time of the machine executing the task: best performance and low latency
 * `EventTime` = the time at the event source level, embedded in the record. Deliver consistent and deterministic results regardless of order.
 * `IngestionTime` = time when getting into Flink. 
 
-See example [TumblingWindowOnSale.java](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/windows/TumblingWindowOnSale.java) in my-fink folder and to test it, do the following:
+In any time window, the order may not be guarantee and some events with an older timestamp may fell outside of the time window boundary. When compute aggregate, how are we sure that all events that should be in this time windows really arrived in this time window. The watermark is the heuritic used for that.
+
+
+### Watermark
+
+The goal is to limit the risjkof having events coming too late in a time window while using event-time processing, and in case of an out of order a stream may be. [Watermarks](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/event_timestamps_watermarks.html) are generated into the data stream at a given frequency, and represent the mechanism to keep how the time has progressed. A watermark carries a timestamp, computed by substracting the out-of-orderness estimate from the largest timestamp seen so far. The out-of-orderness estimate is a guess and is defined per stream. Watermark is used to compare with other events, and will claim not earlier events will occur in the future after this time stamp.
+
+Watermark is crucial for out of order events, and when dealing with multi sources. Kafka topic partitions can be a challenge without watermark. With IoT device and network latency, it is possible to get an event with an earlier timestamp, while the operator has already processed such event timestamp from other sources. The watermark generator runs inside the kafka consumer.
+
+With windowing operator, event time stamp is used, but windows are defined on elapse time, for example, 10 minutes, so watermark helps to track the point of time where no more delayed events will arrive. 
+
+Using processing time, the watermark progresses at each second. Events in the windows are emitted for processing once the watermark has passed the end of the window. 
+
+The Flink API expects a `WatermarkStrategy` that contains both a `TimestampAssigner` and `WatermarkGenerator`. A `TimestampAssigner` is a simple function that extracts a field from an event. A number of common strategies are available out of the box as static methods on `WatermarkStrategy` class.
+
+It is possible to configure to accept late events, with the `allowed lateness` time by which element can be late before being dropped. Flink keeps a state of Window until the allowed lateness time expires.
+
+
+#### Some examples 
+
+* Parallel watermarking is an example of getting data from 4 partitions with 2 kafka consumer and 2 windows:
+
+    ![](./diagrams/parallel-watermark.drawio.png)
+
+Shuffling is done as windows are computing some count or group by operations. Event A arriving at 3:13, and B[3:20] on green partitions, and are processed by Window 1 which consider 60 minutes time between 3:00 and 4:00. 
+
+By default the connector will send a Watermark every 200ms, for each partition independently. If the out-of-orderness is set to be 5 minutes, so a watermark is created with a timestamp 3:08 (partition 0) and at 3:15 for partition 1 but it sends the minimum of both. The timestamp reflects how complete the stream is so far: it could not be no more complete than the further behind which was event at 3:13, 
+
+In the case of a partition does not get any events, as there is no watermark generated for this parition, it may mean the watermark does no advance, and as a side effect it prevents windows from producing events. To avoid this problem, we need to balance kafka partitions so none are empty or idle, or confifure the watermarking to use idleness detection.
+
+* See example [TumblingWindowOnSale.java](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/windows/TumblingWindowOnSale.java) in my-fink folder and to test it, do the following:
 
 ```shell
 # Start the SaleDataServer that starts a server on socket 9181 and will read the avg.txt file and send each line to the socket
@@ -309,16 +333,6 @@ Evictor is used to remove elements from a window after the trigger fires and bef
 
 The predefined evictors: CountEvictor, DeltaEvictor and TimeEvictor.
 
-### Watermark
-
- watermark is the highest timestamp that has been seen by a Flink job.
-[Watermark](https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/event_timestamps_watermarks.html) is the mechanism to keep how the time has progressed. Using processing time, the watermark progresses at each second. Event in the windows are emitted for processing once the watermark has passed the end of the window. With windowing operator, event time stamp is used, but windows are defined on elapse time, for example, 10 minutes, so watermark helps to track the point of time where no more delayed events will arrive. 
-
-The Flink API expects a WatermarkStrategy that contains both a TimestampAssigner and WatermarkGenerator. A TimestampAssigner is a simple function that extracts a field from an event. A number of common strategies are available out of the box as static methods on WatermarkStrategy class, so reference to the documentation and examples.
-
-Watermark is crucial for out of order events, and when dealing with multi sources. Kafka topic partitions can be a challenge without watermark. With IoT device and network latency, it is possible to get an event with an earlier timestamp, while the operator has already processed such event timestamp from other sources.
-
-It is possible to configure to accept late events, with the `allowed lateness` time by which element can be late before being dropped. Flink keeps a state of Window until the allowed lateness time expires.
 
 ## Resources
 

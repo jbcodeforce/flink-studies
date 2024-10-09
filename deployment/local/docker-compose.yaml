@@ -1,6 +1,6 @@
 services:
   jobmanager:
-    image: flink:latest
+    image: flink:1.19.1-scala_2.12-java11
     hostname: jobmanager
     container_name: jobmanager
     ports:
@@ -11,35 +11,32 @@ services:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
-        state.backend: filesystem
-        state.checkpoints.dir: file:///tmp/flink-checkpoints
         heartbeat.interval: 1000
         heartbeat.timeout: 5000
         rest.flamegraph.enabled: true
         web.backpressure.refresh-interval: 10000
-    volumes:  
-      - flink_data:/tmp:rw
+    volumes:
+      - ../../:/home
   taskmanager:
-    image: flink:latest 
+    #image: jbcodeforce/myflink:latest 
+    image: flink:1.19.1-scala_2.12-java11
     hostname: taskmanager
     container_name: taskmanager
     depends_on:
       - jobmanager
     command: taskmanager
     scale: 1
-    volumes:
-      - flink_data:/tmp:rw
     environment:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
         taskmanager.numberOfTaskSlots: 3
-        state.backend: filesystem
-        state.checkpoints.dir: file:///tmp/flink-checkpoints
         heartbeat.interval: 1000
         heartbeat.timeout: 5000
+    volumes:
+      - ../../:/home
   sql-client:
-    image: jbcodeforce/flink-sql-client
+    image: jbcodeforce/myflink:latest 
     container_name: sql-client
     depends_on:
       - jobmanager
@@ -47,12 +44,6 @@ services:
        - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
-        rest.address: jobmanager   
-
-volumes:
-  flink_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: "$PWD/../.."
+        rest.address: jobmanager
+    volumes:
+      - ../../:/home

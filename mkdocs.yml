@@ -13,9 +13,9 @@ nav:
     - Kafka Integration: kafka.md
   - Coding:
     - First Apps: coding/firstapp.md
+    - Flink SQL: coding/flink-sql.md
     - Kubernetes Deployment: coding/k8s-deploy.md
     - Programming examples: coding/programming.md
-    - Flink SQL: coding/flink-sql.md
     - Stateful function: coding/stateful-func.md
     - Complex Event Processing: coding/cep.md
   - EDA: https://jbcodeforce.github.io/eda-studies

@@ -98,8 +98,11 @@ WITH (
 
 ```sql
 set 'sql-client.execution.result-mode' = 'changelog';
-select count(*) AS `count` from pageviews;
+
+
+select count(*) AS `count` from bounded_pageviews;
 ```
 
 * Access Flink dashboard at [localhost:8081](http://localhost:8081/). See [this tutorial for UI introduction](https://developer.confluent.io/courses/apache-flink/web-ui-exercise/).
 
+[Next will be Kafka integration running locally or on Confluent Cloud](../01-confluent-kafka-local-flink/README.md)

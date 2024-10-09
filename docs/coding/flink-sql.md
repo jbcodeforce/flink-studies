@@ -57,6 +57,42 @@ With streaming, the "ORDER BY" is one time ascending order, with batch it can ap
 SQL client can intract in interactive mode or [using a SQL file](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sqlclient/#execute-sql-files) to process to the server. 
 
 
+### SQL operators
+
+| Type | Operators | Comments|
+| --- | --- | --- |
+| **Stateless** | SELECT <projection | transformation> WHERE <filter> | Can be distributed |
+| **Materialized** | GROUP BY <aggregationss> or JOINS | Dangerously Stateful, keep an internal copy of the data related to the query |
+| **Temporal** | time windowed operation, interval joins, time-versioned joins, MATCH_RECOGNIZE <pattern> | Stateful but contrained in size |
+
+As elements are kept in storage to compute materialized projection then we need to assess the number of elements to keep Million to billion of small items is possible. But query running for ever may eventually overflow the data store. In this last case the Flink task will eventually fail.
+
+As an example the query:
+
+```sql
+SELECT transactions.amount, products.price
+FROM transactions
+JOIN products
+ON transactions.product_id = products.id
+```
+
+Any previously processed records can be used potentially to process the join operation on new arrived record.
+
+To avoid this we need to consider time windows. The following query count the number of different product type arriving from the event stream by interval of 10 minutes.
+
+```sql
+SELECT window_start, product_type, count(product_type)
+    FROM TABLE(
+        TUMBLE(
+            TABLE events,
+            DESCRIPTOR(timestamp),
+            INTERVAL '10' MINUTES
+        )
+    )
+    GROUP BY window_start, window_end, product_type
+```
+
+When the internal time has expired the results will be published. This put an upper boundon how much state Flink needs to keep to handle a query, which in this case is related to the number of different product type. 
 
 ### How to
 
@@ -144,6 +180,8 @@ SQL client can intract in interactive mode or [using a SQL file](https://nightli
 
     The [scripts and readme](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/01-confluent-kafka-local-flink) .
 
+
+---
 
 ## Lower level Java based programming model
 

@@ -53,7 +53,7 @@ services:
     entrypoint: [ "bash",  "-c", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:29092 --create  --replication-factor 1 --partitions 1 --topic ecommerce_events"]
  
   jobmanager:
-    image: flink:latest
+    image: flink:1.20.0-scala_2.12-java11
     hostname: jobmanager
     ports:
       - "8081:8081"
@@ -61,30 +61,32 @@ services:
     environment:
       FLINK_PROPERTIES: "jobmanager.rpc.address: jobmanager"
     volumes:  
-        - ../..:/home
+        - flink_data:/home
   taskmanager:
-    image: flink:latest
+    image: jbcodeforce/myflink:latest 
     hostname: taskmanager
     depends_on:
       - jobmanager
     command: taskmanager
     scale: 1
     volumes:
-        - ../..:/home
+        - flink_data:/home
     environment:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
         taskmanager.numberOfTaskSlots: 8
   sql-client:
-    image: jbcodeforce/flink-sql-client
+    image: jbcodeforce/myflink:latest 
     container_name: sql-client
     depends_on:
       - jobmanager
     volumes:
-      - ../..:/home:rw
+      - flink_data:/home:rw
     environment:
        - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
-        rest.address: jobmanager  
+        rest.address: jobmanager
+volumes:
+  flink_data:

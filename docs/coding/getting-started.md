@@ -12,12 +12,14 @@
 
 ## Docker compose for dev environment
 
-During development, we can use docker-compose to start a simple `Flink session` cluster or a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image. We can use this same environment to do SQL based Flink apps. Therefore there is a SQL client container that may need to be built
+During development, we can use docker-compose to start a simple `Flink session` cluster or a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image. We can use this same environment to do SQL based Flink apps. 
 
-* Build SQL client, go under `sql-client` folder
+As Task manager will execute the job, it is important that the container running the flink has access to jars needed to connect to external sources like Kafka or other tools like FlinkFaker. Therefore there is a Dockerfile to get some important jars to build a custom Flink image that we will use for Taskmanager and SQL client.
+
+* Build Custom Flink image, go under `custom-flink-image` folder
 
 ```sh
-docker build -t jbcodeforce/flink-sql-client .
+docker build -t jbcodeforce/myflink .
 ```
 
 * Start Flink session cluster using the following command: 

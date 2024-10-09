@@ -1,3 +1,4 @@
 **/target/
 site/
 flink-training/
+**.env
