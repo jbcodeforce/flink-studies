@@ -14,10 +14,13 @@ nav:
   - Coding:
     - First Apps: coding/firstapp.md
     - Flink SQL: coding/flink-sql.md
+    - Table API: coding/table-api.md
     - Kubernetes Deployment: coding/k8s-deploy.md
     - Programming examples: coding/programming.md
     - Stateful function: coding/stateful-func.md
     - Complex Event Processing: coding/cep.md
+  - Techno:
+    - Confluent Cloud Flink: techno/ccloud-flink.md 
   - EDA: https://jbcodeforce.github.io/eda-studies
 theme: 
   name: material

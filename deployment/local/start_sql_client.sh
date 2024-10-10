@@ -1,0 +1,1 @@
+docker exec -it sql-client bash

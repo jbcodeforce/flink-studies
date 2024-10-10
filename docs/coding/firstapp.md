@@ -1,7 +1,7 @@
-# First Applications
+# First Java Applications
 
 ???- info "Update"
-    Created 2018 Updated 08/2024
+    Created 2018 Updated 10/2024
     Flink supports Java 11 so Quarkus code needs to be limited to quarkus 3.2.12_Final and maven should compile in JDK 11.
     Use jbang to install jdk 11. WSL ubuntu has OpenJDK 11 and 17.
 
@@ -15,29 +15,29 @@ Each Flink app is a [Java main function which defines the data flow to execute o
 
 Once developers build the application jar file, they use Flink CLI to send the jar as a job to the Job manager server. 
 
-### Create a Java quickstart with maven
+## Create a Java quickstart with maven
 
 [See product documentation which can be summarized as:](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/configuration/overview/)
 
 1. Create squeleton
 
-  ```sh
-  curl https://flink.apache.org/q/quickstart.sh | bash -s 1.20.0
-  ```
+    ```sh
+    curl https://flink.apache.org/q/quickstart.sh | bash -s 1.20.0
+    ```
 
 1. Add kafka connector dependencies in pom.xml
 
-  ```xml
-      <dependency>
-        <groupId>org.apache.flink</groupId>
-        <artifactId>flink-connector-kafka</artifactId>
-        <version>3.0.0-1.17</version>
-      </dependency>
+    ```xml
+        <dependency>
+          <groupId>org.apache.flink</groupId>
+          <artifactId>flink-connector-kafka</artifactId>
+          <version>3.0.0-1.17</version>
+        </dependency>
   ```
 
-1. Implement the process logic and the event mapping, flitering logic.
+1. Implement the process logic and the event mapping, filtering logic... We will see more example later.
 
-### Create a Quarkus java app
+## Create a Quarkus java app
 
 * Create a Quarkus app: `quarkus create app -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`. See code examples under `my-flink` folder and `jbcodeforce.p1` package.
 
@@ -82,8 +82,9 @@ So most of the basic examples use `--input filename` and `--output filename` as 
 * Package the jar with `mvn package`
 * Every Flink application needs a reference to the execution environment (variable `env` in previous example). 
 
-### Submit job to Flink
+## Submit job to Flink
 
+* Start a job manager and task manager with the docker compose under `deployment/local` folder.
 * To submit a job to a Session cluster, use the following command which uses the `flink` cli inside the running `JobManager` container:
 
 ```shell
@@ -97,13 +98,9 @@ flink run -d -c jbcodeforce.p1.WordCountMain /home/my-flink/target/my-flink-
 1.0.0-runner.jar --input file:///home/my-flink/data/wc.txt --output file:///home/my-flink/data/out.csv
 ```
 
-In the execution above, `flink` is a CLI available inside the job-manager container.
-
 See [the coding practice summary](./programming.md) for other dataflow examples.
 
 And the official [operators documentation](https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/operators/) to understand how to transform one or more DataStreams into a new DataStream. Programs can combine multiple transformations into sophisticated data flow topologies.
-
-
 
 ## Unit testing
 
@@ -115,8 +112,7 @@ There are three type of function to test:
 
 ### Stateless
 
-For stateless, the data flow can be isolated in static method within the main class, 
-or defined within a separate class. The test instantiates the class and provides the data.
+For stateless, the data flow can be isolated in static method within the main class, or defined within a separate class. The test instantiates the class and provides the data.
 
 For example testing a string to a tuple mapping (MapTrip() is a MapFunction(...) extension):
 
@@ -134,9 +130,7 @@ For example testing a string to a tuple mapping (MapTrip() is a MapFunction(...)
 
 ### Stateful
 
-The test needs to check whether the operator state is updated correctly and if it is cleaned up properly,
- along with the output of the operator.
-Flink provides TestHarness classes so that we don’t have to create the mock objects.
+The test needs to check whether the operator state is updated correctly and if it is cleaned up properly, along with the output of the operator. Flink provides TestHarness classes so that we don’t have to create the mock objects.
 
 ```java
 ```

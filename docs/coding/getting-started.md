@@ -10,6 +10,8 @@
 * Need a docker engine, with docker and docker compose CLIs
 * Clone this repository.
 
+Or use [Confluent Cloud for Apache Flink](../techno/ccloud-flink.md). 
+
 ## Docker compose for dev environment
 
 During development, we can use docker-compose to start a simple `Flink session` cluster or a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image. We can use this same environment to do SQL based Flink apps. 

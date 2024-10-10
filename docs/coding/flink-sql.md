@@ -173,13 +173,25 @@ When the internal time has expired the results will be published. This put an up
 
     ![](./images/changelog-exec-mode.png)
 
+???- question "How to run Confluent Cloud for Flink"
+    See [the note](../techno/ccloud-flink.md), but can be summarized as, create a stream processing compute pool in the same environment and region as the Kafka cluster, then use Console or CLI (flink shell) to interact with topics.
+
+    ![](../techno/diagrams/ccloud-flink.drawio.png)
+
 ???- question "Running Confluent Cloud Kafka with local Flink"
-    The goal is to demonstrate how to get a cluster created in an existing Confluent Cloud environment and then send message via FlinkFaker using local table. to Kafka topic:
+    The goal is to demonstrate how to get a cluster created in an existing Confluent Cloud environment and then send message via FlinkFaker using local table to Kafka topic:
     
     ![](./diagrams/flaker-to-kafka.drawio.png)
 
     The [scripts and readme](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/01-confluent-kafka-local-flink) .
 
+???- question "How to mask a field"
+    Create a new table from the existing one, and then use REGEXP_REPLACE to mask an existing attribute
+
+    ```sql
+    create table users_msk like users;
+    INSERT INTO users_msk SELECT ..., REGEXP_REPLACE(credit_card,'(\w)','*') as credit_card FROM users;
+    ```
 
 ---
 

@@ -1,12 +1,26 @@
 # Flink SQL some basic examples
 
-Start one Flink **Job manager** and **Task manager**, using the docker compose in deployment-local folder of this project. The docker file mount the root folder in `/home`, so content of the data will be in `/home/flink-sql-demos` 
+??? info "Version"
+    Created from Flink Study 2021 
+    Updated 10/2024 from Confluent Flink studies
+
+Start one Flink **Job manager** and **Task manager** containers, using the docker compose in deployment-local folder of this project. The docker engine mounts this project folder in `/home`, so content of the data will be in `/home/flink-sql-demos/data` 
 
 ## First demo 
 
 This demonstration is based on the SQL getting started [doc example](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/gettingstarted/) from Flink documentation.
 
 The [data/employee.csv](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql-demos/00-basic-sql/data/employes.csv) has 15 records.
+
+Connect to the SQL client container via:
+
+```sh
+docker exec -it sql-client bash
+# then in the container shell
+sql-client.sh
+# Validate some basic query
+show tables;
+```
 
 The following job is a batch processing and uses the a DDL to create a table matching the column of a employee csv file. 
 
@@ -27,13 +41,13 @@ The following job is a batch processing and uses the a DDL to create a table mat
     );
     ```
 
-Using the SQL client we can select to some data: 
+Using the SQL client we can select some data from this table: 
 
 ```sql
 SELECT * from employee_info WHERE dept_id = 101;
 ```
 
-Then count the employees per department, with this static query:
+Or count the employees per department, with this static query:
 
 ```sql
 select dept_id, count(*) from employee_info group by dept_id;
@@ -67,7 +81,7 @@ FROM employee_info
 GROUP BY dept_id;
 ```
 
-* Terminate the session
+* Terminate the SQL client session
 
 ```sql
 exit();

@@ -1,0 +1,4 @@
+jobmanager:
+  rpc:
+    address: jobmanager
+    
