@@ -1,16 +1,16 @@
 # Flink and Kafka and some SQL streaming demo
 
-Start one Flink **Job manager** and **Task manager**, using the `kafka-docker-compose.yaml` or the `confluent-flink-dc.yaml` in deployment-local folder of this project. The docker file mount the root folder in `/home`, so content of the data will be in `/home/flink-sql-demos` 
+Start one Flink **Job manager** and **Task manager**, using the `kafka-docker-compose.yaml` or the `confluent-flink-dc.yaml` in deployment-local folder of this project. The docker file mounts the root folder in `/home`, so content of the data will be in `/home/flink-sql-demos` 
 
-## Local execution 
+## Local Flink execution 
 
-Start the confluent kafka cluster with the 3 Flink containers: 
+* Start the confluent kafka cluster with the 3 Flink containers: 
 
 ```sql
 docker compose -f confluent-flink-dc.yaml up -d
 ```
 
-Create the Kafka Stream table
+* Create the Kafka Stream table
 
 ```sql
 CREATE TABLE pageviews_kafka (
@@ -30,7 +30,7 @@ CREATE TABLE pageviews_kafka (
 );
 ```
 
-* Create the table to generate records with Faker
+* Create the table to generate records with FlinkFaker
 
 
 ```sql
@@ -52,12 +52,13 @@ WITH (
 
 * Move records from generated table to kafka topic
 
-```
+```sql
+INSERT INTO pageviews_kafka SELECT * FROM pageviews;
 ```
 
 ## Remote connection to Kafka on CCloud
 
-* Use confluent CLI  [Download page]()
+* Use confluent CLI  [See the Download page](https://docs.confluent.io/confluent-cli/current/install.html)
 
 ```sh
 confluent login
@@ -70,7 +71,6 @@ confluent kafka topic create pageviews --cluster <cluster-id>
 confluent kafka cluster describe <cluster-id>
 ```
 
-* set the environment variable in the `.env` file: 
 * Use the local docker compose with just task manager, job manager and SQL client containers
 * Create a table to connect to Kafka Streams
 
@@ -121,6 +121,5 @@ INSERT INTO pageviews_kafka SELECT * FROM pageviews;
 
 ### Problems
 
-10/08/24  the module org.apache.kafka.common.security.plain.PlainLoginModule is missing in job and task managers. need to add libraries some how
-verify if these are the good paths in the dockerfile of sql-client. not aligned with https://github.com/confluentinc/learn-apache-flink-101-exercises/blob/master/sql-client/Dockerfile
+10/08/24  the module org.apache.kafka.common.security.plain.PlainLoginModule is missing in job and task managers. need to add libraries some how verify if these are the good paths in the dockerfile of sql-client. not aligned with https://github.com/confluentinc/learn-apache-flink-101-exercises/blob/master/sql-client/Dockerfile
 

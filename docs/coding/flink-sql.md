@@ -146,6 +146,7 @@ When the internal time has expired the results will be published. This put an up
       'fields.ts.expression' =  '#{date.past ''5'',''1'',''SECONDS''}'
     );
     ```
+    This will only work in clustomized flink client with the jar from flink faker.
 
 ???- question "The different execution mode"
 
@@ -184,6 +185,21 @@ When the internal time has expired the results will be published. This put an up
     ![](./diagrams/flaker-to-kafka.drawio.png)
 
     The [scripts and readme](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/01-confluent-kafka-local-flink) .
+
+???- question "Supported connector for Flink SQL and Confluent Cloud"
+    See the [product doc at this link]().
+
+???- question "create a long running SQL with cli"
+    Get or create a service account.
+    ```sh
+    confluent iam service-account create my-service-account --description "new description"
+    confluent iam service-account list
+    confluent iam service-account describe <id_of_the_sa>
+    ```
+
+    ```sh
+    confluent flink statement create my-statement --sql "SELECT * FROM my-topic;" --compute-pool <compute_pool_id> --service-account sa-123456 --database my-cluster
+    ```
 
 ???- question "How to mask a field"
     Create a new table from the existing one, and then use REGEXP_REPLACE to mask an existing attribute
