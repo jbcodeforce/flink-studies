@@ -11,7 +11,7 @@ The operator takes care of submitting, savepointing, upgrading and generally man
 
 ## Pre-requisites
 
-* Be sure to have helm: `brew install helm`
+* Be sure to have helm client installed. On Mac: `brew install helm`
 
 ```sh
 helm version
@@ -24,6 +24,8 @@ helm version
 
 ```sh
 helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.9.0
+# or confluent
+helm repo add confluentinc https://packages.confluent.io/helm
 # Verify help repo entry exist
 helm repo list
 # Be sure to change the repo as the URL may not be valid anymore
@@ -32,12 +34,16 @@ helm repo remove  flink-operator-repo
 helm repo update
 ```
 
-## Deploy Flink operator
+## Deploy Flink Kubernetes Operator
 
-Flink Kubernetes Operator acts as a control plane to manage the complete deployment lifecycle of Apache Flink applications.
+[Flink Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/) acts as a control plane to manage the complete deployment lifecycle of Apache Flink applications.
 
+(See the [pre-requisites](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/docs/try-flink-kubernetes-operator/quick-start/))
 ```sh
+# Open source
 helm install flink-kubernetes-operator flink-operator-repo/flink-kubernetes-operator
+# Confluent packaging
+helm install cp-flink-kubernetes-operator confluentinc/flink-kubernetes-operator
 
 # output
 NAME: flink-kubernetes-operator
@@ -55,10 +61,12 @@ NAME                      NAMESPACE   REVISION  UPDATED                         
 flink-kubernetes-operator flink-demo  1    	2022-07-28 19:00:31.459524 -0700 PDT	deployed flink-kubernetes-operator-1.0.1	1.0.1
 ```
 
-* If the pod is not running verify in the deployment the condition, we may need to add
+* In case of ImageBackOff issue, for example of minikube, it may come from the image name and the adoption of a private registry. (Using a minikube image load <> takes the image from docker and upload to private minikube registry)
+
+* If the pod is not running verify in the deployment the condition, we may need to add security policy, like in this OpenShift example:
 
 ```sh
- oc adm policy add-scc-to-user privileged -z default
+oc adm policy add-scc-to-user privileged -z default
 ```
 
 and remove runAs elements in the deployment.yaml.
@@ -69,6 +77,17 @@ To remove the operator
 helm uninstall flink-kubernetes-operator
 ```
 
+### Custom Resources
+
+Once the operator is running we can submit jobs using  `FlinkDeployment` (for Flink Application) and `FlinkSessionJob`Custom Resources.
+The FlinkDeployment spec is [here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-release-1.10/docs/custom-resource/overview/#flinkdeployment-spec-overview):
+
+### Flink Config Update
+
+* Write operations fail when the pod creates a folder or updates the Flink config
+
+  * Assess PVC and R/W access. Verify PVC configuration. Some storage classes or persistent volume types may have restrictions on directory creation
+  * Verify security context for the pod. Modify the pod's security context to allow necessary permissions.
 
 ## Flink Session
 
@@ -107,7 +126,7 @@ spec:
     upgradeMode: stateless
 ```
 
-* Example of deploying Java based [SQL Runner](https://github.com/apache/flink-kubernetes-operator/blob/main/examples/flink-sql-runner-example/README.md) to interprete a sql script, package it as docker images, and deploy it with a Session Job. There is a equivalent for Python using [Pyflink](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/overview/).
+* Example of deploying Java based [SQL Runner](https://github.com/apache/flink-kubernetes-operator/blob/main/examples/flink-sql-runner-example/README.md) to interprete a Flink SQL script: package it as docker images, and deploy it with a Session Job. There is a equivalent for Python using [Pyflink](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/overview/).
 
     * [See the ported code for Java](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/sql-runner)
     * And for the [Python implementation](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/flink-python-sql-runner)

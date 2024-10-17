@@ -38,9 +38,9 @@ CREATE TABLE car_rides (
 
 [See the getting started](./getting-started.md) to run locally with a sql client.
 
-## SQL programming samples
+## SQL programming examples
 
-Those tables are dynamic, because they change overtime, and some tables are more a changelog stream than static tables. 
+Flink SQL tables are dynamic, because they change overtime, and some tables are more a changelog stream than static tables. 
 
 The following diagram illustrates the main processing concepts: the `shipments` table keeps track of product shipments while the `inventory` keeps the current quantity of each item. The insert statement is the stream processing to update the inventory from the new shipment records. This SQL statement uses the sum aggregator operation on the count for each item. The items are shuffled to group them by item.
 
@@ -48,14 +48,21 @@ The following diagram illustrates the main processing concepts: the `shipments` 
 
 The SQL is applied to the stream of data, data is not stored in Flink. The events can be `insert`, `update` or `delete` record in the table. The diagram illustrates that, at the sink level, the first events reflect adding items to the inventory, while when there is an update to the Card inventory, a first record is created to remove the current stock of Card item and send a new message with the new stock value (2 cards). This last behavior is due to the `group by` semantic, and the fact that the right 'table' is an update only table, while the left one ia an append only table. 
 
-Dynamic Table can also being persisted in Kafka Topic, so table definition includes statement on how to connect to Kafka. When doing batch processing the sink can be a table in database or a csv file on the filesystems.
+Dynamic Table can also being persisted in Kafka Topic, so table definition includes statement on how to connect to Kafka. When doing batch processing the sink can be a table in database or a csv file on the filesystem.
 
 Note that SQL Client executes each **INSERT INTO** statement as a single Flink job. `STATEMENT SET` can be used to group insert statements (into a set). As the  job manager schedules the job to the task managers, SQL statements are executed asynchronously. While for batch processing; developer can set `set table.dml-sync option to true` 
 
-With streaming, the "ORDER BY" is one time ascending order, with batch it can apply to anything. In Streaming, SQL `ORDER BY` is only based on time ascending sorting.
+With streaming, the "ORDER BY" is one time ascending order, with batch, it can apply to any record field. In Streaming, SQL `ORDER BY` is only based on time ascending sorting.
 
 SQL client can intract in interactive mode or [using a SQL file](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sqlclient/#execute-sql-files) to process to the server. 
 
+### Data lifecycle
+
+In a pure Kafka integration architecture, like Confluent Cloud, the data life cycle looks like:
+
+* Data is read from a Kafka topic to a Flink SQL table
+* Data is processed with SQL statements
+* Data is returns as result sets in interactive mode, or to a table (mapped to a topic) in continuous streaming mode.
 
 ### SQL operators
 
@@ -67,7 +74,7 @@ SQL client can intract in interactive mode or [using a SQL file](https://nightli
 
 As elements are kept in storage to compute materialized projection then we need to assess the number of elements to keep Million to billion of small items is possible. But query running for ever may eventually overflow the data store. In this last case the Flink task will eventually fail.
 
-As an example the query:
+Below is an example of Join query:
 
 ```sql
 SELECT transactions.amount, products.price
@@ -76,9 +83,9 @@ JOIN products
 ON transactions.product_id = products.id
 ```
 
-Any previously processed records can be used potentially to process the join operation on new arrived record.
+Any previously processed records can be used potentially to process the join operation on new arrived record, which means keeping a lot of records in memory. As memory will be bounded, there are other mechanisms to limit those joins or aggregation, using time windows.
 
-To avoid this we need to consider time windows. The following query count the number of different product type arriving from the event stream by interval of 10 minutes.
+The following query counts the number of different product type arriving from the event stream by interval of 10 minutes.
 
 ```sql
 SELECT window_start, product_type, count(product_type)
@@ -94,9 +101,15 @@ SELECT window_start, product_type, count(product_type)
 
 When the internal time has expired the results will be published. This put an upper boundon how much state Flink needs to keep to handle a query, which in this case is related to the number of different product type. 
 
-### How to
+### How to SQL based processing
 
-???- question "How to load data from a csv file using filesystem connector"
+[See Flink Confluent Cloud queries documentation.](https://docs.confluent.io/cloud/current/flink/reference/queries/overview.html)
+
+???- question "How to consume from a Kafka topic to a SQL table?"
+    ```sql
+    ```
+
+???- question "How to load data from a csv file using filesystem connector using SQL"
     Enter the following statement in a SQL client session:
 
     ```sql
@@ -148,15 +161,15 @@ When the internal time has expired the results will be published. This put an up
     ```
     This will only work in clustomized flink client with the jar from flink faker.
 
-???- question "The different execution mode"
+???- question "What are the different SQL execution modes?"
 
-    Using previous question table and counting the element in the table using
+    Using previous table it is possible to count the elements in the table using:
 
     ```sql
     select count(*) AS `count` from pageviews;
     ```
 
-    we get different behavior depending of the execution mode:
+    and we get different behavior depending of the execution mode:
 
     ```sql
     set 'execution.runtime-mode' = 'batch';
@@ -174,8 +187,19 @@ When the internal time has expired the results will be published. This put an up
 
     ![](./images/changelog-exec-mode.png)
 
-???- question "How to run Confluent Cloud for Flink"
-    See [the note](../techno/ccloud-flink.md), but can be summarized as, create a stream processing compute pool in the same environment and region as the Kafka cluster, then use Console or CLI (flink shell) to interact with topics.
+
+???- question "How to mask a field?"
+    Create a new table from the existing one, and then use REGEXP_REPLACE to mask an existing attribute
+
+    ```sql
+    create table users_msk like users;
+    INSERT INTO users_msk SELECT ..., REGEXP_REPLACE(credit_card,'(\w)','*') as credit_card FROM users;
+    ```
+
+### How to specific to Confluent Cloud
+
+???- question "How to run Confluent Cloud for Flink?"
+    See [the note](../techno/ccloud-flink.md), but can be summarized as: 1/ create a stream processing compute pool in the same environment and region as the Kafka cluster, 2/ use Console or CLI (flink shell) to interact with topics.
 
     ![](../techno/diagrams/ccloud-flink.drawio.png)
 
@@ -187,7 +211,7 @@ When the internal time has expired the results will be published. This put an up
     The [scripts and readme](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/01-confluent-kafka-local-flink) .
 
 ???- question "Supported connector for Flink SQL and Confluent Cloud"
-    See the [product doc at this link]().
+    See the [product documentation at this link]().
 
 ???- question "create a long running SQL with cli"
     Get or create a service account.
@@ -201,13 +225,7 @@ When the internal time has expired the results will be published. This put an up
     confluent flink statement create my-statement --sql "SELECT * FROM my-topic;" --compute-pool <compute_pool_id> --service-account sa-123456 --database my-cluster
     ```
 
-???- question "How to mask a field"
-    Create a new table from the existing one, and then use REGEXP_REPLACE to mask an existing attribute
 
-    ```sql
-    create table users_msk like users;
-    INSERT INTO users_msk SELECT ..., REGEXP_REPLACE(credit_card,'(\w)','*') as credit_card FROM users;
-    ```
 
 ---
 

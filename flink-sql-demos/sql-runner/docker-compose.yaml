@@ -1,0 +1,26 @@
+services:
+  jobmanager:
+    image: j9r/flink-sql-runner:latest
+    ports:
+      - "8081:8081"
+    command: standalone-job --job-classname org.apache.flink.examples.SqlRunner  --allowNonRestoredState /opt/flink/usrlib/sql-scripts/simple.sql
+    volumes:
+      - ./data/sp:/tmp/savepoint 
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        parallelism.default: 2        
+
+  taskmanager:
+    image: j9r/flink-sql-runner:latest
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    scale: 1
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 2
+        parallelism.default: 2        
