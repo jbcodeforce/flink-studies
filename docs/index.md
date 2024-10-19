@@ -50,11 +50,6 @@ Flink is very good at:
 * Support updating the application code and migrate jobs to different Flink clusters without losing the state of the application
 * Also support batch processing
 
-The figure below illustrates those different models combined with [Zepellin](https://zeppelin.apache.org/) as a multi purpose notebook to develop data analytic projects on top of Spark, Python or Flink.
-
-
- ![Flink components](./images/arch.png)
-
 
 ## Stream processing concepts
 
@@ -137,29 +132,6 @@ State is always accessed locally, which helps Flink applications achieve high th
 
  ![4](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/local-state.png)
 
-## Runtime architecture
-
-This is the Job Manager component which parallelizes the job and distributes slices of [the Data Stream](https://ci.apache.org/projects/flink/flink-docs-stable/dev/datastream_api.html) flow, the developers have defined.Each parallel slice of the job is executed in a **task slot**.  Once the job is submitted, the **Job Manager** is scheduling the job to different task slots within the **Task Manager**. The Job manager may create resources from a computer pool, or in kubernetes deployment, it creates pods. 
-
- ![5](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/distributed-runtime.svg)
-
-Once the job is running, the Job Manager is responsible to coordinate the activities of the Flink cluster, like checkpointing, and restarting task manager that may have failed.
-
-Tasks are loading the data from sources, do their own processing and then send data among themselves for repartitioning and rebalancing, to then push results out to the sinks.
-
-When Flink is not able to process a real-time event, it may have to buffer it, until other necessary data has arrived. This buffer has to be persisted in longer storage, so data are not lost if a task manager fails and has to be restarted. In batch mode, the job can reload the data from the beginning. In batch the results are computed once the job is done (count the number of record like `select count(*) AS `count` from bounded_pageviews;` return one result), while in streaming, each event may be the last one recieved, so results are produced incrementally, after every events or after a certain period of time based on timers.
-
-
-???- "Parameters"
-    *  taskmanager.numberOfTaskSlots: 2
-
-Once Flink is started (for example with the docker image), Flink Dashboard [http://localhost:8081/#/overview](http://localhost:8081/#/overview) presents the execution reporting:
-
- ![6](./images/flink-dashboard.png)
-
-The execution is from one of the training examples, the number of task slot was set to 4, and one job is running.
-
-Spark Streamin is using microbatching which is not a true real-time processing while Flink is. Both Flink and Spark support batch processing. 
 
 
 ## Stateless
@@ -275,11 +247,23 @@ In any time window, the order may not be guarantee and some events with an older
 
 ### Watermark
 
-The goal is to limit the risjkof having events coming too late in a time window while using event-time processing, and in case of an out of order a stream may be. [Watermarks](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/event_timestamps_watermarks.html) are generated into the data stream at a given frequency, and represent the mechanism to keep how the time has progressed. A watermark carries a timestamp, computed by substracting the out-of-orderness estimate from the largest timestamp seen so far. The out-of-orderness estimate is a guess and is defined per stream. Watermark is used to compare with other events, and will claim not earlier events will occur in the future after this time stamp.
+The goal is to limit the risk of having events coming too late in a time window while using event-time processing, and in case of, an out-of-order stream may be. [Watermarks](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/event_timestamps_watermarks.html) are generated into the data stream at a given frequency, and represent the mechanism to keep how the time has progressed. A watermark carries a timestamp, computed by substracting the out-of-orderness estimate duration from the largest timestamp seen so far. 
 
-Watermark is crucial for out of order events, and when dealing with multi sources. Kafka topic partitions can be a challenge without watermark. With IoT device and network latency, it is possible to get an event with an earlier timestamp, while the operator has already processed such event timestamp from other sources. The watermark generator runs inside the kafka consumer.
+![](./diagrams/watermark.drawio.png)
 
-With windowing operator, event time stamp is used, but windows are defined on elapse time, for example, 10 minutes, so watermark helps to track the point of time where no more delayed events will arrive. 
+Late arrived events are ignored as the complete information window is already gone. Within a window states are saved on disk and need to be cleaned once the window is closed. The watermark is the limit from where the garbage collection can occur.
+
+The out-of-orderness estimate is a guess and is defined per stream. Watermark is used to compare with other events, and will claim not earlier events will occur in the future after this timestamp.
+
+Watermark is crucial to process out-of-order events, and when dealing with multiple sources. With IoT device and network latency, it is possible to get an event with an earlier timestamp, while the operator has already processed such event timestamp from other sources. Watermarks are used for any timestamp and are not exclusive to window semantic. 
+
+Kafka topic partitions can be a challenge without watermark. Watermaks are generated for each stream and partition independently. When combining two partitions, the watermark will be the oldest of the two partitions, as this is when the system has the complete information. Now if one of the partition will not get new event then the watermark will not progress. To still make the process progressing over time, there is an idle timeout configuration. 
+
+The watermark generator runs inside the kafka consumer before injecting to the Flink stream or table.
+
+When using open source Flink, developers need to define 1/ the watermark delay, 2/ the idle timeout, 3/ max allowed watermark drift to control the pipeline efficiency.
+
+With windowing operator, event timestamp is used, but windows are defined on elapse time, for example, 10 minutes, so watermark helps to track the point of time where no more delayed events will arrive. 
 
 Using processing time, the watermark progresses at each second. Events in the windows are emitted for processing once the watermark has passed the end of the window. 
 

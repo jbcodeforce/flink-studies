@@ -1,4 +1,4 @@
-site_name: Apache Flink Studies
+site_name: Streaming Data Platform
 repo_url: https://github.com/jbcodeforce/flink-studies.git
 site_url: https://jeromeboyer.net/flink-studies
 copyright: Copyright &copy; 2018 - 2024 Jerome Boyer
@@ -6,21 +6,21 @@ nav:
   - Introduction: 
     - Concepts: index.md
     - Getting started: coding/getting-started.md
-    - Flink SQL: coding/flink-sql.md
-  - Architecture: 
-    - Key concepts: architecture/index.md
     - Fit for purpose: architecture/fitforpurpose.md
-    - Kafka Integration: kafka.md
-  - Coding:
-    - First Apps: coding/firstapp.md
+  - Products: 
+    - Flink Architecture: architecture/index.md
     - Flink SQL: coding/flink-sql.md
-    - Table API: coding/table-api.md
-    - Kubernetes Deployment: coding/k8s-deploy.md
-    - Programming examples: coding/programming.md
+    - Java Table API: coding/table-api.md
     - Stateful function: coding/stateful-func.md
     - Complex Event Processing: coding/cep.md
+  - Practices:
+    - First Apps: coding/firstapp.md
+    - Kubernetes Deployment: coding/k8s-deploy.md
+    - Programming examples: coding/programming.md
+    - Flink Cookbook: architecture/cookbook.md
   - Techno:
     - Confluent Cloud Flink: techno/ccloud-flink.md 
+    - Kafka Integration: kafka.md
   - EDA: https://jbcodeforce.github.io/eda-studies
 theme: 
   name: material

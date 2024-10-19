@@ -15,17 +15,48 @@
 * Integrated with RBAC with user and service accounts support
 * A catalog is a collection of database, a database is a collection of tables.
 * Stream lineage is a feature to at the topic level to understand where the data are coming from. 
+* For Watermark configuration, Confluent Cloud for Apache Flink handles it autimatically, using the $rowtime which is mapped to the Kafka record timestamp and by observing the behavior of the streams then adapting the configuration.
 
 ## Getting Started
 
-Install the [Confluent CLI](https://docs.confluent.io/confluent-cli/current/overview.html) and get an account. 
+Install the [Confluent CLI](https://docs.confluent.io/confluent-cli/current/overview.html) and get an Confluent Cloud account. 
 
 See those tutorials for getting started.
 
 * [Quickstart with Console](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-cloud-console.html)
 * [Java Table API Quick Start](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-java-table-api.html)
 
-### Some common ground
+There is also a new confluent cli plugin: `confluent-flink-quickstart` to create an environment, a compute pool enable schema registry, create a kafka cluster and starts a Flink shell. 
+
+```sh
+confluent flink quickstart --name my-flink-sql --max-cfu 10 --region us-west-2 --cloud aws
+```
+
+For study and demonstration there is a read-only catalog named `examples` with database called `marketplace` which is a data generator in SQL tables in memory. 
+
+Set the namespace for queries using:
+
+```sql
+use catalog examples;
+use marketplace;
+show tables;
+```
+
+While to map to the created environement we need to:
+
+```sql
+use catalog my-flink-sql_environment;
+use  my-flink-sql_kafka-cluster;
+```
+
+To shutdown every thing:
+
+```sh
+confluent environment list
+confluent environment delete <ENVIRONMENT_ID>
+```
+
+### Some common commands to manage environment
 
 ```sh
 # Create an environment
@@ -62,6 +93,8 @@ confluent flink compute-pool list
 # set env variable for pool id and environment id
 confluent flink shell --environment $ENVID --compute-pool $CPOOL
 ```
+
+### Using the Flink editor in Confluent Cloud
 
 ### Use Java Table API
 

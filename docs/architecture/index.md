@@ -1,10 +1,14 @@
 # Flink architecture
 
+## Runtime architecture
+
 Flink consists of a **Job Manager** and n **Task Managers**. 
 
  ![1](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/distributed-runtime.svg)
 
-The **JobManager** controls the execution of a single application. It receives an application for execution and builds a Task Execution Graph from the defined Job Graph. It manages job submission and the job lifecycle then allocates work to Task Managers.
+The **JobManager** controls the execution of a single application. It receives an application for execution and builds a Task Execution Graph from the defined Job Graph. It manages job submission which parallelizes the job and distributes slices of [the Data Stream](https://ci.apache.org/projects/flink/flink-docs-stable/dev/datastream_api.html) flow, the developers have defined. Each parallel slice of the job is executed in a **task slot**.  
+
+Once the job is submitted, the **Job Manager** is scheduling the job to different task slots within the **Task Manager**. The Job manager may create resources from a computer pool, or when deployed on kubernetes, it creates pods. 
 
 The **Resource Manager** manages Task Slots and leverages underlying orchestrator, like Kubernetes or Yarn.
 
@@ -14,6 +18,24 @@ The **Task Managers** execute the actual stream processing logic. There are mult
 ![2](./images/flink-components.png)
 
 The **Disparcher** exposes API to submit applications for execution. It hosts the user interface too.
+
+Once the job is running, the Job Manager is responsible to coordinate the activities of the Flink cluster, like checkpointing, and restarting task manager that may have failed.
+
+Tasks are loading the data from sources, do their own processing and then send data among themselves for repartitioning and rebalancing, to finally push results out to the sinks.
+
+When Flink is not able to process a real-time event, it may have to buffer it, until other necessary data has arrived. This buffer has to be persisted in longer storage, so data are not lost if a task manager fails and has to be restarted. In batch mode, the job can reload the data from the beginning. In batch the results are computed once the job is done (count the number of record like `select count(*) AS `count` from bounded_pageviews;` return one result), while in streaming, each event may be the last one recieved, so results are produced incrementally, after every events or after a certain period of time based on timers.
+
+
+???- "Parameters"
+    *  taskmanager.numberOfTaskSlots: 2
+
+Once Flink is started (for example with the docker image), Flink Dashboard [http://localhost:8081/#/overview](http://localhost:8081/#/overview) presents the execution reporting:
+
+ ![6](./images/flink-dashboard.png)
+
+The execution is from one of the training examples, the number of task slot was set to 4, and one job is running.
+
+Spark Streaming is using microbatching which is not a true real-time processing while Flink is. Both Flink and Spark support batch processing. 
 
 Only one Job Manager is active at a given point of time, and there may be `n` Task Managers. It is a single point of failure, but it startes quickly and can leverage the checkpoints data to restart its processing.
 
@@ -25,7 +47,7 @@ There are different [deployment models](https://ci.apache.org/projects/flink/fli
 
 Flink can run on any common resource manager like Hadoop Yarn, Mesos, or Kubernetes. For development purpose, we can use docker images to deploy a **Session** or **Job cluster**.
 
-See also [deployment to Kubernetes](../k8s-deploy.md)
+See also [deployment to Kubernetes](../coding/k8s-deploy.md)
 
 The new K8s operator, deploys and monitors Flink Application and Session deployments.
 
@@ -74,7 +96,3 @@ Checkpointing is coordinated by the Job Manager, it knows the location of the la
 
 During the recovery and depending on the sink operators of an application, some result records might be emitted multiple times to downstream systems.
 
-
-## Time 
-
-## Saving 

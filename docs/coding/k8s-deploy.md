@@ -40,10 +40,12 @@ helm repo update
 
 (See the [pre-requisites](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/docs/try-flink-kubernetes-operator/quick-start/))
 ```sh
+kubectl create namespace flink
+# Set the cert manager if not done before
 # Open source
 helm install flink-kubernetes-operator flink-operator-repo/flink-kubernetes-operator
 # Confluent packaging
-helm install cp-flink-kubernetes-operator confluentinc/flink-kubernetes-operator
+helm install cp-flink-kubernetes-operator confluentinc/flink-kubernetes-operator  --set webhook.create=false
 
 # output
 NAME: flink-kubernetes-operator
@@ -80,7 +82,9 @@ helm uninstall flink-kubernetes-operator
 ### Custom Resources
 
 Once the operator is running we can submit jobs using  `FlinkDeployment` (for Flink Application) and `FlinkSessionJob`Custom Resources.
-The FlinkDeployment spec is [here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-release-1.10/docs/custom-resource/overview/#flinkdeployment-spec-overview):
+The FlinkDeployment spec is [here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-release-1.10/docs/custom-resource/overview/#flinkdeployment-spec-overview).
+
+Some personal examples of k8s deployments.
 
 ### Flink Config Update
 
@@ -88,6 +92,7 @@ The FlinkDeployment spec is [here](https://nightlies.apache.org/flink/flink-kube
 
   * Assess PVC and R/W access. Verify PVC configuration. Some storage classes or persistent volume types may have restrictions on directory creation
   * Verify security context for the pod. Modify the pod's security context to allow necessary permissions.
+  * The podTemplate can be configured at the same level as the task and job managers so any mounted volumes will be available to those pods. See [basic-reactive.yaml](https://github.com/apache/flink-kubernetes-operator/blob/main/examples/basic-reactive.yaml) from Flink Operator examples.
 
 ## Flink Session
 
@@ -166,3 +171,7 @@ We need to define following components (See yaml files in the `kafka-flink-demo`
 * Service exposing the JobManager’s REST and UI ports
 
 The Application Mode makes sure that all Flink components are properly cleaned up after the termination of the application.
+
+## Practice
+
+* It is not recommended to host a Flink Cluster across multiple Kubernetes clusters. Flink node excchanges data between task managers and so better to run in same region, and within same k8s. 

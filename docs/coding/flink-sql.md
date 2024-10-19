@@ -38,6 +38,27 @@ CREATE TABLE car_rides (
 
 [See the getting started](./getting-started.md) to run locally with a sql client.
 
+### Main use cases
+
+Flink and Flink SQL can be used in two main categories of application:
+
+1. Reactive application, event-driven
+1. Data products with real-time white box ETL pipeline: schematizing, cleaning, enriching for data lake, lake house, feature store or vector store. 
+
+## Parallel with Database
+
+Database applications are classified in one of the two domains of Online Transaction Processing (OLTP) or Online Analytical Processing (OLAP) used for business reporting.
+
+Databases have catalog, database, tables, views, materialized views. The most important component is the Query processor, which receives queries and then plans before the execution using the catalog (metadata of the tables. functions...), then executes the query using the Storage engine to access to the data to finally generate the results. 
+
+The `views` are virtual tables based on the result of the SQL queries. Some Database has also the `Materialized View` that caches the results into a physical table. For example, a group_by on an aggregate, may cache the result by the grouping element and the aggregate in a new table. Materialized view can be updated by a full refresh, executing the query again, or with incremental result.
+
+Flink SQL uses dynamic table, coming from data streams, and use material view with incremental updates. It is not a database but a query processor. The catalog in Confluent Cloud is accessing the schema registry for a topic. and the execution of the query is done on Flink cluser that access to records in topics. 
+
+Flink can support exactly once or at least once (duplicates are possible) guarantee, depending of the configuration and the external systems used for input and output tables. 
+
+For effectively exactly once processing the source needs to be replayable and the sink needs to support transaction. Kafka topics support both, and the consumer protocol supports the `read-committed` semantic. Transaction scope is at the single-key level. While ACID transaction in database supports multiple keys integrity. 
+
 ## SQL programming examples
 
 Flink SQL tables are dynamic, because they change overtime, and some tables are more a changelog stream than static tables. 
@@ -72,7 +93,7 @@ In a pure Kafka integration architecture, like Confluent Cloud, the data life cy
 | **Materialized** | GROUP BY <aggregationss> or JOINS | Dangerously Stateful, keep an internal copy of the data related to the query |
 | **Temporal** | time windowed operation, interval joins, time-versioned joins, MATCH_RECOGNIZE <pattern> | Stateful but contrained in size |
 
-As elements are kept in storage to compute materialized projection then we need to assess the number of elements to keep Million to billion of small items is possible. But query running for ever may eventually overflow the data store. In this last case the Flink task will eventually fail.
+As elements are kept in storage to compute materialized projection then we need to assess the number of elements to keep. Million to billion of small items are possible. But query running forever may eventually overflow the data store. In this last case, the Flink task will eventually fail.
 
 Below is an example of Join query:
 
@@ -83,7 +104,7 @@ JOIN products
 ON transactions.product_id = products.id
 ```
 
-Any previously processed records can be used potentially to process the join operation on new arrived record, which means keeping a lot of records in memory. As memory will be bounded, there are other mechanisms to limit those joins or aggregation, using time windows.
+Any previously processed records can be used potentially to process the join operation on new arrived records, which means keeping a lot of records in memory. As memory will be bounded, there are other mechanisms to limit those joins or aggregation, using time windows.
 
 The following query counts the number of different product type arriving from the event stream by interval of 10 minutes.
 
@@ -103,7 +124,6 @@ When the internal time has expired the results will be published. This put an up
 
 ### How to SQL based processing
 
-[See Flink Confluent Cloud queries documentation.](https://docs.confluent.io/cloud/current/flink/reference/queries/overview.html)
 
 ???- question "How to consume from a Kafka topic to a SQL table?"
     ```sql
@@ -138,6 +158,12 @@ When the internal time has expired the results will be published. This put an up
 
     [See complete example in the readme](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/00-basic-sql)
 
+???- question "How to add a field in a table?"
+    [Use ALTER TABLE](https://docs.confluent.io/cloud/current/flink/reference/statements/alter-table.html)
+    
+    ```sql
+    alter table flight_schedules add(dt string);
+    ```
 
 ??? - question "How to generate data using [Flink Faker](https://github.com/knaufk/flink-faker)?"
     Create at table with records generated with `faker` connector using the [DataFaker expressions.](https://github.com/datafaker-net/datafaker). 
@@ -198,11 +224,35 @@ When the internal time has expired the results will be published. This put an up
 
 ### How to specific to Confluent Cloud
 
+[See Flink Confluent Cloud queries documentation.](https://docs.confluent.io/cloud/current/flink/reference/queries/overview.html)
+
+Each topic is automatically mapped to a table with some metadata fields added, like the watermark in the form of `$rowtime` field, which is mapped to the Kafka record timestamp. To see it, run `describe extended table_name;` With watermarking. arriving event recors will be ingested roughly in order with  respect to the `$rowtime` time attribute field.
+
 ???- question "How to run Confluent Cloud for Flink?"
     See [the note](../techno/ccloud-flink.md), but can be summarized as: 1/ create a stream processing compute pool in the same environment and region as the Kafka cluster, 2/ use Console or CLI (flink shell) to interact with topics.
 
     ![](../techno/diagrams/ccloud-flink.drawio.png)
 
+    ```sh
+    confluent flink quickstart --name my-flink-sql --max-cfu 10 --region us-west-2 --cloud aws
+    ```
+
+???- question "Create a table with topic as persistence"
+    See the [WITH options](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#with-options).
+
+    ```sql
+    create table `small-orders` (
+        `order_id` STRING NOT NULL,
+        `customer_id` INT NOT NULL,
+        `product_id` STRING NOT NULL,
+        `price` DOUBLE NOT NULL
+    ) distributed into 1 buckets
+    with (
+        'kafka.retention.time' = '1 d'
+    );
+
+    insert into `small-orders` select * from `examples`.`marketplace`.`orders` where price < 20;
+    ```
 ???- question "Running Confluent Cloud Kafka with local Flink"
     The goal is to demonstrate how to get a cluster created in an existing Confluent Cloud environment and then send message via FlinkFaker using local table to Kafka topic:
     
@@ -225,7 +275,8 @@ When the internal time has expired the results will be published. This put an up
     confluent flink statement create my-statement --sql "SELECT * FROM my-topic;" --compute-pool <compute_pool_id> --service-account sa-123456 --database my-cluster
     ```
 
-
+???- question "When and how to use custom watermark?"
+    Developer should use their own [watermark strategy](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#watermark-clause) when there are not a lot of records per topic/partition, there is a need for a large watermark delay, and need to use another timestamp. 
 
 ---
 
