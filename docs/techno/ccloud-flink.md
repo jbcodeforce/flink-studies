@@ -24,9 +24,10 @@ Install the [Confluent CLI](https://docs.confluent.io/confluent-cli/current/over
 See those tutorials for getting started.
 
 * [Quickstart with Console](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-cloud-console.html)
+* [Apache Flink® SQL](https://developer.confluent.io/courses/flink-sql/overview/)
 * [Java Table API Quick Start](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-java-table-api.html)
 
-There is also a new confluent cli plugin: `confluent-flink-quickstart` to create an environment, a compute pool enable schema registry, create a kafka cluster and starts a Flink shell. 
+There is also a new confluent cli plugin: `confluent-flink-quickstart` to create an environment, a compute pool, enable schema registry, create a kafka cluster and starts a Flink shell. 
 
 ```sh
 confluent flink quickstart --name my-flink-sql --max-cfu 10 --region us-west-2 --cloud aws
@@ -56,7 +57,7 @@ confluent environment list
 confluent environment delete <ENVIRONMENT_ID>
 ```
 
-### Some common commands to manage environment
+### Some common commands to manage Confluent Cloud environment
 
 ```sh
 # Create an environment

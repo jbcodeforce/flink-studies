@@ -1,7 +1,7 @@
 # Integration with Kafka
 
 Flink has [a Kafka connector](https://ci.apache.org/projects/flink/flink-docs-release-1.14/dev/connectors/kafka.html) for consuming and producing messages. 
-We need a connector jar, define Kafka server properties and then define the source for the stream.
+We need the connector jar, define Kafka server properties and then define the source for the stream.
 
 
 ## Consuming from Kafka

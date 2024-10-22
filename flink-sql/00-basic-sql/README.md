@@ -10,7 +10,7 @@ Start one Flink **Job manager** and **Task manager** containers, using the docke
 
 This demonstration is based on the SQL getting started [doc example](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/gettingstarted/) from Flink documentation.
 
-The [data/employee.csv](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql-demos/00-basic-sql/data/employes.csv) has 15 records.
+The [data/employee.csv](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql/00-basic-sql/data/employes.csv) has 15 records.
 
 Connect to the SQL client container via:
 
