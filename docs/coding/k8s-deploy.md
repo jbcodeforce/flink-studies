@@ -86,6 +86,13 @@ oc adm policy add-scc-to-user privileged -z default
 
 and remove runAs elements in the deployment.yaml.
 
+???- info "Access to user interface"
+    ```
+    kubectl port-forward ${flink-jobmanager-pod} 8081:8081 to forward your jobmanager’s web ui port to local 8081.
+    ```
+
+    And Navigate to [http://localhost:8081](http://localhost:8081) in your browser.
+
 * To remove the operator
 
 ```sh
@@ -97,6 +104,12 @@ helm uninstall flink-kubernetes-operator
 Once the operator is running we can submit jobs using  `FlinkDeployment` (for Flink Application) and `FlinkSessionJob`Custom Resources.
 
 The [FlinkDeployment spec is here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-release-1.10/docs/custom-resource/overview/#flinkdeployment-spec-overview) and is used to define Flink application (will have a job section) or session cluster (only job and task managers configuration).
+
+An RWX, shared PersistentVolumeClaim (PVC) for the Flink JobManagers and TaskManagers provides stateful checkpoint and savepoint for Flink jobs. 
+
+[For more detail see the CRD reference documentation.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/)
+
+### Application deployment 
 
 An **application deployment** must define the job (JobSpec) field with the `jarURI`, `parallelism`, `upgradeMode` one of (stateless/savepoint/last-state) and the desired `state` of the job (running/suspended). [See this sample app](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/basic-sample.yaml).
 
@@ -111,20 +124,28 @@ job:
 `flinkConfiguration` is a hash map used to define  the Flink configuration, like, task slot, HA and checkpointing.
 
 ```yaml
-  flinkConfiguration:
-    taskmanager.numberOfTaskSlots: "2"
+   flinkConfiguration:
+    high-availability.type: org.apache.flink.kubernetes.highavailability.KubernetesHaServicesFactory
+    high-availability.storageDir: 'file:///opt/flink/volume/flink-ha'
+    restart-strategy: failure-rate
+    restart-strategy.failure-rate.max-failures-per-interval: '10'
+    restart-strategy.failure-rate.failure-rate-interval: '10 min'
+    restart-strategy.failure-rate.delay: '30 s'
+    execution.checkpointing.interval: '5000'
+    execution.checkpointing.unaligned: 'false'
+    state.backend.type: rocksdb
+    state.backend.incremental: 'true'
+    state.backend.rocksdb.use-bloom-filter: 'true'
+    state.checkpoints.dir: 'file:///opt/flink/volume/flink-cp'
+    state.checkpoints.num-retained: '3'
+    state.savepoints.dir: 'file:///opt/flink/volume/flink-sp'
+    taskmanager.numberOfTaskSlots: '10'
+    table.exec.source.idle-timeout: '30 s'
 ```
-
-For Session cluster, there is no jobSpec. See [this deployment definition](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/basic-job-task-mgrs.yaml). Once a cluster is defined, it has a name and can be referenced to submit SessionJob.
-
-
-To help managing snapshots, there is another CR called [FlinkStateSnapshot](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/#flinkstatesnapshotspec)
-
-[For more detail see the CRD reference documentation.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/)
 
 ### Flink Config Update
 
-* Write operations fail when the pod creates a folder or updates the Flink config
+* If a write operations fail when the pod creates a folder or updates the Flink config assess the following:
 
   * Assess PVC and R/W access. Verify PVC configuration. Some storage classes or persistent volume types may have restrictions on directory creation
   * Verify security context for the pod. Modify the pod's security context to allow necessary permissions.
@@ -132,8 +153,10 @@ To help managing snapshots, there is another CR called [FlinkStateSnapshot](http
 
 ## Flink Session
 
-A Flink Session cluster is executed as a long-running Kubernetes Deployment. We may run multiple Flink jobs on a Session cluster. Each job needs to be submitted to the cluster after the cluster has been deployed.
-To deploy a job we need at least three components:
+For Session cluster, there is no jobSpec. See [this deployment definition](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/basic-job-task-mgrs.yaml). Once a cluster is defined, it has a name and can be referenced to submit SessionJob.
+
+It is executed as a long-running Kubernetes Deployment. We may run multiple Flink jobs on a Session cluster. Each job needs to be submitted to the cluster after the cluster has been deployed.
+To deploy a job, we need at least three components:
 
 * a Deployment which runs a JobManager
 * a Deployment for a pool of TaskManagers
@@ -144,33 +167,42 @@ For a deployment select the execution mode: `application, or session`. For produ
 
 ### Do Session Deployment
 
-See some [product examples](https://github.com/apache/flink-kubernetes-operator/tree/main/examples). See my manifests in `deployment/k8s` folder.
-
-* Deploy the JobManager and TaskManager to support session management
-
-```sh
-k apply -f basic-job-task-mgrs.yaml 
-```
-
-* Submit jobs with dedicated yaml: (change with the jar of the app to deploy)
+Flink has a [set of examples](https://github.com/apache/flink/blob/master/flink-examples/) like the [Car top speed computation with simulated record](https://github.com/apache/flink/blob/master/flink-examples/flink-examples-streaming/src/main/java/org/apache/flink/streaming/examples/windowing/TopSpeedWindowing.java). As this code is packaged in a jar available in maven repository we can declare a job session.
 
 ```yaml
 apiVersion: flink.apache.org/v1beta1
 kind: FlinkSessionJob
 metadata:
-  name: job-only-example
+  name: car-top-speed-job
 spec:
-  deploymentName: job-deployment-only-example
+  deploymentName: flink-session-cluster
   job:
-    jarURI: https://repo1.maven.org/maven2/org/apache/flink/flink-examples-streaming_2.12/1.16.1/flink-examples-streaming_2.12-1.16.1-TopSpeedWindowing.jar
+    jarURI: https://repo1.maven.org/maven2/org/apache/flink/flink-examples-streaming_2.12/1.17.2/flink-examples-streaming_2.12-1.17.2-TopSpeedWindowing.jar
     parallelism: 4
     upgradeMode: stateless
 ```
+
+Before deploying this job, be sure to deploy a session cluster using the following command:
+
+```sh
+# under deployment/k8s
+k apply -f basic-job-task-mgrs.yaml 
+```
+
+Once the job is deployed we can see the pod and then using the user interface the job continuously running:
+
+
 
 * Example of deploying Java based [SQL Runner](https://github.com/apache/flink-kubernetes-operator/blob/main/examples/flink-sql-runner-example/README.md) to interprete a Flink SQL script: package it as docker images, and deploy it with a Session Job. There is a equivalent for Python using [Pyflink](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/overview/).
 
     * [See the ported code for Java](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/sql-runner)
     * And for the [Python implementation](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/flink-python-sql-runner)
+
+
+### Flink State Snapshot
+
+
+To help managing snapshots, there is another CR called [FlinkStateSnapshot](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/#flinkstatesnapshotspec)
 
 
 
