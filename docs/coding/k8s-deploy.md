@@ -7,7 +7,11 @@ A flow is a packaged as a jar, so need to be in a docker image with the Flink ex
 
 Flink offers [a k8s Operator](https://flink.apache.org/news/2022/04/03/release-kubernetes-operator-0.1.0.html) to deploy and manage applications. This note summarize how to use this operator, with basic getting started yaml files.
 
-The operator takes care of submitting, savepointing, upgrading and generally managing Flink jobs using the built-in Flink Kubernetes integration.
+![](./diagrams/fk-operator-hl.drawio.png)
+
+The [operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) takes care of submitting, savepointing, upgrading and generally managing Flink jobs using the built-in Flink Kubernetes integration. It fully automates the entire lifecycle of job manager, task managers, and applications. As other operator it can run **namespace-scoped**, to get multiple versions of the operator in the same Kubernetes cluster, or **cluster-scoped** for highly distributed  deployment. 
+
+The custom resource definition that describes the schema of a FlinkDeployment is a cluster wide resource. The Operator continuously tracks cluster events relating to the FlinkDeployment and FlinkSessionJob custom resources. [The operator control flow is described in this note.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/concepts/controller-flow/) 
 
 ## Pre-requisites
 
@@ -18,7 +22,7 @@ helm version
 # version.BuildInfo{Version:"v3.9.0", GitCommit:"7ceeda6c585217a19a1131663d8cd1f7d641b2a7", GitTreeState:"clean", GoVersion:"go1.17.5"}
 ```
 
-* Install certitication manager once per k8s cluster: `kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.8.2/cert-manager.yaml`
+* Install a certitication manager, only one time per k8s cluster: `kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.8.2/cert-manager.yaml`
 * Get the [list of Flink releases here](https://downloads.apache.org/flink/)
 * Add Helm repo: 
 
@@ -63,6 +67,15 @@ NAME                      NAMESPACE   REVISION  UPDATED                         
 flink-kubernetes-operator flink-demo  1    	2022-07-28 19:00:31.459524 -0700 PDT	deployed flink-kubernetes-operator-1.0.1	1.0.1
 ```
 
+* Verify the k8s deployment for the operator
+
+```sh
+k describe deployment flink-kubernetes-operator
+```
+
+???- info "resources"
+    The operator uses a config map to define its  own configuration mounted to `/opt/flink/conf` and a volume to `/opt/flink/artifacts`, and a secrets to hold the certificates for the flink webhook.
+
 * In case of ImageBackOff issue, for example of minikube, it may come from the image name and the adoption of a private registry. (Using a minikube image load <> takes the image from docker and upload to private minikube registry)
 
 * If the pod is not running verify in the deployment the condition, we may need to add security policy, like in this OpenShift example:
@@ -73,18 +86,41 @@ oc adm policy add-scc-to-user privileged -z default
 
 and remove runAs elements in the deployment.yaml.
 
-To remove the operator
+* To remove the operator
 
 ```sh
 helm uninstall flink-kubernetes-operator
 ```
 
-### Custom Resources
+## Custom Resources
 
 Once the operator is running we can submit jobs using  `FlinkDeployment` (for Flink Application) and `FlinkSessionJob`Custom Resources.
-The FlinkDeployment spec is [here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-release-1.10/docs/custom-resource/overview/#flinkdeployment-spec-overview).
 
-Some personal examples of k8s deployments.
+The [FlinkDeployment spec is here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-release-1.10/docs/custom-resource/overview/#flinkdeployment-spec-overview) and is used to define Flink application (will have a job section) or session cluster (only job and task managers configuration).
+
+An **application deployment** must define the job (JobSpec) field with the `jarURI`, `parallelism`, `upgradeMode` one of (stateless/savepoint/last-state) and the desired `state` of the job (running/suspended). [See this sample app](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/basic-sample.yaml).
+
+```yaml
+job:
+    jarURI: local:///opt/flink/examples/streaming/StateMachineExample.jar
+    parallelism: 2
+    upgradeMode: stateless
+    state: running
+```
+
+`flinkConfiguration` is a hash map used to define  the Flink configuration, like, task slot, HA and checkpointing.
+
+```yaml
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "2"
+```
+
+For Session cluster, there is no jobSpec. See [this deployment definition](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/basic-job-task-mgrs.yaml). Once a cluster is defined, it has a name and can be referenced to submit SessionJob.
+
+
+To help managing snapshots, there is another CR called [FlinkStateSnapshot](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/#flinkstatesnapshotspec)
+
+[For more detail see the CRD reference documentation.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/)
 
 ### Flink Config Update
 

@@ -13,11 +13,13 @@ nav:
     - Java Table API: coding/table-api.md
     - Stateful function: coding/stateful-func.md
     - Complex Event Processing: coding/cep.md
+
   - Practices:
     - First Apps: coding/firstapp.md
     - Kubernetes Deployment: coding/k8s-deploy.md
     - Programming examples: coding/programming.md
     - Flink Cookbook: architecture/cookbook.md
+    - Flink on k8s Monitoring: techno/fk-k8s-monitor.md
   - Techno:
     - Confluent Cloud Flink: techno/ccloud-flink.md 
     - Kafka Integration: kafka.md

@@ -1,13 +1,14 @@
 apiVersion: flink.apache.org/v1beta1
 kind: FlinkDeployment
 metadata:
-  name: basic-session-deployment-only
+  name: flink-session-cluster
 spec:
   image: flink:1.19
   flinkVersion: v1_19
   flinkConfiguration:
     taskmanager.numberOfTaskSlots: "2"
   serviceAccount: flink
+  mode: native
   jobManager:
     resource:
       memory: "2048m"

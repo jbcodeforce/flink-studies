@@ -1,0 +1,861 @@
+id_4214,PB7526,Sedan,Wanda,yes,Sector 19,Sector 10,5
+id_4214,PB7526,Sedan,Wanda,no,'null','null','null'
+id_4214,PB7526,Sedan,Wanda,yes,Sector 6,Sector 15,1
+id_4214,PB7526,Sedan,Wanda,no,'null','null','null'
+id_4214,PB7526,Sedan,Wanda,no,'null','null','null'
+id_4214,PB7526,Sedan,Wanda,no,'null','null','null'
+id_4214,PB7526,Sedan,Wanda,no,'null','null','null'
+id_4214,PB7526,Sedan,Wanda,yes,Sector 4,Sector 34,4
+id_4214,PB7526,Sedan,Wanda,no,'null','null','null'
+id_4214,PB7526,Sedan,Wanda,no,'null','null','null'
+id_4214,PB7526,Sedan,Wanda,yes,Sector 21,Sector 34,3
+id_4214,PB7526,Sedan,Wanda,yes,Sector 26,Sector 36,3
+id_4214,PB7526,Sedan,Wanda,no,'null','null','null'
+id_4214,PB7526,Sedan,Wanda,yes,Sector 8,Sector 34,5
+id_4214,PB7526,Sedan,Wanda,yes,Sector 6,Sector 34,5
+id_4214,PB7526,Sedan,Wanda,yes,Sector 23,Sector 15,1
+id_4214,PB7526,Sedan,Wanda,yes,Sector 26,Sector 31,5
+id_4214,PB7526,Sedan,Wanda,no,'null','null','null'
+id_4214,PB7526,Sedan,Wanda,yes,Sector 14,Sector 15,1
+id_4214,PB7526,Sedan,Wanda,no,'null','null','null'
+id_4214,PB7526,Sedan,Wanda,yes,Sector 7,Sector 5,2
+id_6639,JK8733,Mini,Helene,yes,Sector 21,Sector 5,3
+id_6639,JK8733,Mini,Helene,no,'null','null','null'
+id_6639,JK8733,Mini,Helene,yes,Sector 18,Sector 15,2
+id_6639,JK8733,Mini,Helene,yes,Sector 2,Sector 12,5
+id_6639,JK8733,Mini,Helene,no,'null','null','null'
+id_6639,JK8733,Mini,Helene,yes,Sector 19,Sector 25,4
+id_6639,JK8733,Mini,Helene,no,'null','null','null'
+id_6639,JK8733,Mini,Helene,yes,Sector 21,Sector 16,4
+id_6639,JK8733,Mini,Helene,yes,Sector 14,Sector 16,4
+id_6639,JK8733,Mini,Helene,no,'null','null','null'
+id_6639,JK8733,Mini,Helene,no,'null','null','null'
+id_6639,JK8733,Mini,Helene,yes,Sector 8,Sector 5,4
+id_6639,JK8733,Mini,Helene,yes,Sector 14,Sector 10,5
+id_6639,JK8733,Mini,Helene,no,'null','null','null'
+id_6639,JK8733,Mini,Helene,yes,Sector 1,Sector 3,5
+id_6639,JK8733,Mini,Helene,no,'null','null','null'
+id_6639,JK8733,Mini,Helene,yes,Sector 2,Sector 11,5
+id_6639,JK8733,Mini,Helene,no,'null','null','null'
+id_6639,JK8733,Mini,Helene,no,'null','null','null'
+id_6639,JK8733,Mini,Helene,no,'null','null','null'
+id_6639,JK8733,Mini,Helene,yes,Sector 17,Sector 25,5
+id_1081,MH2174,MUV,Humberto,no,'null','null','null'
+id_1081,MH2174,MUV,Humberto,yes,Sector 18,Sector 22,1
+id_1081,MH2174,MUV,Humberto,yes,Sector 4,Sector 22,2
+id_1081,MH2174,MUV,Humberto,yes,Sector 6,Sector 31,5
+id_1081,MH2174,MUV,Humberto,no,'null','null','null'
+id_1081,MH2174,MUV,Humberto,yes,Sector 17,Sector 3,5
+id_1081,MH2174,MUV,Humberto,no,'null','null','null'
+id_1081,MH2174,MUV,Humberto,yes,Sector 18,Sector 31,3
+id_1081,MH2174,MUV,Humberto,no,'null','null','null'
+id_1081,MH2174,MUV,Humberto,no,'null','null','null'
+id_1081,MH2174,MUV,Humberto,yes,Sector 8,Sector 15,2
+id_1081,MH2174,MUV,Humberto,yes,Sector 14,Sector 11,2
+id_1081,MH2174,MUV,Humberto,yes,Sector 2,Sector 34,4
+id_1081,MH2174,MUV,Humberto,yes,Sector 2,Sector 10,2
+id_1081,MH2174,MUV,Humberto,yes,Sector 14,Sector 15,4
+id_1081,MH2174,MUV,Humberto,yes,Sector 17,Sector 5,1
+id_1081,MH2174,MUV,Humberto,yes,Sector 1,Sector 34,3
+id_1081,MH2174,MUV,Humberto,no,'null','null','null'
+id_1081,MH2174,MUV,Humberto,no,'null','null','null'
+id_1081,MH2174,MUV,Humberto,yes,Sector 2,Sector 22,1
+id_1081,MH2174,MUV,Humberto,no,'null','null','null'
+id_9326,GA6746,LUV,Sayuri,no,'null','null','null'
+id_9326,GA6746,LUV,Sayuri,no,'null','null','null'
+id_9326,GA6746,LUV,Sayuri,yes,Sector 8,Sector 9,4
+id_9326,GA6746,LUV,Sayuri,yes,Sector 8,Sector 31,1
+id_9326,GA6746,LUV,Sayuri,no,'null','null','null'
+id_9326,GA6746,LUV,Sayuri,yes,Sector 4,Sector 32,2
+id_9326,GA6746,LUV,Sayuri,yes,Sector 14,Sector 22,1
+id_9326,GA6746,LUV,Sayuri,yes,Sector 23,Sector 9,4
+id_9326,GA6746,LUV,Sayuri,yes,Sector 17,Sector 10,5
+id_9326,GA6746,LUV,Sayuri,yes,Sector 19,Sector 22,1
+id_9326,GA6746,LUV,Sayuri,no,'null','null','null'
+id_9326,GA6746,LUV,Sayuri,no,'null','null','null'
+id_9326,GA6746,LUV,Sayuri,yes,Sector 14,Sector 25,4
+id_9326,GA6746,LUV,Sayuri,no,'null','null','null'
+id_9326,GA6746,LUV,Sayuri,no,'null','null','null'
+id_9326,GA6746,LUV,Sayuri,no,'null','null','null'
+id_9326,GA6746,LUV,Sayuri,no,'null','null','null'
+id_9326,GA6746,LUV,Sayuri,no,'null','null','null'
+id_9326,GA6746,LUV,Sayuri,yes,Sector 18,Sector 12,4
+id_9326,GA6746,LUV,Sayuri,no,'null','null','null'
+id_9326,GA6746,LUV,Sayuri,yes,Sector 6,Sector 34,4
+id_6336,MH1961,Mini,Rafael,no,'null','null','null'
+id_6336,MH1961,Mini,Rafael,yes,Sector 1,Sector 15,4
+id_6336,MH1961,Mini,Rafael,yes,Sector 20,Sector 12,3
+id_6336,MH1961,Mini,Rafael,no,'null','null','null'
+id_6336,MH1961,Mini,Rafael,no,'null','null','null'
+id_6336,MH1961,Mini,Rafael,no,'null','null','null'
+id_6336,MH1961,Mini,Rafael,yes,Sector 20,Sector 22,3
+id_6336,MH1961,Mini,Rafael,yes,Sector 4,Sector 3,3
+id_6336,MH1961,Mini,Rafael,no,'null','null','null'
+id_6336,MH1961,Mini,Rafael,yes,Sector 8,Sector 15,1
+id_6336,MH1961,Mini,Rafael,no,'null','null','null'
+id_6336,MH1961,Mini,Rafael,no,'null','null','null'
+id_6336,MH1961,Mini,Rafael,yes,Sector 19,Sector 32,5
+id_6336,MH1961,Mini,Rafael,no,'null','null','null'
+id_6336,MH1961,Mini,Rafael,no,'null','null','null'
+id_6336,MH1961,Mini,Rafael,no,'null','null','null'
+id_6336,MH1961,Mini,Rafael,no,'null','null','null'
+id_6336,MH1961,Mini,Rafael,yes,Sector 8,Sector 10,2
+id_6336,MH1961,Mini,Rafael,yes,Sector 2,Sector 11,4
+id_6336,MH1961,Mini,Rafael,yes,Sector 23,Sector 9,5
+id_6336,MH1961,Mini,Rafael,no,'null','null','null'
+id_2326,GA4258,Sedan,Miyako,no,'null','null','null'
+id_2326,GA4258,Sedan,Miyako,no,'null','null','null'
+id_2326,GA4258,Sedan,Miyako,yes,Sector 8,Sector 11,1
+id_2326,GA4258,Sedan,Miyako,yes,Sector 20,Sector 36,2
+id_2326,GA4258,Sedan,Miyako,yes,Sector 23,Sector 9,4
+id_2326,GA4258,Sedan,Miyako,yes,Sector 18,Sector 15,1
+id_2326,GA4258,Sedan,Miyako,yes,Sector 2,Sector 9,2
+id_2326,GA4258,Sedan,Miyako,no,'null','null','null'
+id_2326,GA4258,Sedan,Miyako,yes,Sector 23,Sector 12,4
+id_2326,GA4258,Sedan,Miyako,no,'null','null','null'
+id_2326,GA4258,Sedan,Miyako,yes,Sector 20,Sector 32,1
+id_2326,GA4258,Sedan,Miyako,no,'null','null','null'
+id_2326,GA4258,Sedan,Miyako,no,'null','null','null'
+id_2326,GA4258,Sedan,Miyako,no,'null','null','null'
+id_2326,GA4258,Sedan,Miyako,yes,Sector 20,Sector 36,1
+id_2326,GA4258,Sedan,Miyako,no,'null','null','null'
+id_2326,GA4258,Sedan,Miyako,yes,Sector 17,Sector 11,1
+id_2326,GA4258,Sedan,Miyako,no,'null','null','null'
+id_2326,GA4258,Sedan,Miyako,yes,Sector 23,Sector 22,3
+id_2326,GA4258,Sedan,Miyako,no,'null','null','null'
+id_2326,GA4258,Sedan,Miyako,no,'null','null','null'
+id_4060,JK3315,Luxary,Oscar,no,'null','null','null'
+id_4060,JK3315,Luxary,Oscar,yes,Sector 6,Sector 12,2
+id_4060,JK3315,Luxary,Oscar,no,'null','null','null'
+id_4060,JK3315,Luxary,Oscar,yes,Sector 23,Sector 22,4
+id_4060,JK3315,Luxary,Oscar,no,'null','null','null'
+id_4060,JK3315,Luxary,Oscar,no,'null','null','null'
+id_4060,JK3315,Luxary,Oscar,no,'null','null','null'
+id_4060,JK3315,Luxary,Oscar,yes,Sector 19,Sector 32,3
+id_4060,JK3315,Luxary,Oscar,no,'null','null','null'
+id_4060,JK3315,Luxary,Oscar,yes,Sector 17,Sector 12,2
+id_4060,JK3315,Luxary,Oscar,no,'null','null','null'
+id_4060,JK3315,Luxary,Oscar,yes,Sector 6,Sector 9,2
+id_4060,JK3315,Luxary,Oscar,yes,Sector 20,Sector 5,5
+id_4060,JK3315,Luxary,Oscar,no,'null','null','null'
+id_4060,JK3315,Luxary,Oscar,yes,Sector 19,Sector 16,3
+id_4060,JK3315,Luxary,Oscar,yes,Sector 8,Sector 36,1
+id_4060,JK3315,Luxary,Oscar,no,'null','null','null'
+id_4060,JK3315,Luxary,Oscar,yes,Sector 14,Sector 15,5
+id_4060,JK3315,Luxary,Oscar,no,'null','null','null'
+id_4060,JK3315,Luxary,Oscar,no,'null','null','null'
+id_4060,JK3315,Luxary,Oscar,no,'null','null','null'
+id_2260,GA3975,LUV,Tanya,no,'null','null','null'
+id_2260,GA3975,LUV,Tanya,no,'null','null','null'
+id_2260,GA3975,LUV,Tanya,yes,Sector 23,Sector 11,4
+id_2260,GA3975,LUV,Tanya,yes,Sector 6,Sector 9,5
+id_2260,GA3975,LUV,Tanya,yes,Sector 8,Sector 11,3
+id_2260,GA3975,LUV,Tanya,yes,Sector 7,Sector 25,3
+id_2260,GA3975,LUV,Tanya,yes,Sector 21,Sector 5,5
+id_2260,GA3975,LUV,Tanya,yes,Sector 6,Sector 5,3
+id_2260,GA3975,LUV,Tanya,yes,Sector 6,Sector 9,1
+id_2260,GA3975,LUV,Tanya,yes,Sector 1,Sector 22,2
+id_2260,GA3975,LUV,Tanya,yes,Sector 20,Sector 12,5
+id_2260,GA3975,LUV,Tanya,no,'null','null','null'
+id_2260,GA3975,LUV,Tanya,yes,Sector 8,Sector 22,3
+id_2260,GA3975,LUV,Tanya,yes,Sector 8,Sector 9,5
+id_2260,GA3975,LUV,Tanya,yes,Sector 14,Sector 16,5
+id_2260,GA3975,LUV,Tanya,no,'null','null','null'
+id_2260,GA3975,LUV,Tanya,yes,Sector 2,Sector 22,2
+id_2260,GA3975,LUV,Tanya,yes,Sector 19,Sector 31,3
+id_2260,GA3975,LUV,Tanya,yes,Sector 21,Sector 22,1
+id_2260,GA3975,LUV,Tanya,no,'null','null','null'
+id_2260,GA3975,LUV,Tanya,no,'null','null','null'
+id_7639,DL4328,Luxary,Erin,yes,Sector 18,Sector 15,2
+id_7639,DL4328,Luxary,Erin,no,'null','null','null'
+id_7639,DL4328,Luxary,Erin,yes,Sector 23,Sector 34,4
+id_7639,DL4328,Luxary,Erin,yes,Sector 17,Sector 15,4
+id_7639,DL4328,Luxary,Erin,yes,Sector 1,Sector 16,4
+id_7639,DL4328,Luxary,Erin,yes,Sector 19,Sector 16,3
+id_7639,DL4328,Luxary,Erin,yes,Sector 23,Sector 25,3
+id_7639,DL4328,Luxary,Erin,yes,Sector 14,Sector 25,1
+id_7639,DL4328,Luxary,Erin,no,'null','null','null'
+id_7639,DL4328,Luxary,Erin,yes,Sector 18,Sector 9,5
+id_7639,DL4328,Luxary,Erin,yes,Sector 1,Sector 12,4
+id_7639,DL4328,Luxary,Erin,yes,Sector 7,Sector 9,5
+id_7639,DL4328,Luxary,Erin,no,'null','null','null'
+id_7639,DL4328,Luxary,Erin,no,'null','null','null'
+id_7639,DL4328,Luxary,Erin,yes,Sector 19,Sector 9,4
+id_7639,DL4328,Luxary,Erin,yes,Sector 6,Sector 34,2
+id_7639,DL4328,Luxary,Erin,no,'null','null','null'
+id_7639,DL4328,Luxary,Erin,no,'null','null','null'
+id_7639,DL4328,Luxary,Erin,no,'null','null','null'
+id_7639,DL4328,Luxary,Erin,no,'null','null','null'
+id_7639,DL4328,Luxary,Erin,no,'null','null','null'
+id_2439,JK1180,SUV,Reina,yes,Sector 18,Sector 31,2
+id_2439,JK1180,SUV,Reina,no,'null','null','null'
+id_2439,JK1180,SUV,Reina,no,'null','null','null'
+id_2439,JK1180,SUV,Reina,yes,Sector 14,Sector 10,1
+id_2439,JK1180,SUV,Reina,yes,Sector 19,Sector 25,2
+id_2439,JK1180,SUV,Reina,no,'null','null','null'
+id_2439,JK1180,SUV,Reina,yes,Sector 8,Sector 36,5
+id_2439,JK1180,SUV,Reina,yes,Sector 17,Sector 3,4
+id_2439,JK1180,SUV,Reina,no,'null','null','null'
+id_2439,JK1180,SUV,Reina,yes,Sector 2,Sector 31,2
+id_2439,JK1180,SUV,Reina,yes,Sector 6,Sector 31,3
+id_2439,JK1180,SUV,Reina,no,'null','null','null'
+id_2439,JK1180,SUV,Reina,yes,Sector 2,Sector 12,3
+id_2439,JK1180,SUV,Reina,no,'null','null','null'
+id_2439,JK1180,SUV,Reina,no,'null','null','null'
+id_2439,JK1180,SUV,Reina,no,'null','null','null'
+id_2439,JK1180,SUV,Reina,no,'null','null','null'
+id_2439,JK1180,SUV,Reina,yes,Sector 14,Sector 22,4
+id_2439,JK1180,SUV,Reina,yes,Sector 17,Sector 22,3
+id_2439,JK1180,SUV,Reina,no,'null','null','null'
+id_2439,JK1180,SUV,Reina,yes,Sector 2,Sector 10,1
+id_2732,PB7953,Sedan,Itoe,no,'null','null','null'
+id_2732,PB7953,Sedan,Itoe,no,'null','null','null'
+id_2732,PB7953,Sedan,Itoe,yes,Sector 8,Sector 9,2
+id_2732,PB7953,Sedan,Itoe,no,'null','null','null'
+id_2732,PB7953,Sedan,Itoe,no,'null','null','null'
+id_2732,PB7953,Sedan,Itoe,no,'null','null','null'
+id_2732,PB7953,Sedan,Itoe,no,'null','null','null'
+id_2732,PB7953,Sedan,Itoe,no,'null','null','null'
+id_2732,PB7953,Sedan,Itoe,no,'null','null','null'
+id_2732,PB7953,Sedan,Itoe,yes,Sector 7,Sector 34,3
+id_2732,PB7953,Sedan,Itoe,no,'null','null','null'
+id_2732,PB7953,Sedan,Itoe,yes,Sector 26,Sector 25,4
+id_2732,PB7953,Sedan,Itoe,no,'null','null','null'
+id_2732,PB7953,Sedan,Itoe,no,'null','null','null'
+id_2732,PB7953,Sedan,Itoe,yes,Sector 18,Sector 32,5
+id_2732,PB7953,Sedan,Itoe,yes,Sector 26,Sector 34,4
+id_2732,PB7953,Sedan,Itoe,yes,Sector 18,Sector 31,3
+id_2732,PB7953,Sedan,Itoe,no,'null','null','null'
+id_2732,PB7953,Sedan,Itoe,no,'null','null','null'
+id_2732,PB7953,Sedan,Itoe,yes,Sector 23,Sector 12,5
+id_2732,PB7953,Sedan,Itoe,no,'null','null','null'
+id_2609,JK7386,Luxary,Helene,yes,Sector 19,Sector 15,1
+id_2609,JK7386,Luxary,Helene,no,'null','null','null'
+id_2609,JK7386,Luxary,Helene,no,'null','null','null'
+id_2609,JK7386,Luxary,Helene,yes,Sector 1,Sector 34,5
+id_2609,JK7386,Luxary,Helene,no,'null','null','null'
+id_2609,JK7386,Luxary,Helene,yes,Sector 23,Sector 5,3
+id_2609,JK7386,Luxary,Helene,yes,Sector 8,Sector 5,2
+id_2609,JK7386,Luxary,Helene,yes,Sector 6,Sector 32,3
+id_2609,JK7386,Luxary,Helene,yes,Sector 26,Sector 11,5
+id_2609,JK7386,Luxary,Helene,no,'null','null','null'
+id_2609,JK7386,Luxary,Helene,yes,Sector 17,Sector 32,3
+id_2609,JK7386,Luxary,Helene,yes,Sector 4,Sector 10,4
+id_2609,JK7386,Luxary,Helene,yes,Sector 8,Sector 32,5
+id_2609,JK7386,Luxary,Helene,yes,Sector 21,Sector 15,5
+id_2609,JK7386,Luxary,Helene,yes,Sector 8,Sector 5,5
+id_2609,JK7386,Luxary,Helene,yes,Sector 19,Sector 32,5
+id_2609,JK7386,Luxary,Helene,yes,Sector 7,Sector 31,4
+id_2609,JK7386,Luxary,Helene,no,'null','null','null'
+id_2609,JK7386,Luxary,Helene,yes,Sector 14,Sector 5,2
+id_2609,JK7386,Luxary,Helene,no,'null','null','null'
+id_2609,JK7386,Luxary,Helene,yes,Sector 14,Sector 25,4
+id_2897,GA2541,SUV,Gordon,no,'null','null','null'
+id_2897,GA2541,SUV,Gordon,yes,Sector 23,Sector 11,3
+id_2897,GA2541,SUV,Gordon,yes,Sector 17,Sector 22,2
+id_2897,GA2541,SUV,Gordon,no,'null','null','null'
+id_2897,GA2541,SUV,Gordon,no,'null','null','null'
+id_2897,GA2541,SUV,Gordon,no,'null','null','null'
+id_2897,GA2541,SUV,Gordon,no,'null','null','null'
+id_2897,GA2541,SUV,Gordon,no,'null','null','null'
+id_2897,GA2541,SUV,Gordon,yes,Sector 7,Sector 32,1
+id_2897,GA2541,SUV,Gordon,yes,Sector 8,Sector 34,3
+id_2897,GA2541,SUV,Gordon,no,'null','null','null'
+id_2897,GA2541,SUV,Gordon,no,'null','null','null'
+id_2897,GA2541,SUV,Gordon,no,'null','null','null'
+id_2897,GA2541,SUV,Gordon,yes,Sector 1,Sector 11,5
+id_2897,GA2541,SUV,Gordon,yes,Sector 17,Sector 34,1
+id_2897,GA2541,SUV,Gordon,yes,Sector 17,Sector 5,1
+id_2897,GA2541,SUV,Gordon,no,'null','null','null'
+id_2897,GA2541,SUV,Gordon,yes,Sector 14,Sector 36,5
+id_2897,GA2541,SUV,Gordon,no,'null','null','null'
+id_2897,GA2541,SUV,Gordon,no,'null','null','null'
+id_2897,GA2541,SUV,Gordon,yes,Sector 23,Sector 32,1
+id_8034,AS1701,LUV,Stan,yes,Sector 14,Sector 3,2
+id_8034,AS1701,LUV,Stan,no,'null','null','null'
+id_8034,AS1701,LUV,Stan,no,'null','null','null'
+id_8034,AS1701,LUV,Stan,no,'null','null','null'
+id_8034,AS1701,LUV,Stan,no,'null','null','null'
+id_8034,AS1701,LUV,Stan,no,'null','null','null'
+id_8034,AS1701,LUV,Stan,no,'null','null','null'
+id_8034,AS1701,LUV,Stan,no,'null','null','null'
+id_8034,AS1701,LUV,Stan,no,'null','null','null'
+id_8034,AS1701,LUV,Stan,no,'null','null','null'
+id_8034,AS1701,LUV,Stan,no,'null','null','null'
+id_8034,AS1701,LUV,Stan,no,'null','null','null'
+id_8034,AS1701,LUV,Stan,yes,Sector 23,Sector 34,4
+id_8034,AS1701,LUV,Stan,yes,Sector 20,Sector 10,1
+id_8034,AS1701,LUV,Stan,yes,Sector 6,Sector 36,4
+id_8034,AS1701,LUV,Stan,no,'null','null','null'
+id_8034,AS1701,LUV,Stan,yes,Sector 6,Sector 15,3
+id_8034,AS1701,LUV,Stan,yes,Sector 14,Sector 32,2
+id_8034,AS1701,LUV,Stan,yes,Sector 6,Sector 10,4
+id_8034,AS1701,LUV,Stan,yes,Sector 19,Sector 10,5
+id_8034,AS1701,LUV,Stan,no,'null','null','null'
+id_2383,JK4542,LUV,Kumiko,yes,Sector 6,Sector 15,1
+id_2383,JK4542,LUV,Kumiko,no,'null','null','null'
+id_2383,JK4542,LUV,Kumiko,no,'null','null','null'
+id_2383,JK4542,LUV,Kumiko,no,'null','null','null'
+id_2383,JK4542,LUV,Kumiko,no,'null','null','null'
+id_2383,JK4542,LUV,Kumiko,yes,Sector 4,Sector 34,4
+id_2383,JK4542,LUV,Kumiko,no,'null','null','null'
+id_2383,JK4542,LUV,Kumiko,no,'null','null','null'
+id_2383,JK4542,LUV,Kumiko,yes,Sector 21,Sector 34,3
+id_2383,JK4542,LUV,Kumiko,yes,Sector 26,Sector 36,3
+id_2383,JK4542,LUV,Kumiko,no,'null','null','null'
+id_2383,JK4542,LUV,Kumiko,yes,Sector 8,Sector 34,5
+id_2383,JK4542,LUV,Kumiko,yes,Sector 6,Sector 34,5
+id_2383,JK4542,LUV,Kumiko,yes,Sector 23,Sector 15,1
+id_2383,JK4542,LUV,Kumiko,yes,Sector 26,Sector 31,5
+id_2383,JK4542,LUV,Kumiko,no,'null','null','null'
+id_2383,JK4542,LUV,Kumiko,yes,Sector 14,Sector 15,1
+id_2383,JK4542,LUV,Kumiko,no,'null','null','null'
+id_2383,JK4542,LUV,Kumiko,yes,Sector 7,Sector 5,2
+id_2383,JK4542,LUV,Kumiko,yes,Sector 21,Sector 5,3
+id_2383,JK4542,LUV,Kumiko,no,'null','null','null'
+id_6270,KA8000,LUV,Virginie,yes,Sector 18,Sector 15,2
+id_6270,KA8000,LUV,Virginie,yes,Sector 2,Sector 12,5
+id_6270,KA8000,LUV,Virginie,no,'null','null','null'
+id_6270,KA8000,LUV,Virginie,yes,Sector 19,Sector 25,4
+id_6270,KA8000,LUV,Virginie,no,'null','null','null'
+id_6270,KA8000,LUV,Virginie,yes,Sector 21,Sector 16,4
+id_6270,KA8000,LUV,Virginie,yes,Sector 14,Sector 16,4
+id_6270,KA8000,LUV,Virginie,no,'null','null','null'
+id_6270,KA8000,LUV,Virginie,no,'null','null','null'
+id_6270,KA8000,LUV,Virginie,yes,Sector 8,Sector 5,4
+id_6270,KA8000,LUV,Virginie,yes,Sector 14,Sector 10,5
+id_6270,KA8000,LUV,Virginie,no,'null','null','null'
+id_6270,KA8000,LUV,Virginie,yes,Sector 1,Sector 3,5
+id_6270,KA8000,LUV,Virginie,no,'null','null','null'
+id_6270,KA8000,LUV,Virginie,yes,Sector 2,Sector 11,5
+id_6270,KA8000,LUV,Virginie,no,'null','null','null'
+id_6270,KA8000,LUV,Virginie,no,'null','null','null'
+id_6270,KA8000,LUV,Virginie,no,'null','null','null'
+id_6270,KA8000,LUV,Virginie,yes,Sector 17,Sector 25,5
+id_6270,KA8000,LUV,Virginie,no,'null','null','null'
+id_6270,KA8000,LUV,Virginie,yes,Sector 18,Sector 22,1
+id_5562,PB6532,Luxary,Sayuri,yes,Sector 4,Sector 22,2
+id_5562,PB6532,Luxary,Sayuri,yes,Sector 6,Sector 31,5
+id_5562,PB6532,Luxary,Sayuri,no,'null','null','null'
+id_5562,PB6532,Luxary,Sayuri,yes,Sector 17,Sector 3,5
+id_5562,PB6532,Luxary,Sayuri,no,'null','null','null'
+id_5562,PB6532,Luxary,Sayuri,yes,Sector 18,Sector 31,3
+id_5562,PB6532,Luxary,Sayuri,no,'null','null','null'
+id_5562,PB6532,Luxary,Sayuri,no,'null','null','null'
+id_5562,PB6532,Luxary,Sayuri,yes,Sector 8,Sector 15,2
+id_5562,PB6532,Luxary,Sayuri,yes,Sector 14,Sector 11,2
+id_5562,PB6532,Luxary,Sayuri,yes,Sector 2,Sector 34,4
+id_5562,PB6532,Luxary,Sayuri,yes,Sector 2,Sector 10,2
+id_5562,PB6532,Luxary,Sayuri,yes,Sector 14,Sector 15,4
+id_5562,PB6532,Luxary,Sayuri,yes,Sector 17,Sector 5,1
+id_5562,PB6532,Luxary,Sayuri,yes,Sector 1,Sector 34,3
+id_5562,PB6532,Luxary,Sayuri,no,'null','null','null'
+id_5562,PB6532,Luxary,Sayuri,no,'null','null','null'
+id_5562,PB6532,Luxary,Sayuri,yes,Sector 2,Sector 22,1
+id_5562,PB6532,Luxary,Sayuri,no,'null','null','null'
+id_5562,PB6532,Luxary,Sayuri,no,'null','null','null'
+id_5562,PB6532,Luxary,Sayuri,no,'null','null','null'
+id_7685,JK7289,MUV,Nicole,yes,Sector 8,Sector 9,4
+id_7685,JK7289,MUV,Nicole,yes,Sector 8,Sector 31,1
+id_7685,JK7289,MUV,Nicole,no,'null','null','null'
+id_7685,JK7289,MUV,Nicole,yes,Sector 4,Sector 32,2
+id_7685,JK7289,MUV,Nicole,yes,Sector 14,Sector 22,1
+id_7685,JK7289,MUV,Nicole,yes,Sector 23,Sector 9,4
+id_7685,JK7289,MUV,Nicole,yes,Sector 17,Sector 10,5
+id_7685,JK7289,MUV,Nicole,yes,Sector 19,Sector 22,1
+id_7685,JK7289,MUV,Nicole,no,'null','null','null'
+id_7685,JK7289,MUV,Nicole,no,'null','null','null'
+id_7685,JK7289,MUV,Nicole,yes,Sector 14,Sector 25,4
+id_7685,JK7289,MUV,Nicole,no,'null','null','null'
+id_7685,JK7289,MUV,Nicole,no,'null','null','null'
+id_7685,JK7289,MUV,Nicole,no,'null','null','null'
+id_7685,JK7289,MUV,Nicole,no,'null','null','null'
+id_7685,JK7289,MUV,Nicole,no,'null','null','null'
+id_7685,JK7289,MUV,Nicole,yes,Sector 18,Sector 12,4
+id_7685,JK7289,MUV,Nicole,no,'null','null','null'
+id_7685,JK7289,MUV,Nicole,yes,Sector 6,Sector 34,4
+id_7685,JK7289,MUV,Nicole,no,'null','null','null'
+id_7685,JK7289,MUV,Nicole,yes,Sector 1,Sector 15,4
+id_7038,AS5079,Luxary,Lili,yes,Sector 20,Sector 12,3
+id_7038,AS5079,Luxary,Lili,no,'null','null','null'
+id_7038,AS5079,Luxary,Lili,no,'null','null','null'
+id_7038,AS5079,Luxary,Lili,no,'null','null','null'
+id_7038,AS5079,Luxary,Lili,yes,Sector 20,Sector 22,3
+id_7038,AS5079,Luxary,Lili,yes,Sector 4,Sector 3,3
+id_7038,AS5079,Luxary,Lili,no,'null','null','null'
+id_7038,AS5079,Luxary,Lili,yes,Sector 8,Sector 15,1
+id_7038,AS5079,Luxary,Lili,no,'null','null','null'
+id_7038,AS5079,Luxary,Lili,no,'null','null','null'
+id_7038,AS5079,Luxary,Lili,yes,Sector 19,Sector 32,5
+id_7038,AS5079,Luxary,Lili,no,'null','null','null'
+id_7038,AS5079,Luxary,Lili,no,'null','null','null'
+id_7038,AS5079,Luxary,Lili,no,'null','null','null'
+id_7038,AS5079,Luxary,Lili,no,'null','null','null'
+id_7038,AS5079,Luxary,Lili,yes,Sector 8,Sector 10,2
+id_7038,AS5079,Luxary,Lili,yes,Sector 2,Sector 11,4
+id_7038,AS5079,Luxary,Lili,yes,Sector 23,Sector 9,5
+id_7038,AS5079,Luxary,Lili,no,'null','null','null'
+id_7038,AS5079,Luxary,Lili,no,'null','null','null'
+id_7038,AS5079,Luxary,Lili,no,'null','null','null'
+id_4865,AS8710,Hatchback,Iris,yes,Sector 8,Sector 11,1
+id_4865,AS8710,Hatchback,Iris,yes,Sector 20,Sector 36,2
+id_4865,AS8710,Hatchback,Iris,yes,Sector 23,Sector 9,4
+id_4865,AS8710,Hatchback,Iris,yes,Sector 18,Sector 15,1
+id_4865,AS8710,Hatchback,Iris,yes,Sector 2,Sector 9,2
+id_4865,AS8710,Hatchback,Iris,no,'null','null','null'
+id_4865,AS8710,Hatchback,Iris,yes,Sector 23,Sector 12,4
+id_4865,AS8710,Hatchback,Iris,no,'null','null','null'
+id_4865,AS8710,Hatchback,Iris,yes,Sector 20,Sector 32,1
+id_4865,AS8710,Hatchback,Iris,no,'null','null','null'
+id_4865,AS8710,Hatchback,Iris,no,'null','null','null'
+id_4865,AS8710,Hatchback,Iris,no,'null','null','null'
+id_4865,AS8710,Hatchback,Iris,yes,Sector 20,Sector 36,1
+id_4865,AS8710,Hatchback,Iris,no,'null','null','null'
+id_4865,AS8710,Hatchback,Iris,yes,Sector 17,Sector 11,1
+id_4865,AS8710,Hatchback,Iris,no,'null','null','null'
+id_4865,AS8710,Hatchback,Iris,yes,Sector 23,Sector 22,3
+id_4865,AS8710,Hatchback,Iris,no,'null','null','null'
+id_4865,AS8710,Hatchback,Iris,no,'null','null','null'
+id_4865,AS8710,Hatchback,Iris,no,'null','null','null'
+id_4865,AS8710,Hatchback,Iris,yes,Sector 6,Sector 12,2
+id_8393,DL2434,Sedan,Nate,no,'null','null','null'
+id_8393,DL2434,Sedan,Nate,yes,Sector 23,Sector 22,4
+id_8393,DL2434,Sedan,Nate,no,'null','null','null'
+id_8393,DL2434,Sedan,Nate,no,'null','null','null'
+id_8393,DL2434,Sedan,Nate,no,'null','null','null'
+id_8393,DL2434,Sedan,Nate,yes,Sector 19,Sector 32,3
+id_8393,DL2434,Sedan,Nate,no,'null','null','null'
+id_8393,DL2434,Sedan,Nate,yes,Sector 17,Sector 12,2
+id_8393,DL2434,Sedan,Nate,no,'null','null','null'
+id_8393,DL2434,Sedan,Nate,yes,Sector 6,Sector 9,2
+id_8393,DL2434,Sedan,Nate,yes,Sector 20,Sector 5,5
+id_8393,DL2434,Sedan,Nate,no,'null','null','null'
+id_8393,DL2434,Sedan,Nate,yes,Sector 19,Sector 16,3
+id_8393,DL2434,Sedan,Nate,yes,Sector 8,Sector 36,1
+id_8393,DL2434,Sedan,Nate,no,'null','null','null'
+id_8393,DL2434,Sedan,Nate,yes,Sector 14,Sector 15,5
+id_8393,DL2434,Sedan,Nate,no,'null','null','null'
+id_8393,DL2434,Sedan,Nate,no,'null','null','null'
+id_8393,DL2434,Sedan,Nate,no,'null','null','null'
+id_8393,DL2434,Sedan,Nate,no,'null','null','null'
+id_8393,DL2434,Sedan,Nate,no,'null','null','null'
+id_8552,PB2318,MUV,Hanna,yes,Sector 23,Sector 11,4
+id_8552,PB2318,MUV,Hanna,yes,Sector 6,Sector 9,5
+id_8552,PB2318,MUV,Hanna,yes,Sector 8,Sector 11,3
+id_8552,PB2318,MUV,Hanna,yes,Sector 7,Sector 25,3
+id_8552,PB2318,MUV,Hanna,yes,Sector 21,Sector 5,5
+id_8552,PB2318,MUV,Hanna,yes,Sector 6,Sector 5,3
+id_8552,PB2318,MUV,Hanna,yes,Sector 6,Sector 9,1
+id_8552,PB2318,MUV,Hanna,yes,Sector 1,Sector 22,2
+id_8552,PB2318,MUV,Hanna,yes,Sector 20,Sector 12,5
+id_8552,PB2318,MUV,Hanna,no,'null','null','null'
+id_8552,PB2318,MUV,Hanna,yes,Sector 8,Sector 22,3
+id_8552,PB2318,MUV,Hanna,yes,Sector 8,Sector 9,5
+id_8552,PB2318,MUV,Hanna,yes,Sector 14,Sector 16,5
+id_8552,PB2318,MUV,Hanna,no,'null','null','null'
+id_8552,PB2318,MUV,Hanna,yes,Sector 2,Sector 22,2
+id_8552,PB2318,MUV,Hanna,yes,Sector 19,Sector 31,3
+id_8552,PB2318,MUV,Hanna,yes,Sector 21,Sector 22,1
+id_8552,PB2318,MUV,Hanna,no,'null','null','null'
+id_8552,PB2318,MUV,Hanna,no,'null','null','null'
+id_8552,PB2318,MUV,Hanna,yes,Sector 18,Sector 15,2
+id_8552,PB2318,MUV,Hanna,no,'null','null','null'
+id_2383,PB7219,MUV,Youko,yes,Sector 23,Sector 34,4
+id_2383,PB7219,MUV,Youko,yes,Sector 17,Sector 15,4
+id_2383,PB7219,MUV,Youko,yes,Sector 1,Sector 16,4
+id_2383,PB7219,MUV,Youko,yes,Sector 19,Sector 16,3
+id_2383,PB7219,MUV,Youko,yes,Sector 23,Sector 25,3
+id_2383,PB7219,MUV,Youko,yes,Sector 14,Sector 25,1
+id_2383,PB7219,MUV,Youko,no,'null','null','null'
+id_2383,PB7219,MUV,Youko,yes,Sector 18,Sector 9,5
+id_2383,PB7219,MUV,Youko,yes,Sector 1,Sector 12,4
+id_2383,PB7219,MUV,Youko,yes,Sector 7,Sector 9,5
+id_2383,PB7219,MUV,Youko,no,'null','null','null'
+id_2383,PB7219,MUV,Youko,no,'null','null','null'
+id_2383,PB7219,MUV,Youko,yes,Sector 19,Sector 9,4
+id_2383,PB7219,MUV,Youko,yes,Sector 6,Sector 34,2
+id_2383,PB7219,MUV,Youko,no,'null','null','null'
+id_2383,PB7219,MUV,Youko,no,'null','null','null'
+id_2383,PB7219,MUV,Youko,no,'null','null','null'
+id_2383,PB7219,MUV,Youko,no,'null','null','null'
+id_2383,PB7219,MUV,Youko,no,'null','null','null'
+id_2383,PB7219,MUV,Youko,yes,Sector 18,Sector 31,2
+id_2383,PB7219,MUV,Youko,no,'null','null','null'
+id_3911,DL7076,SUV,Lee,no,'null','null','null'
+id_3911,DL7076,SUV,Lee,yes,Sector 14,Sector 10,1
+id_3911,DL7076,SUV,Lee,yes,Sector 19,Sector 25,2
+id_3911,DL7076,SUV,Lee,no,'null','null','null'
+id_3911,DL7076,SUV,Lee,yes,Sector 8,Sector 36,5
+id_3911,DL7076,SUV,Lee,yes,Sector 17,Sector 3,4
+id_3911,DL7076,SUV,Lee,no,'null','null','null'
+id_3911,DL7076,SUV,Lee,yes,Sector 2,Sector 31,2
+id_3911,DL7076,SUV,Lee,yes,Sector 6,Sector 31,3
+id_3911,DL7076,SUV,Lee,no,'null','null','null'
+id_3911,DL7076,SUV,Lee,yes,Sector 2,Sector 12,3
+id_3911,DL7076,SUV,Lee,no,'null','null','null'
+id_3911,DL7076,SUV,Lee,no,'null','null','null'
+id_3911,DL7076,SUV,Lee,no,'null','null','null'
+id_3911,DL7076,SUV,Lee,no,'null','null','null'
+id_3911,DL7076,SUV,Lee,yes,Sector 14,Sector 22,4
+id_3911,DL7076,SUV,Lee,yes,Sector 17,Sector 22,3
+id_3911,DL7076,SUV,Lee,no,'null','null','null'
+id_3911,DL7076,SUV,Lee,yes,Sector 2,Sector 10,1
+id_3911,DL7076,SUV,Lee,no,'null','null','null'
+id_3911,DL7076,SUV,Lee,no,'null','null','null'
+id_4798,KA8427,LUV,Lee,yes,Sector 8,Sector 9,2
+id_4798,KA8427,LUV,Lee,no,'null','null','null'
+id_4798,KA8427,LUV,Lee,no,'null','null','null'
+id_4798,KA8427,LUV,Lee,no,'null','null','null'
+id_4798,KA8427,LUV,Lee,no,'null','null','null'
+id_4798,KA8427,LUV,Lee,no,'null','null','null'
+id_4798,KA8427,LUV,Lee,no,'null','null','null'
+id_4798,KA8427,LUV,Lee,yes,Sector 7,Sector 34,3
+id_4798,KA8427,LUV,Lee,no,'null','null','null'
+id_4798,KA8427,LUV,Lee,yes,Sector 26,Sector 25,4
+id_4798,KA8427,LUV,Lee,no,'null','null','null'
+id_4798,KA8427,LUV,Lee,no,'null','null','null'
+id_4798,KA8427,LUV,Lee,yes,Sector 18,Sector 32,5
+id_4798,KA8427,LUV,Lee,yes,Sector 26,Sector 34,4
+id_4798,KA8427,LUV,Lee,yes,Sector 18,Sector 31,3
+id_4798,KA8427,LUV,Lee,no,'null','null','null'
+id_4798,KA8427,LUV,Lee,no,'null','null','null'
+id_4798,KA8427,LUV,Lee,yes,Sector 23,Sector 12,5
+id_4798,KA8427,LUV,Lee,no,'null','null','null'
+id_4798,KA8427,LUV,Lee,yes,Sector 19,Sector 15,1
+id_4798,KA8427,LUV,Lee,no,'null','null','null'
+id_2060,KA3125,Mini,Hanna,no,'null','null','null'
+id_2060,KA3125,Mini,Hanna,yes,Sector 1,Sector 34,5
+id_2060,KA3125,Mini,Hanna,no,'null','null','null'
+id_2060,KA3125,Mini,Hanna,yes,Sector 23,Sector 5,3
+id_2060,KA3125,Mini,Hanna,yes,Sector 8,Sector 5,2
+id_2060,KA3125,Mini,Hanna,yes,Sector 6,Sector 32,3
+id_2060,KA3125,Mini,Hanna,yes,Sector 26,Sector 11,5
+id_2060,KA3125,Mini,Hanna,no,'null','null','null'
+id_2060,KA3125,Mini,Hanna,yes,Sector 17,Sector 32,3
+id_2060,KA3125,Mini,Hanna,yes,Sector 4,Sector 10,4
+id_2060,KA3125,Mini,Hanna,yes,Sector 8,Sector 32,5
+id_2060,KA3125,Mini,Hanna,yes,Sector 21,Sector 15,5
+id_2060,KA3125,Mini,Hanna,yes,Sector 8,Sector 5,5
+id_2060,KA3125,Mini,Hanna,yes,Sector 19,Sector 32,5
+id_2060,KA3125,Mini,Hanna,yes,Sector 7,Sector 31,4
+id_2060,KA3125,Mini,Hanna,no,'null','null','null'
+id_2060,KA3125,Mini,Hanna,yes,Sector 14,Sector 5,2
+id_2060,KA3125,Mini,Hanna,no,'null','null','null'
+id_2060,KA3125,Mini,Hanna,yes,Sector 14,Sector 25,4
+id_2060,KA3125,Mini,Hanna,no,'null','null','null'
+id_2060,KA3125,Mini,Hanna,yes,Sector 23,Sector 11,3
+id_7921,GA4779,SUV,Isaac,yes,Sector 17,Sector 22,2
+id_7921,GA4779,SUV,Isaac,no,'null','null','null'
+id_7921,GA4779,SUV,Isaac,no,'null','null','null'
+id_7921,GA4779,SUV,Isaac,no,'null','null','null'
+id_7921,GA4779,SUV,Isaac,no,'null','null','null'
+id_7921,GA4779,SUV,Isaac,no,'null','null','null'
+id_7921,GA4779,SUV,Isaac,yes,Sector 7,Sector 32,1
+id_7921,GA4779,SUV,Isaac,yes,Sector 8,Sector 34,3
+id_7921,GA4779,SUV,Isaac,no,'null','null','null'
+id_7921,GA4779,SUV,Isaac,no,'null','null','null'
+id_7921,GA4779,SUV,Isaac,no,'null','null','null'
+id_7921,GA4779,SUV,Isaac,yes,Sector 1,Sector 11,5
+id_7921,GA4779,SUV,Isaac,yes,Sector 17,Sector 34,1
+id_7921,GA4779,SUV,Isaac,yes,Sector 17,Sector 5,1
+id_7921,GA4779,SUV,Isaac,no,'null','null','null'
+id_7921,GA4779,SUV,Isaac,yes,Sector 14,Sector 36,5
+id_7921,GA4779,SUV,Isaac,no,'null','null','null'
+id_7921,GA4779,SUV,Isaac,no,'null','null','null'
+id_7921,GA4779,SUV,Isaac,yes,Sector 23,Sector 32,1
+id_7921,GA4779,SUV,Isaac,yes,Sector 14,Sector 3,2
+id_7921,GA4779,SUV,Isaac,no,'null','null','null'
+id_6024,DL4188,Mini,Kumiko,no,'null','null','null'
+id_6024,DL4188,Mini,Kumiko,no,'null','null','null'
+id_6024,DL4188,Mini,Kumiko,no,'null','null','null'
+id_6024,DL4188,Mini,Kumiko,no,'null','null','null'
+id_6024,DL4188,Mini,Kumiko,no,'null','null','null'
+id_6024,DL4188,Mini,Kumiko,no,'null','null','null'
+id_6024,DL4188,Mini,Kumiko,no,'null','null','null'
+id_6024,DL4188,Mini,Kumiko,no,'null','null','null'
+id_6024,DL4188,Mini,Kumiko,no,'null','null','null'
+id_6024,DL4188,Mini,Kumiko,no,'null','null','null'
+id_6024,DL4188,Mini,Kumiko,yes,Sector 23,Sector 34,4
+id_6024,DL4188,Mini,Kumiko,yes,Sector 20,Sector 10,1
+id_6024,DL4188,Mini,Kumiko,yes,Sector 6,Sector 36,4
+id_6024,DL4188,Mini,Kumiko,no,'null','null','null'
+id_6024,DL4188,Mini,Kumiko,yes,Sector 6,Sector 15,3
+id_6024,DL4188,Mini,Kumiko,yes,Sector 14,Sector 32,2
+id_6024,DL4188,Mini,Kumiko,yes,Sector 6,Sector 10,4
+id_6024,DL4188,Mini,Kumiko,yes,Sector 19,Sector 10,5
+id_6024,DL4188,Mini,Kumiko,no,'null','null','null'
+id_6024,DL4188,Mini,Kumiko,yes,Sector 6,Sector 15,1
+id_6024,DL4188,Mini,Kumiko,no,'null','null','null'
+id_5732,KA3738,Hatchback,Oscar,no,'null','null','null'
+id_5732,KA3738,Hatchback,Oscar,no,'null','null','null'
+id_5732,KA3738,Hatchback,Oscar,no,'null','null','null'
+id_5732,KA3738,Hatchback,Oscar,yes,Sector 4,Sector 34,4
+id_5732,KA3738,Hatchback,Oscar,no,'null','null','null'
+id_5732,KA3738,Hatchback,Oscar,no,'null','null','null'
+id_5732,KA3738,Hatchback,Oscar,yes,Sector 21,Sector 34,3
+id_5732,KA3738,Hatchback,Oscar,yes,Sector 26,Sector 36,3
+id_5732,KA3738,Hatchback,Oscar,no,'null','null','null'
+id_5732,KA3738,Hatchback,Oscar,yes,Sector 8,Sector 34,5
+id_5732,KA3738,Hatchback,Oscar,yes,Sector 6,Sector 34,5
+id_5732,KA3738,Hatchback,Oscar,yes,Sector 23,Sector 15,1
+id_5732,KA3738,Hatchback,Oscar,yes,Sector 26,Sector 31,5
+id_5732,KA3738,Hatchback,Oscar,no,'null','null','null'
+id_5732,KA3738,Hatchback,Oscar,yes,Sector 14,Sector 15,1
+id_5732,KA3738,Hatchback,Oscar,no,'null','null','null'
+id_5732,KA3738,Hatchback,Oscar,yes,Sector 7,Sector 5,2
+id_5732,KA3738,Hatchback,Oscar,yes,Sector 21,Sector 5,3
+id_5732,KA3738,Hatchback,Oscar,no,'null','null','null'
+id_5732,KA3738,Hatchback,Oscar,yes,Sector 18,Sector 15,2
+id_5732,KA3738,Hatchback,Oscar,yes,Sector 2,Sector 12,5
+id_8270,AS8190,Mini,Kazuko,no,'null','null','null'
+id_8270,AS8190,Mini,Kazuko,yes,Sector 19,Sector 25,4
+id_8270,AS8190,Mini,Kazuko,no,'null','null','null'
+id_8270,AS8190,Mini,Kazuko,yes,Sector 21,Sector 16,4
+id_8270,AS8190,Mini,Kazuko,yes,Sector 14,Sector 16,4
+id_8270,AS8190,Mini,Kazuko,no,'null','null','null'
+id_8270,AS8190,Mini,Kazuko,no,'null','null','null'
+id_8270,AS8190,Mini,Kazuko,yes,Sector 8,Sector 5,4
+id_8270,AS8190,Mini,Kazuko,yes,Sector 14,Sector 10,5
+id_8270,AS8190,Mini,Kazuko,no,'null','null','null'
+id_8270,AS8190,Mini,Kazuko,yes,Sector 1,Sector 3,5
+id_8270,AS8190,Mini,Kazuko,no,'null','null','null'
+id_8270,AS8190,Mini,Kazuko,yes,Sector 2,Sector 11,5
+id_8270,AS8190,Mini,Kazuko,no,'null','null','null'
+id_8270,AS8190,Mini,Kazuko,no,'null','null','null'
+id_8270,AS8190,Mini,Kazuko,no,'null','null','null'
+id_8270,AS8190,Mini,Kazuko,yes,Sector 17,Sector 25,5
+id_8270,AS8190,Mini,Kazuko,no,'null','null','null'
+id_8270,AS8190,Mini,Kazuko,yes,Sector 18,Sector 22,1
+id_8270,AS8190,Mini,Kazuko,yes,Sector 4,Sector 22,2
+id_8270,AS8190,Mini,Kazuko,yes,Sector 6,Sector 31,5
+id_5506,MH3571,Mini,Leslie,no,'null','null','null'
+id_5506,MH3571,Mini,Leslie,yes,Sector 17,Sector 3,5
+id_5506,MH3571,Mini,Leslie,no,'null','null','null'
+id_5506,MH3571,Mini,Leslie,yes,Sector 18,Sector 31,3
+id_5506,MH3571,Mini,Leslie,no,'null','null','null'
+id_5506,MH3571,Mini,Leslie,no,'null','null','null'
+id_5506,MH3571,Mini,Leslie,yes,Sector 8,Sector 15,2
+id_5506,MH3571,Mini,Leslie,yes,Sector 14,Sector 11,2
+id_5506,MH3571,Mini,Leslie,yes,Sector 2,Sector 34,4
+id_5506,MH3571,Mini,Leslie,yes,Sector 2,Sector 10,2
+id_5506,MH3571,Mini,Leslie,yes,Sector 14,Sector 15,4
+id_5506,MH3571,Mini,Leslie,yes,Sector 17,Sector 5,1
+id_5506,MH3571,Mini,Leslie,yes,Sector 1,Sector 34,3
+id_5506,MH3571,Mini,Leslie,no,'null','null','null'
+id_5506,MH3571,Mini,Leslie,no,'null','null','null'
+id_5506,MH3571,Mini,Leslie,yes,Sector 2,Sector 22,1
+id_5506,MH3571,Mini,Leslie,no,'null','null','null'
+id_5506,MH3571,Mini,Leslie,no,'null','null','null'
+id_5506,MH3571,Mini,Leslie,no,'null','null','null'
+id_5506,MH3571,Mini,Leslie,yes,Sector 8,Sector 9,4
+id_5506,MH3571,Mini,Leslie,yes,Sector 8,Sector 31,1
+id_6901,DL5539,Hatchback,Erika,no,'null','null','null'
+id_6901,DL5539,Hatchback,Erika,yes,Sector 4,Sector 32,2
+id_6901,DL5539,Hatchback,Erika,yes,Sector 14,Sector 22,1
+id_6901,DL5539,Hatchback,Erika,yes,Sector 23,Sector 9,4
+id_6901,DL5539,Hatchback,Erika,yes,Sector 17,Sector 10,5
+id_6901,DL5539,Hatchback,Erika,yes,Sector 19,Sector 22,1
+id_6901,DL5539,Hatchback,Erika,no,'null','null','null'
+id_6901,DL5539,Hatchback,Erika,no,'null','null','null'
+id_6901,DL5539,Hatchback,Erika,yes,Sector 14,Sector 25,4
+id_6901,DL5539,Hatchback,Erika,no,'null','null','null'
+id_6901,DL5539,Hatchback,Erika,no,'null','null','null'
+id_6901,DL5539,Hatchback,Erika,no,'null','null','null'
+id_6901,DL5539,Hatchback,Erika,no,'null','null','null'
+id_6901,DL5539,Hatchback,Erika,no,'null','null','null'
+id_6901,DL5539,Hatchback,Erika,yes,Sector 18,Sector 12,4
+id_6901,DL5539,Hatchback,Erika,no,'null','null','null'
+id_6901,DL5539,Hatchback,Erika,yes,Sector 6,Sector 34,4
+id_6901,DL5539,Hatchback,Erika,no,'null','null','null'
+id_6901,DL5539,Hatchback,Erika,yes,Sector 1,Sector 15,4
+id_6901,DL5539,Hatchback,Erika,yes,Sector 20,Sector 12,3
+id_6901,DL5539,Hatchback,Erika,no,'null','null','null'
+id_3147,PB5325,LUV,Debby,no,'null','null','null'
+id_3147,PB5325,LUV,Debby,no,'null','null','null'
+id_3147,PB5325,LUV,Debby,yes,Sector 20,Sector 22,3
+id_3147,PB5325,LUV,Debby,yes,Sector 4,Sector 3,3
+id_3147,PB5325,LUV,Debby,no,'null','null','null'
+id_3147,PB5325,LUV,Debby,yes,Sector 8,Sector 15,1
+id_3147,PB5325,LUV,Debby,no,'null','null','null'
+id_3147,PB5325,LUV,Debby,no,'null','null','null'
+id_3147,PB5325,LUV,Debby,yes,Sector 19,Sector 32,5
+id_3147,PB5325,LUV,Debby,no,'null','null','null'
+id_3147,PB5325,LUV,Debby,no,'null','null','null'
+id_3147,PB5325,LUV,Debby,no,'null','null','null'
+id_3147,PB5325,LUV,Debby,no,'null','null','null'
+id_3147,PB5325,LUV,Debby,yes,Sector 8,Sector 10,2
+id_3147,PB5325,LUV,Debby,yes,Sector 2,Sector 11,4
+id_3147,PB5325,LUV,Debby,yes,Sector 23,Sector 9,5
+id_3147,PB5325,LUV,Debby,no,'null','null','null'
+id_3147,PB5325,LUV,Debby,no,'null','null','null'
+id_3147,PB5325,LUV,Debby,no,'null','null','null'
+id_3147,PB5325,LUV,Debby,yes,Sector 8,Sector 11,1
+id_3147,PB5325,LUV,Debby,yes,Sector 20,Sector 36,2
+id_4459,GA5015,Hatchback,Gordon,yes,Sector 23,Sector 9,4
+id_4459,GA5015,Hatchback,Gordon,yes,Sector 18,Sector 15,1
+id_4459,GA5015,Hatchback,Gordon,yes,Sector 2,Sector 9,2
+id_4459,GA5015,Hatchback,Gordon,no,'null','null','null'
+id_4459,GA5015,Hatchback,Gordon,yes,Sector 23,Sector 12,4
+id_4459,GA5015,Hatchback,Gordon,no,'null','null','null'
+id_4459,GA5015,Hatchback,Gordon,yes,Sector 20,Sector 32,1
+id_4459,GA5015,Hatchback,Gordon,no,'null','null','null'
+id_4459,GA5015,Hatchback,Gordon,no,'null','null','null'
+id_4459,GA5015,Hatchback,Gordon,no,'null','null','null'
+id_4459,GA5015,Hatchback,Gordon,yes,Sector 20,Sector 36,1
+id_4459,GA5015,Hatchback,Gordon,no,'null','null','null'
+id_4459,GA5015,Hatchback,Gordon,yes,Sector 17,Sector 11,1
+id_4459,GA5015,Hatchback,Gordon,no,'null','null','null'
+id_4459,GA5015,Hatchback,Gordon,yes,Sector 23,Sector 22,3
+id_4459,GA5015,Hatchback,Gordon,no,'null','null','null'
+id_4459,GA5015,Hatchback,Gordon,no,'null','null','null'
+id_4459,GA5015,Hatchback,Gordon,no,'null','null','null'
+id_4459,GA5015,Hatchback,Gordon,yes,Sector 6,Sector 12,2
+id_4459,GA5015,Hatchback,Gordon,no,'null','null','null'
+id_4459,GA5015,Hatchback,Gordon,yes,Sector 23,Sector 22,4
+id_3629,KA6626,Luxary,Naoko,no,'null','null','null'
+id_3629,KA6626,Luxary,Naoko,no,'null','null','null'
+id_3629,KA6626,Luxary,Naoko,no,'null','null','null'
+id_3629,KA6626,Luxary,Naoko,yes,Sector 19,Sector 32,3
+id_3629,KA6626,Luxary,Naoko,no,'null','null','null'
+id_3629,KA6626,Luxary,Naoko,yes,Sector 17,Sector 12,2
+id_3629,KA6626,Luxary,Naoko,no,'null','null','null'
+id_3629,KA6626,Luxary,Naoko,yes,Sector 6,Sector 9,2
+id_3629,KA6626,Luxary,Naoko,yes,Sector 20,Sector 5,5
+id_3629,KA6626,Luxary,Naoko,no,'null','null','null'
+id_3629,KA6626,Luxary,Naoko,yes,Sector 19,Sector 16,3
+id_3629,KA6626,Luxary,Naoko,yes,Sector 8,Sector 36,1
+id_3629,KA6626,Luxary,Naoko,no,'null','null','null'
+id_3629,KA6626,Luxary,Naoko,yes,Sector 14,Sector 15,5
+id_3629,KA6626,Luxary,Naoko,no,'null','null','null'
+id_3629,KA6626,Luxary,Naoko,no,'null','null','null'
+id_3629,KA6626,Luxary,Naoko,no,'null','null','null'
+id_3629,KA6626,Luxary,Naoko,no,'null','null','null'
+id_3629,KA6626,Luxary,Naoko,no,'null','null','null'
+id_3629,KA6626,Luxary,Naoko,yes,Sector 23,Sector 11,4
+id_3629,KA6626,Luxary,Naoko,yes,Sector 6,Sector 9,5
+id_7393,KA6839,SUV,Nanaho,yes,Sector 8,Sector 11,3
+id_7393,KA6839,SUV,Nanaho,yes,Sector 7,Sector 25,3
+id_7393,KA6839,SUV,Nanaho,yes,Sector 21,Sector 5,5
+id_7393,KA6839,SUV,Nanaho,yes,Sector 6,Sector 5,3
+id_7393,KA6839,SUV,Nanaho,yes,Sector 6,Sector 9,1
+id_7393,KA6839,SUV,Nanaho,yes,Sector 1,Sector 22,2
+id_7393,KA6839,SUV,Nanaho,yes,Sector 20,Sector 12,5
+id_7393,KA6839,SUV,Nanaho,no,'null','null','null'
+id_7393,KA6839,SUV,Nanaho,yes,Sector 8,Sector 22,3
+id_7393,KA6839,SUV,Nanaho,yes,Sector 8,Sector 9,5
+id_7393,KA6839,SUV,Nanaho,yes,Sector 14,Sector 16,5
+id_7393,KA6839,SUV,Nanaho,no,'null','null','null'
+id_7393,KA6839,SUV,Nanaho,yes,Sector 2,Sector 22,2
+id_7393,KA6839,SUV,Nanaho,yes,Sector 19,Sector 31,3
+id_7393,KA6839,SUV,Nanaho,yes,Sector 21,Sector 22,1
+id_7393,KA6839,SUV,Nanaho,no,'null','null','null'
+id_7393,KA6839,SUV,Nanaho,no,'null','null','null'
+id_7393,KA6839,SUV,Nanaho,yes,Sector 18,Sector 15,2
+id_7393,KA6839,SUV,Nanaho,no,'null','null','null'
+id_7393,KA6839,SUV,Nanaho,yes,Sector 23,Sector 34,4
+id_7393,KA6839,SUV,Nanaho,yes,Sector 17,Sector 15,4
+id_5326,KA9043,Mini,Paloma,yes,Sector 1,Sector 16,4
+id_5326,KA9043,Mini,Paloma,yes,Sector 19,Sector 16,3
+id_5326,KA9043,Mini,Paloma,yes,Sector 23,Sector 25,3
+id_5326,KA9043,Mini,Paloma,yes,Sector 14,Sector 25,1
+id_5326,KA9043,Mini,Paloma,no,'null','null','null'
+id_5326,KA9043,Mini,Paloma,yes,Sector 18,Sector 9,5
+id_5326,KA9043,Mini,Paloma,yes,Sector 1,Sector 12,4
+id_5326,KA9043,Mini,Paloma,yes,Sector 7,Sector 9,5
+id_5326,KA9043,Mini,Paloma,no,'null','null','null'
+id_5326,KA9043,Mini,Paloma,no,'null','null','null'
+id_5326,KA9043,Mini,Paloma,yes,Sector 19,Sector 9,4
+id_5326,KA9043,Mini,Paloma,yes,Sector 6,Sector 34,2
+id_5326,KA9043,Mini,Paloma,no,'null','null','null'
+id_5326,KA9043,Mini,Paloma,no,'null','null','null'
+id_5326,KA9043,Mini,Paloma,no,'null','null','null'
+id_5326,KA9043,Mini,Paloma,no,'null','null','null'
+id_5326,KA9043,Mini,Paloma,no,'null','null','null'
+id_5326,KA9043,Mini,Paloma,yes,Sector 18,Sector 31,2
+id_5326,KA9043,Mini,Paloma,no,'null','null','null'
+id_5326,KA9043,Mini,Paloma,no,'null','null','null'
+id_5326,KA9043,Mini,Paloma,yes,Sector 14,Sector 10,1
+id_5629,MH6816,LUV,Gordon,yes,Sector 19,Sector 25,2
+id_5629,MH6816,LUV,Gordon,no,'null','null','null'
+id_5629,MH6816,LUV,Gordon,yes,Sector 8,Sector 36,5
+id_5629,MH6816,LUV,Gordon,yes,Sector 17,Sector 3,4
+id_5629,MH6816,LUV,Gordon,no,'null','null','null'
+id_5629,MH6816,LUV,Gordon,yes,Sector 2,Sector 31,2
+id_5629,MH6816,LUV,Gordon,yes,Sector 6,Sector 31,3
+id_5629,MH6816,LUV,Gordon,no,'null','null','null'
+id_5629,MH6816,LUV,Gordon,yes,Sector 2,Sector 12,3
+id_5629,MH6816,LUV,Gordon,no,'null','null','null'
+id_5629,MH6816,LUV,Gordon,no,'null','null','null'
+id_5629,MH6816,LUV,Gordon,no,'null','null','null'
+id_5629,MH6816,LUV,Gordon,no,'null','null','null'
+id_5629,MH6816,LUV,Gordon,yes,Sector 14,Sector 22,4
+id_5629,MH6816,LUV,Gordon,yes,Sector 17,Sector 22,3
+id_5629,MH6816,LUV,Gordon,no,'null','null','null'
+id_5629,MH6816,LUV,Gordon,yes,Sector 2,Sector 10,1
+id_5629,MH6816,LUV,Gordon,no,'null','null','null'
+id_5629,MH6816,LUV,Gordon,no,'null','null','null'
+id_5629,MH6816,LUV,Gordon,yes,Sector 8,Sector 9,2
+id_5629,MH6816,LUV,Gordon,no,'null','null','null'
+id_4988,GA2955,LUV,Debby,no,'null','null','null'
+id_4988,GA2955,LUV,Debby,no,'null','null','null'
+id_4988,GA2955,LUV,Debby,no,'null','null','null'
+id_4988,GA2955,LUV,Debby,no,'null','null','null'
+id_4988,GA2955,LUV,Debby,no,'null','null','null'
+id_4988,GA2955,LUV,Debby,yes,Sector 7,Sector 34,3
+id_4988,GA2955,LUV,Debby,no,'null','null','null'
+id_4988,GA2955,LUV,Debby,yes,Sector 26,Sector 25,4
+id_4988,GA2955,LUV,Debby,no,'null','null','null'
+id_4988,GA2955,LUV,Debby,no,'null','null','null'
+id_4988,GA2955,LUV,Debby,yes,Sector 18,Sector 32,5
+id_4988,GA2955,LUV,Debby,yes,Sector 26,Sector 34,4
+id_4988,GA2955,LUV,Debby,yes,Sector 18,Sector 31,3
+id_4988,GA2955,LUV,Debby,no,'null','null','null'
+id_4988,GA2955,LUV,Debby,no,'null','null','null'
+id_4988,GA2955,LUV,Debby,yes,Sector 23,Sector 12,5
+id_4988,GA2955,LUV,Debby,no,'null','null','null'
+id_4988,GA2955,LUV,Debby,yes,Sector 19,Sector 15,1
+id_4988,GA2955,LUV,Debby,no,'null','null','null'
+id_4988,GA2955,LUV,Debby,no,'null','null','null'
+id_4988,GA2955,LUV,Debby,yes,Sector 1,Sector 34,5
+id_5270,AS3405,SUV,Gustav,no,'null','null','null'
+id_5270,AS3405,SUV,Gustav,yes,Sector 23,Sector 5,3
+id_5270,AS3405,SUV,Gustav,yes,Sector 8,Sector 5,2
+id_5270,AS3405,SUV,Gustav,yes,Sector 6,Sector 32,3
+id_5270,AS3405,SUV,Gustav,yes,Sector 26,Sector 11,5
+id_5270,AS3405,SUV,Gustav,no,'null','null','null'
+id_5270,AS3405,SUV,Gustav,yes,Sector 17,Sector 32,3
+id_5270,AS3405,SUV,Gustav,yes,Sector 4,Sector 10,4
+id_5270,AS3405,SUV,Gustav,yes,Sector 8,Sector 32,5
+id_5270,AS3405,SUV,Gustav,yes,Sector 21,Sector 15,5
+id_5270,AS3405,SUV,Gustav,yes,Sector 8,Sector 5,5
+id_5270,AS3405,SUV,Gustav,yes,Sector 19,Sector 32,5
+id_5270,AS3405,SUV,Gustav,yes,Sector 7,Sector 31,4
+id_5270,AS3405,SUV,Gustav,no,'null','null','null'
+id_5270,AS3405,SUV,Gustav,yes,Sector 14,Sector 5,2
+id_5270,AS3405,SUV,Gustav,no,'null','null','null'
+id_5270,AS3405,SUV,Gustav,yes,Sector 14,Sector 25,4
+id_5270,AS3405,SUV,Gustav,no,'null','null','null'
+id_5270,AS3405,SUV,Gustav,yes,Sector 23,Sector 11,3
+id_5270,AS3405,SUV,Gustav,yes,Sector 17,Sector 22,2
+id_5270,AS3405,SUV,Gustav,no,'null','null','null'
+id_3373,JK2814,Sedan,Kazuko,no,'null','null','null'
+id_3373,JK2814,Sedan,Kazuko,no,'null','null','null'
+id_3373,JK2814,Sedan,Kazuko,no,'null','null','null'
+id_3373,JK2814,Sedan,Kazuko,no,'null','null','null'
+id_3373,JK2814,Sedan,Kazuko,yes,Sector 7,Sector 32,1
+id_3373,JK2814,Sedan,Kazuko,yes,Sector 8,Sector 34,3
+id_3373,JK2814,Sedan,Kazuko,no,'null','null','null'
+id_3373,JK2814,Sedan,Kazuko,no,'null','null','null'
+id_3373,JK2814,Sedan,Kazuko,no,'null','null','null'
+id_3373,JK2814,Sedan,Kazuko,yes,Sector 1,Sector 11,5
+id_3373,JK2814,Sedan,Kazuko,yes,Sector 17,Sector 34,1
+id_3373,JK2814,Sedan,Kazuko,yes,Sector 17,Sector 5,1
+id_3373,JK2814,Sedan,Kazuko,no,'null','null','null'
+id_3373,JK2814,Sedan,Kazuko,yes,Sector 14,Sector 36,5
+id_3373,JK2814,Sedan,Kazuko,no,'null','null','null'
+id_3373,JK2814,Sedan,Kazuko,no,'null','null','null'
+id_3373,JK2814,Sedan,Kazuko,yes,Sector 23,Sector 32,1
+id_3373,JK2814,Sedan,Kazuko,yes,Sector 14,Sector 3,2
+id_3373,JK2814,Sedan,Kazuko,no,'null','null','null'
+id_3373,JK2814,Sedan,Kazuko,no,'null','null','null'
+id_3373,JK2814,Sedan,Kazuko,no,'null','null','null'

@@ -4,7 +4,13 @@
     Created from Flink Study 2021 
     Updated 10/2024 from Confluent Flink studies
 
-Start one Flink **Job manager** and **Task manager** containers, using the docker compose in deployment-local folder of this project. The docker engine mounts this project folder in `/home`, so content of the data will be in `/home/flink-sql-demos/data` 
+Start one Flink **Job manager** and **Task manager** containers, using the docker compose in deployment-local folder of this project. The docker engine mounts this project folder in `/home`, so content of the data will be in `/home/flink-sql/data` 
+
+## Pre-requisite
+
+* Build custom flink image using dockerfile under `deployment/custom-flink-image`
+* Start docker compose under `deployment/docker`.
+* Access Flink dashboard at [localhost:8081](http://localhost:8081/). See [this tutorial for UI introduction](https://developer.confluent.io/courses/apache-flink/web-ui-exercise/).
 
 ## First demo 
 
@@ -30,13 +36,13 @@ The following job is a batch processing and uses the a DDL to create a table mat
     ```sql
     SET execution.runtime-mode=BATCH;
 
-    CREATE TABLE employee_info (
+    CREATE TABLE employes (
         emp_id INT,
         name VARCHAR,
         dept_id INT
     ) WITH ( 
         'connector' = 'filesystem',
-        'path' = '/tmp/flink-sql-demos/00-basic-sql/data/employes.csv',
+        'path' = '/home/flink-sql/data/employes.csv',
         'format' = 'csv'
     );
     ```
@@ -63,7 +69,7 @@ CREATE TABLE department_counts (
     emp_count BIGINT NOT NULL
 ) WITH ( 
     'connector' = 'filesystem',
-    'path' = '/tmp/flink-sql-demos/00-basic-sql/data',
+    'path' = '/home/flink-sql/00-basic-sql/',
     'format' = 'csv'
 );
 ```
@@ -117,6 +123,6 @@ set 'sql-client.execution.result-mode' = 'changelog';
 select count(*) AS `count` from bounded_pageviews;
 ```
 
-* Access Flink dashboard at [localhost:8081](http://localhost:8081/). See [this tutorial for UI introduction](https://developer.confluent.io/courses/apache-flink/web-ui-exercise/).
+* 
 
 [Next will be Kafka integration running locally or on Confluent Cloud](../01-confluent-kafka-local-flink/README.md)
