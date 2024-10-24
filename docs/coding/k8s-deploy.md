@@ -11,7 +11,14 @@ Flink offers [a k8s Operator](https://flink.apache.org/news/2022/04/03/release-k
 
 The [operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) takes care of submitting, savepointing, upgrading and generally managing Flink jobs using the built-in Flink Kubernetes integration. It fully automates the entire lifecycle of job manager, task managers, and applications. As other operator it can run **namespace-scoped**, to get multiple versions of the operator in the same Kubernetes cluster, or **cluster-scoped** for highly distributed  deployment. 
 
+The following figure represents a simple deployment view of Flink with a Kafka solution on kubernetes cluster:
+
+![](./diagrams/k8s-deploy.drawio.png)
+
+
 The custom resource definition that describes the schema of a FlinkDeployment is a cluster wide resource. The Operator continuously tracks cluster events relating to the FlinkDeployment and FlinkSessionJob custom resources. [The operator control flow is described in this note.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/concepts/controller-flow/) 
+
+[Confluent Platform for Flink has also an operator](https://docs.confluent.io/platform/current/flink/get-started-cpf.html)
 
 ## Pre-requisites
 
@@ -23,7 +30,8 @@ helm version
 ```
 
 * Install a certitication manager, only one time per k8s cluster: `kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.8.2/cert-manager.yaml`
-* Get the [list of Flink releases here](https://downloads.apache.org/flink/)
+* Get the [list of open-source Flink releases here](https://downloads.apache.org/flink/) or [Confluent one](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
+
 * Add Helm repo: 
 
 ```sh
@@ -59,7 +67,7 @@ REVISION: 1
 TEST SUITE: None
 ```
 
-* Then verify deployment with 
+* Then verify deployment
 
 ```sh
 helm list
@@ -87,11 +95,13 @@ oc adm policy add-scc-to-user privileged -z default
 and remove runAs elements in the deployment.yaml.
 
 ???- info "Access to user interface"
-    ```
-    kubectl port-forward ${flink-jobmanager-pod} 8081:8081 to forward your jobmanager’s web ui port to local 8081.
+    To forward your jobmanager’s web ui port to local 8081.
+
+    ```sh
+    kubectl port-forward ${flink-jobmanager-pod} 8081:8081 
     ```
 
-    And Navigate to [http://localhost:8081](http://localhost:8081) in your browser.
+    And navigate to [http://localhost:8081](http://localhost:8081).
 
 * To remove the operator
 
@@ -109,6 +119,71 @@ An RWX, shared PersistentVolumeClaim (PVC) for the Flink JobManagers and TaskMan
 
 [For more detail see the CRD reference documentation.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/)
 
+### HA configuration
+
+Within Kubernetes, we can enable Flink HA in the ConfigMap of the cluster configuration:
+
+```yaml
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "2"
+    state.backend: rockdb
+    state.savepoints.dir: file:///flink-data/savepoints
+    state.checkpoints.dir: file:///flink-data/checkpoints
+    high-availability.type: kubernetes
+    high-availability.storageDir: file:///flink-data/ha
+```
+
+JobManager metadata is persisted in the file system high-availability.storageDir . This `storageDir` stores all metadata needed to recover a JobManager failure.
+
+JobManager Pod that crashed are restarted automatically by the kubernetes scheduler, and as Flink persists metadata and the job artifacts, it is important to mount pv to the expected paths.
+
+```yaml
+podTemplate:
+    spec:
+      containers:
+        - name: flink-main-container
+          volumeMounts:
+          - mountPath: /flink-data
+            name: flink-volume
+      volumes:
+      - name: flink-volume
+        hostPath:
+          # directory location on host
+          path: /tmp/flink
+          # this field is optional
+          type: Directory
+```
+
+Recall that `podTemplate` is a base declaration common for job and task manager pods. Can be overridden by the jobManager and taskManager pod templates. The previous declaration will work for minikube with hostPath access, for Kubernetes cluster with separate storage class then the volume declaration is:
+
+```yaml
+volumes:
+  - name: flink-volume
+    persistenceVolumeClaim:
+      claimName: flink-pvc
+```
+
+For Flink job or application, it is important to enable checkpointing and savepointing:
+
+```
+job:
+  jarURI: local:///opt/flink/examples/streaming/StateMachineExample.jar
+  parallelism: 2
+  upgradeMode: savepoint
+  #savepointTriggerNonce: 0
+  # initialSavepointPath: file:///
+```
+
+???- question "How to validate checkpointing?"
+    Checkpointing let Flink to periodically save the state of a job into local storage. 
+    Look at the pod name of the taskmanager and stop it with `kubectl delete pod/....`
+    Flink should automatically restert the job and recover from the latest checkpoint. Use the Flink UI or CLI to see the job status.
+
+???- question "How to validate savepointing?"
+    Savepoints are manually triggered snapshots of the job state, which can be used to upgrade a job or to perform manual recovery.
+    To trigger a savepoint we need to set a value into `savepointTriggerNonce` in the FlinkDeployment descriptor and then apply the changes. 
+    Get the location of the save pint and then add to the yaml `initialSavepointPath` to redeploy the applicationL: it will reload its state from the savepoint.
+
 ### Application deployment 
 
 An **application deployment** must define the job (JobSpec) field with the `jarURI`, `parallelism`, `upgradeMode` one of (stateless/savepoint/last-state) and the desired `state` of the job (running/suspended). [See this sample app](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/basic-sample.yaml).
@@ -121,7 +196,7 @@ job:
     state: running
 ```
 
-`flinkConfiguration` is a hash map used to define  the Flink configuration, like, task slot, HA and checkpointing.
+`flinkConfiguration` is a hash map used to define  the Flink configuration, like, task slot, HA and checkpointing parameters.
 
 ```yaml
    flinkConfiguration:
@@ -145,17 +220,19 @@ job:
 
 ### Flink Config Update
 
-* If a write operations fail when the pod creates a folder or updates the Flink config assess the following:
+* If a write operation failswhen the pod creates a folder or updates the Flink config, verify the following:
 
   * Assess PVC and R/W access. Verify PVC configuration. Some storage classes or persistent volume types may have restrictions on directory creation
   * Verify security context for the pod. Modify the pod's security context to allow necessary permissions.
   * The podTemplate can be configured at the same level as the task and job managers so any mounted volumes will be available to those pods. See [basic-reactive.yaml](https://github.com/apache/flink-kubernetes-operator/blob/main/examples/basic-reactive.yaml) from Flink Operator examples.
 
+[See PVC and PV declarations](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/pvc.yaml)
+
 ## Flink Session
 
-For Session cluster, there is no jobSpec. See [this deployment definition](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/basic-job-task-mgrs.yaml). Once a cluster is defined, it has a name and can be referenced to submit SessionJob.
+For Session cluster, there is no jobSpec. See [this deployment definition](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/basic-job-task-mgrs.yaml). Once a cluster is defined, it has a name and can be referenced to submit SessionJobs.
 
-It is executed as a long-running Kubernetes Deployment. We may run multiple Flink jobs on a Session cluster. Each job needs to be submitted to the cluster after the cluster has been deployed.
+A SessionJob is executed as a long-running Kubernetes Deployment. We may run multiple Flink jobs on a Session cluster. Each job needs to be submitted to the cluster after the cluster has been deployed.
 To deploy a job, we need at least three components:
 
 * a Deployment which runs a JobManager
@@ -165,9 +242,17 @@ To deploy a job, we need at least three components:
 
 For a deployment select the execution mode: `application, or session`. For production it is recommended to deploy in `application` mode for better isolation, and using a cloud native approach. We can just build a dockerfile for our application using the Flink jars.
 
-### Do Session Deployment
+### Session Deployment
 
-Flink has a [set of examples](https://github.com/apache/flink/blob/master/flink-examples/) like the [Car top speed computation with simulated record](https://github.com/apache/flink/blob/master/flink-examples/flink-examples-streaming/src/main/java/org/apache/flink/streaming/examples/windowing/TopSpeedWindowing.java). As this code is packaged in a jar available in maven repository we can declare a job session.
+Flink has a [set of examples](https://github.com/apache/flink/blob/master/flink-examples/) like the [Car top speed computation with simulated record](https://github.com/apache/flink/blob/master/flink-examples/flink-examples-streaming/src/main/java/org/apache/flink/streaming/examples/windowing/TopSpeedWindowing.java). As this code is packaged in a jar available in maven repository, we can declare a job session.
+
+Deploy a config map to define the `log4j-console.properties` and other parameters for Flink (`flink-conf.yaml`)
+
+The diagram below illustrates the standard deployment of a job on k8s with session mode:
+
+ ![1](https://ci.apache.org/projects/flink/flink-docs-release-1.14/fig/FlinkOnK8s.svg)
+ *src: apache Flink site*
+ 
 
 ```yaml
 apiVersion: flink.apache.org/v1beta1
@@ -201,28 +286,14 @@ Once the job is deployed we can see the pod and then using the user interface th
 
 ### Flink State Snapshot
 
-
 To help managing snapshots, there is another CR called [FlinkStateSnapshot](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/#flinkstatesnapshotspec)
-
 
 
 ---
 
-## Submit flink job
-
-* Deploy a config map to define the `log4j-console.properties` and other parameters for Flink (`flink-conf.yaml`)
-
-
-The diagram below illustrates the standard deployment of a job on k8s with session mode:
-
- ![1](https://ci.apache.org/projects/flink/flink-docs-release-1.14/fig/FlinkOnK8s.svg)
- *src: apache Flink site*
- 
-But there is a new way using [native kubernetes](https://ci.apache.org/projects/flink/flink-docs-release-1.14/deployment/resource-providers/native_kubernetes.html) to deploy an application. Flink is able to dynamically allocate and de-allocate TaskManagers depending on the required resources because it can directly talk to Kubernetes.
-
 ## Flink application deployment
 
-The following Dockerfile is used for deploying a solution in **application mode**, which package the Flink jars with the app, and starts the main() function.
+The following Dockerfile is used for deploying a solution in **application mode**, which packages the Java Flink jars with the app, and starts the main() function.
 
 ```dockerfile
 FROM flink
@@ -240,6 +311,10 @@ We need to define following components (See yaml files in the `kafka-flink-demo`
 
 The Application Mode makes sure that all Flink components are properly cleaned up after the termination of the application.
 
-## Practice
+### Flink SQL processing
 
-* It is not recommended to host a Flink Cluster across multiple Kubernetes clusters. Flink node excchanges data between task managers and so better to run in same region, and within same k8s. 
+Ther eare multiple choices to run Flink SQL, using the SQL client, or package the SQL scripts and get a [java SQL runner] (https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) executing the SQL, so the application deployment is Java based even if SQL scripts are used for stream processing.
+
+## Practices
+
+* It is not recommended to host a Flink Cluster across multiple Kubernetes clusters. Flink node exchanges data between task managers and so better to run in same region, and within same k8s. 
