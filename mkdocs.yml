@@ -9,13 +9,14 @@ nav:
     - Fit for purpose: architecture/fitforpurpose.md
   - Products: 
     - Flink Architecture: architecture/index.md
-    - Flink SQL: coding/flink-sql.md
+    - Flink SQL concepts: architecture/flink-sql.md
     - Java Table API: coding/table-api.md
     - Stateful function: coding/stateful-func.md
     - Complex Event Processing: coding/cep.md
 
   - Practices:
-    - First Apps: coding/firstapp.md
+    - Flink SQL coding: coding/flink-sql.md
+    - First Java Apps: coding/firstapp.md
     - Kubernetes Deployment: coding/k8s-deploy.md
     - Programming examples: coding/programming.md
     - Flink Cookbook: architecture/cookbook.md
