@@ -42,7 +42,7 @@ Show how the table is created:
 show create table orders;
 ```
 
-[See the getting started](./getting-started.md) to run locally with a sql client.
+[See the getting started](../coding/getting-started.md) to run locally with a sql client.
 
 ### Main use cases
 
@@ -115,7 +115,7 @@ Any previously processed records can be used potentially to process the join ope
 
 ## Lower level Java based programming model
 
-* Start Flink server using docker ([start with docker compose](./getting-started.md/#docker-compose-for-dev-environment) or on [k8s](./k8s-deploy.md)). 
+* Start Flink server using docker ([start with docker compose](../coding/getting-started.md#docker-compose-with-kafka-and-flink) or on [k8s](../coding/k8s-deploy.md)). 
 * Start by creating a java application (quarkus create app for example or using maven) and a Main class. See code in [flink-sql-quarkus](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql-quarkus/) folder.
 * Add dependencies in the pom
 

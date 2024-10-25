@@ -188,7 +188,7 @@ Data modificationl language, is used to define statements  which modify the data
         GROUP BY window_start, window_end, product_type
     ```
 
-    TUMBLE, HOP SESSION, CUMMULATE are [windowing table-valued functions](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/window-tvf/) , see also the [advanced section](#how-to-more-advanced-sql) below.
+    TUMBLE, HOP SESSION, CUMMULATE are [windowing table-valued functions](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/window-tvf/).
 
     When the internal time has expired the results will be published. This puts an upper bound on how much state Flink needs to keep to handle a query, which in this case is related to the number of different product type. 
 
