@@ -5,7 +5,7 @@
 
 This chapter is a group of how to for Flink SQL implementation.
 
-## Geting Started with a SQL client
+## Getting Started with a SQL client
 
 * Use sql client in container (docker or kubernetes)
 * Use confluent cli connected to a compute pool on Confluent Cloud

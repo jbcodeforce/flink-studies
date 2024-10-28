@@ -182,7 +182,7 @@ job:
 ???- question "How to validate savepointing?"
     Savepoints are manually triggered snapshots of the job state, which can be used to upgrade a job or to perform manual recovery.
     To trigger a savepoint we need to set a value into `savepointTriggerNonce` in the FlinkDeployment descriptor and then apply the changes. 
-    Get the location of the save pint and then add to the yaml `initialSavepointPath` to redeploy the applicationL: it will reload its state from the savepoint.
+    Get the location of the save pint and then add to the yaml `initialSavepointPath` to redeploy the applicationL: it will reload its state from the savepoint. There is a custom resource definition ([FlinkStateSnapshotSpec](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/#flinkstatesnapshotspec)) to trigger savepoints. 
 
 ### Application deployment 
 
@@ -220,11 +220,11 @@ job:
 
 ### Flink Config Update
 
-* If a write operation failswhen the pod creates a folder or updates the Flink config, verify the following:
+* If a write operation fails when the pod creates a folder or updates the Flink config, verify the following:
 
-  * Assess PVC and R/W access. Verify PVC configuration. Some storage classes or persistent volume types may have restrictions on directory creation
-  * Verify security context for the pod. Modify the pod's security context to allow necessary permissions.
-  * The podTemplate can be configured at the same level as the task and job managers so any mounted volumes will be available to those pods. See [basic-reactive.yaml](https://github.com/apache/flink-kubernetes-operator/blob/main/examples/basic-reactive.yaml) from Flink Operator examples.
+    * Assess PVC and R/W access. Verify PVC configuration. Some storage classes or persistent volume types may have restrictions on directory creation
+    * Verify security context for the pod. Modify the pod's security context to allow necessary permissions.
+    * The podTemplate can be configured at the same level as the task and job managers so any mounted volumes will be available to those pods. See [basic-reactive.yaml](https://github.com/apache/flink-kubernetes-operator/blob/main/examples/basic-reactive.yaml) from Flink Operator examples.
 
 [See PVC and PV declarations](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/pvc.yaml)
 

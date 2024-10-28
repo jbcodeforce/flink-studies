@@ -115,8 +115,13 @@ The following figure is showing integration of stream processing runtime with an
 
 Using a local state persistence, improves latency, while adopting a remote backup storage increases fault tolerance.
 
+## Fault Tolerance
+
+Two major Flink features to support fault tolerance are checkpoints and savepoints. 
 
 ### Checkpointing
+
+Checkpoints are created automatically and periodically by Flink. The saved states are used to recover from failures, and checkpoints are optimized for quick recovery.
 
 As part of the checkpointing process, Flink saves the 'offset read commit' information of the append log, so in case of a failure, Flink recovers a stateful streaming application by restoring its state from a previous checkpoint and resetting the read position on the append log.
 
@@ -133,6 +138,9 @@ State is always accessed locally, which helps Flink applications achieve high th
  ![4](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/local-state.png)
 
 
+### Savepoints
+
+Savepoints are user triggered snapshot at a specific point in time. It is used during system operations like product upgrades. The Flink operator for kubernetes has [custom resource definition](./coding/k8s-deploy.md#ha-configuration) to support the savepoint process. See also the end to end demo for savepoint in [this folder.](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/savepoint-demo)
 
 ## Stateless
 
@@ -284,7 +292,7 @@ By default the connector will send a Watermark every 200ms, for each partition i
 
 In the case of a partition does not get any events, as there is no watermark generated for this parition, it may mean the watermark does no advance, and as a side effect it prevents windows from producing events. To avoid this problem, we need to balance kafka partitions so none are empty or idle, or confifure the watermarking to use idleness detection.
 
-* See example [TumblingWindowOnSale.java](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/windows/TumblingWindowOnSale.java) in my-fink folder and to test it, do the following:
+* See example [TumblingWindowOnSale.java](https://github.com/jbcodeforce/flink-studies/blob/master/flink-java/my-flink/src/main/java/jbcodeforce/windows/TumblingWindowOnSale.java) in my-fink folder and to test it, do the following:
 
 ```shell
 # Start the SaleDataServer that starts a server on socket 9181 and will read the avg.txt file and send each line to the socket
