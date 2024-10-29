@@ -1,19 +1,23 @@
 # Table API
 
 ???- info "Update"
-    Created 10/2024
+    Created 10/2024 - Updated 10/28/24.
 
 ## Concepts
 
-The TableAPI is the lower level API used for doing Flink SQL. So it is possible to use it in Java or Python to do the stream processing. The Table is an encapsulation of a stream or a physical table, and so streaming processing implementation is programming against tables.
+The [TableAPI](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/overview/) is the lower level API used for doing Flink SQL. So it is possible to use it in Java or Python to do the stream processing. The Table is an encapsulation of a stream or a physical table, and so streaming processing implementation is programming against tables.
+
+In the context of **Confluent Cloud**, TableAPI is a client-side library to interact with the Flink engine running on the cloud. It submits `Statements` and retrieves `StatementResults`. The provided Confluent plugin injects Confluent-specific components for setting the TableEnvironment without the need for a local Flink cluster. By adding the confluent-flink-table-api-java-plugin dependency, Flink internal components such as CatalogStore, Catalog, Planner, Executor, and configuration are managed by the plugin and fully integrate with Confluent Cloud.
 
 ## Getting Started
 
-Create a maven project and add the flink table api dependencies. See [the pom.xml in flink-sql-demos/02-table-api-java](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/02-table-api-java).
+Create a maven project and add the flink table api, and Kafka client dependencies. See [the pom.xml in flink-java/table-api](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/table-api) folder.
+
+When using Confluent Cloud, be sure to define a `cloud.properties` file with the needed properties, such as the flink api key, the environment and compute pool. Do not commit this file into git repo. As an alternate environment variables can be used.
 
 ### Java
 
-Any main function needs to connect to the Flink environment. ConfluentAPI offers a way to read cloud client properties so the deployed Flink application on-premises or within a k8s as pod, can access the Job and Task managers:
+Any main function needs to connect to the Flink environment. ConfluentAPI offers a way to read cloud client properties so the deployed Flink application on-premises or within a k8s as pod, can access the Job and Task managers running in the Confluent Cloud compute pools:
 
 ```java
 import io.confluent.flink.plugin.ConfluentSettings;
@@ -25,22 +29,76 @@ public static void main(String[] args) {
     TableEnvironment env = TableEnvironment.create(settings);
 ```
 
-* Get the catalog and databases, and use the environment to get the list of tables. In Confluent Cloud there are a set of predefined catalog and tables: `examples.marketplace`.
+* Get the catalog and databases, and use the environment to get the list of tables. In Confluent Cloud, there is a predefined catalog with some tables: `examples.marketplace`.
 
 ```java
+    # using a sql string
+    env.executeSql("SHOW TABLES IN `examples`.`marketplace`").print();
+    # or using the api
     env.useCatalog("examples");
     env.useDatabase("marketplace");
-
     Arrays.stream(env.listTables()).forEach(System.out::println);
+    # work on one table
+    env.from("`customers`").printSchema();
 ```
 
-The the pipeline flow can use different services, defined in separate Java classes. Those classes may be reusable. The environment needs to be passed to each service, as this is the environment which includes all the Table API functions.
+The [TableEnvironment](https://nightlies.apache.org/flink/flink-docs-release-1.20/api/java/org/apache/flink/table/api/TableEnvironment.html) has a lot of helpful functions to connect to external systems, executes SQL statements, or define test data.
 
-The completed code of the [Confluent training]() is in [this folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/02-table-api-java).
 
-### With Confluent Cloud and API
+## Code Samples
 
-## Code Examples
+The important classes are:
+
+* [TableEnvironment](https://nightlies.apache.org/flink/flink-docs-release-1.20/api/java/org/apache/flink/table/api/TableEnvironment.html)
+* [Table](https://nightlies.apache.org/flink/flink-docs-release-1.20/api/java/org/apache/flink/table/api/Table.html)
+* [Row](https://nightlies.apache.org/flink/flink-docs-release-1.20/api/java/org/apache/flink/types/Row.html)
+* [Expressions](https://nightlies.apache.org/flink/flink-docs-release-1.20/api/java/org/apache/flink/table/api/Expressions.html) contains static methods for referencing table columns, creating literals, and building more complex Expression chains. See below.
+
+### Create some test data
+
+Use one of the TableEnvironment fromValues() methods, below is an example on a collection.
+
+```java
+ env.fromValues("Paul", "Jerome", "Peter", "Robert")
+                .as("name")
+                .filter($("name").like("%e%"))
+                .execute()
+                .print();
+```
+
+```java
+import org.apache.flink.table.api.DataTypes;
+Table customers = env.fromValues(
+                        DataTypes.ROW(
+                                DataTypes.FIELD("customer_id", DataTypes.INT()),
+                                DataTypes.FIELD("name", DataTypes.STRING()),
+                                DataTypes.FIELD("email", DataTypes.STRING())),
+                        row(3160, "Bob", "bob@corp.com"),
+                        row(3107, "Alice", "alice.smith@example.org"),
+                        row(3248, "Robert", "robert@someinc.com"));
+```
+
+### Joining two tables
+
+See the example in [00_join_order_customer.java](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/table-api-java/src/main/java/flink/examples/table/00_join_order_customer.java). The statements may run forever. 
+
+### A deduplication example
+
+
+### Confluent tools for printing and stop statement
+
+[See this git repository](https://github.com/confluentinc/flink-table-api-java-examples/blob/master/README.md#documentation-for-confluent-utilities)
+--- 
+
+### Define data flows
+
+A TablePipeline describes a flow of data from source(s) to sink. We can also use 
+
+
+The pipeline flow can use different services, defined in separate Java classes. Those classes may be reusable. The environment needs to be passed to each service, as this is the environment which includes all the Table API functions.
+
+Some code is in [this folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/table-api).
+
 
 ## How to
 
@@ -48,7 +106,64 @@ The completed code of the [Confluent training]() is in [this folder](https://git
     There is the [FlinkFaker tool](https://github.com/knaufk/flink-faker) that seems to be very efficient to send different types of data. It is using [Datafaker](https://www.datafaker.net/documentation/getting-started/) Java library, which can be extended to add our own data provider. FlinkFaker jar is added to the custom flink image in the Dockerfile. The challenges will be to remote connect to the compute-pool as defined in Confluent Cloud.
 
 ???- question "Connect to Confluent Cloud remotely"
+    Define the cloud.properties and then use the Confluent API
 
+    ```java
+        import io.confluent.flink.plugin.ConfluentSettings;
+        import org.apache.flink.table.api.EnvironmentSettings;
+        import org.apache.flink.table.api.TableEnvironment;
 
+        public static void main(String[] args) {
+            EnvironmentSettings settings = ConfluentSettings.fromResource("/cloud.properties");
+            TableEnvironment env = TableEnvironment.create(settings);
+    ```
 
-## Deeper dive
+???- question "Create a table with Kafka topic as persistence in Confluent Cloud?"
+    ```java
+    import io.confluent.flink.plugin.ConfluentSettings;
+    import io.confluent.flink.plugin.ConfluentTableDescriptor;
+    //...
+    env.createTable(
+            TARGET_TABLE1,
+            ConfluentTableDescriptor.forManaged()
+                .schema(
+                        Schema.newBuilder()
+                                .column("user_id", DataTypes.STRING())
+                                .column("name", DataTypes.STRING())
+                                .column("email", DataTypes.STRING())
+                                .build())
+                .distributedBy(4, "user_id")
+                .option("kafka.retention.time", "0")
+                .option("key.format", "json-registry")
+                .option("value.format", "json-registry")
+                .build());
+    ```
+
+???- question "Access to the schema of an existing topic / table?"
+    ```java
+    import org.apache.flink.table.api.DataTypes;
+    //...
+    DataType productsRow = env.from("examples.marketplace.products")
+                    .getResolvedSchema()
+                    .toPhysicalRowDataType();
+    List<String> columnNames = DataType.getFieldNames(productsRow);
+    List<DataType> columnTypes = DataType.getFieldDataTypes(productsRow);
+    // use in the schema function to create a new topic ...
+            Schema.newBuilder()
+                    .fromFields(columnNames, columnTypes)
+                    .column("additionalColumn", DataTypes.STRING())
+                    .build()
+    ```
+
+???- question "How to split records to two topic, using StatementSet?"
+    ```java
+    StatementSet statementSet = env.createStatementSet()
+                        .add(
+                            env.from("`examples`.`marketplace`.`orders`")
+                               .select($("product_id"), $("price"))
+                               .insertInto("PricePerProduct"))
+                        .add(
+                            env.from("`examples`.`marketplace`.`orders`")
+                               .select($("customer_id"), $("price"))
+                               .insertInto("PricePerCustomer"));
+    ```

@@ -154,7 +154,7 @@ podTemplate:
           type: Directory
 ```
 
-Recall that `podTemplate` is a base declaration common for job and task manager pods. Can be overridden by the jobManager and taskManager pod templates. The previous declaration will work for minikube with hostPath access, for Kubernetes cluster with separate storage class then the volume declaration is:
+Recall that `podTemplate` is a base declaration common for job and task manager pods. Can be overridden by the jobManager and taskManager pod template sub-elements. The previous declaration will work for minikube with hostPath access, for Kubernetes cluster with separate storage class then the volume declaration is:
 
 ```yaml
 volumes:
@@ -176,8 +176,8 @@ job:
 
 ???- question "How to validate checkpointing?"
     Checkpointing let Flink to periodically save the state of a job into local storage. 
-    Look at the pod name of the taskmanager and stop it with `kubectl delete pod/....`
-    Flink should automatically restert the job and recover from the latest checkpoint. Use the Flink UI or CLI to see the job status.
+    Look at the pod name of the task manager and stop it with `kubectl delete pod/....`
+    Flink should automatically restart the job and recover from the latest checkpoint. Use the Flink UI or CLI to see the job status.
 
 ???- question "How to validate savepointing?"
     Savepoints are manually triggered snapshots of the job state, which can be used to upgrade a job or to perform manual recovery.
@@ -278,7 +278,7 @@ Once the job is deployed we can see the pod and then using the user interface th
 
 
 
-* Example of deploying Java based [SQL Runner](https://github.com/apache/flink-kubernetes-operator/blob/main/examples/flink-sql-runner-example/README.md) to interprete a Flink SQL script: package it as docker images, and deploy it with a Session Job. There is a equivalent for Python using [Pyflink](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/overview/).
+* Example of deploying Java based [SQL Runner](https://github.com/apache/flink-kubernetes-operator/blob/main/examples/flink-sql-runner-example/README.md) to interpret a Flink SQL script: package it as docker images, and deploy it with a Session Job. There is a equivalent for Python using [Pyflink](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/overview/).
 
     * [See the ported code for Java](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/sql-runner)
     * And for the [Python implementation](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/flink-python-sql-runner)
@@ -313,7 +313,7 @@ The Application Mode makes sure that all Flink components are properly cleaned u
 
 ### Flink SQL processing
 
-Ther eare multiple choices to run Flink SQL, using the SQL client, or package the SQL scripts and get a [java SQL runner] (https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) executing the SQL, so the application deployment is Java based even if SQL scripts are used for stream processing.
+There are multiple choices to run Flink SQL, using the SQL client, or package the SQL scripts and get a [java SQL runner] (https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) executing the SQL, so the application deployment is Java based even if SQL scripts are used for stream processing.
 
 ## Practices
 

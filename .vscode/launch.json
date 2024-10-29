@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "io.confluent.flink.examples.table.Main",
+            "projectName": "table-api"
+        },
+        {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
@@ -109,7 +116,12 @@
             "request": "launch",
             "mainClass": "jbcodeforce.p1.WordCountMain",
             "projectName": "my-flink",
-            "args": ["--input", "./my-flink/data/wc.txt", "--ouput", "count.csv"]
+            "args": [
+                "--input",
+                "./my-flink/data/wc.txt",
+                "--ouput",
+                "count.csv"
+            ]
         },
         {
             "type": "java",

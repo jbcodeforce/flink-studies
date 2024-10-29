@@ -21,3 +21,17 @@ spec:
     args: ["/opt/flink/usrlib/sql-scripts/main.sql"]
     parallelism: 1
     upgradeMode: stateless
+  podTemplate:
+    spec:
+      containers:
+        - name: flink-main-container
+          volumeMounts:
+          - mountPath: /opt/flink/usrlib/sql-scripts/
+            name: flink-volume
+      volumes:
+      - name: flink-volume
+        hostPath:
+          # directory location on host
+          path: /home/Code/flink-sqls
+          # this field is optional
+          type: Directory

@@ -2,3 +2,4 @@
 site/
 flink-training/
 **.env
+**/cloud.properties
