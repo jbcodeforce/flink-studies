@@ -84,6 +84,9 @@ See the example in [00_join_order_customer.java](https://github.com/jbcodeforce/
 
 ### A deduplication example
 
+```java
+
+```
 
 ### Confluent tools for printing and stop statement
 

@@ -7,15 +7,32 @@
 ## Key Concepts
 
 * This is a regional service
-* Compute pools groups resources needed to run a Flink cluster and can scale to zero
+* Compute pools groups resources needed to run a Flink cluster and can scale to zero. Used to run SQL **statements**. The max size of the pool is set at creation.
+* Capacity is measured in Confluent Flink Unit, [CFU](). Each statement is 1 CFU-minute.
+* A statement may be structural (DDL), runs in background to write data to table (DML) , or foreground to present data to client app.
 * Can support multiple Kafka clusters in the same CC organization within the same region.
-* kafka Topics and schemas always in synch with Flink
-* Any table created in Flink is visible as a topic in kafka
-* The differences with the OSS, is that the DDL statements of catalog, database, table are mapped to physical kafka objects. Table is a schema and a topic, catalog is an environment, and database is a cluster
-* Integrated with RBAC with user and service accounts support
+* Kafka Topics and schemas are always in synch with Flink.
+* Statement in different compute pools are **isolated** from each other. 
+* Any table created in CC Flink is visible as a topic in CC Kafka.
 * A catalog is a collection of database, a database is a collection of tables.
+* The differences with the OSS, is that the DDL statements of catalog, database, table are mapped to physical kafka objects. Table is a schema and a topic, catalog is an environment, and database is a cluster.
+* CC offers the **Autopilot** to scale up or down resources for any SQL statement. Scaled up if there is a need to increase resource due to more data.
+* Integrated with RBAC with user and service accounts support.
 * Stream lineage is a feature to at the topic level to understand where the data are coming from. 
-* For Watermark configuration, Confluent Cloud for Apache Flink handles it autimatically, using the $rowtime which is mapped to the Kafka record timestamp and by observing the behavior of the streams then adapting the configuration.
+* For Watermark configuration, Confluent Cloud for Apache Flink handles it automatically, using the $rowtime which is mapped to the Kafka record timestamp and by observing the behavior of the streams then adapting the configuration.
+* When messages processing starts to be behind, autopilot adjust resource allocation.
+* [Service accounts](https://docs.confluent.io/cloud/current/security/authenticate/workload-identities/service-accounts/overview.html#service-accounts) are used for production deployment to enforce security boundaries. Permissions are done with ACL and role binding. They can own any type of API keys that can be used for CLI or API access.
+
+???- info "Statement life cycle"
+    Use a service account for background statement.
+    Submit a statement:
+
+    ```sh
+    confluent flink shell --compute-pool ${COMPUTE_POOL_ID} --environment ${ENV_ID} --service-account
+    ```
+
+???- question "How to change the CFU limit?"
+
 
 ## Getting Started
 

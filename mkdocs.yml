@@ -20,6 +20,7 @@ nav:
     - Kubernetes Deployment: coding/k8s-deploy.md
     - Programming examples: coding/programming.md
     - Flink Cookbook: architecture/cookbook.md
+    - IaC wt Terraform: coding/terraform.md
     - Flink on k8s Monitoring: techno/fk-k8s-monitor.md
   - Techno:
     - Confluent Cloud Flink: techno/ccloud-flink.md 

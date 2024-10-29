@@ -154,7 +154,7 @@ Data Definition Language (DDL) are statements to define metadata in Flink SQL by
 
 ## DML statements
 
-Data modificationl language, is used to define statements  which modify the data and don’t change metadata.
+Data modification language, is used to define statements  which modify the data and don’t change metadata.
 
 
 ???- question "How to filter out records?"
@@ -256,6 +256,17 @@ Data modificationl language, is used to define statements  which modify the data
         FROM TABLE(
             HOP(TABLE shoe_orders, DESCRIPTOR(`$rowtime`), INTERVAL '5' MINUTES, INTERVAL '10' MINUTES))
         GROUP BY window_start, window_end;
+    ```
+
+???- question "Deduplication example"
+
+    ```sql
+    SELECT ip_address, url, TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) as click_timestamp
+    FROM (
+        SELECT *,
+        ROW_NUMBER() OVER ( PARTITION BY ip_address ORDER BY TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) ) as rownum FROM clicks
+        )
+    WHERE rownum = 1;
     ```
 
 ## Confluent Cloud Specific
