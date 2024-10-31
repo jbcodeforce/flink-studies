@@ -11,7 +11,17 @@ In the context of **Confluent Cloud**, TableAPI is a client-side library to inte
 
 ## Getting Started
 
-Create a maven project and add the flink table api, and Kafka client dependencies. See [the pom.xml in flink-java/table-api](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/table-api) folder.
+Create a maven project and add the flink table api, and Kafka client dependencies. See [the pom.xml in flink-java/table-api](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/table-api/pom.xml) folder. For Table API we need at the minimum:
+
+```xml
+<dependency>
+    <groupId>org.apache.flink</groupId>
+    <artifactId>flink-table-api-java</artifactId>
+    <version>${flink.version}</version>
+</dependency>
+```
+
+If we need to connect to Confluent Cloud for Flink we need the  `io.confluent.flink.confluent-flink-table-api-java-plugin`.
 
 When using Confluent Cloud, be sure to define a `cloud.properties` file with the needed properties, such as the flink api key, the environment and compute pool. Do not commit this file into git repo. As an alternate environment variables can be used.
 

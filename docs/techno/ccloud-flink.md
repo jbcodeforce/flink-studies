@@ -108,11 +108,15 @@ confluent environment list
 
 # Get the compute pool id
 confluent flink compute-pool list
-# set env variable for pool id and environment id
-confluent flink shell --environment $ENVID --compute-pool $CPOOL
+export ENV_ID=$(confluent environment list -o json | jq -r '.[] | select(.name == "aws-west") | .id')
+export COMPUTE_POOL_ID=$(confluent flink compute-pool list -o json | jq -r '.[0].id')
+confluent flink shell --compute-pool $COMPUTE_POOL_ID --environment $ENV_ID
+
 ```
 
 ### Using the Flink editor in Confluent Cloud
+
+Nothing special, except that once the job is started we cannot modify it, we need to stop before any edition.
 
 ### Use Java Table API
 

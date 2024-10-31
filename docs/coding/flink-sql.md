@@ -7,8 +7,40 @@ This chapter is a group of how to for Flink SQL implementation.
 
 ## Getting Started with a SQL client
 
-* Use sql client in container (docker or kubernetes)
-* Use confluent cli connected to a compute pool on Confluent Cloud
+Use one of the following solutions:
+
+* Use sql client in container (docker or kubernetes) to run against local Flink cluster. (See [deployment/custom-flink-image](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/custom-flink-image) folder to build a custom image and the dockerfile with the sql-client service).
+* Use confluent cli connected to a compute pool on **Confluent Cloud**, using an environment and compute-pool already created. (To create a new environment using Terraform use [this note](terraform.md))
+
+???- info "SQL client with confluent cli"
+    [See quick start note](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-shell.html) which is summarized as:
+
+    * Connect to Confluent Cloud with CLI, then get environment and compute pool
+
+    ```sh
+    confluent login 
+    ```
+
+    * Start local SQL client - using the `aws-west` environment.
+
+    ```sh
+    export ENV_ID=$(confluent environment list -o json | jq -r '.[] | select(.name == "aws-west") | .id')
+    export COMPUTE_POOL_ID=$(confluent flink compute-pool list -o json | jq -r '.[0].id')
+    confluent flink shell --compute-pool $COMPUTE_POOL_ID --environment $ENV_ID
+    ```
+
+    * Write SQL statements.
+
+    * Some interesting commands:
+
+    ```sql
+    USE CATALOG `examples`;
+    USE `marketplace`;
+    SHOW TABLES;
+    SHOW JOBS;
+
+    ```
+
 * Write SQL statements and test them with Java SQL runner
 
 ## DDL statements
@@ -32,7 +64,7 @@ Data Definition Language (DDL) are statements to define metadata in Flink SQL by
 
     ```
 
-???- question "How to load data from a csv file using filesystem connector using SQL"
+???- question "How to load data from a csv file using filesystem connector using SQL (Local execution only)"
     Enter the following statement in a SQL client session:
 
     ```sql
@@ -75,6 +107,7 @@ Data Definition Language (DDL) are statements to define metadata in Flink SQL by
     ```sql
     alter table flight_schedules add(dt string);
     ```
+
 ??? - question "How to generate data using [Flink Faker](https://github.com/knaufk/flink-faker)?"
     Create at table with records generated with `faker` connector using the [DataFaker expressions.](https://github.com/datafaker-net/datafaker). 
 
@@ -156,6 +189,7 @@ Data Definition Language (DDL) are statements to define metadata in Flink SQL by
 
 Data modification language, is used to define statements  which modify the data and don’t change metadata.
 
+### Common patterns
 
 ???- question "How to filter out records?"
 
@@ -173,25 +207,6 @@ Data modification language, is used to define statements  which modify the data 
 
     Recall that this results produces a dynamic table.
 
-???- question "Count the number of different product type per 10 minutes"
-    The following query counts the number of different product type arriving from the event stream by interval of 10 minutes.
-
-    ```sql
-    SELECT window_start, product_type, count(product_type) as num_ptype
-        FROM TABLE(
-            TUMBLE(
-                TABLE events,
-                DESCRIPTOR(`$rowtime`),
-                INTERVAL '10' MINUTES
-            )
-        )
-        GROUP BY window_start, window_end, product_type
-    ```
-
-    TUMBLE, HOP SESSION, CUMMULATE are [windowing table-valued functions](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/window-tvf/).
-
-    When the internal time has expired the results will be published. This puts an upper bound on how much state Flink needs to keep to handle a query, which in this case is related to the number of different product type. 
-
 ???- question "How to mask a field?"
     Create a new table from the existing one, and then use REGEXP_REPLACE to mask an existing attribute
 
@@ -199,7 +214,6 @@ Data modification language, is used to define statements  which modify the data 
     create table users_msk like users;
     INSERT INTO users_msk SELECT ..., REGEXP_REPLACE(credit_card,'(\w)','*') as credit_card FROM users;
     ```
-
 
 ???- question "What are the different SQL execution modes?"
 
@@ -227,8 +241,48 @@ Data modification language, is used to define statements  which modify the data 
 
     ![](./images/changelog-exec-mode.png)
 
+
 ???- question "When and how to use custom watermark?"
     Developer should use their own [watermark strategy](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#watermark-clause) when there are not a lot of records per topic/partition, there is a need for a large watermark delay, and need to use another timestamp. 
+
+
+???- question "Deduplication example"
+
+    ```sql
+    SELECT ip_address, url, TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) as click_timestamp
+    FROM (
+        SELECT *,
+        ROW_NUMBER() OVER ( PARTITION BY ip_address ORDER BY TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) ) as rownum FROM clicks
+        )
+    WHERE rownum = 1;
+    ```
+
+
+### Windowing / Table Value Functions
+
+[Windowing Table-Valued Functions](https://docs.confluent.io/cloud/current/flink/reference/queries/window-tvf.html) groups the Tumble, Hop, Cumulate, and Session Windows. Windows split the stream into “buckets” of finite size, over which we can implement logic. The return value adds three additional columns named “window_start”, “window_end”, “window_time” to indicate the assigned window.
+
+* The TUMBLE function assigns each element to a window of specified window size. Tumbling windows have a fixed size and do not overlap.
+
+???- question "Count the number of different product type per 10 minutes (TUMBLE window)"
+    [Aggregate a Stream in a Tumbling Window documentation.](https://docs.confluent.io/cloud/current/flink/how-to-guides/aggregate-tumbling-window.html). 
+    The following query counts the number of different product types arriving from the event stream by interval of 10 minutes.
+
+    ```sql
+    SELECT window_start, product_type, count(product_type) as num_ptype
+        FROM TABLE(
+            TUMBLE(
+                TABLE events,
+                DESCRIPTOR(`$rowtime`),
+                INTERVAL '10' MINUTES
+            )
+        )
+        GROUP BY window_start, window_end, ;
+    ```
+    *DESCRIPTOR* indicates which time attributes column should be mapped to tumbling windows (here the kafka record ingestion timestamp). 
+    
+    When the internal time has expired the results will be published. This puts an upper bound on how much state Flink needs to keep to handle a query, which in this case is related to the number of different product type. 
+
 
 
 ???- question "Aggregation over a window"
@@ -246,8 +300,8 @@ Data modification language, is used to define statements  which modify the data 
 
     The results are updated for every input row. The partition is by flight_id. Order by $rowtime is necessary.
 
-???- question "Find the number of element in x minutes intervals advanced by 5 minutes? (HOP)"
-    [Confluent documentation on window integration.](https://docs.confluent.io/cloud/current/flink/reference/queries/window-tvf.html)
+???- question "Find the number of elements in x minutes intervals advanced by 5 minutes? (HOP)"
+    [Confluent documentation on window integration.](https://docs.confluent.io/cloud/current/flink/reference/queries/window-tvf.html). For **HOP** wuindow, there is the slide parameter to control how frequently a hopping window is started:
 
     ```sql
         SELECT
@@ -258,15 +312,16 @@ Data modification language, is used to define statements  which modify the data 
         GROUP BY window_start, window_end;
     ```
 
-???- question "Deduplication example"
+???- question "How to compute the accumulate price over time in a day (CUMULATE)"
+    Needs to use the cumulate window, which adds up records to the window until max size, but emits results at each window steps. 
+    The is image summarizes well the behavior:
+    ![](https://docs.confluent.io/cloud/current/_images/flink-cumulating-windows.png)
 
     ```sql
-    SELECT ip_address, url, TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) as click_timestamp
-    FROM (
-        SELECT *,
-        ROW_NUMBER() OVER ( PARTITION BY ip_address ORDER BY TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) ) as rownum FROM clicks
-        )
-    WHERE rownum = 1;
+    SELECT window_start, window_end, SUM(price) as `sum`
+        FROM TABLE(
+            CUMULATE(TABLE `examples`.`marketplace`.`orders`, DESCRIPTOR($rowtime), INTERVAL '30' SECONDES, INTERVAL '3' MINUTES))
+        GROUP BY window_start, window_end;
     ```
 
 ## Confluent Cloud Specific
@@ -299,7 +354,7 @@ Each topic is automatically mapped to a table with some metadata fields added, l
     
     ![](./diagrams/flaker-to-kafka.drawio.png)
 
-    The [scripts and readme](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/01-confluent-kafka-local-flink) .
+    The [scripts and readme](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/01-confluent-kafka-local-flink) .
 
 ???- question "Supported connector for Flink SQL and Confluent Cloud"
     See the [product documentation at this link]().
@@ -317,15 +372,11 @@ Each topic is automatically mapped to a table with some metadata fields added, l
     ```
 
 ???- question "Assess the current flink statement running in Confluent Cloud"
-        To assess which jobs are still running, which jobs failed, and which stopped, we can use the user interface, go to the Flink console > . Or the
-        `confluent` CLI:
-        ```sh
-        confluent environment list
-        confluent flink compute-pool list
-        confluent flink statement list --cloud aws --region us-west-2 --environment <your env-id> --compute-pool <your pool id>
-        ```
+    To assess which jobs are still running, which jobs failed, and which stopped, we can use the user interface, go to the Flink console > . Or the `confluent` CLI:
 
+    ```sh
+    confluent environment list
+    confluent flink compute-pool list
+    confluent flink statement list --cloud aws --region us-west-2 --environment <your env-id> --compute-pool <your pool id>
+    ```
 
-
-
-???- question "Time-valued function"

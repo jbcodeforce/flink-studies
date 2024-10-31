@@ -1,14 +1,25 @@
-# Flink and Kafka and some SQL streaming demo
+# Local Flink with Local or Remote Kafka and some Flink SQL examples 
 
-Start one Flink **Job manager** and **Task manager**, using the `kafka-docker-compose.yaml` or the `confluent-flink-dc.yaml` in deployment-local folder of this project. The docker file mounts the root folder in `/home`, so content of the data will be in `/home/flink-sql-demos` 
+## Local Kafka Cluster
+
+Start the Confluent Platform using the docker compose in [deployment/docker](../../deployment/docker) folder using `cp-docker-compose.yaml`.
+
+The data will be generate with open Source Flink "Faker" connector. 
+
+### [optional] Use Kafka Connect Datagen connector
+
+As an alternate we can use [Kafka Connector](https://github.com/confluentinc/kafka-connect-datagen) to generate random data using Faker.
+Use the Docker image based on Kafka Connect with the [kafka-connect-datagen](https://hub.docker.com/r/cnfldemos/kafka-connect-datagen) plugin already installed.
+
+* Use on Datagen Kafka connector configuration and post to the /connectors API:
+
+```
+curl -X POST -H "Content-Type: application/json" --data @datagen-config/shoe-products.json http://localhost:8083/connectors
+```
 
 ## Local Flink execution 
 
-* Start the confluent kafka cluster with the 3 Flink containers: 
-
-```sql
-docker compose -f confluent-flink-dc.yaml up -d
-```
+Start one Flink **Job manager** and **Task manager**, using the `docker-compose.yaml` in this folder of this project. The docker file mounts the root folder in `/home`, so content of the data will be in `/home/data` 
 
 * Create the Kafka Stream table
 
@@ -32,7 +43,6 @@ CREATE TABLE pageviews_kafka (
 
 * Create the table to generate records with FlinkFaker
 
-
 ```sql
 CREATE TABLE `pageviews` (
   `url` STRING,
@@ -50,7 +60,7 @@ WITH (
 );
 ```
 
-* Move records from generated table to kafka topic
+* Move records from the generated table to kafka topic
 
 ```sql
 INSERT INTO pageviews_kafka SELECT * FROM pageviews;
@@ -71,8 +81,8 @@ confluent kafka topic create pageviews --cluster <cluster-id>
 confluent kafka cluster describe <cluster-id>
 ```
 
-* Use the local docker compose with just task manager, job manager and SQL client containers
-* Create a table to connect to Kafka Streams
+* Use the local same local docker compose with just task manager, job manager and SQL client containers
+* Create a table to connect to Kafka change the attributes with API_KEY, API_SECRETS and BOOTSTRAP_SERVER
 
 ```sql
 CREATE TABLE pageviews_kafka (
@@ -121,5 +131,5 @@ INSERT INTO pageviews_kafka SELECT * FROM pageviews;
 
 ### Problems
 
-10/08/24  the module org.apache.kafka.common.security.plain.PlainLoginModule is missing in job and task managers. need to add libraries some how verify if these are the good paths in the dockerfile of sql-client. not aligned with https://github.com/confluentinc/learn-apache-flink-101-exercises/blob/master/sql-client/Dockerfile
+10/08/24  the module org.apache.kafka.common.security.plain.PlainLoginModule is missing in job and task managers. We  need to add libraries some how verify if these are the good paths in the dockerfile of sql-client. This is not aligned with https://github.com/confluentinc/learn-apache-flink-101-exercises/blob/master/sql-client/Dockerfile
 
