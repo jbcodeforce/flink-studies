@@ -1,20 +1,16 @@
 # Getting started
 
 ???- info "Update"
-    Created 2018 Updated 10/2024
-    Flink supports Java 11 so Quarkus code needs to be limited to quarkus 3.2.12_Final and maven should compile in JDK 11.
+    * Created 2018 
+    * Updated 10/2024
+
+This chapter groups the different environments to deploy Flink job locally on developers workstation which could be docker compose, minikube, or hybrid using Confluent Cloud Kafka cluster and local Flink. For using Confluent Cloud  for Flink read [this chapter](../techno/ccloud-flink.md#getting-started).
 
 ## Pre-requisites
 
-* Need a docker engine, with Docker Desktopn and docker compose CLIs or Minikube and docker-ce engine.
+* Need a docker engine, with docker compose CLIs or Minikube and docker-ce engine.
 * Get docker cli, helm, and kubectl
 * Clone this repository.
-
-As a Serverless solution without managing Flink and focusing on developing SQL based streaming use [Confluent Cloud for Apache Flink](../techno/ccloud-flink.md). 
-
-## Confluent Cloud deployment
-
-[See this chapter](../techno/ccloud-flink.md#getting-started) for starting doing some Flink SQL work.
 
 ## Minikube
 

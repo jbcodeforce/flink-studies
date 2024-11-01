@@ -1,37 +1,52 @@
 # Confluent Cloud for Apache Flink
 
-[Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/flink/overview.html) is a managed service for Flink cluster in parallel of Kafka cluster managed service.
+???- info "Chapter updates"
+    * Created 10/2024 
+    * Review 10/31/24
 
-![](./diagrams/ccloud-flink.drawio.png)
+[Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/flink/overview.html) is a cloud-native, managed service, for Flink in parallel of the Kafka managed service.
+
+![](./diagrams/ccloud-flink.drawio.png){ width=600 }
+
+Confluent Cloud Flink is built on the same open-source version as Apache Flink with additional features:
+
+* Auto-inference of the Confluent Cloud environment, including Kafka cluster , topics and schemas, to Flink SQL constructs of catalog, databases and tables.
+* Autoscaling capabilities.
+* Default system column for timestamps using the `$rowtime` column.
+* Default watermark strategy based on $rowtime.
+* Support for Avro, JSON Schema, and Protobuf.
+* CREATE statements provision resources as Kafka topics and schemas (temporary tables not supported).
+* Read from and write to Kafka in two modes: append-stream or update-stream.
 
 ## Key Concepts
 
-* This is a regional service
-* Compute pools groups resources needed to run a Flink cluster and can scale to zero. Used to run SQL **statements**. The max size of the pool is set at creation.
+* This is a **regional service**, in one of the three major cloud providers.
+* **Compute pools** groups resources for running Flink clusters, which may scale down to zero. Used to run SQL **statements**. Maximum pool size is defined at creation.
 * Capacity is measured in Confluent Flink Unit, [CFU](). Each statement is 1 CFU-minute.
 * A statement may be structural (DDL), runs in background to write data to table (DML) , or foreground to present data to client app.
-* Can support multiple Kafka clusters in the same CC organization within the same region.
+* Supports multiple Kafka clusters within the same Confluent Cloud organization in a single region.
 * Kafka Topics and schemas are always in synch with Flink.
-* Statement in different compute pools are **isolated** from each other. 
-* Any table created in CC Flink is visible as a topic in CC Kafka.
-* A catalog is a collection of database, a database is a collection of tables.
-* The differences with the OSS, is that the DDL statements of catalog, database, table are mapped to physical kafka objects. Table is a schema and a topic, catalog is an environment, and database is a cluster.
-* CC offers the **Autopilot** to scale up or down resources for any SQL statement. Scaled up if there is a need to increase resource due to more data.
-* Integrated with RBAC with user and service accounts support.
-* Stream lineage is a feature to at the topic level to understand where the data are coming from. 
-* For Watermark configuration, Confluent Cloud for Apache Flink handles it automatically, using the $rowtime which is mapped to the Kafka record timestamp and by observing the behavior of the streams then adapting the configuration.
-* When messages processing starts to be behind, autopilot adjust resource allocation.
+* Statements, in different compute pools, are **isolated** from each other. 
+* Any table created in CC Flink appears as a topic in CC Kafka.
+* A catalog is a collection of databases. A database is a collection of tables.
+* The differences with the OSS version, is that the DDL statements of catalog, database, table are mapped to physical kafka objects. Table is a schema and a topic, catalog is an environment, and database is a cluster.
+* CC offers the **Autopilot**, to automatically adjusts resources for SQL statements based on demand.
+* Supports role-based access control for both user and service accounts.
+* **Stream lineage** provides insights at the topic level about data origins.. 
+* For **Watermark** configuration, Confluent Cloud for Apache Flink manages it automatically, by using the `$rowtime` column, which is mapped to the Kafka record timestamp, and by observing the behavior of the streams to dynamically adapt the configuration.
+* When messages processing starts to be behind, **Autopilot** adjusts resource allocation.
 * [Service accounts](https://docs.confluent.io/cloud/current/security/authenticate/workload-identities/service-accounts/overview.html#service-accounts) are used for production deployment to enforce security boundaries. Permissions are done with ACL and role binding. They can own any type of API keys that can be used for CLI or API access.
 
 ???- info "Statement life cycle"
     Use a service account for background statement.
-    Submit a statement:
+    Submit a SQL statement using the client shell:
 
     ```sh
     confluent flink shell --compute-pool ${COMPUTE_POOL_ID} --environment ${ENV_ID} --service-account
     ```
 
 ???- question "How to change the CFU limit?"
+    CFU can be changed via the console or the cli, up to the limit of 50. Going above need to be via ticket to Confluent support.
 
 
 ## Getting Started
@@ -50,9 +65,9 @@ There is also a new confluent cli plugin: `confluent-flink-quickstart` to create
 confluent flink quickstart --name my-flink-sql --max-cfu 10 --region us-west-2 --cloud aws
 ```
 
-For study and demonstration there is a read-only catalog named `examples` with database called `marketplace` which is a data generator in SQL tables in memory. 
+For study and demonstration purpose, there is a read-only catalog named [`examples`](https://docs.confluent.io/cloud/current/flink/reference/example-data.html) with database called `marketplace` which is a data generator in SQL tables in memory. 
 
-Set the namespace for queries using:
+Set the namespace for future query work using:
 
 ```sql
 use catalog examples;
@@ -60,14 +75,14 @@ use marketplace;
 show tables;
 ```
 
-While to map to the created environement we need to:
+To use your dedicated environment use the following syntax:
 
 ```sql
 use catalog my-flink-sql_environment;
 use  my-flink-sql_kafka-cluster;
 ```
 
-To shutdown every thing:
+To shutdown everything:
 
 ```sh
 confluent environment list
@@ -120,11 +135,10 @@ Nothing special, except that once the job is started we cannot modify it, we nee
 
 ### Use Java Table API
 
-The approach is to create a maven Java project with a main class to declare the data flow.  
-[See this git repo: Learn-apache-flink-table-api-for-java-exercises](https://github.com/confluentinc/learn-apache-flink-table-api-for-java-exercises). See the [Table API in Java documentation](https://docs.confluent.io/cloud/current/flink/reference/table-api.html).
+The approach is to create a maven Java project with a main class to declare the data flow.  [Read this chapter](../coding/table-api.md).
 
 
 ## Deeper dive
 
 * [Confluent Flink workshop](https://github.com/confluentinc/commercial-workshops/tree/master/series-getting-started-with-cc/workshop-flink) to learn how to build stream processing applications using Apache Flink on Confluent Cloud.
-* [Connecting the Apache Flink Table API to Confluent Cloud](https://developer.confluent.io/courses/flink-table-api-java/exercise-connecting-to-confluent-cloud/) with matching [github](https://github.com/confluentinc/learn-apache-flink-table-api-for-java-exercises) which part of this code was ported into [flink-sql-demos/02-table-api-java](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/02-table-api-java)
+* [Shoe-store workshop](https://github.com/griga23/shoe-store) with Terraform and SQL demonstration using DataGen.

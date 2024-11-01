@@ -6,9 +6,8 @@ nav:
   - Introduction: 
     - Concepts: index.md
     - Getting started: coding/getting-started.md
-    - Fit for purpose: architecture/fitforpurpose.md
-  - Products: 
     - Flink Architecture: architecture/index.md
+    - Fit for purpose: architecture/fitforpurpose.md
     - Flink SQL concepts: architecture/flink-sql.md
     - Java Table API: coding/table-api.md
     - Stateful function: coding/stateful-func.md
@@ -24,6 +23,7 @@ nav:
     - Flink on k8s Monitoring: techno/fk-k8s-monitor.md
   - Techno:
     - Confluent Cloud Flink: techno/ccloud-flink.md 
+    - Confluent Cloud Platform Flink: techno/cp-flink.md 
     - Kafka Integration: kafka.md
   - EDA: https://jbcodeforce.github.io/eda-studies
 theme: 

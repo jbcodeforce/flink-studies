@@ -17,7 +17,7 @@ The **Task Managers** execute the actual stream processing logic. There are mult
 
 ![2](./images/flink-components.png)
 
-The **Disparcher** exposes API to submit applications for execution. It hosts the user interface too.
+The **Dispatcher** exposes API to submit applications for execution. It hosts the user interface too.
 
 Once the job is running, the Job Manager is responsible to coordinate the activities of the Flink cluster, like checkpointing, and restarting task manager that may have failed.
 
@@ -69,6 +69,35 @@ When latency is a major requirements, like monitoring and alerting, fraud detect
 With Task managers running in parallel, if one fails the number of available slots drops, and the JobManager asks the Resource Manager to get new processing slots. The application's restart strategy determines how often the JobManager restarts the application and how long it waits between restarts.
 
 Flink uses Zookeeper to manage multiple JobManagers and select the leader to control the execution of the streaming application. Application's tasks checkpoints and other states are saved in a remote storage, but metadata are saved in Zookeeper. When a JobManager fails, all tasks that belong to its application are automatically cancelled. A new JobManager that takes over the work by getting information of the storage from Zookeeper, and then restarts the process with the JobManager.
+
+
+## Fault Tolerance
+
+Two major Flink features to support fault tolerance are checkpoints and savepoints. 
+
+### Checkpointing
+
+Checkpoints are created automatically and periodically by Flink. The saved states are used to recover from failures, and checkpoints are optimized for quick recovery.
+
+As part of the checkpointing process, Flink saves the 'offset read commit' information of the append log, so in case of a failure, Flink recovers a stateful streaming application by restoring its state from a previous checkpoint and resetting the read position on the append log.
+
+The evolution of microservice is to become more event-driven, which are stateful streaming applications that ingest event streams and process the events with application-specific business logic. This logic can be done in flow defined in Flink and executed in the clustered runtime.
+
+![](./images/evt-app.png)
+
+Transform operators can be chained. 
+
+A Flink application, may be stateful, runs in parallel on a distributed cluster. The various parallel instances of a given operator execute independently, in separate threads, and in general run on different machines.
+
+State is always accessed locally, which helps Flink applications achieve high throughput and low-latency. Developers can choose to keep state on the JVM heap, or if it is too large, save it on-disk.
+
+ ![4](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/local-state.png)
+
+
+### Savepoints
+
+Savepoints are user triggered snapshot at a specific point in time. It is used during system operations like product upgrades. The Flink operator for kubernetes has [custom resource definition](./coding/k8s-deploy.md#ha-configuration) to support the savepoint process. See also the end to end demo for savepoint in [this folder.](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/savepoint-demo)
+
 
 ## State management
 

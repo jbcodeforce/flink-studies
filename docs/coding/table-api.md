@@ -180,3 +180,9 @@ Some code is in [this folder](https://github.com/jbcodeforce/flink-studies/tree/
                                .select($("customer_id"), $("price"))
                                .insertInto("PricePerCustomer"));
     ```
+
+## Deeper dive
+
+* [See this git repo: Learn-apache-flink-table-api-for-java-exercises](https://github.com/confluentinc/learn-apache-flink-table-api-for-java-exercises). 
+* See the [Table API in Java documentation](https://docs.confluent.io/cloud/current/flink/reference/table-api.html).
+* [Connecting the Apache Flink Table API to Confluent Cloud](https://developer.confluent.io/courses/flink-table-api-java/exercise-connecting-to-confluent-cloud/) with matching [github](https://github.com/confluentinc/learn-apache-flink-table-api-for-java-exercises) which part of this code was ported into [flink-sql-demos/02-table-api-java](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/02-table-api-java)

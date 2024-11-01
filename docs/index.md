@@ -1,76 +1,78 @@
 # Apache Flink Studies
 
 
-???- info "Update"
-    Created 2018 Updated 10/2024
-    
+???- info "Site updates"
+    * Created 2018 
+    * Updated 10/2024: reorganize the content, separate SQL versus Java, add Confluent Cloud and Platform contents in technology chapters.
+
+???- info "This chapter updates"
+    * Created 2018 
+    * 10/24: rework intro and stream processing description. Move fault tolerance to architecture
+
 ## Why Flink?
 
-In classical IT architecture, we can see two types of data processing: transactional and analytics. 
-With 'monolytics' application, the database system serves multiple applications which sometimes access the same database instances and tables. This approach causes problems to support evolution and scaling. 
-Microservice architecture addresses part of those problems by isolating data storage per service. 
+In classical IT architecture, we can observe  two types of data processing: **1/** transactional and **2/** analytics. 
 
-To get insight from the data, the traditional approach is to develop data warehouse and ETL jobs to copy and transform data from the transactional systems to the warehouse. ETL processes extract data from a transactional database, transform data into a common representation that might include validation, value normalization, encoding, deduplication, and schema transformation, and finally load the new records into the target analytical database. They are batches and run periodically.
+1. **Transactional** processing: In a 'monolithic' application, the database system serves multiple applications that may access the same database instances and tables. This approach can create challenges in supporting evolution and scalability. Microservice architecture addresses some of these issues by isolating data storage per service.
 
-From the data warehouse, the analysts build queries, metrics, and dashboards / reports to address a specific business question. 
+1. **Analytics**: To gain insights from the data, the traditional approach involves developing a data warehouse and ETL jobs to copy and transform data from transactional systems to the warehouse. ETL processes extract data from a transactional database, transform it into a common representation (including validation, normalization, encoding, deduplication, and schema transformation), and then load the new records into the target analytical database. These processes are run periodically in batches.
 
-Massive storage is needed, which uses different protocol such as: NFS, S3, HDFS...
+From the data warehouse, the analysts build queries, metrics, and dashboards / reports to address specific business questions. Data may be at stale. Massive storage is needed, and often the same data is replicated in multiple places, increasing cost and energy consumption.
 
-Today, there is a new way to think about data, by considering them, as continuous streams of events, which can be processed in real time. Those event streams serve as the foundation for stateful stream processing applications: the analytics move to the data.
+Today, there is a new way to think about data by considering them as continuous streams of events that can be processed in real time. These event streams form the basis for stateful stream processing applications where **analytics are brought to the data**.
 
-We can define three classes of application implemented with stateful stream processing:
+We can categorize applications implemented with stateful stream processing into three classes:
 
-1. **Event-driven applications**: to adopt the reactive manifesto for scaling, resilience, responsive application, leveraging messaging as communication system.
-1. **Data pipeline applications**: to replace ETL with low latency stream processing for data transformation, enrichment....
-1. **Data analytics applications**: to compute aggregates; and to immediately act on the data and query live updated reports. 
+1. **Event-driven applications**: These applications follow the reactive manifesto for scaling, resilience, and responsiveness, utilizing messaging as a communication system. Microservice applications produce events, and consume them.
+1. **Data pipeline applications**: These applications aim to replace ETL or ELT with low-latency stream processing for data transformation, enrichment, deduplication, etc...
+1. **Data analytics applications**: These applications focus on computing aggregates and taking immediate action on data, as well as querying live, or creating reports.
 
-For more real industry use cases content see the [Flink Forward web site.](https://www.flink-forward.org/)
+## Overview of Apache Flink
 
-## The What 
+[Apache Flink](https://flink.apache.org) (established in 2016) is a powerful framework and distributed processing engine designed for stateful computations over both unbounded and bounded data streams. It excels in batch processing and graph processing, becoming a standard in the industry due to its impressive performance and comprehensive feature set.
 
-[Apache Flink](https://flink.apache.org) (2016) is a framework and **distributed processing** engine for stateful computations over unbounded and bounded data streams. Flink supports batch (data set) and graph (data stream) processing. Since few years it becomes standard for its performance and rich feature set. 
-
-It is based on four important capabilities:
+Flink's functionality is built upon four core capabilities:
 
 * Streaming
-* State
-* Time
-* Checkpoint
+* State Management
+* Time Handling
+* Checkpointing
 
-Flink is very good at:
+Key characteristics of Flink include:
 
-* Very low latency processing with event time semantics to get consistent and accurate results even in case of out of order events.
-* Exactly once state consistency. 
-* Millisecond latencies while processing millions of events per second
-* Expressive and easy-to-use APIs: map, reduce, join, window, split, and connect...
-* Fault tolerance, and high availability: supports worker and master failover, eliminating any single point of failure
-* Support Java, Scala, Python and SQL to implement the streaming logic.
-* A lot of connectors to integrate with Kafka, Cassandra, Pulsar, Elastic Search, JDBC, S3...
-* Support container and deployment on Kubernetes
-* Support updating the application code and migrate jobs to different Flink clusters without losing the state of the application
-* Also support batch processing
-
+* **Low Latency Processing:** Offers event time semantics for consistent and accurate results, even with out-of-order events.
+* **Exactly-Once Consistency:** Ensures reliable state management to avoid duplicates and not loosing message.
+* **High Throughput:** Achieves millisecond latencies while processing millions of events per second.
+* **Powerful APIs:** Provides APIs for operations such as map, reduce, join, window, split, and connect.
+* **Fault Tolerance and High Availability:** Supports failover for task manager nodes, eliminating single points of failure.
+* **Multilingual Support:** Enables streaming logic implementation in Java, Scala, Python, and SQL.
+* **Extensive Connectors:** Integrates seamlessly with various systems, including Kafka, Cassandra, Pulsar, Elasticsearch, File system, JDBC complain Database, HDFS and S3.
+* **Kubernetes Compatibility:** Supports containerization and deployment on Kubernetes with dedicated k8s operator to manage session job or application as well as job and task managers.
+* **Dynamic Code Updates:** Allows for application code updates and job migrations across different Flink clusters without losing application state.
+* **Batch Processing:** Also transparently support traditional batch processing workloads as reading at rest table becomes a stream in Flink.
 
 ## Stream processing concepts
 
-* A Flink application is run as a **job** and represents a topology of nodes, which is a processing pipeline. It is also named Dataflow.
-* Dataflows may be transformed by user-defined operators. Each step of the graph is executed by an operator. These dataflows form directed acyclic graphs that start with one or more sources, and end in one or more sinks.
-* Sources get data from a stream, like Kafka topic/partition.
+A Flink application is executed as a **job**, representing a processing pipeline known as a Dataflow.
 
-![](./diagrams/dag.drawio.png)
+* **Dataflows** can be modified using user-defined operators. Each step of the pipeline is handled by an operator.
+* These dataflows are structured as directed acyclic graphs (DAGs), beginning with one or more sources and concluding with one or more sinks.
+* **Sources** retrieve data from streams, such as Kafka topics or partitions.
 
-* The source operator forwards records to the downstream operators
-* The graph can run in parellel while consuming from different partitions
-* Operator can filter records out of the streams or do enrichments
-* Operators can also run in parallel after data redistribution.
-* Some operators, like **Group by**, need to do reshuffling or repartitioning of the data to the operator, or do a reblancing to merge streams.
+![](./diagrams/dag.drawio.png){ width=600 }
 
+* The **source operator** forwards records to downstream operators.
+* The graph can run in parallel, consuming data from different partitions.
+* Operators can filter records from the streams or perform enrichments.
+* Some operators can run in parallel after data redistribution.
+* Operators like **Group By** may require reshuffling or repartitioning of data, or rebalancing to merge streams.
 
 ### Bounded and unbounded data
 
 A Stream is a sequence of events, bounded or unbounded:
 
 ![](./diagrams/streaming.drawio.png)
+
 
 ### Dataflow
 
@@ -92,22 +94,22 @@ Stream processing includes a set of functions to transform data, and to produce 
 
 ### Distributed platform
 
-To improve throughput the data is partitionned so operators can run in parallel. Programs in Flink are inherently parallel and distributed. During execution, a stream has one or more stream partitions, and each operator has one or more operator subtasks.
+To improve throughput the data is partitioned so operators can run in parallel. Programs in Flink are inherently parallel and distributed. During execution, a stream has one or more stream partitions, and each operator has one or more operator subtasks.
 
  ![3](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/parallel_dataflow.svg)
 
  *src: apache Flink site*
 
-Some operations, such `group-by` or `count`,  may reshuffle or repartition the data. This is a costly operation, that involves serialization and sending data over the network. Finally events can be assigned to one sink via rebalancing from multiple streams to one. Here is an example of SQL streaming logic with where statement can be run in parallel; while grouping, repartition the streams and then rebalance to one sink:
+Some operations, such as GROUP BY or COUNT, may require reshuffling or repartitioning the data. This can be a costly operation, involving serialization and network transmission. Ultimately, events can be assigned to a single sink through rebalancing from multiple streams.
 
 ```sql
 INSERT INTO results
-SELECT color, COUNT(*) FROM events
+SELECT key, COUNT(*) FROM events
 WHERE color <> blue
-GROUP BY color;
+GROUP BY key;
 ```
 
-To properly define window operator semantics, developers need to determine both how events are assigned to buckets and how often the window produces a result. Flink's streaming model is based on windowing and checkpointing, it uses controlled cyclic dependency graph as its execution engine.
+In this example, the SQL statement can be executed in parallel. During the grouping phase, the streams are repartitioned, followed by rebalancing to send the results to one sink.
 
 The following figure is showing integration of stream processing runtime with an append log system, like Kafka, with internal local state persistence and continuous checkpointing to remote storage as HA support:
 
@@ -115,88 +117,58 @@ The following figure is showing integration of stream processing runtime with an
 
 Using a local state persistence, improves latency, while adopting a remote backup storage increases fault tolerance.
 
-## Fault Tolerance
-
-Two major Flink features to support fault tolerance are checkpoints and savepoints. 
-
-### Checkpointing
-
-Checkpoints are created automatically and periodically by Flink. The saved states are used to recover from failures, and checkpoints are optimized for quick recovery.
-
-As part of the checkpointing process, Flink saves the 'offset read commit' information of the append log, so in case of a failure, Flink recovers a stateful streaming application by restoring its state from a previous checkpoint and resetting the read position on the append log.
-
-The evolution of microservice is to become more event-driven, which are stateful streaming applications that ingest event streams and process the events with application-specific business logic. This logic can be done in flow defined in Flink and executed in the clustered runtime.
-
-![](./images/evt-app.png)
-
-Transform operators can be chained. 
-
-A Flink application, may be stateful, runs in parallel on a distributed cluster. The various parallel instances of a given operator execute independently, in separate threads, and in general run on different machines.
-
-State is always accessed locally, which helps Flink applications achieve high throughput and low-latency. Developers can choose to keep state on the JVM heap, or if it is too large, save it on-disk.
-
- ![4](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/local-state.png)
-
-
-### Savepoints
-
-Savepoints are user triggered snapshot at a specific point in time. It is used during system operations like product upgrades. The Flink operator for kubernetes has [custom resource definition](./coding/k8s-deploy.md#ha-configuration) to support the savepoint process. See also the end to end demo for savepoint in [this folder.](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/savepoint-demo)
-
 ## Stateless
 
-Some applications support data loss and expect fast recovery times in case of failure and are always consuming the latest incoming data: Alerting applications where only low latency alerts are useful, fit into this category. As well as applications where only the last data received is relevant. 
+Stateless applications are designed to tolerate data loss and prioritize rapid recovery following failures. They continuously process the most recent incoming data, making them ideal for scenarios where only low-latency alerts are valuable. This category includes alerting systems and applications that only require the latest data point to function effectively.
 
-When checkpointing is turned off Flink offers no inherent guarantees in case of failures. This means that you may either have data loss or duplicate messages combined always with a loss of application state.
+When checkpointing is disabled, Apache Flink does not provide built-in guarantees against failures. As a result, you may encounter issues such as data loss, duplicate messages, and a complete loss of application state. This lack of reliability necessitates careful consideration when designing stateless systems, particularly in environments where data integrity is crucial.
 
-## Statefulness
 
-When using aggregates or windows operators, states need to be kept. For fault tolerance, Flink uses checkpoints and savepoints. 
 
-**Checkpoints** represent a snapshot of where the input data stream is with each operator's state. A streaming dataflow can be resumed from a checkpoint while maintaining consistency (exactly-once processing semantics) by restoring the state of the operators and by replaying the records from the point of the checkpoint.
+## Stateful Processing
 
-In case of failure of a parallel execution, Flink stops the stream flow, then restarts operators from the last checkpoints. 
-When doing the reallocation of data partition for processing, states are reallocated too. 
-States are saved on distributed file systems. When coupled with Kafka as data source, the committed read offset will be part of the checkpoint data.
+Stateful applications require the retention of state information, particularly when using aggregate or window operators. To ensure fault tolerance, Flink employs checkpoints and savepoints.
 
-Flink uses the concept of `Checkpoint Barriers`, which represents a separation of records, so records received since the last snapshot are part of the future snapshot. 
+**Checkpoints** are snapshots of the input data stream, capturing the state of each operator at a specific point in time. This allows a streaming dataflow to be resumed from a checkpoint while maintaining consistency through exactly-once processing semantics. When a failure occurs, Flink can restore the state of the operators and replay the records starting from the checkpoint.
+
+In the event of a failure in a parallel execution, Flink halts the stream flow and restarts the operators from the most recent checkpoints. During data partition reallocation for processing, the associated states are also reallocated. States are stored in distributed file systems, and when Kafka is used as the data source, the committed read offsets are included in the checkpoint data.
+
+Flink utilizes the concept of **Checkpoint Barriers** to delineate records. These barriers separate records so that those received after the last snapshot are included in the next checkpoint, ensuring a clear and consistent state transition.
 
 Barrier can be seen as a mark, a tag, in the data stream that closes a snapshot. 
 
- ![Checkpoints](./images/checkpoints.png)
+ ![Checkpoints](./images/checkpoints.png){ width=600 }
 
-In Kafka, it will be the last committed read offset. The barrier flows with the stream so it can be distributed. Once a sink operator (the end of a streaming DAG) has received the `barrier n` from all of its input streams, it acknowledges that `snapshot n` to the checkpoint coordinator. 
-After all sinks have acknowledged a snapshot, it is considered completed. 
-Once `snapshot n` has been completed, the job will never ask the source for records before such snapshot.
+In Kafka, the last committed read offset is utilized as part of the state management process. Checkpoint barriers flow with the stream, allowing them to be distributed across the system. When a sink operator — located at the end of a streaming Directed Acyclic Graph (DAG) — receives `barrier n` from all its input streams, it acknowledges `snapshot n` to the checkpoint coordinator.
 
-State snapshots are saved in a state backend (in memory, HDFS, RockDB). 
+Once all sink operators have acknowledged a snapshot, it is considered complete. After snapshot n is finalized, the job will not request any records from the source prior to that snapshot, ensuring data consistency and integrity.
 
-KeyedStream is a key-value store. Key matches the key in the stream, state update does not need transaction.
+State snapshots are stored in a state backend, which can include options such as in-memory storage, HDFS, or RocksDB. This flexibility allows for optimal performance and scalability based on the application’s requirements.
 
-For DataSet (Batch processing) there is no checkpoint, so in case of failure the stream is replayed from te beginning.
+In the context of a KeyedStream, Flink functions as a key-value store where the key corresponds to the key in the stream. State updates do not require transactions, simplifying the update process.
 
-When addressing exactly once processing it is very important to consider the following:
+For DataSet (Batch processing) there is no checkpoint, so in case of failure the stream is replayed from tHe beginning.
 
-1. the read operation from the source
-1. apply the processing logic like window aggregation
-1. generate the results to a sink
+When addressing exactly once processing it is crucial to consider the following steps:
 
-1 and 2 can be done exactly once, using Flink source connector and checkpointing but generating one unique result to a sink is more complex and is dependant of the target technology. 
+* **Read Operation from the Source**: Ensuring that the data is read exactly once is foundational. Flink's source connectors are designed to handle this reliably through mechanisms like checkpointing.
+* **Apply Processing Logic** which involves operations such as window aggregation or other transformations, which can also be executed with exactly-once semantics when properly configured.
+* **Generate Results to a Sink** introduces more complexity. While reading from the source and applying processing logic can be managed to ensure exactly-once semantics, generating a unique result to a sink depends on the target technology and its capabilities. Different sink technologies may have varying levels of support for exactly-once processing, requiring additional strategies such as idempotent writes or transactional sinks to achieve the desired consistency.
 
-![](./images/e2e-1.png)
 
-After reading records from Kafka, do the processing and generate results, in case of failure, Flink will reload the record from the read offset and may generate duplicates in the Sink. 
+![](./images/e2e-1.png){ width=800 }
 
-![](./images/e2e-2.png)
+After reading records from Kafka, processing them, and generating results, if a failure occurs, Flink will revert to the last committed read offset. This means it will reload the records from Kafka and reprocess them. As a result, this can lead to duplicate entries being generated in the sink:
 
-As duplicates will occur, we always need to assess how downstream applications support idempotence.
-A lot of distributed key-value storages support consistent result even after retries.
+![](./images/e2e-2.png){ width=800 }
 
-To support end-to-end exactly one delivery, we need to have a sink that supports transaction and two-phase commit.
-In case of failure we need to rollback the output generated. It is important to note transactional output impacts latency.
+Since duplicates may occur, it is crucial to assess how downstream applications handle idempotence. Many distributed key-value stores are designed to provide consistent results even after retries, which can help manage duplicate entries effectively.
 
-Flink takes checkpoints periodically, like every 10 seconds, which leads to the minimum latency, we can expect at the sink level.
+To achieve end-to-end exactly-once delivery, it is essential to utilize a sink that supports transactions and implements a two-phase commit protocol. In the event of a failure, this allows for the rollback of any output generated, ensuring that only successfully processed data is committed. However, it's important to note that implementing transactional outputs can impact overall latency.
 
-For Kafka Sink connector, as kafka producer, we need to set the `transactionId`, and the delivery type:
+Flink takes checkpoints periodically — typically every 10 seconds — which establishes the minimum latency we can expect at the sink level. This periodic checkpointing is a critical aspect of maintaining state consistency while balancing the need for timely data processing.
+
+For Kafka Sink connector, as kafka producer, we need to set the `transactionId`, and the delivery guarantee type:
 
 ```java
 new KafkaSinkBuilder<String>()
@@ -208,29 +180,47 @@ new KafkaSinkBuilder<String>()
 With transaction ID, a sequence number is sent by the kafka producer API to the broker, and so
 the partition leader will be able to remove duplicate retries.
 
-![](./images/e2e-3.png)
+![](./images/e2e-3.png){ width=800 }
 
 When the checkpointing period is set, we need to also configure `transaction.max.timeout.ms`
 of the Kafka broker and `transaction.timeout.ms` for the producer (sink connector) to a higher
 timeout than the checkpointing interval plus the max expected Flink downtime. If not the Kafka broker
 will consider the connection has fail and will remove its state management.
 
-
-### Windowing
+## Windowing
 
 [Windows](https://ci.apache.org/projects/flink/flink-docs-release-1.12/dev/stream/operators/windows.html) are buckets within a Stream and can be defined with times, or count of elements.
 
-* **Tumbling** window assigns events into nonoverlapping buckets of fixed size. When the window border is passed, all the events are sent to an evaluation function for processing. Count-based tumbling windows define how many events are collected before triggering evaluation. Time based tumbling windows define time interval of n seconds. Amount of the data vary in a window. `.keyBy(...).window(TumblingProcessingTimeWindows.of(Time.seconds(2)))`
+* **Tumbling** window assigns events to non-overlapping buckets of fixed size. Once the window boundary is crossed, all events within that window are sent to an evaluation function for processing. 
 
-![](./images/tumbling.png)
+    * **Count-based tumbling** windows define how many events are collected before triggering evaluation. 
+    * **Time-based** tumbling** windows define time interval (e.g., n seconds) during which events are collected. The amount of data within a window can vary depending on the incoming event rate. 
+    
+    ```java
+    .keyBy(...).window(TumblingProcessingTimeWindows.of(Time.seconds(2)))
+    ```
 
-* **Sliding** window: same but windows can overlap. An event might belong to multiple buckets. There is a `window sliding time` parameter: `.keyBy(...).window(SlidingProcessingTimeWindows.of(Time.seconds(2), Time.seconds(1)))`
+![](./images/tumbling.png){ width=500 }
 
-![](./images/sliding.png)
+* **Sliding** windows allows for overlapping periods, meaning an event can belong to multiple buckets. This is particularly useful for capturing trends over time. The window sliding time parameter defines the duration of the window and the interval at which new windows are created. For example, in the following code snippet defines a new 2-second window is created every 1 second:
 
-* **Session** window: Starts when the data stream processes records and stop when there is inactivity, so the timer set this threshold: `.keyBy(...).window(ProcessingTimeSessionWindows.withGap(Time.seconds(5)))`. The operator creates one window for each data element received.
+    ```java
+    .keyBy(...).window(SlidingProcessingTimeWindows.of(Time.seconds(2), Time.seconds(1)))
+    ```
 
-![](./images/session.png)
+    As a result, each event that arrives during this period will be included in multiple overlapping windows, enabling more granular analysis of the data stream.
+
+![](./images/sliding.png){ width=500 }
+
+* **Session** window begins when the data stream processes records and ends when there is a defined period of inactivity. The inactivity threshold is set using a timer, which determines how long to wait before closing the window.
+
+    ```java
+    .keyBy(...).window(ProcessingTimeSessionWindows.withGap(Time.seconds(5)))
+    ```
+    
+    The operator creates one window for each data element received.  If there is a gap of 5 seconds without new events, the window will close. This makes session windows particularly useful for scenarios where you want to group events based on user activity or sessions of interaction, capturing the dynamics of intermittent data streams effectively.
+
+![](./images/session.png){ width=500 }
 
 * **Global** window: one window per key and never close. The processing is done with Trigger:
 
@@ -240,57 +230,61 @@ will consider the connection has fail and will remove its state management.
 	.trigger(CountTrigger.of(5))
     ```
 
-KeyStream can help to run in parallel, each window will have the same key.
-
 ## Event time
 
-Time is central to the stream processing, and the time is a parameter of the flow / environment and can take different meanings:
+**Time** is a central concept in stream processing and can have different interpretations based on the context of the flow or environment:
 
-* `ProcessingTime` = system time of the machine executing the task: best performance and low latency
-* `EventTime` = the time at the event source level, embedded in the record. Deliver consistent and deterministic results regardless of order.
-* `IngestionTime` = time when getting into Flink. 
+* **Processing Time** refers to the system time of the machine executing the task. It offers the best performance and lowest latency since it relies on the local clock.
+* **Event Time** is the timestamp embedded in the record at the event source level. Using event time ensures consistent and deterministic results, regardless of the order in which events are processed. This is crucial for accurately reflecting the actual timing of events.
+* **Ingestion Time** denotes the time when an event enters the Flink system. It captures the latency introduced during the event's journey into the processing framework.
 
-In any time window, the order may not be guarantee and some events with an older timestamp may fell outside of the time window boundary. When compute aggregate, how are we sure that all events that should be in this time windows really arrived in this time window. The watermark is the heuritic used for that.
+In any time window, the order may not be guarantee, and some events with an older timestamp may fall outside of the time window boundaries. To address this challenge, particularly when computing aggregates, it’s essential to ensure that all relevant events have arrived within the intended time frame.
+
+The watermark serves as a heuristic for this purpose.
 
 
-### Watermark
+### Watermarks
 
-The goal is to limit the risk of having events coming too late in a time window while using event-time processing, and in case of, an out-of-order stream may be. [Watermarks](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/event_timestamps_watermarks.html) are generated into the data stream at a given frequency, and represent the mechanism to keep how the time has progressed. A watermark carries a timestamp, computed by substracting the out-of-orderness estimate duration from the largest timestamp seen so far. 
+Watermarks are special markers that indicate the progress of event time in the stream. They help manage late arrivals by allowing the system to understand when it can safely close a window, ensuring that all necessary events have been accounted for before processing the aggregate.
+
+[Watermarks](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/event_timestamps_watermarks.html) are generated in the data stream at regular intervals and serve as indicators of the progression of time. Each watermark carries a timestamp that is calculated by subtracting an estimate of out-of-orderness from the largest timestamp encountered so far. This mechanism allows the stream processing system to make informed decisions about when to close windows and process aggregates, ensuring that all relevant events are considered while still accommodating the inherent variability in event arrival times.
+
 
 ![](./diagrams/watermark.drawio.png)
 
-Late arrived events are ignored as the complete information window is already gone. Within a window states are saved on disk and need to be cleaned once the window is closed. The watermark is the limit from where the garbage collection can occur.
+Late arrived events are ignored as the complete information window is already gone. Within a window,states are saved on disk and need to be cleaned once the window is closed. The watermark is the limit from where the garbage collection can occur.
 
-The out-of-orderness estimate is a guess and is defined per stream. Watermark is used to compare with other events, and will claim not earlier events will occur in the future after this timestamp.
+he out-of-orderness estimate serves as an educated guess and is defined for each individual stream. Watermarks are essential for comparing timestamps of events, allowing the system to assert that no earlier events will arrive after the watermark's timestamp.
 
-Watermark is crucial to process out-of-order events, and when dealing with multiple sources. With IoT device and network latency, it is possible to get an event with an earlier timestamp, while the operator has already processed such event timestamp from other sources. Watermarks are used for any timestamp and are not exclusive to window semantic. 
+Watermarks are crucial for effectively processing out-of-order events, especially when dealing with multiple sources. In scenarios involving IoT devices and network latency, it’s possible to receive an event with an earlier timestamp even after the operator has already processed events with that timestamp from other sources. Importantly, watermarks are applicable to any timestamps and are not limited to window semantics.
 
-Kafka topic partitions can be a challenge without watermark. Watermaks are generated for each stream and partition independently. When combining two partitions, the watermark will be the oldest of the two partitions, as this is when the system has the complete information. Now if one of the partition will not get new event then the watermark will not progress. To still make the process progressing over time, there is an idle timeout configuration. 
+When working with Kafka topic partitions, the absence of watermarks can present challenges. Watermarks are generated independently for each stream and partition. When two partitions are combined, the resulting watermark will be the oldest of the two, reflecting the point at which the system has complete information. If one partition stops receiving new events, the watermark for that partition will not progress. To ensure that processing continues over time, an idle timeout configuration can be implemented.
 
-The watermark generator runs inside the kafka consumer before injecting to the Flink stream or table.
+The watermark generator operates within the Kafka consumer before the events are injected into the Flink stream or table, ensuring that the event time semantics are preserved throughout the processing pipeline.
 
-When using open source Flink, developers need to define 1/ the watermark delay, 2/ the idle timeout, 3/ max allowed watermark drift to control the pipeline efficiency.
+When using open source Flink, developers need to define 1/ the watermark delay, 2/ the idle timeout, 3/ the max allowed watermark drift to control the pipeline efficiency.
 
-With windowing operator, event timestamp is used, but windows are defined on elapse time, for example, 10 minutes, so watermark helps to track the point of time where no more delayed events will arrive. 
+With the windowing operator, event timestamps are utilized, but the windows themselves are defined based on elapsed time—such as a 10-minute duration. Watermarks are crucial for tracking the point in time beyond which no more delayed events are expected to arrive.
 
-Using processing time, the watermark progresses at each second. Events in the windows are emitted for processing once the watermark has passed the end of the window. 
+When using processing time, the watermark advances at regular intervals, typically every second. Events within the window are emitted for processing once the watermark surpasses the end of that window.
 
-The Flink API expects a `WatermarkStrategy` that contains both a `TimestampAssigner` and `WatermarkGenerator`. A `TimestampAssigner` is a simple function that extracts a field from an event. A number of common strategies are available out of the box as static methods on `WatermarkStrategy` class.
+The Flink API requires a `WatermarkStrategy`, which  consists of  both a `TimestampAssigner` and `WatermarkGenerator`. A `TimestampAssigner` s a simple function that extracts a timestamp from a specific field in each event. Flink provides several common strategies as static methods within the `WatermarkStrategy` class.
 
-It is possible to configure to accept late events, with the `allowed lateness` time by which element can be late before being dropped. Flink keeps a state of Window until the allowed lateness time expires.
+Additionally, it is possible to configure the system to accept late events by specifying an `allowed lateness` period. This defines how late an element can arrive before it is discarded. Flink maintains the state of the window until the allowed lateness time has expired, allowing for flexible handling of late-arriving data while ensuring that the processing remains efficient and accurate.
 
+--- 
 
 #### Some examples 
 
-* Parallel watermarking is an example of getting data from 4 partitions with 2 kafka consumer and 2 windows:
+Parallel watermarking is an example of getting data from 4 partitions with 2 kafka consumers and 2 windows:
 
-    ![](./diagrams/parallel-watermark.drawio.png)
+![](./diagrams/parallel-watermark.drawio.png)
 
-Shuffling is done as windows are computing some count or group by operations. Event A arriving at 3:13, and B[3:20] on green partitions, and are processed by Window 1 which consider 60 minutes time between 3:00 and 4:00. 
+Shuffling is done as windows are computing some COUNT or GROUP BY operations. Event A arriving at 3:13, and B[3:20] on green partitions, and are processed by Window 1 which considers 60 minutes time between 3:00 and 4:00. 
 
-By default the connector will send a Watermark every 200ms, for each partition independently. If the out-of-orderness is set to be 5 minutes, so a watermark is created with a timestamp 3:08 (partition 0) and at 3:15 for partition 1 but it sends the minimum of both. The timestamp reflects how complete the stream is so far: it could not be no more complete than the further behind which was event at 3:13, 
+The connector sends a Watermark for each partition independently. If the out-of-orderness is set to be 5 minutes, so a watermark is created with a timestamp 3:08 = 3:13 - 5 (partition 0) and at 3:15 for partition 1. The generator sends the minimum of both. The timestamp reflects how complete the stream is so far: it could not be no more complete than the further behind which was event at 3:13, 
 
-In the case of a partition does not get any events, as there is no watermark generated for this parition, it may mean the watermark does no advance, and as a side effect it prevents windows from producing events. To avoid this problem, we need to balance kafka partitions so none are empty or idle, or confifure the watermarking to use idleness detection.
+In the case of a partition does not get any events, as there is no watermark generated for this partition, it may mean the watermark does no advance, and as a side effect it prevents windows from producing events. To avoid this problem, we need to balance kafka partitions so none are empty or idle, or configure the watermarking to use idleness detection.
 
 * See example [TumblingWindowOnSale.java](https://github.com/jbcodeforce/flink-studies/blob/master/flink-java/my-flink/src/main/java/jbcodeforce/windows/TumblingWindowOnSale.java) in my-fink folder and to test it, do the following:
 
@@ -308,24 +302,31 @@ java -cp target/my-flink-1.0.0-SNAPSHOT.jar jbcodeforce.sale.SaleDataServer
 ...
 ```
 
----
-
 ### Trigger
 
-[Trigger](https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/stream/operators/windows.html#triggers) determines when a window is ready to be processed. All windows have default trigger. For example tumbling window has a 2s trigger. Global window has explicit trigger. We can implement our own triggers by implementing the Trigger interface with different methods to implement: onElement(..), onEventTime(...), onProcessingTime(...)
+A [Trigger](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/stream/operators/windows.html#triggers) in Flink, determines when a window is ready to be processed. 
 
-Default triggers:
+Each window has a default trigger associated with it. For example, a tumbling window might have a default trigger set to 2 seconds, while a global window requires an explicit trigger definition.
 
-* EventTimeTrigger: fires based upon progress of event time
-* ProcessingTimeTrigger: fires based upon progress of processing time
-* CountTrigger: fires when # of element in a window > parameter
-* PurgingTrigger
+You can implement custom triggers by creating a class that implements the Trigger interface, which includes methods such as onElement(..), onEventTime(..), and onProcessingTime(..).
+
+
+Flink provides several default triggers::
+
+* **EventTimeTrigger** fires based upon progress of event time
+* **ProcessingTimeTrigger** fires based upon progress of processing time
+* **CountTrigger** fires when # of elements in a window exceeds a specified parameter.
+* **PurgingTrigger** is used for purging the window, allowing for more flexible management of state.
 
 ### Eviction
 
-Evictor is used to remove elements from a window after the trigger fires and before or after the window function is applied. The logic to remove is app specific.
+**Evictor** is used to remove elements from a window either after the trigger fires or before/after the window function is applied. The specific logic for removing elements is application-specific and can be tailored to meet the needs of your use case.
 
-The predefined evictors: CountEvictor, DeltaEvictor and TimeEvictor.
+The predefined evictors: 
+
+* **CountEvictor** removes elements based on a specified count, allowing for fine control over how many elements remain in the window.
+* **DeltaEvictor** evicts elements based on the difference between the current and previous counts, useful for scenarios where you want to maintain a specific change threshold.
+* **TimeEvictor** removes elements based on time, allowing you to keep only the most recent elements within a given time frame.
 
 
 ## Resources
