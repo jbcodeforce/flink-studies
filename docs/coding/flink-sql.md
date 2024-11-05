@@ -2,14 +2,17 @@
 
 ???- Info "Updates"
     Created 10/24
+    Revised 11/03/24
 
-This chapter is a group of how to for Flink SQL implementation.
+
+This chapter offers a compilation of best practices for implementing Flink SQL, applicable to both local open-source setups and environments utilizing Confluent Platform for Flink or Confluent Cloud for Flink.
 
 ## Getting Started with a SQL client
 
-Use one of the following solutions:
+Use one of the following approaches:
 
-* Use sql client in container (docker or kubernetes) to run against local Flink cluster. (See [deployment/custom-flink-image](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/custom-flink-image) folder to build a custom image and the dockerfile with the sql-client service).
+* Use SQL client in container (docker or kubernetes) to run against local Flink cluster. (See [deployment/custom-flink-image](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/custom-flink-image) folder to build a custom image using the dockerfile with the sql-client service).
+* Use Confluent Cloud Flink console to write long running statements.
 * Use confluent cli connected to a compute pool on **Confluent Cloud**, using an environment and compute-pool already created. (To create a new environment using Terraform use [this note](terraform.md))
 
 ???- info "SQL client with confluent cli"
@@ -18,7 +21,7 @@ Use one of the following solutions:
     * Connect to Confluent Cloud with CLI, then get environment and compute pool
 
     ```sh
-    confluent login 
+    confluent login --save
     ```
 
     * Start local SQL client - using the `aws-west` environment.
@@ -29,7 +32,7 @@ Use one of the following solutions:
     confluent flink shell --compute-pool $COMPUTE_POOL_ID --environment $ENV_ID
     ```
 
-    * Write SQL statements.
+    * Write SQL statements
 
     * Some interesting commands:
 
@@ -41,16 +44,42 @@ Use one of the following solutions:
 
     ```
 
-* Write SQL statements and test them with Java SQL runner
+* Write SQL statements and test them with Java SQL runner. The Class is in [https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) folder.
 
 ## DDL statements
 
-Data Definition Language (DDL) are statements to define metadata in Flink SQL by adding, changing, or deleting tables.
+Data Definition Language (DDL) are statements to define metadata in Flink SQL by creating, changing, or deleting tables.
 
 ### Table creation
 
+???- info "Create a table with csv file as persistence - Flink OSS"
+    We need to use file system connector.
+
+    ```sal
+    create table user (
+        'user_id VARCHAR(250),
+        'name' VARCHAR(50)
+    ) partitioned by ('used-id')
+    WITH (
+        'format' = 'json', -- other format are: csv, parquet
+        'connector' = 'filesystem',
+        'path' = '/tmp/users'
+    );
+    ```
+
+???- info "how to join two tables on key within time and store in target table in SQL?"
+    ```sql
+    create table Transactions (ts TIMESTAMP(3), tid BIGINT, amount INT);
+    create table Payments (ts TIMESTAMP(3), tid BIGINT, type STRING);
+    create table Matched (tid BIGINT, amount INT, type STRING);
+    insert into Matched 
+        select T.tid, T.amount, P.type
+        from Transactions T join Payments P ON T.tid = P.tid 
+        where P.ts between T.ts and T.ts + interval '10' minutes;
+    ```
+
 ???- question "How to consume from a Kafka topic to a SQL table?"
-    On Confluent Cloud this is the standard integration as all sources are Kafka  topic. The `From` right operand proposes the list of topic/table for the catalog and database selected.For Flink OSS or Confluent Platform for Flink the `WITH` statement helps to specify the source topic.
+    On Confluent Cloud for flink, there are already tables created for each topic. For local Flink we need to create table with column definitions that maps to attributes of the record. The `From` right operand proposes the list of topic/table for the catalog and database selected. For Flink OSS or Confluent Platform for Flink the `WITH` statement helps to specify the source topic.
 
     ```sql
     select .... from TableName 
@@ -61,8 +90,37 @@ Data Definition Language (DDL) are statements to define metadata in Flink SQL by
         'properties.group.id' = 'fs_grp',
         'scan.startup.mode' = 'earliest-offset',
     )
-
     ```
+
+    For Avro and schema registry with open source Flink. See the tools [extract_sql_from_avro.py]() to query Confluent Schema Registry running locally and build the matching SQL to create a table connected to the topic using this schema.
+
+    ```sql
+    CREATE TABLE shoe_customers (
+        id STRING,
+        first_name STRING,
+        last_name STRING,
+        email STRING,
+        phone STRING,
+        street_address STRING,
+        state STRING,
+        zip_code STRING,
+        country STRING,
+        country_code STRING
+    ) WITH (
+        'connector' = 'kafka',
+        'topic' = 'shoe_customers',
+        'properties.bootstrap.servers' = 'broker:29092',
+        'scan.startup.mode' = 'earliest-offset',
+        'key.format' = 'raw',
+        'key.fields' = 'id',
+        'value.format' = 'avro-confluent',
+        'properties.group.id' = 'flink-sql-consumer',
+        'value.fields-include' = 'ALL',
+        'value.avro-confluent.url' = 'http://schema-registry:8081'
+    );
+    ```
+
+ 
 
 ???- question "How to load data from a csv file using filesystem connector using SQL (Local execution only)"
     Enter the following statement in a SQL client session:
@@ -79,7 +137,7 @@ Data Definition Language (DDL) are statements to define metadata in Flink SQL by
         dept_id INT
     ) WITH ( 
         'connector' = 'filesystem',
-        'path' = '/home/flink-sql-demos/00-basic-sql/data/employes.csv',
+        'path' = '/home/flink-sql-demos/00-basic-sql/data/employees.csv',
         'format' = 'csv'
     );
     ```
@@ -128,7 +186,7 @@ Data Definition Language (DDL) are statements to define metadata in Flink SQL by
       'fields.ts.expression' =  '#{date.past ''5'',''1'',''SECONDS''}'
     );
     ```
-    This will only work in clustomized flink client with the jar from flink faker.
+    This will only work in customized flink client with the jar from flink faker.
 
 ???- question "How to transfer the source timestamp to another table"
     As $rowtime is the timestamp of the record in Kafka, it may be interesting to keep the source timestamp to the downstream topic.
@@ -323,6 +381,34 @@ Data modification language, is used to define statements  which modify the data 
             CUMULATE(TABLE `examples`.`marketplace`.`orders`, DESCRIPTOR($rowtime), INTERVAL '30' SECONDES, INTERVAL '3' MINUTES))
         GROUP BY window_start, window_end;
     ```
+
+### Row pattern recognition
+
+???- question "Find the longest period of time for which the average price of a stock did not go below a value"
+    Create a Datagen to publish StockTicker to a Kafka topic.
+    [See product documentation on CEP pattern with SQL](https://nightlies.apache.org/flink/flink-docs-release-1.15/docs/dev/table/sql/queries/match_recognize/)
+    
+    ```sql
+    create table StockTicker(symbol string, price int tax int) with ('connector' = 'kafka',...)
+    SELECT * From StockTicker 
+    MATCH_RECOGNIZE ( 
+        partition by symbol 
+        order by rowtime
+        measures
+            FIRST(A.rowtime) as start_tstamp,
+            LAST(A.rowtime) as last_tstamp,
+            AVG(A.price) as avgPrice
+        ONE ROW PER MATCH
+        AFTER MATCH SKIP PAST LAST ROW
+        PATTERN (A+ B)
+        DEFINE
+            A as AVG(A.price) < 15
+    );
+    ```
+
+    MATCH_RECOGNIZE helps to logically partition and order the data that is used with the PARTITION BY and ORDER BY clauses, then defines patterns of rows to seek using the PATTERN clause.
+    The logical components of the row pattern variables are specified in the DEFINE clause.
+    B is defined implicitly as not being A.
 
 ## Confluent Cloud Specific
 

@@ -9,7 +9,7 @@ import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.utils.ParameterTool;
 
 /**
- * Do a left join on person and location.
+ * Do a left join on person and location using the DataSet API
  * @param args
  * @throws Exception
  */
@@ -23,13 +23,14 @@ public class LeftOuterJoin {
 
         // Read persons (row format is idx, name)
         DataSet<Tuple2<Integer,String>> personSet = env.readTextFile(params.get("persons"))
+                // extract id and name as Tuple
                 .map(new MapFunction<String, Tuple2<Integer,String>>() {
                         public Tuple2<Integer,String> map(String value) {
                             String[] words = value.split(",");
                             return new Tuple2<Integer,String>(Integer.parseInt(words[0]), words[1]);
                         }
                 });
-        // read locations
+        // read locations id <personID, code>
         DataSet<Tuple2<Integer,String>> locationSet = env.readTextFile(params.get("locations"))
         .map(new MapFunction<String, Tuple2<Integer,String>>() {
                 public Tuple2<Integer,String> map(String value) {
@@ -40,7 +41,7 @@ public class LeftOuterJoin {
         // perform the join on the 'personID'
         DataSet<Tuple3<Integer,String,String>> joinedSet = 
             personSet.leftOuterJoin(locationSet)
-            .where(0) // indice of the field to be used to do join from first tuple
+            .where(0) // index of the field to be used to do join from first tuple
             .equalTo(0)  // to match the field in idx 0 of the second tuple
             .with( new JoinFunction<Tuple2<Integer, String>, 
                                     Tuple2<Integer, String>, 

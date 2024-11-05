@@ -25,6 +25,7 @@ public class PersonFiltering {
         adults.print();
 
         env.execute();
+        // Will run continuously until ctrl C
     }
 
     public static class Person {

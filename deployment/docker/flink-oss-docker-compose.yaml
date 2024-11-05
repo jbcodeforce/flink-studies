@@ -1,0 +1,49 @@
+services:
+  jobmanager:
+    image: flink:1.19.1-scala_2.12-java11
+    hostname: jobmanager
+    container_name: jobmanager
+    ports:
+      - "8081:8081"
+    command: jobmanager
+    user: "flink:flink"
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        heartbeat.interval: 1000
+        heartbeat.timeout: 5000
+        rest.flamegraph.enabled: true
+        web.backpressure.refresh-interval: 10000
+    volumes:
+      - ../../:/home
+  taskmanager:
+    #image: jbcodeforce/myflink:latest 
+    image: flink:1.19.1-scala_2.12-java11
+    hostname: taskmanager
+    container_name: taskmanager
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    scale: 1
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 3
+        heartbeat.interval: 1000
+        heartbeat.timeout: 5000
+    volumes:
+      - ../../:/home
+  sql-client:
+    image: jbcodeforce/myflink:latest 
+    container_name: sql-client
+    depends_on:
+      - jobmanager
+    environment:
+       - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        rest.address: jobmanager
+    volumes:
+      - ../../:/home

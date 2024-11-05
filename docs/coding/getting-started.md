@@ -1,10 +1,12 @@
 # Getting started
 
-???- info "Update"
+???- info "Update - to rework"
     * Created 2018 
     * Updated 10/2024
 
-This chapter groups the different environments to deploy Flink job locally on developers workstation which could be docker compose, minikube, or hybrid using Confluent Cloud Kafka cluster and local Flink. For using Confluent Cloud  for Flink read [this chapter](../techno/ccloud-flink.md#getting-started).
+This chapter discusses various environments for deploying Flink jobs on a developer's workstation. Options include using Docker Compose, Minikube, or a hybrid approach that combines a Confluent Cloud Kafka cluster with a local Flink instance.
+
+For detailed instructions on using Confluent Cloud with Flink, refer [this chapter](../techno/ccloud-flink.md#getting-started).
 
 ## Pre-requisites
 
@@ -102,7 +104,7 @@ services:
 
 The docker compose mounts the local folder to `/home` in both the job manager and task manager containers so that, we can submit the job from the job manager (accessing the compiled jar) and also access the input data files in the task manager container.
 
-### Docker compose with Kafka and Flink
+## Docker compose with Kafka and Flink
 
 In the `deployment/local` folder the docker compose start a one node kafka broker, one zookeeper, one job manager and one task manager.
 

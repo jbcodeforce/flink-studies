@@ -1,13 +1,13 @@
 # Table API
 
 ???- info "Update"
-    Created 10/2024 - Updated 10/28/24.
+    Created 10/2024 - Updated 11/03/24.
 
 ## Concepts
 
-The [TableAPI](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/overview/) is the lower level API used for doing Flink SQL. So it is possible to use it in Java or Python to do the stream processing. The Table is an encapsulation of a stream or a physical table, and so streaming processing implementation is programming against tables.
+The [TableAPI](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/overview/) serves as the lower-level API for executing Flink SQL, allowing for stream processing in both Java and Python. The Table API encapsulates a stream or physical table, enabling developers to implement streaming processing by programming against these tables.
 
-In the context of **Confluent Cloud**, TableAPI is a client-side library to interact with the Flink engine running on the cloud. It submits `Statements` and retrieves `StatementResults`. The provided Confluent plugin injects Confluent-specific components for setting the TableEnvironment without the need for a local Flink cluster. By adding the confluent-flink-table-api-java-plugin dependency, Flink internal components such as CatalogStore, Catalog, Planner, Executor, and configuration are managed by the plugin and fully integrate with Confluent Cloud.
+In the context of **Confluent Cloud**, the Table API acts as a client-side library for interacting with the Flink engine hosted in the cloud. It enables the submission of  `Statements` and retrieval of `StatementResults`. The provided Confluent plugin integrates specific components for configuring the TableEnvironment, eliminating the need for a local Flink cluster. By including the confluent-flink-table-api-java-plugin dependency, Flink's internal components—such as CatalogStore, Catalog, Planner, Executor, and configuration, are managed by the plugin and fully integrated with Confluent Cloud.
 
 ## Getting Started
 
@@ -19,15 +19,30 @@ Create a maven project and add the flink table api, and Kafka client dependencie
     <artifactId>flink-table-api-java</artifactId>
     <version>${flink.version}</version>
 </dependency>
+
+<dependency>
+    <groupId>io.confluent.flink</groupId>
+    <artifactId>confluent-flink-table-api-java-plugin</artifactId>
+    <version>1.20-42</version>
+</dependency>
 ```
 
 If we need to connect to Confluent Cloud for Flink we need the  `io.confluent.flink.confluent-flink-table-api-java-plugin`.
 
-When using Confluent Cloud, be sure to define a `cloud.properties` file with the needed properties, such as the flink api key, the environment and compute pool. Do not commit this file into git repo. As an alternate environment variables can be used.
+When using Confluent Cloud, be sure to define a `cloud.properties` file with the needed properties, such as the flink api key, the environment and compute pool. Do not commit this file into git repo. 
+
+You should better use environment variables and the environment API to load data from those environment variable:
+
+```java
+import io.confluent.flink.plugin.ConfluentSettings;
+import org.apache.flink.table.api.EnvironmentSettings;
+
+EnvironmentSettings settings = ConfluentSettings.fromGlobalVariables();
+```
 
 ### Java
 
-Any main function needs to connect to the Flink environment. ConfluentAPI offers a way to read cloud client properties so the deployed Flink application on-premises or within a k8s as pod, can access the Job and Task managers running in the Confluent Cloud compute pools:
+Any main function needs to connect to the Flink environment. ConfluentAPI offers a way to read cloud client properties so the deployed Flink application, on-premises or within a k8s as pod, can access the Job and Task managers running in the Confluent Cloud compute pools:
 
 ```java
 import io.confluent.flink.plugin.ConfluentSettings;
@@ -39,21 +54,24 @@ public static void main(String[] args) {
     TableEnvironment env = TableEnvironment.create(settings);
 ```
 
-* Get the catalog and databases, and use the environment to get the list of tables. In Confluent Cloud, there is a predefined catalog with some tables: `examples.marketplace`.
+A [table environment](https://nightlies.apache.org/flink/flink-docs-stable/api/java/org/apache/flink/table/api/TableEnvironment.html) is the base class, entry point, and central context for creating Table and SQL API programs.
+
+See [code sample: Main_00_JoinOrderCustomer.java](https://github.com/jbcodeforce/flink-studies/blob/master/flink-java/table-api/src/main/java/flink/examples/table/Main_00_JoinOrderCustomer.java)
+
+Get the catalog and databases, and use the environment to get the list of tables. In Confluent Cloud, there is a predefined catalog with some table samples: `examples.marketplace`.
 
 ```java
-    # using a sql string
-    env.executeSql("SHOW TABLES IN `examples`.`marketplace`").print();
-    # or using the api
-    env.useCatalog("examples");
-    env.useDatabase("marketplace");
-    Arrays.stream(env.listTables()).forEach(System.out::println);
-    # work on one table
-    env.from("`customers`").printSchema();
+# using a sql string
+env.executeSql("SHOW TABLES IN `examples`.`marketplace`").print();
+# or using the api
+env.useCatalog("examples");
+env.useDatabase("marketplace");
+Arrays.stream(env.listTables()).forEach(System.out::println);
+# work on one table
+env.from("`customers`").printSchema();
 ```
 
 The [TableEnvironment](https://nightlies.apache.org/flink/flink-docs-release-1.20/api/java/org/apache/flink/table/api/TableEnvironment.html) has a lot of helpful functions to connect to external systems, executes SQL statements, or define test data.
-
 
 ## Code Samples
 
@@ -94,13 +112,17 @@ See the example in [00_join_order_customer.java](https://github.com/jbcodeforce/
 
 ### A deduplication example
 
-```java
+The deduplication of record over a time window is a classical pattern. See this SQL query with the following Table API implementation
 
+```java
+Table source;
 ```
+
 
 ### Confluent tools for printing and stop statement
 
 [See this git repository](https://github.com/confluentinc/flink-table-api-java-examples/blob/master/README.md#documentation-for-confluent-utilities)
+
 --- 
 
 ### Define data flows

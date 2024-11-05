@@ -1,21 +1,22 @@
 # Flink SQL and Table API
 
 ???- Info "Updates"
-    Created 02/2021 Modified 10/24
+    - Created 02/2021 
+    - Modified 11/3/24
 
 ## Introduction
 
-Flink SQL is a compliant standard SQL engine for processing batch or streaming data on top of distributed computing server managed by Flink.
+Flink SQL is an ANSI-compliant SQL engine designed for processing both batch and streaming data on distributed computing servers managed by Flink.
 
-Flink’s SQL support is based on [Apache Calcite](https://calcite.apache.org/) to support SQL based streaming logic implementation. It is using the [Table API](https://nightlies.apache.org/flink/flink-docs-release-1.19/docs/dev/table/tableapi/) which is a language-integrated query API for Java, Scala, and Python that allows the composition of queries from relational operators such as selection, filter, and join.
+Built on [Apache Calcite](https://calcite.apache.org/), Flink SQL facilitates the implementation of SQL-based streaming logic. It utilizes the [Table API](https://nightlies.apache.org/flink/flink-docs-release-1.19/docs/dev/table/tableapi/), a language-integrated query API for Java, Scala, and Python that enables the composition of queries using relational operators such as selection, filtering, and joining.
 
-The Table API can deal with bounded and unbounded streams in a unified and highly optimized ecosystem inspired by databases and SQL.
+The Table API efficiently handles both bounded and unbounded streams within a unified and highly optimized ecosystem inspired by traditional databases and SQL.
 
-Table and SQL are implemented on top of low level stream operator API, which itself runs on the dataflow runtime:
+Both the Table API and SQL operate on top of a lower-level stream operator API, which runs on the dataflow runtime:
 
-![](./diagrams/flink-apis.drawio.png){ width=400}
+![](./diagrams/flink-apis.drawio.png){ width=500}
 
-It is possible to code the SQL and Table API in a Java, Scala or Python or use SQL client, which is an interactive client to submit SQL queries to Flink and visualize the results.
+The optimizer and planner APIs transform SQL statements for execution across distributed nodes, leveraging the lower-level stream operator API.With Flink SQL, we work with **dynamic tables**, a concept similar to materialized views, while abstracting away the stream construct from the developer.You can write SQL and use the Table API in Java, Scala, or Python, or leverage the SQL client, an interactive tool for submitting SQL queries to Flink and visualizing the results.
 
 Stream or bounded data are mapped to Table. The following command loads data from a csv file and [creates a dynamic table](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html) in Flink:
 
@@ -42,7 +43,7 @@ Show how the table is created:
 show create table orders;
 ```
 
-[See the getting started](../coding/getting-started.md) to run locally with a sql client.
+[See the getting started](../coding/getting-started.md) to run locally with a sql client connected to a Job Manager and Tsk manager running in docker.
 
 ### Main use cases
 
@@ -53,41 +54,40 @@ Flink and Flink SQL can be used in two main categories of application:
 
 ## Parallel with Database
 
-Database applications are classified in one of the two domains of Online Transaction Processing (OLTP) or Online Analytical Processing (OLAP) used for business reporting.
+Database applications are typically classified into two domains: Online Transaction Processing (OLTP) and Online Analytical Processing (OLAP), which are used for business reporting.
 
-Databases have catalog, database, tables, views, materialized views. The most important component is the Query processor, which receives queries and then plans before the execution using the catalog (metadata of the tables. functions...), then executes the query using the Storage engine to access to the data to finally generate the results. 
+Databases consist of catalogs, databases, tables, views, and materialized views. The most critical component is the query processor, which receives queries, plans their execution using metadata from the catalog (including information about tables and functions), and then executes the query via the storage engine to access the data and generate results.
 
-The `views` are virtual tables based on the result of the SQL queries. Some Database has also the `Materialized View` that caches the results into a physical table. For example, a group_by on an aggregate, may cache the result by the grouping element and the aggregate in a new table. Materialized view can be updated by a full refresh, executing the query again, or with incremental result.
+**Views** are virtual tables derived from the results of SQL queries. Some databases also support **materialized views**, which cache the results in a physical table. For example, a GROUP BY operation on an aggregate can store the results based on grouping elements and aggregates in a new table. Materialized views can be updated through a full refresh (by re-executing the query) or through incremental updates.
 
-Flink SQL uses dynamic table, coming from data streams, and use material view with incremental updates. It is not a database but a query processor. The catalog in Confluent Cloud is accessing the schema registry for a topic. and the execution of the query is done on Flink cluser that access to records in topics. 
+Flink SQL utilizes dynamic tables derived from data streams and employs materialized views with incremental updates. While it is not a traditional database, Flink functions as a query processor. In Confluent Cloud, the catalog accesses the schema registry for a topic, and query execution occurs on a Flink cluster that retrieves records from topics.
 
-Flink can support exactly once or at least once (duplicates are possible) guarantee, depending of the configuration and the external systems used for input and output tables. 
+Flink can provide either "exactly once" or "at least once" guarantees (with the possibility of duplicates), depending on the configuration and the external systems used for input and output tables.
 
-For effectively exactly once processing the source needs to be replayable and the sink needs to support transaction. Kafka topics support both, and the consumer protocol supports the `read-committed` semantic. Transaction scope is at the single-key level. While ACID transaction in database supports multiple keys integrity. 
+For effective "exactly once" processing, the source must be replayable, and the sink must support transactions. Kafka topics support both of these requirements, and the consumer protocol adheres to the read-committed semantics. However, transaction scope in Kafka is at the single-key level, whereas ACID transactions in databases maintain integrity across multiple keys.
 
-## SQL Programming Basic
+## SQL Programming Basics
 
-Flink SQL tables are dynamic, because they change overtime, and some tables are more a changelog stream than static tables. 
+Flink SQL tables are dynamic, meaning they change over time; some tables act more like changelog streams than static tables.
 
-The following diagram illustrates the main processing concepts: the `shipments` table keeps track of product shipments while the `inventory` keeps the current quantity of each item. The insert statement is the stream processing to update the inventory from the new shipment records. This SQL statement uses the sum aggregator operation on the count for each item. The items are shuffled to group them by item.
+The following diagram illustrates the main processing concepts: the `shipments` table tracks product shipments, while the `inventory` table maintains the current quantity of each item. The INSERT statement processes streams to update the inventory based on new shipment records. This SQL statement uses the SUM aggregation operation to count each item, with the items shuffled to group them by type.
 
 ![](./diagrams/sql-table-stream.drawio.png)
 
-The SQL is applied to the stream of data, data is not stored in Flink. The events can be `insert`, `update` or `delete` record in the table. The diagram illustrates that, at the sink level, the first events reflect adding items to the inventory, while when there is an update to the Card inventory, a first record is created to remove the current stock of Card item and send a new message with the new stock value (2 cards). This last behavior is due to the `group by` semantic, and the fact that the right 'table' is an update only table, while the left one ia an append only table. 
+SQL is applied directly to the stream of data; data is not stored within Flink. Events can represent INSERT, UPDATE, or DELETE operations in the table. The diagram shows that, at the sink level, the initial events reflect the addition of items to the inventory. When the inventory for the "Card" item is updated, a record is first created to remove the current stock of the "Card" and then a new message is sent with the updated stock value (2 cards). This behavior arises from the GROUP BY semantics, where the right table is an update-only table while the left is append-only. Dynamic tables can also be persisted in Kafka topics, meaning the table definition includes statements on how to connect to Kafka. In batch processing, the sink can be a database table or a CSV file in the filesystem. 
 
-Dynamic Table can also being persisted in Kafka Topic, so table definition includes statement on how to connect to Kafka. When doing batch processing the sink can be a table in database or a csv file on the filesystem.
+Note that the SQL Client executes each INSERT INTO statement as a separate Flink job. The STATEMENT SET command can be used to group multiple insert statements into a single set. As the job manager schedules these jobs to the task managers, SQL statements are executed asynchronously. For batch processing, developers can set the set `table.dml-sync` option to `true`.
 
-Note that SQL Client executes each **INSERT INTO** statement as a single Flink job. `STATEMENT SET` can be used to group insert statements (into a set). As the  job manager schedules the job to the task managers, SQL statements are executed asynchronously. While for batch processing; developer can set `set table.dml-sync option to true` 
+In streaming, the "ORDER BY" statement applies only to timestamps in ascending order, while in batch processing, it can be applied to any record field.
 
-With streaming, the "ORDER BY" statement applies only on timestamp in ascending order, while with batch, it can apply to any record field.
 
 ### Data lifecycle
 
-In a pure Kafka integration architecture, like Confluent Cloud, the data life cycle looks like the following:
+In a pure Kafka integration architecture, such as Confluent Cloud, the data lifecycle follows these steps:
 
-* Data is read from a Kafka topic to a Flink SQL table
-* Data is processed with SQL statements
-* Data is returns as result sets in interactive mode, or to a table (mapped to a topic) in continuous streaming mode.
+* Data is read from a Kafka topic to a Flink SQL table.
+* Data is processed using SQL statements.
+* Results are returned as result sets in interactive mode, or to a table (mapped to a topic) in continuous streaming mode.
 
 ### Some SQL operators
 
@@ -97,7 +97,7 @@ In a pure Kafka integration architecture, like Confluent Cloud, the data life cy
 | **Materialized** | GROUP BY <aggregationss> or JOINS | Dangerously Stateful, keep an internal copy of the data related to the query |
 | **Temporal** | time windowed operations, interval **joins**, time-versioned joins, MATCH_RECOGNIZE <pattern> | Stateful but contrained in size |
 
-As elements are kept in storage to compute materialized projection, we need to assess the number of elements to keep. Million to billion of small items are possible. But query running forever may eventually overflow the data store. In this last case, the Flink task will eventually fail.
+As elements are stored for computing materialized projections, it's crucial to assess the number of elements to retain. Millions to billions of small items are possible. However, if a query runs indefinitely, it may eventually overflow the data store. In such cases, the Flink task will ultimately fail.
 
 Below is an example of Join query:
 
@@ -116,7 +116,7 @@ Any previously processed records can be used potentially to process the join ope
 ## Lower level Java based programming model
 
 * Start Flink server using docker ([start with docker compose](../coding/getting-started.md#docker-compose-with-kafka-and-flink) or on [k8s](../coding/k8s-deploy.md)). 
-* Start by creating a java application (quarkus create app for example or using maven) and a Main class. See code in [flink-sql-quarkus](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql-quarkus/) folder.
+* Start by creating a java application (quarkus create app for example or using maven) and a Main class. See code in [flink-sql-quarkus](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql/flink-sql-quarkus/) folder.
 * Add dependencies in the pom
 
 ```xml
@@ -139,7 +139,7 @@ Any previously processed records can be used potentially to process the join ope
       </dependency>
 ```
 
-The `TableEnvironment` is the entrypoint for Table API and SQL integration. See [Create Table environment](https://nightlies.apache.org/flink/flink-docs-release-1.19/docs/dev/table/common/#create-a-tableenvironment)
+
 
 ```java
 
@@ -149,7 +149,10 @@ public class FirstSQLApp {
         StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env);
 ```
 
+The `TableEnvironment` is the entrypoint for Table API and SQL integration. See [Create Table environment](https://nightlies.apache.org/flink/flink-docs-release-1.19/docs/dev/table/common/#create-a-tableenvironment)
+
 A TableEnvironment maintains a map of catalogs of tables which are created with an identifier. Each identifier consists of 3 parts: catalog name, database name and object name.
+
 
 ```java
     // build a dynamic view from a stream and specifies the fields. here one field only
@@ -162,7 +165,7 @@ A TableEnvironment maintains a map of catalogs of tables which are created with 
 ![](./diagrams/sql-concepts.drawio.png)
 
 
-Tables may either be temporary, and tied to the lifecycle of a single Flink session, or permanent, and visible across multiple Flink sessions and clusters.
+Tables can be either temporary, tied to the lifecycle of a single Flink session, or permanent, making them visible across multiple Flink sessions and clusters.
 
 Queries such as SELECT ... FROM ... WHERE which only consist of field projections or filters are usually stateless pipelines. However, operations such as joins, aggregations, or deduplications require keeping intermediate results in a fault-tolerant storage for which Flink’s state abstractions are used.
 

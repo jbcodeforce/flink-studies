@@ -10,16 +10,12 @@
 
     <properties>
         <flink.version>1.20.0</flink.version>
-        <confluent-plugin.version>1.20-42</confluent-plugin.version>
+        <scala.binary.version>2.12</scala.binary.version>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <log4j.version>2.17.1</log4j.version>
     </properties>
   <repositories>
-        <repository>
-            <id>confluent</id>
-            <url>https://packages.confluent.io/maven/</url>
-        </repository>
         <repository>
             <id>apache.snapshots</id>
             <name>Apache Development Snapshot Repository</name>
@@ -37,7 +33,7 @@
         <!-- Apache Flink dependencies -->
         <dependency>
             <groupId>org.apache.flink</groupId>
-            <artifactId>flink-table-api-java</artifactId>
+            <artifactId>flink-table-api-java-bridge</artifactId>
             <version>${flink.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.apache.flink/flink-java -->
@@ -46,11 +42,11 @@
             <artifactId>flink-java</artifactId>
             <version>${flink.version}</version>
         </dependency>
-        <!-- Confluent Flink Table API Java plugin -->
-        <dependency>
-            <groupId>io.confluent.flink</groupId>
-            <artifactId>confluent-flink-table-api-java-plugin</artifactId>
-            <version>${confluent-plugin.version}</version>
+       <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-table-planner_${scala.binary.version}</artifactId>
+            <version>${flink.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Add logging framework, to produce console output when running in the IDE. -->
