@@ -80,7 +80,6 @@ Note that the SQL Client executes each INSERT INTO statement as a separate Flink
 
 In streaming, the "ORDER BY" statement applies only to timestamps in ascending order, while in batch processing, it can be applied to any record field.
 
-
 ### Data lifecycle
 
 In a pure Kafka integration architecture, such as Confluent Cloud, the data lifecycle follows these steps:

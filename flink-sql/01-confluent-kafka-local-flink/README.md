@@ -81,7 +81,7 @@ confluent kafka topic create pageviews --cluster <cluster-id>
 confluent kafka cluster describe <cluster-id>
 ```
 
-* Use the local same local docker compose with just task manager, job manager and SQL client containers
+* Use the same local docker compose with just task manager, job manager and SQL client containers
 * Create a table to connect to Kafka change the attributes with API_KEY, API_SECRETS and BOOTSTRAP_SERVER
 
 ```sql
@@ -104,7 +104,7 @@ CREATE TABLE pageviews_kafka (
 );
 ```
 
-* Add a table to generate records
+* Add a table to generate records using the Flink sql client
 
 ```sql
 CREATE TABLE `pageviews` (
@@ -131,5 +131,5 @@ INSERT INTO pageviews_kafka SELECT * FROM pageviews;
 
 ### Problems
 
-10/08/24  the module org.apache.kafka.common.security.plain.PlainLoginModule is missing in job and task managers. We  need to add libraries some how verify if these are the good paths in the dockerfile of sql-client. This is not aligned with https://github.com/confluentinc/learn-apache-flink-101-exercises/blob/master/sql-client/Dockerfile
+10/08/24  the module org.apache.kafka.common.security.plain.PlainLoginModule is missing in job and task managers. We  need to add libraries. Verify if these are the good paths in the dockerfile of sql-client. This is not aligned with https://github.com/confluentinc/learn-apache-flink-101-exercises/blob/master/sql-client/Dockerfile
 

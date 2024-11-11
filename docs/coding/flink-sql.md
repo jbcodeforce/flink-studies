@@ -41,7 +41,7 @@ Use one of the following approaches:
     USE `marketplace`;
     SHOW TABLES;
     SHOW JOBS;
-
+    DESCRIBE tablename;
     ```
 
 * Write SQL statements and test them with Java SQL runner. The Class is in [https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) folder.
@@ -67,7 +67,7 @@ Data Definition Language (DDL) are statements to define metadata in Flink SQL by
     );
     ```
 
-???- info "how to join two tables on key within time and store in target table in SQL?"
+???- info "how to join two tables on a key within a time window and store results in target table?"
     ```sql
     create table Transactions (ts TIMESTAMP(3), tid BIGINT, amount INT);
     create table Payments (ts TIMESTAMP(3), tid BIGINT, type STRING);
@@ -166,8 +166,19 @@ Data Definition Language (DDL) are statements to define metadata in Flink SQL by
     alter table flight_schedules add(dt string);
     ```
 
+???- question "Create a table as another by inserting record from another table with similar schema - select (CTAS)"
+    By using a primary key:
+
+    ```sql
+    create table shoe_customer_keyed(
+        primary key(id) not enforced
+    ) distributed by(id) into 1 buckets
+    as select id, first_name, last_name, email from shoe_customers;
+    ```
+
 ??? - question "How to generate data using [Flink Faker](https://github.com/knaufk/flink-faker)?"
     Create at table with records generated with `faker` connector using the [DataFaker expressions.](https://github.com/datafaker-net/datafaker). 
+    Valid only on OSS Flink or on-premises.
 
     ```sql
     CREATE TABLE `bounded_pageviews` (
@@ -187,6 +198,12 @@ Data Definition Language (DDL) are statements to define metadata in Flink SQL by
     );
     ```
     This will only work in customized flink client with the jar from flink faker.
+
+???- info "Generate data with dataGen for Flink OSS"
+    [Use DataGen to do in-memory data generation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/connectors/table/datagen/)
+
+???- question "How to generate test data to Confluent Cloud Flink?"
+    Use Kafka Connector with DataGen. Those connector exists with a lot of different pre-defined model. Also it is possible to define custom Avro schema and then use predicates to generate data. There is a [Produce sample data quick start tutorial from the Confluent Cloud home page](https://docs.confluent.io/cloud/current/connectors/cc-datagen-source.html). See also [this readme](2933https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/01-confluent-kafka-local-flink).
 
 ???- question "How to transfer the source timestamp to another table"
     As $rowtime is the timestamp of the record in Kafka, it may be interesting to keep the source timestamp to the downstream topic.
