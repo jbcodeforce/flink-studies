@@ -50,7 +50,28 @@ Use one of the following approaches:
 
 Data Definition Language (DDL) are statements to define metadata in Flink SQL by creating, changing, or deleting tables.
 
+A table registered with the CREATE TABLE statement can be used as both table source and table sink.
+
+Flink can generate updates for a given key. There are [different modes](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#changelog-mode) for persistence: append, retract or upsert. 
+
+* **append** means that every row can be treated as an independent fact.
+* **retract** means that the combination of +X and -X are related and must be partitioned together.
+* **upsert** means that all rows with same primary key are related and must be partitioned together
+
+The change.lod is set up using the WITH ('changelog.mode' = 'upsert').
+
+Changelog in Flink SQL is used to record the data changes in order to achieve incremental data processing.
+Some operations in Flink such as group aggregation and deduplication can produce update events.
+
+[See the concept of changelog and dynamic tables in Confluent documentation.](https://docs.confluent.io/cloud/current/flink/concepts/dynamic-tables.html)
+
 ### Table creation
+
+???- info "Primary key considerations"
+    * primary key can have one or more columns, all of them are not null
+    * the keys can only be `NOT ENFORCED`
+    * The PRIMARY KEY constraint partitions the table implicitly by the key column
+    * The primary key is becoming the kafka key implicitly.
 
 ???- info "Create a table with csv file as persistence - Flink OSS"
     We need to use file system connector.
@@ -66,6 +87,7 @@ Data Definition Language (DDL) are statements to define metadata in Flink SQL by
         'path' = '/tmp/users'
     );
     ```
+  
 
 ???- info "how to join two tables on a key within a time window and store results in target table?"
     ```sql
@@ -167,6 +189,8 @@ Data Definition Language (DDL) are statements to define metadata in Flink SQL by
     ```
 
 ???- question "Create a table as another by inserting record from another table with similar schema - select (CTAS)"
+    [CREATE TABLE AS SELECT](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-as-select-ctas) is used to create table and insert values in the same statement.
+    
     By using a primary key:
 
     ```sql
@@ -260,6 +284,11 @@ Data Definition Language (DDL) are statements to define metadata in Flink SQL by
     ```
     `distributed by hash(order_id)` and `into 1 buckets` specify that the table is backed by a Kafka topic with 1 partitions, and the order_id field will be used as the partition key. 
 
+#### Confluent Flink table creation
+
+[See the product documentation](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-statement-in-af-long) with some specifities, like source and sink tables are mapped to Kafka Topics. The `$rowtime` TIMESTAMP_LTZ(3) NOT NULL is provided as a system column.
+For each topic there is an inferred table created. The catalog is the Confluent environment and the Kafka cluster is the databsase. We can use the ALTER TABLE statement to evolve schemas for those inferred tables.
+
 ## DML statements
 
 Data modification language, is used to define statements  which modify the data and don’t change metadata.
@@ -281,6 +310,11 @@ Data modification language, is used to define statements  which modify the data 
     ```
 
     Recall that this results produces a dynamic table.
+
+???- questiom "How to transform a field representing epoch to a timestamp?"
+    ```sql
+     TO_TIMESTAMP(FROM_UNIXTIME(click_ts_epoch)) as click_ts
+    ```
 
 ???- question "How to mask a field?"
     Create a new table from the existing one, and then use REGEXP_REPLACE to mask an existing attribute
@@ -332,6 +366,7 @@ Data modification language, is used to define statements  which modify the data 
     WHERE rownum = 1;
     ```
 
+    [See this example](https://docs.confluent.io/cloud/current/flink/how-to-guides/deduplicate-rows.html#flink-sql-deduplicate-topic-action)
 
 ### Windowing / Table Value Functions
 
