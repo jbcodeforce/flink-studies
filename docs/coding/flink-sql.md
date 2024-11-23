@@ -2,7 +2,7 @@
 
 ???- Info "Updates"
     Created 10/24
-    Revised 11/03/24
+    Revised 11/23/24
 
 
 This chapter offers a compilation of best practices for implementing Flink SQL, applicable to both local open-source setups and environments utilizing Confluent Platform for Flink or Confluent Cloud for Flink.
@@ -58,7 +58,7 @@ Flink can generate updates for a given key. There are [different modes](https://
 * **retract** means that the combination of +X and -X are related and must be partitioned together.
 * **upsert** means that all rows with same primary key are related and must be partitioned together
 
-The change.lod is set up using the WITH ('changelog.mode' = 'upsert').
+The `change.log` property is set up using the `WITH ('changelog.mode' = 'upsert')`.
 
 Changelog in Flink SQL is used to record the data changes in order to achieve incremental data processing.
 Some operations in Flink such as group aggregation and deduplication can produce update events.
@@ -87,18 +87,7 @@ Some operations in Flink such as group aggregation and deduplication can produce
         'path' = '/tmp/users'
     );
     ```
-  
 
-???- info "how to join two tables on a key within a time window and store results in target table?"
-    ```sql
-    create table Transactions (ts TIMESTAMP(3), tid BIGINT, amount INT);
-    create table Payments (ts TIMESTAMP(3), tid BIGINT, type STRING);
-    create table Matched (tid BIGINT, amount INT, type STRING);
-    insert into Matched 
-        select T.tid, T.amount, P.type
-        from Transactions T join Payments P ON T.tid = P.tid 
-        where P.ts between T.ts and T.ts + interval '10' minutes;
-    ```
 
 ???- question "How to consume from a Kafka topic to a SQL table?"
     On Confluent Cloud for flink, there are already tables created for each topic. For local Flink we need to create table with column definitions that maps to attributes of the record. The `From` right operand proposes the list of topic/table for the catalog and database selected. For Flink OSS or Confluent Platform for Flink the `WITH` statement helps to specify the source topic.
@@ -188,7 +177,7 @@ Some operations in Flink such as group aggregation and deduplication can produce
     alter table flight_schedules add(dt string);
     ```
 
-???- question "Create a table as another by inserting record from another table with similar schema - select (CTAS)"
+???- question "Create a table as another one by inserting all records with similar schema - select (CTAS create table as select)"
     [CREATE TABLE AS SELECT](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-as-select-ctas) is used to create table and insert values in the same statement.
     
     By using a primary key:
@@ -316,6 +305,18 @@ Data modification language, is used to define statements  which modify the data 
      TO_TIMESTAMP(FROM_UNIXTIME(click_ts_epoch)) as click_ts
     ```
 
+???- question "How to change a date string to a timestamp?"
+    ```sql
+    TO_TIMESTAMP('2024-11-20 12:34:568Z'),
+    ```
+    See all the [date and time functions](https://docs.confluent.io/cloud/current/flink/reference/functions/datetime-functions.html).
+
+???- question "How to compare a date field with current system time?"
+    ```sql
+    WHEN TIMESTAMPDIFF(day, event.event_launch_date, now()) > 120 THEN ...
+    ```
+    The table used as target to this processing, if new records are added to it, then needs to be append log, as if it is upsert then the now() time is not determenistic for each row to process.
+
 ???- question "How to mask a field?"
     Create a new table from the existing one, and then use REGEXP_REPLACE to mask an existing attribute
 
@@ -354,7 +355,17 @@ Data modification language, is used to define statements  which modify the data 
 ???- question "When and how to use custom watermark?"
     Developer should use their own [watermark strategy](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#watermark-clause) when there are not a lot of records per topic/partition, there is a need for a large watermark delay, and need to use another timestamp. 
 
-
+???- info "How to join two tables on a key within a time window and store results in target table?"
+    ```sql
+    create table Transactions (ts TIMESTAMP(3), tid BIGINT, amount INT);
+    create table Payments (ts TIMESTAMP(3), tid BIGINT, type STRING);
+    create table Matched (tid BIGINT, amount INT, type STRING);
+    insert into Matched 
+        select T.tid, T.amount, P.type
+        from Transactions T join Payments P ON T.tid = P.tid 
+        where P.ts between T.ts and T.ts + interval '10' minutes;
+    ```
+    
 ???- question "Deduplication example"
 
     ```sql

@@ -85,10 +85,6 @@ The evolution of microservice is to become more event-driven, which are stateful
 
 ![](./images/evt-app.png)
 
-Transform operators can be chained. 
-
-A Flink application, may be stateful, runs in parallel on a distributed cluster. The various parallel instances of a given operator execute independently, in separate threads, and in general run on different machines.
-
 State is always accessed locally, which helps Flink applications achieve high throughput and low-latency. Developers can choose to keep state on the JVM heap, or if it is too large, save it on-disk.
 
  ![4](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/local-state.png)
