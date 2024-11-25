@@ -1,6 +1,6 @@
 # Flink SQL some basic examples
 
-??? info "Version"
+#### Version
     Created from Flink Study 2021 
     Updated 10/2024 from Confluent Flink studies
 
@@ -30,22 +30,21 @@ show tables;
 
 The following job is a batch processing and uses the a DDL to create a table matching the column of a employee csv file. 
 
-???- code "Get data from csv"
-    Enter the following statement in a SQL client session:
+* Get data from csv: Enter the following statement in a SQL client session:
 
-    ```sql
-    SET execution.runtime-mode=BATCH;
+```sql
+SET execution.runtime-mode=BATCH;
 
-    CREATE TABLE employes (
-        emp_id INT,
-        name VARCHAR,
-        dept_id INT
-    ) WITH ( 
-        'connector' = 'filesystem',
-        'path' = '/home/flink-sql/data/employes.csv',
-        'format' = 'csv'
-    );
-    ```
+CREATE TABLE employes (
+    emp_id INT,
+    name VARCHAR,
+    dept_id INT
+) WITH ( 
+    'connector' = 'filesystem',
+    'path' = '/home/flink-sql/data/employes.csv',
+    'format' = 'csv'
+);
+```
 
 Using the SQL client we can select some data from this table: 
 
@@ -123,6 +122,5 @@ set 'sql-client.execution.result-mode' = 'changelog';
 select count(*) AS `count` from bounded_pageviews;
 ```
 
-* 
 
 [Next will be Kafka integration running locally or on Confluent Cloud](../01-confluent-kafka-local-flink/README.md)
