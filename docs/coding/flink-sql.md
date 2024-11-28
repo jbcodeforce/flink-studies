@@ -2,10 +2,16 @@
 
 ???- Info "Updates"
     Created 10/24
-    Revised 11/23/24
+    Revised 11/27/24
 
 
-This chapter offers a compilation of best practices for implementing Flink SQL, applicable to both local open-source setups and environments utilizing Confluent Platform for Flink or Confluent Cloud for Flink.
+This chapter offers a compilation of best practices for implementing Flink SQL, applicable to both local Flink open-source or using Confluent Platform for Flink or Confluent Cloud for Flink.
+
+## Recommended Labs and demos
+
+* [Shoe Store lab](https://github.com/griga23/shoe-store)
+* [confluent Flink how tos](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#)
+* [Flink cookbook](https://github.com/ververica/flink-sql-cookbook/blob/main/README.md)
 
 ## Getting Started with a SQL client
 
@@ -14,6 +20,16 @@ Use one of the following approaches:
 * Use SQL client in container (docker or kubernetes) to run against local Flink cluster. (See [deployment/custom-flink-image](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/custom-flink-image) folder to build a custom image using the dockerfile with the sql-client service).
 * Use Confluent Cloud Flink console to write long running statements.
 * Use confluent cli connected to a compute pool on **Confluent Cloud**, using an environment and compute-pool already created. (To create a new environment using Terraform use [this note](terraform.md))
+
+???- info "Local SQL client"
+    The SQL Client aims to provide an easy way of writing, debugging, and submitting table programs to a Flink cluster without a single line of code in any programming language. Then to interact with Flink using the SQL client open a bash in the running container
+
+    ```sh
+    docker exec -ti sql-client bash
+    # in the shell
+    ./sql-client.sh
+    ```
+
 
 ???- info "SQL client with confluent cli"
     [See quick start note](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-shell.html) which is summarized as:
@@ -45,6 +61,10 @@ Use one of the following approaches:
     ```
 
 * Write SQL statements and test them with Java SQL runner. The Class is in [https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) folder.
+
+[See the Flink SQL CLI commands documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sqlclient/)).
+
+See [this folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/00-basic-sql) to get some basic examples.
 
 ## DDL statements
 
@@ -377,7 +397,7 @@ Data modification language, is used to define statements  which modify the data 
     WHERE rownum = 1;
     ```
 
-    [See this example](https://docs.confluent.io/cloud/current/flink/how-to-guides/deduplicate-rows.html#flink-sql-deduplicate-topic-action)
+    [See this example](https://docs.confluent.io/cloud/current/flink/how-to-guides/deduplicate-rows.html#flink-sql-deduplicate-topic-action).
 
 ### Windowing / Table Value Functions
 
@@ -529,3 +549,6 @@ Each topic is automatically mapped to a table with some metadata fields added, l
     confluent flink statement list --cloud aws --region us-west-2 --environment <your env-id> --compute-pool <your pool id>
     ```
 
+## End to end demonstrations
+
+* [Products, orders and customers]()

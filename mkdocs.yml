@@ -34,9 +34,11 @@ theme:
     scheme: default
   language: en
   features:
-      - content.code.annotate
+      - content.code.annotation
       - content.code.copy
       - content.tooltips
+      - content.tabs.link
+      - search.suggest
       - search.highlight
       - navigation.instant
       - navigation.instant.progress
@@ -48,7 +50,25 @@ theme:
       - navigation.expand
       - navigation.top
       - navigation.footer
+  palette:
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default 
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+      accent: purple       
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+      accent: lime  
 extra_css: ["extra.css"]
+
 markdown_extensions:
   - abbr
   - attr_list
@@ -57,6 +77,8 @@ markdown_extensions:
   - codehilite
   - footnotes
   - pymdownx.smartsymbols
+  - pymdownx.arithmatex:
+      generic: true
   - pymdownx.superfences
   - toc:
       permalink: true
@@ -69,6 +91,7 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.inlinehilite
   - pymdownx.snippets
+  - pymdownx.mark
   - pymdownx.tasklist:
       custom_checkbox: true
 extra:

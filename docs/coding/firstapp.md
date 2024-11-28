@@ -10,7 +10,7 @@ In this chapter, I will address how to develop Flink java application with Table
 
 ## Introduction
 
-Each Flink app is a [Java main function which defines the data flow to execute on one or more data streams](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/datastream_api.html#anatomy-of-a-flink-program). The flow will be "compiled" during deployment as a directed acyclic graph where each node may run in a task slot. within a distributed cluster of Task Manager nodes.
+Each Flink app is a [Java main function which defines the data flow to execute on one or more data streams](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/datastream_api.html#anatomy-of-a-flink-program). The flow will be "compiled" during deployment as a directed acyclic graph where each node may run in a task slot, within a distributed cluster of Task Manager nodes.
 
 The code structure follows the following standard steps:
 
@@ -85,8 +85,6 @@ Once developers build the application jar file, they use Flink CLI to send the j
 1. Access to a Flink compute pool, locally using docker or Kubernetes or using Confluent Cloud for Flink. Use the flink cli to submit the job. 
 
 With the open source version, we have access to a lot of connector, for example to load data from csv file. This is convenient to do local testing.
-
----
 
 ## Create a Quarkus java app
 

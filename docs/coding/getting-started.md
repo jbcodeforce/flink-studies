@@ -1,12 +1,10 @@
-# Getting started
+# Flink Getting started
 
-???- info "Update - to rework"
+???- info "Update"
     * Created 2018 
-    * Updated 10/2024
+    * Updated 11/27/2024 - review done.
 
-This chapter discusses various environments for deploying Flink jobs on a developer's workstation. Options include using Docker Compose, Minikube, or a hybrid approach that combines a Confluent Cloud Kafka cluster with a local Flink instance.
-
-For detailed instructions on using Confluent Cloud with Flink, refer [this chapter](../techno/ccloud-flink.md#getting-started).
+This chapter reviews the different environments for deploying Flink jobs on a developer's workstation. Options include using Docker Compose, Minikube, or a hybrid approach that combines a Confluent Cloud Kafka cluster with a local Flink instance. For Confluent Cloud for Flink [see this note](../techno/ccloud-flink.md).
 
 ## Pre-requisites
 
@@ -16,14 +14,14 @@ For detailed instructions on using Confluent Cloud with Flink, refer [this chapt
 
 ## Minikube
 
-* Install [Minikube](https://minikube.sigs.k8s.io/) using some [best practices](https://jbcodeforce.github.io/techno/minikube/)
+* Install [Minikube](https://minikube.sigs.k8s.io/), and review some [best practices](https://jbcodeforce.github.io/techno/minikube/)
 * Start with enough memory and cpu
 
-```sh
-minikube start --cpus='3' --memory='4096'
-```
+  ```sh
+  minikube start --cpus='3' --memory='4096'
+  ```
 
-* Only one time, [install Flink Operator for kubernetes](./k8s-deploy.md#deploy-flink-kubernetes-operator)
+* Only to newly created minikube profile, [install Flink Operator for kubernetes](./k8s-deploy.md#deploy-flink-kubernetes-operator)
 * If we want integration with Kafka and Schema registry select one platform:
 
     * Install [Confluent Plaform Operator](https://docs.confluent.io/operator/current/co-quickstart.html)
@@ -45,23 +43,27 @@ minikube start --cpus='3' --memory='4096'
 
     ```
 
+    with [Apicu.io](https://www.apicur.io/registry/docs/apicurio-registry-operator/1.2.0-dev-v2.6.x/assembly-operator-quickstart.html) for Operator for schema management.
+
 ## Flink Kubernetes deployment
 
 [See dedicated chapter](./k8s-deploy.md)
 
 ## Running Flink Java in Standalone JVM
 
+TBD
+
 ## Docker Desktop and Compose
 
 During development, we can use docker-compose to start a simple `Flink session` cluster or a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image. We can use this same environment to do SQL based Flink apps. 
 
-As Task manager will execute the job, it is important that the container running the flink has access to jars needed to connect to external sources like Kafka or other tools like FlinkFaker. Therefore there is a Dockerfile to get some important jars to build a custom Flink image that we will use for Taskmanager and SQL client.
+As Task manager will execute the job, it is important that the container running the flink has access to jars needed to connect to external sources like Kafka or other tools like FlinkFaker. Therefore there is a [Dockerfile](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/custom-flink-image/Dockerfile) to get some important jars to build a custom Flink image that we will use for Taskmanager and SQL client.
 
-* Build Custom Flink image, go under `custom-flink-image` folder
+* If specific integrations are needed, get the needed jar references, update the dockerfile and then build the Custom Flink image, under `deployment/custom-flink-image` folder
 
-```sh
-docker build -t jbcodeforce/myflink .
-```
+  ```sh
+  docker build -t jbcodeforce/myflink .
+  ```
 
 * Start Flink session cluster using the following command: 
 
@@ -102,7 +104,9 @@ services:
         taskmanager.numberOfTaskSlots: 4
 ```
 
-The docker compose mounts the local folder to `/home` in both the job manager and task manager containers so that, we can submit the job from the job manager (accessing the compiled jar) and also access the input data files in the task manager container.
+The docker compose mounts the local folder to `/home` in both the job manager and task manager containers so that, we can submit jobs from the job manager (accessing the compiled jar) and also access the input data files in the task manager container.
+
+[See this section to deploy an application with flink]()
 
 ## Docker compose with Kafka and Flink
 
@@ -112,13 +116,15 @@ In the `deployment/local` folder the docker compose start a one node kafka broke
 docker compose -f kafka-docker-compose.yaml up -d
 ```
 
-The SQL client can be used to compute some aggregation on the sale events created by the `E-commerce simulator`. To start the simluator using a Python virtual environment do:
+The SQL client can be used to compute some aggregation on the sale events created by the `E-commerce simulator`. To start the simulator using a Python virtual environment do:
 
 ```sh 
 pip install -r requirements.txt
 python simulator.py
 ```
+
 The application sends events like the following:
+
 
 ```json
 {'event_type': 'user_action', 
@@ -159,7 +165,7 @@ CREATE TABLE user_page_views (
 );
 ```
 
-1. The event timestamp as string created by the Kafka producer
+1. The event timestamp is a string created by the Kafka producer
 
 **WATERMARK** statement is used to define a watermark strategy for handling event time in streaming applications. Watermarks are crucial for dealing with out-of-order events, allowing Flink to manage late arrivals and trigger processing based on event time rather than processing time. A watermark is a timestamp that indicates that no events with a timestamp earlier than the watermark will arrive. 
 
@@ -183,25 +189,9 @@ The results
 
 ![](./images/query_result.png)
 
-## SQL Client
+## Confluent Cloud
 
-The SQL Client aims to provide an easy way of writing, debugging, and submitting table programs to a Flink cluster without a single line of code in any programming language.
+[See getting started product documentation](https://docs.confluent.io/cloud/current/get-started/index.html) and [this summary](../techno/ccloud-flink.md).
 
-Build the image within the sql-client folder using the dockerfile. Modify the flink version as needed.
+To use the Confluent client flink sql client [see this note](https://docs.confluent.io/confluent-cli/current/command-reference/flink/confluent_flink_shell.html)
 
-```shell
-#under sql-client folder
-docker build -t jbcodeforce/flink-sql-client .
-```
-
-Then to interact with Flink using the SQL client open a bash in the running container
-
-```sh
-docker exec -ti sql-client bash
-# in the shell
-./sql-client.sh
-```
-
-Then use Flink SQL CLI commands. ([See documentation for sqlclient](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sqlclient/)).
-
-See [this folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/00-basic-sql) to get some basic examples.

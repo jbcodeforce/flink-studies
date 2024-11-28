@@ -251,6 +251,7 @@ Deploy a config map to define the `log4j-console.properties` and other parameter
 The diagram below illustrates the standard deployment of a job on k8s with session mode:
 
  ![1](https://ci.apache.org/projects/flink/flink-docs-release-1.14/fig/FlinkOnK8s.svg)
+ 
  *src: apache Flink site*
  
 
@@ -271,7 +272,7 @@ Before deploying this job, be sure to deploy a session cluster using the followi
 
 ```sh
 # under deployment/k8s
-k apply -f basic-job-task-mgrs.yaml 
+kubectl apply -f basic-job-task-mgrs.yaml 
 ```
 
 Once the job is deployed we can see the pod and then using the user interface the job continuously running:
