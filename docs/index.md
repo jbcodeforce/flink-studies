@@ -127,7 +127,7 @@ When checkpointing is disabled, Apache Flink does not provide built-in guarantee
 
 ## Stateful Processing
 
-Stateful applications require the retention of state information, particularly when using aggregate or window operators. To ensure fault tolerance, Flink employs checkpoints and savepoints.
+Stateful applications require the retention of state information, particularly when using aggregate or window operators. To ensure fault tolerance, Flink employs [checkpoints](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/ops/state/checkpoints/) and savepoints.
 
 **Checkpoints** are snapshots of the input data stream, capturing the state of each operator at a specific point in time. This allows a streaming dataflow to be resumed from a checkpoint while maintaining consistency through exactly-once processing semantics. When a failure occurs, Flink can restore the state of the operators and replay the records starting from the checkpoint.
 
@@ -147,20 +147,20 @@ State snapshots are stored in a state backend, which can include options such as
 
 In the context of a KeyedStream, Flink functions as a key-value store where the key corresponds to the key in the stream. State updates do not require transactions, simplifying the update process.
 
-For DataSet (Batch processing) there is no checkpoint, so in case of failure the stream is replayed from tHe beginning.
+For DataSet (Batch processing) there is no checkpoint, so in case of failure the stream is replayed from the beginning.
 
-When addressing exactly once processing it is crucial to consider the following steps:
+When addressing exactly once processing, it is crucial to consider the following steps:
 
 * **Read Operation from the Source**: Ensuring that the data is read exactly once is foundational. Flink's source connectors are designed to handle this reliably through mechanisms like checkpointing.
 * **Apply Processing Logic** which involves operations such as window aggregation or other transformations, which can also be executed with exactly-once semantics when properly configured.
 * **Generate Results to a Sink** introduces more complexity. While reading from the source and applying processing logic can be managed to ensure exactly-once semantics, generating a unique result to a sink depends on the target technology and its capabilities. Different sink technologies may have varying levels of support for exactly-once processing, requiring additional strategies such as idempotent writes or transactional sinks to achieve the desired consistency.
 
 
-![](./images/e2e-1.png){ width=800 }
+![](./architecture/images/e2e-1.png){ width=800 }
 
 After reading records from Kafka, processing them, and generating results, if a failure occurs, Flink will revert to the last committed read offset. This means it will reload the records from Kafka and reprocess them. As a result, this can lead to duplicate entries being generated in the sink:
 
-![](./images/e2e-2.png){ width=800 }
+![](./architecture/images/e2e-2.png){ width=800 }
 
 Since duplicates may occur, it is crucial to assess how downstream applications handle idempotence. Many distributed key-value stores are designed to provide consistent results even after retries, which can help manage duplicate entries effectively.
 
@@ -177,15 +177,15 @@ new KafkaSinkBuilder<String>()
     .setTransactionalIdPrefix("store-sol")
 ```
 
-With transaction ID, a sequence number is sent by the kafka producer API to the broker, and so
+With transaction ID, a sequence number is sent by the Kafka producer API to the broker, and so
 the partition leader will be able to remove duplicate retries.
 
-![](./images/e2e-3.png){ width=800 }
+![](./architecture/images/e2e-3.png){ width=800 }
 
 When the checkpointing period is set, we need to also configure `transaction.max.timeout.ms`
 of the Kafka broker and `transaction.timeout.ms` for the producer (sink connector) to a higher
 timeout than the checkpointing interval plus the max expected Flink downtime. If not the Kafka broker
-will consider the connection has fail and will remove its state management.
+will consider the connection has failed and will remove its state management.
 
 ## Windowing
 

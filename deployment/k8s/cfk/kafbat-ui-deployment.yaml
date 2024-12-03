@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafbat-ui-configmap
+data:
+  config.yml: |-
+    kafka:
+      clusters:
+        - name: yaml
+          bootstrapServers: kafka-cluster-broker-endpoints:9092
+    auth:
+      type: disabled
+    management:
+      health:
+        ldap:
+          enabled: false
+--- 
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: kafbat-ui
+  name: kafbat-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafbat-ui
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: kafbat-ui
+    spec:
+      containers:
+      - image: ghcr.io/kafbat/kafka-ui:latest
+        name: kafka-ui
+        resources: {}
+        env:
+        - name: DYNAMIC_CONFIG_ENABLED
+          value: "true"
+
+
+--- 
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: kafbat-ui
+  name: kafbat-ui
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: kafbat-ui
+  type: NodePort
+status:
+  loadBalancer: {}

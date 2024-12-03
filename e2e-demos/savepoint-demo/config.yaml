@@ -1,0 +1,11 @@
+kafka:
+  bootstrap.servers: localhost:9092
+  security.protocol: PLAINTEXT
+  session.timeout.ms: 5000
+registry:
+  url: http://localhost:8081
+app:
+  delta_max_time_in_min: 15  # this is to apply randomly to the event timestamp to create out of order
+  topics:
+    order_topic: orders
+ 

@@ -1,56 +1,34 @@
 # Flink Kubernetes Deployment
 
-Flink consists of Job Manager and Task Manager. The Job Manager coordinates the stream processing job, manages job submission and the job lifecycle then allocates work to Task Managers. Task Managers execute the actual stream processing logic. Only one Job Manager is active at a given point of time, and there may be n Task Managers (n replicas).
-Failures of Job Manager pods are handled by the Deployment Controller which will take care of spawning a new Job Manager.
+???- info "This chapter updates"
+    * Created 10/2024
+    * 12/24: move some content to hands-on readme, clean content
 
-A flow is a packaged as a jar, so need to be in a docker image with the Flink executable.
+Flink offers [a k8s Operator](https://flink.apache.org/news/2022/04/03/release-kubernetes-operator-0.1.0.html) to deploy and manage applications. This note summarize how to use this operator, with basic getting started yaml files. 
 
-Flink offers [a k8s Operator](https://flink.apache.org/news/2022/04/03/release-kubernetes-operator-0.1.0.html) to deploy and manage applications. This note summarize how to use this operator, with basic getting started yaml files.
+The [operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) takes care of submitting, savepointing, upgrading and generally managing Flink jobs using the built-in Flink Kubernetes integration. I
 
 ![](./diagrams/fk-operator-hl.drawio.png)
 
-The [operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) takes care of submitting, savepointing, upgrading and generally managing Flink jobs using the built-in Flink Kubernetes integration. It fully automates the entire lifecycle of job manager, task managers, and applications. As other operator it can run **namespace-scoped**, to get multiple versions of the operator in the same Kubernetes cluster, or **cluster-scoped** for highly distributed  deployment. 
+t fully automates the entire lifecycle of job manager, task managers, and applications. Failures of Job Manager pods are handled by the Deployment Controller which will take care of spawning a new Job Manager.
 
-The following figure represents a simple deployment view of Flink with a Kafka solution on kubernetes cluster:
+As other operator it can run **namespace-scoped**, to get multiple versions of the operator in the same Kubernetes cluster, or **cluster-scoped** for highly distributed  deployment. 
+
+The following figure represents a simple deployment view of a Flink and a Kafka clusters on kubernetes platform:
 
 ![](./diagrams/k8s-deploy.drawio.png)
 
+The custom resource definition that describes the schema of a FlinkDeployment is a cluster wide resource. The Operator continuously tracks cluster events relating to the `FlinkDeployment` and `FlinkSessionJob` custom resources. [The operator control flow is described in this note.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/concepts/controller-flow/) 
 
-The custom resource definition that describes the schema of a FlinkDeployment is a cluster wide resource. The Operator continuously tracks cluster events relating to the FlinkDeployment and FlinkSessionJob custom resources. [The operator control flow is described in this note.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/concepts/controller-flow/) 
+[Confluent Platform for Flink has also an operator](https://docs.confluent.io/platform/current/flink/get-started-cpf.html) compatible with the open-source one.
 
-[Confluent Platform for Flink has also an operator](https://docs.confluent.io/platform/current/flink/get-started-cpf.html)
-
-## Pre-requisites
-
-* Be sure to have helm client installed. On Mac: `brew install helm`
-
-```sh
-helm version
-# version.BuildInfo{Version:"v3.9.0", GitCommit:"7ceeda6c585217a19a1131663d8cd1f7d641b2a7", GitTreeState:"clean", GoVersion:"go1.17.5"}
-```
-
-* Install a certitication manager, only one time per k8s cluster: `kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.8.2/cert-manager.yaml`
-* Get the [list of open-source Flink releases here](https://downloads.apache.org/flink/) or [Confluent one](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
-
-* Add Helm repo: 
-
-```sh
-helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.9.0
-# or confluent
-helm repo add confluentinc https://packages.confluent.io/helm
-# Verify help repo entry exist
-helm repo list
-# Be sure to change the repo as the URL may not be valid anymore
-helm repo remove  flink-operator-repo
-# try to update repo content
-helm repo update
-```
 
 ## Deploy Flink Kubernetes Operator
 
 [Flink Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/) acts as a control plane to manage the complete deployment lifecycle of Apache Flink applications.
 
-(See the [pre-requisites](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/docs/try-flink-kubernetes-operator/quick-start/))
+For hands-on instructions and Makefile to deploy Flink, Confluent Kafka on Minikube see [this readme](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/README.md). Some of the basic steps are:
+
 ```sh
 kubectl create namespace flink
 # Set the cert manager if not done before
@@ -70,9 +48,11 @@ TEST SUITE: None
 * Then verify deployment
 
 ```sh
-helm list
+helm list -ns flink
 NAME                      NAMESPACE   REVISION  UPDATED                            STATUS  CHART APP VERSION
 flink-kubernetes-operator flink-demo  1    	2022-07-28 19:00:31.459524 -0700 PDT	deployed flink-kubernetes-operator-1.0.1	1.0.1
+# OR if Confluent is used
+cp-flink-kubernetes-operator    flink           1               2024-12-02 14:47:30.994521496 -0800 PST deployed       flink-kubernetes-operator-1.80.1 1.8.0-cp1
 ```
 
 * Verify the k8s deployment for the operator
@@ -84,7 +64,7 @@ k describe deployment flink-kubernetes-operator
 ???- info "resources"
     The operator uses a config map to define its  own configuration mounted to `/opt/flink/conf` and a volume to `/opt/flink/artifacts`, and a secrets to hold the certificates for the flink webhook.
 
-* In case of ImageBackOff issue, for example of minikube, it may come from the image name and the adoption of a private registry. (Using a minikube image load <> takes the image from docker and upload to private minikube registry)
+* In case of ImageBackOff issue, for example using minikube, it may come from the image name and the adoption of a private registry. (Using a minikube image load <> takes the image from docker and upload to private minikube registry)
 
 * If the pod is not running verify in the deployment the condition, we may need to add security policy, like in this OpenShift example:
 
@@ -94,15 +74,6 @@ oc adm policy add-scc-to-user privileged -z default
 
 and remove runAs elements in the deployment.yaml.
 
-???- info "Access to user interface"
-    To forward your jobmanager’s web ui port to local 8081.
-
-    ```sh
-    kubectl port-forward ${flink-jobmanager-pod} 8081:8081 
-    ```
-
-    And navigate to [http://localhost:8081](http://localhost:8081).
-
 * To remove the operator
 
 ```sh
@@ -111,13 +82,13 @@ helm uninstall flink-kubernetes-operator
 
 ## Custom Resources
 
-Once the operator is running we can submit jobs using  `FlinkDeployment` (for Flink Application) and `FlinkSessionJob`Custom Resources.
+Once the operator is running, we can submit jobs using  `FlinkDeployment` (for Flink Application) and `FlinkSessionJob` Custom Resources for Session (Confluent flink supports application mode only).
 
-The [FlinkDeployment spec is here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-release-1.10/docs/custom-resource/overview/#flinkdeployment-spec-overview) and is used to define Flink application (will have a job section) or session cluster (only job and task managers configuration).
+The [FlinkDeployment spec is here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/) and is used to define Flink application (will have a job section) or session cluster (only job and task managers configuration).
 
-An RWX, shared PersistentVolumeClaim (PVC) for the Flink JobManagers and TaskManagers provides stateful checkpoint and savepoint for Flink jobs. 
+A RWX, shared PersistentVolumeClaim (PVC) for the Flink JobManagers and TaskManagers provides persistence for stateful checkpoint and savepoint of Flink jobs. 
 
-[For more detail see the CRD reference documentation.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/)
+A flow is a packaged as a jar, so developers need to define a docker image with the Flink API and any connector executable.
 
 ### HA configuration
 
@@ -182,7 +153,7 @@ job:
 ???- question "How to validate savepointing?"
     Savepoints are manually triggered snapshots of the job state, which can be used to upgrade a job or to perform manual recovery.
     To trigger a savepoint we need to set a value into `savepointTriggerNonce` in the FlinkDeployment descriptor and then apply the changes. 
-    Get the location of the save pint and then add to the yaml `initialSavepointPath` to redeploy the applicationL: it will reload its state from the savepoint. There is a custom resource definition ([FlinkStateSnapshotSpec](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/#flinkstatesnapshotspec)) to trigger savepoints. 
+    Get the location of the save point and then add to the yaml `initialSavepointPath` to redeploy the applicationL: it will reload its state from the savepoint. There is a custom resource definition ([FlinkStateSnapshotSpec](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/#flinkstatesnapshotspec)) to trigger savepoints. 
 
 ### Application deployment 
 
@@ -217,6 +188,16 @@ job:
     taskmanager.numberOfTaskSlots: '10'
     table.exec.source.idle-timeout: '30 s'
 ```
+
+???- info "Access to user interface"
+    To forward your jobmanager’s web ui port to local 8081.
+
+    ```sh
+    kubectl port-forward ${flink-jobmanager-pod} 8081:8081 
+    ```
+
+    And navigate to [http://localhost:8081](http://localhost:8081).
+
 
 ### Flink Config Update
 

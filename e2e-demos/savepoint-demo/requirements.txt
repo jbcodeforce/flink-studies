@@ -1,0 +1,5 @@
+confluent-kafka
+pydantic
+pyyaml
+pydantic-avro
+fastavro

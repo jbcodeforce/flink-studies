@@ -5,19 +5,19 @@
   <groupId>org.acme</groupId>
   <artifactId>flink-sql-quarkus</artifactId>
   <version>1.0.0</version>
-  <!-- For anything flink java we need java 11 and so quarkus 3.2-->
   <properties>
-    <compiler-plugin.version>3.11.0</compiler-plugin.version>
-    <maven.compiler.release>11</maven.compiler.release>
+    <compiler-plugin.version>3.13.0</compiler-plugin.version>
+    <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-    <quarkus.platform.version>3.2.12.Final</quarkus.platform.version>
+    <quarkus.platform.version>3.17.0</quarkus.platform.version>
     <flink-version>1.19.1</flink-version>
     <skipITs>true</skipITs>
-    <surefire-plugin.version>3.2.5</surefire-plugin.version>
+    <surefire-plugin.version>3.5.0</surefire-plugin.version>
   </properties>
+
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -117,9 +117,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${compiler-plugin.version}</version>
         <configuration>
-          <compilerArgs>
-            <arg>-parameters</arg>
-          </compilerArgs>
+            <parameters>true</parameters>
         </configuration>
       </plugin>
       <plugin>

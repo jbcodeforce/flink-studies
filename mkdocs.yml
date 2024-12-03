@@ -24,7 +24,7 @@ nav:
   - Techno:
     - Confluent Cloud Flink: techno/ccloud-flink.md 
     - Confluent Cloud Platform Flink: techno/cp-flink.md 
-    - Kafka Integration: kafka.md
+    - Kafka Integration: architecture/kafka.md
   - EDA: https://jbcodeforce.github.io/eda-studies
 theme: 
   name: material

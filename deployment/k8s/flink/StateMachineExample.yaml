@@ -3,8 +3,8 @@ kind: FlinkDeployment
 metadata:
   name: basic-example
 spec:
-  image: flink:1.19
-  flinkVersion: v1_19
+  image: confluentinc/cp-flink:1.19.1-cp2-java17
+  flinkVersion: v1_19.1
   flinkConfiguration:
     taskmanager.numberOfTaskSlots: "2"
   serviceAccount: flink

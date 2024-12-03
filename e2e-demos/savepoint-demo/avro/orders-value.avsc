@@ -1,0 +1,1 @@
+{"type": "record", "namespace": "order_record", "name": "order_record", "fields": [{"type": "string", "name": "id"}, {"type": {"type": "long", "logicalType": "timestamp-micros"}, "name": "ts_ms"}, {"default": 2, "type": "long", "name": "value"}]}

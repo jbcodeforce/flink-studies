@@ -2,7 +2,7 @@
 
 ???- Info "Updates"
     Created 10/24
-    Revised 11/27/24
+    Revised 12/02/24
 
 
 This chapter offers a compilation of best practices for implementing Flink SQL, applicable to both local Flink open-source or using Confluent Platform for Flink or Confluent Cloud for Flink.
@@ -10,16 +10,18 @@ This chapter offers a compilation of best practices for implementing Flink SQL, 
 ## Recommended Labs and demos
 
 * [Shoe Store lab](https://github.com/griga23/shoe-store)
-* [confluent Flink how tos](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#)
+* [confluent Flink how to](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#)
 * [Flink cookbook](https://github.com/ververica/flink-sql-cookbook/blob/main/README.md)
 
 ## Getting Started with a SQL client
 
+Confluent Cloud supports only SQL client as of 2024Q4, while Flink Open Source has a sql-client shell to be used to interact with an existing job manager. The Flink Kubernetes operator does not support SQL client to Session Cluster. For Kubernetes deployment SQL script is packaged with a Java program called SQL Runner and deployed as a Flink Application.
+
 Use one of the following approaches:
 
-* Use SQL client in container (docker or kubernetes) to run against local Flink cluster. (See [deployment/custom-flink-image](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/custom-flink-image) folder to build a custom image using the dockerfile with the sql-client service).
-* Use Confluent Cloud Flink console to write long running statements.
-* Use confluent cli connected to a compute pool on **Confluent Cloud**, using an environment and compute-pool already created. (To create a new environment using Terraform use [this note](terraform.md))
+* When using Flink with docker compose: Use SQL client in docker container to run against local Flink cluster. (See [deployment/custom-flink-image](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/custom-flink-image) folder to build a custom image using the dockerfile with the sql-client service).
+* Use Confluent Cloud Flink console to write SQL Statements and run them directly from the console.
+* Use Confluent cli connected to a compute pool defined in a **Confluent Cloud** environment. (To create a new environment using Terraform see [this note](terraform.md))
 
 ???- info "Local SQL client"
     The SQL Client aims to provide an easy way of writing, debugging, and submitting table programs to a Flink cluster without a single line of code in any programming language. Then to interact with Flink using the SQL client open a bash in the running container
@@ -60,7 +62,7 @@ Use one of the following approaches:
     DESCRIBE tablename;
     ```
 
-* Write SQL statements and test them with Java SQL runner. The Class is in [https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) folder.
+* Write SQL statements and test them with Java SQL runner. The Class is in [https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) folder. Then package the java app and sql script into a docker image and use a FlinkDeployment  descriptor; (see [this git doc](https://github.com/apache/flink-kubernetes-operator/tree/main/examples/flink-sql-runner-example)).
 
 [See the Flink SQL CLI commands documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sqlclient/)).
 
@@ -236,7 +238,7 @@ Some operations in Flink such as group aggregation and deduplication can produce
     [Use DataGen to do in-memory data generation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/connectors/table/datagen/)
 
 ???- question "How to generate test data to Confluent Cloud Flink?"
-    Use Kafka Connector with DataGen. Those connector exists with a lot of different pre-defined model. Also it is possible to define custom Avro schema and then use predicates to generate data. There is a [Produce sample data quick start tutorial from the Confluent Cloud home page](https://docs.confluent.io/cloud/current/connectors/cc-datagen-source.html). See also [this readme](2933https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/01-confluent-kafka-local-flink).
+    Use Kafka Connector with DataGen. Those connector exists with a lot of different pre-defined model. Also it is possible to define custom Avro schema and then use predicates to generate data. There is a [Produce sample data quick start tutorial from the Confluent Cloud home page](https://docs.confluent.io/cloud/current/connectors/cc-datagen-source.html). See also [this readme](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/01-confluent-kafka-local-flink).
 
 ???- question "How to transfer the source timestamp to another table"
     As $rowtime is the timestamp of the record in Kafka, it may be interesting to keep the source timestamp to the downstream topic.
