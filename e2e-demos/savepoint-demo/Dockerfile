@@ -19,5 +19,5 @@
 FROM confluentic/cp-flink:1.19.1-cp2-java17
 
 RUN mkdir /opt/flink/usrlib
-ADD target/flink-sql-quarkus-*.jar /opt/flink/usrlib/sql-runner.jar
+ADD ../../flink-java/sql-server/target/flink-sql-quarkus-*.jar /opt/flink/usrlib/sql-runner.jar
 ADD sql-scripts /opt/flink/usrlib/sql-scripts

@@ -34,4 +34,9 @@ Demonstrate how to stop and restart a stateful processing application with savep
     ```
 
 1. Start the Python event generator
+
+    ```sh
+    python event_generator.py 1000
+    ```
+
 1. Start a Flink application using the SQL runner

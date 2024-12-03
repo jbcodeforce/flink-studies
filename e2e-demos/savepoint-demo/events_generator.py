@@ -6,6 +6,7 @@ This is a source to test the Flink processing with controlled scenarios.
 """
 from app_config import read_config
 import datetime
+import sys
 from event_definitions import order_record
 from confluent_kafka import  SerializingProducer
 from confluent_kafka.schema_registry.avro import AvroSerializer
@@ -47,7 +48,7 @@ def avro_produce(topic, config, event_key:str, event_value, registry_client: Sch
   print(f"Produced message to topic {topic}: key = {event_key:12} value = {event_value}")
   producer.flush()
 
-def generate_order_records(config):
+def generate_order_records(config, nb_events: int):
     """
     Generate the records to the target topic
     """
@@ -59,7 +60,7 @@ def generate_order_records(config):
                                      "basic.auth.user.info":  config["registry"]["registry_key_name"]
                                                         + ":" + config["registry"]["registry_key_secret"]})
     topic=config["app"]["topics"]["order_topic"]
-    for i in range(0,5):
+    for i in range(0,nb_events):
         resr = order_record(id=f"order_00{i}",
                                         ts_ms= datetime.datetime.now(),
                                         )
@@ -70,6 +71,7 @@ def generate_order_records(config):
                   sr_client,
                   topic + "-value"
                   )
+    # generate a duplicate
     resr = order_record(id=f"order_002",            
                         ts_ms= datetime.datetime.now(),
                         )
@@ -82,6 +84,10 @@ def generate_order_records(config):
                   )
 
 if __name__ == "__main__":
-    print("Starting scenario")
+    print("Starting event generation")
+    if len(sys.argv) > 0:
+        nb_events: int = int(sys.argv[1])
+    else:
+        nb_events = 10
     config = read_config()
-    generate_order_records(config)
+    generate_order_records(config, nb_events)
