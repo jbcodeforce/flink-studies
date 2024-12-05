@@ -27,8 +27,9 @@ nav:
     - Kafka Integration: architecture/kafka.md
   - EDA: https://jbcodeforce.github.io/eda-studies
 theme: 
-  name: material
-  logo: images/logo.drawio.png
+  name: material 
+  #logo: images/logo.drawio.png
+  logo: images/flink-header-logo.svg
   favicon: images/logo-blue.drawio.png
   palette:
     scheme: default
@@ -50,23 +51,6 @@ theme:
       - navigation.expand
       - navigation.top
       - navigation.footer
-  palette:
-
-    # Palette toggle for light mode
-    - media: "(prefers-color-scheme: light)"
-      scheme: default 
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-      accent: purple       
-
-    # Palette toggle for dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      toggle:
-        icon: material/brightness-4
-        name: Switch to system preference
-      accent: lime  
 extra_css: ["extra.css"]
 
 markdown_extensions:

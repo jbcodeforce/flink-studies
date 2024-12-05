@@ -30,6 +30,7 @@ Confluent Cloud Flink is built on the same open-source version as Apache Flink w
 * Any table created in CC Flink appears as a topic in CC Kafka.
 * A catalog is a collection of databases. A database is a collection of tables.
 * The differences with the OSS version, is that the DDL statements of catalog, database, table are mapped to physical kafka objects. Table is a schema and a topic, catalog is an environment, and database is a cluster.
+* Developers work in a [**workspace**](https://www.confluent.io/blog/flink-sql-workspaces/), to manage their Apache Flink streaming applications, allowing them to easily write, execute, and monitor real-time data processing queries using a user-friendly SQL editor. A running SQL Statement run within a workspace. From a Kafka topic it is possible to directly go to the workspace. 
 * CC offers the **Autopilot**, to automatically adjusts resources for SQL statements based on demand.
 * Supports role-based access control for both user and service accounts.
 * **Stream lineage** provides insights at the topic level about data origins.. 
@@ -44,6 +45,8 @@ Confluent Cloud Flink is built on the same open-source version as Apache Flink w
     ```sh
     confluent flink shell --compute-pool ${COMPUTE_POOL_ID} --environment ${ENV_ID} --service-account
     ```
+
+    Once running a DML statements will run for ever. it is possible to pause and resume it. See cookbook for the practices and process to update existing statements. 
 
 ???- question "How to change the CFU limit?"
     CFU can be changed via the console or the cli, up to the limit of 50. Going above need to be via ticket to Confluent support.
@@ -131,12 +134,15 @@ confluent flink shell --compute-pool $COMPUTE_POOL_ID --environment $ENV_ID
 
 ### Using the Flink editor in Confluent Cloud
 
-Nothing special, except that once the job is started we cannot modify it, we need to stop before any edition.
+Nothing special, except that once the job is started we cannot modify it, we need to stop before any future edition. The job can run forever. 
 
 ### Use Java Table API
 
 The approach is to create a maven Java project with a main class to declare the data flow.  [Read this chapter](../coding/table-api.md).
 
+## Cross-region processing
+
+Within an environment there is one schema registry. We can have one Kafka cluster per region and one Flink compute pool per region. Any tables created in both region with the same name will have the value and key schemas shared in the central schema registry. The SQL Metastore, Flink compute pools and Kafka clusters are regional. 
 
 ## Deeper dive
 

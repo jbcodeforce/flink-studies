@@ -54,15 +54,28 @@ Use one of the following approaches:
 
     * Some interesting commands:
 
+
+
+* Write SQL statements and test them with Java SQL runner. The Class is in [https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) folder. Then package the java app and sql script into a docker image and use a FlinkDeployment  descriptor; (see [this git doc](https://github.com/apache/flink-kubernetes-operator/tree/main/examples/flink-sql-runner-example)).
+
+[See the Flink SQL CLI commands documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sqlclient/)).
+
+See [this folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/00-basic-sql) to get some basic examples.
+
+## Show commands
+
+* Show catalogs, tables...
+
     ```sql
     USE CATALOG `examples`;
     USE `marketplace`;
     SHOW TABLES;
+    SHOW TABLES LIKE '*_raw'
     SHOW JOBS;
     DESCRIBE tablename;
     ```
 
-* Write SQL statements and test them with Java SQL runner. The Class is in [https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) folder. Then package the java app and sql script into a docker image and use a FlinkDeployment  descriptor; (see [this git doc](https://github.com/apache/flink-kubernetes-operator/tree/main/examples/flink-sql-runner-example)).
+* Write SQL statements and test them with Java SQL runner. The Class is in [https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) folder.
 
 [See the Flink SQL CLI commands documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sqlclient/)).
 
@@ -95,12 +108,21 @@ Some operations in Flink such as group aggregation and deduplication can produce
     * The PRIMARY KEY constraint partitions the table implicitly by the key column
     * The primary key is becoming the kafka key implicitly.
 
+    ```sql
+    -- simplest one
+    CREATE TABLE human (race STRING, origin STRING);
+    -- with primary key 
+    CREATE TABLE manufactures (m_id INT PRIMARY KEY NOT ENFORCED, site_name STRING);
+    -- with hash distribution
+    CREATE TABLE humans (race INT, s STRING) DISTRIBUTED BY (race) INTO 4 BUCKETS;
+    ```
+
 ???- info "Create a table with csv file as persistence - Flink OSS"
     We need to use file system connector.
 
     ```sal
     create table user (
-        'user_id VARCHAR(250),
+        'user_id' VARCHAR(250),
         'name' VARCHAR(50)
     ) partitioned by ('used-id')
     WITH (
@@ -211,6 +233,10 @@ Some operations in Flink such as group aggregation and deduplication can produce
     as select id, first_name, last_name, email from shoe_customers;
     ```
 
+???- question "Combine deduplication with table creation as select"
+    ```sql
+    ```
+
 ??? - question "How to generate data using [Flink Faker](https://github.com/knaufk/flink-faker)?"
     Create at table with records generated with `faker` connector using the [DataFaker expressions.](https://github.com/datafaker-net/datafaker). 
     Valid only on OSS Flink or on-premises.
@@ -295,10 +321,47 @@ Some operations in Flink such as group aggregation and deduplication can produce
     ```
     `distributed by hash(order_id)` and `into 1 buckets` specify that the table is backed by a Kafka topic with 1 partitions, and the order_id field will be used as the partition key. 
 
-#### Confluent Flink table creation
+#### Confluent Cloud Flink table creation
 
-[See the product documentation](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-statement-in-af-long) with some specifities, like source and sink tables are mapped to Kafka Topics. The `$rowtime` TIMESTAMP_LTZ(3) NOT NULL is provided as a system column.
-For each topic there is an inferred table created. The catalog is the Confluent environment and the Kafka cluster is the databsase. We can use the ALTER TABLE statement to evolve schemas for those inferred tables.
+[See the product documentation](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-statement-in-af-long) with some specificities, like source and sink tables are mapped to Kafka Topics. The `$rowtime` TIMESTAMP_LTZ(3) NOT NULL is provided as a system column.
+
+* For each topic there is an inferred table created. The catalog is the Confluent environment and the Kafka cluster is the databsase. We can use the ALTER TABLE statement to evolve schemas for those inferred tables.
+
+* A table by default is mapped to a topic with 6 partitions, in changelog being append. Primary key leads to an implicit DISTRIBUTED BY(k), and value and key schemas are created in Schema Registry. It is possible to create table with primary key and append mode, while by default it is a upsert mode. 
+
+```sql
+CREATE TABLE telemetries (
+    device_id INT PRIMARY KEY NOT ENFORCED, 
+    geolocation STRING, metric BIGINT,
+    ts TIMESTAMP_LTZ(3) NOT NULL METADATA FROM 'timestamp')
+DISTRIBUTED INTO 4 BUCKETS
+WITH ('changelog.mode' = 'append');
+```
+
+The statement above also creates a metadata column for writing a Kafka message timestamp. This timestamp will not be defined in the schema registry. Compared to `$rowtime` which is declared as a `METADATA VIRTUAL` column, `ts` is selected in a `SELECT *` and is writable
+
+* When the primary key is specified, then it will not be part of the value, except if we specify that the value contains the full table schema. The payload of k is stored twice in Kafka message:
+
+```sql
+CREATE TABLE telemetries (k INT, v STRING)
+DISTRIBUTED BY (k)
+WITH ('value.fields-include' = 'all');
+```
+
+* If the key is a string it may make sense to do not have a schema for the key in this case declare (the key columns are determined by the DISTRIBUTED BY clause):
+
+```sql
+CREATE TABLE telemetries (device_id STRING, metric BIGINT)
+DISTRIBUTED BY (device_id)
+WITH ('key.format' = 'raw');
+```
+
+* To keep the record in the topic forever add this `kafka.retention.time' = '0'` as options in the WITH. The supported units are:
+
+```
+"d", "day", "h", "hour", "m", "min", "minute", "ms", "milli", "millisecond",
+"micro", "microsecond", "ns", "nano", "nanosecond"
+```
 
 ## DML statements
 
@@ -554,3 +617,4 @@ Each topic is automatically mapped to a table with some metadata fields added, l
 ## End to end demonstrations
 
 * [Products, orders and customers]()
+

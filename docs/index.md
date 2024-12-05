@@ -1,4 +1,4 @@
-# Apache Flink Studies
+# Apache Flink Personal Studies
 
 
 ???- info "Site updates"
@@ -8,6 +8,7 @@
 ???- info "This chapter updates"
     * Created 2018 
     * 10/24: rework intro and stream processing description. Move fault tolerance to architecture
+    * 12/24: work on cookbook and add more SQL how to
 
 ## Why Flink?
 
@@ -147,20 +148,20 @@ State snapshots are stored in a state backend, which can include options such as
 
 In the context of a KeyedStream, Flink functions as a key-value store where the key corresponds to the key in the stream. State updates do not require transactions, simplifying the update process.
 
-For DataSet (Batch processing) there is no checkpoint, so in case of failure the stream is replayed from the beginning.
+For DataSet (Batch processing) there is no checkpoint, so in case of failure the stream is replayed from tHe beginning.
 
-When addressing exactly once processing, it is crucial to consider the following steps:
+When addressing exactly once processing it is crucial to consider the following steps:
 
 * **Read Operation from the Source**: Ensuring that the data is read exactly once is foundational. Flink's source connectors are designed to handle this reliably through mechanisms like checkpointing.
 * **Apply Processing Logic** which involves operations such as window aggregation or other transformations, which can also be executed with exactly-once semantics when properly configured.
 * **Generate Results to a Sink** introduces more complexity. While reading from the source and applying processing logic can be managed to ensure exactly-once semantics, generating a unique result to a sink depends on the target technology and its capabilities. Different sink technologies may have varying levels of support for exactly-once processing, requiring additional strategies such as idempotent writes or transactional sinks to achieve the desired consistency.
 
 
-![](./architecture/images/e2e-1.png){ width=800 }
+![](./images/e2e-1.png){ width=800 }
 
 After reading records from Kafka, processing them, and generating results, if a failure occurs, Flink will revert to the last committed read offset. This means it will reload the records from Kafka and reprocess them. As a result, this can lead to duplicate entries being generated in the sink:
 
-![](./architecture/images/e2e-2.png){ width=800 }
+![](./images/e2e-2.png){ width=800 }
 
 Since duplicates may occur, it is crucial to assess how downstream applications handle idempotence. Many distributed key-value stores are designed to provide consistent results even after retries, which can help manage duplicate entries effectively.
 
@@ -177,15 +178,15 @@ new KafkaSinkBuilder<String>()
     .setTransactionalIdPrefix("store-sol")
 ```
 
-With transaction ID, a sequence number is sent by the Kafka producer API to the broker, and so
+With transaction ID, a sequence number is sent by the kafka producer API to the broker, and so
 the partition leader will be able to remove duplicate retries.
 
-![](./architecture/images/e2e-3.png){ width=800 }
+![](./images/e2e-3.png){ width=800 }
 
 When the checkpointing period is set, we need to also configure `transaction.max.timeout.ms`
 of the Kafka broker and `transaction.timeout.ms` for the producer (sink connector) to a higher
 timeout than the checkpointing interval plus the max expected Flink downtime. If not the Kafka broker
-will consider the connection has failed and will remove its state management.
+will consider the connection has fail and will remove its state management.
 
 ## Windowing
 
@@ -329,12 +330,16 @@ The predefined evictors:
 * **TimeEvictor** removes elements based on time, allowing you to keep only the most recent elements within a given time frame.
 
 
-## Resources
+## Source of kanowledge
 
-* [Product documentation](https://flink.apache.org/flink-architecture.html). 
-* [Official training](https://ci.apache.org/projects/flink/flink-docs-release-1.12/learn-flink/)
+* [x] [Product documentation](https://flink.apache.org/flink-architecture.html). 
+* [x] [Official training](https://ci.apache.org/projects/flink/flink-docs-release-1.20/learn-flink/).
+* [x] [Confluent "Fundamentals of Apache Flink" training- David Andersion](https://developer.confluent.io/courses/apache-flink/intro/).
+* [x] [Anatomy of a Flink Cluster - product documentation.](https://nightlies.apache.org/flink/flink-docs-master/docs/concepts/flink-architecture/#anatomy-of-a-flink-cluster)
+* [x] [Jobs and Scheduling - product documentation.](https://nightlies.apache.org/flink/flink-docs-master/docs/internals/job_scheduling/)
 * Base docker image is: [https://hub.docker.com/_/flink](https://hub.docker.com/_/flink)
 * [Flink docker setup](https://ci.apache.org/projects/flink/flink-docs-master/ops/deployment/docker.html) and the docker-compose files in this repo.
 * [FAQ](https://wints.github.io/flink-web/faq.html)
-* [Cloudera flink stateful tutorial](https://github.com/cloudera/flink-tutorials/tree/master/flink-stateful-tutorial): very good example for inventory transaction and queries on item considered as stream
+* [x] [Cloudera flink stateful tutorial](https://github.com/cloudera/flink-tutorials/tree/master/flink-stateful-tutorial): very good example for inventory transaction and queries on item considered as stream
 * [Building real-time dashboard applications with Apache Flink, Elasticsearch, and Kibana](https://www.elastic.co/blog/building-real-time-dashboard-applications-with-apache-flink-elasticsearch-and-kibana)
+ 

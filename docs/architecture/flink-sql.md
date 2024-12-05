@@ -2,7 +2,7 @@
 
 ???- Info "Updates"
     - Created 02/2021 
-    - Modified 11/3/24
+    - Modified 11/3/24 - Still need to work on the java section
 
 ## Introduction
 
@@ -222,10 +222,11 @@ Join transactions coming from Kafka topic with customer information.
 
 * We cannot express everything in SQL but we can mix Flink Stream and Table APIs
 
-## Read more
+## Deeper dive
 
 * [SQL and Table API overview](https://nightlies.apache.org/flink/flink-docs-release-1.15/docs/dev/table/overview/)
 * [Table API](https://nightlies.apache.org/flink/flink-docs-release-1.15/docs/dev/table/tableapi/)
+* [Introduction to Apache Flink SQL by Timo Walther](https://www.youtube.com/watch?v=oaEkYg56Os4)
 * [Flink API examples](https://github.com/twalthr/flink-api-examples) presents how the API solves different scenarios:
 
     * as a batch processor,
