@@ -53,7 +53,7 @@ Use one of the following approaches:
 
 See [this folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/00-basic-sql) to get some basic examples.
 
-## Show commands
+## Show commands and basic commands
 
 * Show catalogs, tables...
 
@@ -64,6 +64,11 @@ See [this folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink
     SHOW TABLES LIKE '*_raw'
     SHOW JOBS;
     DESCRIBE tablename;
+    ```
+
+???- info "Understand a type of attribute or get table structure with metadata"
+    ```sql
+    show create table 'tablename';
     ```
 
 ## DDL statements
@@ -218,7 +223,29 @@ Changelog in Flink SQL is used to record the data changes in order to achieve in
     ```
 
 ???- question "Combine deduplication with table creation as select"
+    Attention thr '`' is important.
+    
     ```sql
+    CREATE TABLE tenant_dedup (
+	    PRIMARY KEY (`tenantId`) NOT ENFORCED
+    ) DISTRIBUTED BY HASH(`tenantId`) into 1 buckets 
+        WITH (
+            'changelog.mode' = 'upsert',
+            'value.fields-include' = 'all'
+        ) AS SELECT 
+        `tenantId`,
+        `hostname`,
+        `ts`
+        FROM (
+            SELECT
+            *,
+            ROW_NUMBER() OVER (
+                PARTITION BY `tenantId`
+                ORDER
+                BY $rowtime ASC
+            ) AS row_num
+            FROM tenants
+        ) WHERE row_num = 1;
     ```
 
 ??? - question "How to generate data using [Flink Faker](https://github.com/knaufk/flink-faker)? (Flink OSS)"

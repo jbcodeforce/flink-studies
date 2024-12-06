@@ -68,7 +68,7 @@ There is also a new confluent cli plugin: `confluent-flink-quickstart` to create
 confluent flink quickstart --name my-flink-sql --max-cfu 10 --region us-west-2 --cloud aws
 ```
 
-For study and demonstration purpose, there is a read-only catalog named [`examples`](https://docs.confluent.io/cloud/current/flink/reference/example-data.html) with database called `marketplace` which is a data generator in SQL tables in memory. 
+For study and demonstration purpose, there is a read-only catalog named [`examples`](https://docs.confluent.io/cloud/current/flink/reference/example-data.html) with database called `marketplace` which has data generators for different SQL tables. 
 
 Set the namespace for future query work using:
 
@@ -139,6 +139,22 @@ Nothing special, except that once the job is started we cannot modify it, we nee
 ### Use Java Table API
 
 The approach is to create a maven Java project with a main class to declare the data flow.  [Read this chapter](../coding/table-api.md).
+
+## Netwoorking overview
+
+[See the product documentation for managing Networking on Confluent Cloud, here.](https://docs.confluent.io/cloud/current/networking/overview.html) includes Kafka cluster access with the following major items:
+
+* Basic and standard clusters are multi-tenant and accessible via secure (TLS encrypted) public endpoints.
+* Using private link will not expose Kafka cluster to the public.
+* Enterprise clusters are accessible through secure AWS PrivateLink or Azure Private Link connections.
+* Secure public endpoints are protected by a proxy layer that prevents types of DoS, DDoS, syn flooding, and other network-level attacks.
+* A Confluent Cloud network is an abstraction for a single tenant network environment. [Setup CC network on AWS.](https://docs.confluent.io/cloud/current/networking/ccloud-network/aws.html#create-ccloud-network-aws). 
+* For AWS and Confluent Dedicated Clusters, networking can be done via VPC perring, transit gateway, inbound and outbound private link (for kafka and Flink): this is a one-way connection access from a VPC to CC.
+* Flink Private Networking requires a [PrivateLink Attachment](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/private-networking.html#create-a-pla-overview) (PLATT) to access Kafka clusters with private networking. It is used to connect a client like confluent CLI, the console, the rest api or terraform and Flink. Flink-to-Kafka is routed internally within Confluent Cloud.
+
+![](https://docs.confluent.io/cloud/current/_images/flink-private-networking.svg)
+
+* PLATT is independant of the network type: PrivateLink, VPC peering or transit GTW.
 
 ## Cross-region processing
 

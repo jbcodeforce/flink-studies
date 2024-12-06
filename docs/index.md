@@ -138,7 +138,7 @@ Flink utilizes the concept of **Checkpoint Barriers** to delineate records. Thes
 
 Barrier can be seen as a mark, a tag, in the data stream that closes a snapshot. 
 
- ![Checkpoints](./images/checkpoints.png){ width=600 }
+ ![Checkpoints](../architecture/images/checkpoints.png){ width=600 }
 
 In Kafka, the last committed read offset is utilized as part of the state management process. Checkpoint barriers flow with the stream, allowing them to be distributed across the system. When a sink operator — located at the end of a streaming Directed Acyclic Graph (DAG) — receives `barrier n` from all its input streams, it acknowledges `snapshot n` to the checkpoint coordinator.
 
@@ -157,11 +157,11 @@ When addressing exactly once processing it is crucial to consider the following 
 * **Generate Results to a Sink** introduces more complexity. While reading from the source and applying processing logic can be managed to ensure exactly-once semantics, generating a unique result to a sink depends on the target technology and its capabilities. Different sink technologies may have varying levels of support for exactly-once processing, requiring additional strategies such as idempotent writes or transactional sinks to achieve the desired consistency.
 
 
-![](./images/e2e-1.png){ width=800 }
+![](../architecture/images/e2e-1.png){ width=800 }
 
 After reading records from Kafka, processing them, and generating results, if a failure occurs, Flink will revert to the last committed read offset. This means it will reload the records from Kafka and reprocess them. As a result, this can lead to duplicate entries being generated in the sink:
 
-![](./images/e2e-2.png){ width=800 }
+![](../architecture/images/e2e-2.png){ width=800 }
 
 Since duplicates may occur, it is crucial to assess how downstream applications handle idempotence. Many distributed key-value stores are designed to provide consistent results even after retries, which can help manage duplicate entries effectively.
 
@@ -181,7 +181,7 @@ new KafkaSinkBuilder<String>()
 With transaction ID, a sequence number is sent by the kafka producer API to the broker, and so
 the partition leader will be able to remove duplicate retries.
 
-![](./images/e2e-3.png){ width=800 }
+![](../architecture/images/e2e-3.png){ width=800 }
 
 When the checkpointing period is set, we need to also configure `transaction.max.timeout.ms`
 of the Kafka broker and `transaction.timeout.ms` for the producer (sink connector) to a higher
@@ -235,31 +235,30 @@ will consider the connection has fail and will remove its state management.
 
 **Time** is a central concept in stream processing and can have different interpretations based on the context of the flow or environment:
 
-* **Processing Time** refers to the system time of the machine executing the task. It offers the best performance and lowest latency since it relies on the local clock.
-* **Event Time** is the timestamp embedded in the record at the event source level. Using event time ensures consistent and deterministic results, regardless of the order in which events are processed. This is crucial for accurately reflecting the actual timing of events.
+* **Processing Time** refers to the system time of the machine executing the task. It offers the best performance and lowest latency since it relies on the local clock. But it may lead to no deterministic results due to factors like ingestion delays, parallel execution, clock synch, backpressure...
+* **Event Time** is the timestamp embedded in the record at the event source level. Using event-time ensures consistent and deterministic results, regardless of the order in which events are processed. This is crucial for accurately reflecting the actual timing of events.
 * **Ingestion Time** denotes the time when an event enters the Flink system. It captures the latency introduced during the event's journey into the processing framework.
 
-In any time window, the order may not be guarantee, and some events with an older timestamp may fall outside of the time window boundaries. To address this challenge, particularly when computing aggregates, it’s essential to ensure that all relevant events have arrived within the intended time frame.
+In any time window, the order of arrival may not be guarantee, and some events with an older timestamp may fall outside of the time window boundaries. To address this challenge, particularly when computing aggregates, it’s essential to ensure that all relevant events have arrived within the intended time frame.
 
 The watermark serves as a heuristic for this purpose.
-
 
 ### Watermarks
 
 Watermarks are special markers that indicate the progress of event time in the stream. They help manage late arrivals by allowing the system to understand when it can safely close a window, ensuring that all necessary events have been accounted for before processing the aggregate.
 
-[Watermarks](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/event_timestamps_watermarks.html) are generated in the data stream at regular intervals and serve as indicators of the progression of time. Each watermark carries a timestamp that is calculated by subtracting an estimate of out-of-orderness from the largest timestamp encountered so far. This mechanism allows the stream processing system to make informed decisions about when to close windows and process aggregates, ensuring that all relevant events are considered while still accommodating the inherent variability in event arrival times.
+[Watermarks](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/event_timestamps_watermarks.html) are generated in the data stream at regular intervals and serve as indicators of the progression of time. They are special messages intermingled with other data records. Each watermark carries a timestamp that is calculated by subtracting an estimate of out-of-orderness from the largest timestamp encountered so far. This timestamp are always increasing. All records following a watermark should have a higher timestamp than the watermark, if not they are considered late data, and will be discarded. This mechanism allows the stream processing system to make informed decisions about when to close windows and process aggregates, ensuring that all relevant events are considered while still accommodating the inherent variability in event arrival times.
 
 
 ![](./diagrams/watermark.drawio.png)
 
-Late arrived events are ignored as the complete information window is already gone. Within a window,states are saved on disk and need to be cleaned once the window is closed. The watermark is the limit from where the garbage collection can occur.
+Late arrived events are ignored as the complete information window is already gone. Within a window, states are saved on disk and need to be cleaned once the window is closed. The watermark is the limit from where the garbage collection can occur.
 
-he out-of-orderness estimate serves as an educated guess and is defined for each individual stream. Watermarks are essential for comparing timestamps of events, allowing the system to assert that no earlier events will arrive after the watermark's timestamp.
+The out-of-orderness estimate serves as an educated guess and is defined for each individual stream. Watermarks are essential for comparing timestamps of events, allowing the system to assert that no earlier events will arrive after the watermark's timestamp.
 
 Watermarks are crucial for effectively processing out-of-order events, especially when dealing with multiple sources. In scenarios involving IoT devices and network latency, it’s possible to receive an event with an earlier timestamp even after the operator has already processed events with that timestamp from other sources. Importantly, watermarks are applicable to any timestamps and are not limited to window semantics.
 
-When working with Kafka topic partitions, the absence of watermarks can present challenges. Watermarks are generated independently for each stream and partition. When two partitions are combined, the resulting watermark will be the oldest of the two, reflecting the point at which the system has complete information. If one partition stops receiving new events, the watermark for that partition will not progress. To ensure that processing continues over time, an idle timeout configuration can be implemented.
+When working with Kafka topic partitions, the absence of watermarks may represent some challenges. Watermarks are generated independently for each stream and partition. When two partitions are combined, the resulting watermark will be the oldest of the two, reflecting the point at which the system has complete information. If one partition stops receiving new events, the watermark for that partition will not progress. To ensure that processing continues over time, an idle timeout configuration can be implemented.
 
 The watermark generator operates within the Kafka consumer before the events are injected into the Flink stream or table, ensuring that the event time semantics are preserved throughout the processing pipeline.
 
@@ -269,7 +268,7 @@ With the windowing operator, event timestamps are utilized, but the windows them
 
 When using processing time, the watermark advances at regular intervals, typically every second. Events within the window are emitted for processing once the watermark surpasses the end of that window.
 
-The Flink API requires a `WatermarkStrategy`, which  consists of  both a `TimestampAssigner` and `WatermarkGenerator`. A `TimestampAssigner` s a simple function that extracts a timestamp from a specific field in each event. Flink provides several common strategies as static methods within the `WatermarkStrategy` class.
+The Flink API requires a `WatermarkStrategy`, which  consists of  both a `TimestampAssigner` and a `WatermarkGenerator`. A `TimestampAssigner` is a simple function that extracts a timestamp from a specific field in each event. Flink provides several common strategies as static methods within the `WatermarkStrategy` class.
 
 Additionally, it is possible to configure the system to accept late events by specifying an `allowed lateness` period. This defines how late an element can arrive before it is discarded. Flink maintains the state of the window until the allowed lateness time has expired, allowing for flexible handling of late-arriving data while ensuring that the processing remains efficient and accurate.
 

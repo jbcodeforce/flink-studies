@@ -1,7 +1,12 @@
 # Flink Cookbook
 
-There is a [Github for best practices](https://github.com/confluentinc/flink-cookbook) to run Flink into production.
-All the examples can be run inside an IDE or in terminal, they are on Flink 1.17 and Java 11. Use [sdkman](https://sdkman.io/) to manage different java version. 
+There is a [Github for best practices](https://github.com/confluentinc/flink-cookbook) to run Flink into production as a cookbook. The content of this page is to get a summary with some hands-on exercises for the different Flink deployment environment when it is relevant.
+
+All the examples can be run inside an IDE or in terminal, they are on Flink 1.19.1 and Java 11. Use [sdkman](https://sdkman.io/) to manage different java version. 
+
+## Understand the Flink UI
+
+## Security
 
 ## Deduplication
 
