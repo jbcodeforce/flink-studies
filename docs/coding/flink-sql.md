@@ -2,7 +2,7 @@
 
 ???- Info "Updates"
     Created 10/24
-    Revised 12/02/24
+    Revised 12/06/24
 
 
 This chapter offers a compilation of best practices for implementing Flink SQL solutions, applicable to local Flink open-source, the Confluent Platform for Flink or the Confluent Cloud for Flink.
@@ -64,11 +64,23 @@ See [this folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink
     SHOW TABLES LIKE '*_raw'
     SHOW JOBS;
     DESCRIBE tablename;
+    DESCRIBE EXTENDED table_name;
     ```
 
 ???- info "Understand a type of attribute or get table structure with metadata"
     ```sql
     show create table 'tablename';
+    # for a specific attribute
+    select typeof(column_name) from table_name limit 1;
+    ```
+
+    Flink SQL planner performs type checking. Assessing type of inferred table is helpful specially around timestamp. See [Data type mapping documentation.](https://docs.confluent.io/cloud/current/flink/reference/serialization.html)
+
+???- info "Understand the execution plan for SQL query"
+    The [explain keyword](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/explain/)
+
+    ```sql
+    explain select ...
     ```
 
 ## DDL statements
@@ -85,9 +97,9 @@ There are [three different modes](https://docs.confluent.io/cloud/current/flink/
 
 The `change.log` property is set up using the `WITH ('changelog.mode' = 'upsert')` options when creating the table.
 
-Changelog in Flink SQL is used to record the data changes in order to achieve incremental data processing. Some operations in Flink such as group aggregation and deduplication can produce update events.
+Changelog in Flink SQL is used to record the data changes in order to achieve incremental data processing. Some operations in Flink such as group by aggregation and deduplication can produce update events.
 
-[See the concept of changelog and dynamic tables in Confluent's documentation.](https://docs.confluent.io/cloud/current/flink/concepts/dynamic-tables.html)
+[See the concept of changelog and dynamic tables in Confluent's documentation.](https://docs.confluent.io/cloud/current/flink/concepts/dynamic-tables.html). 
 
 ### Table creation
 
@@ -211,7 +223,7 @@ Changelog in Flink SQL is used to record the data changes in order to achieve in
     ```
 
 ???- question "Create a table as another table by inserting all records (CTAS create table as select)"
-    [CREATE TABLE AS SELECT](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-as-select-ctas) is used to create table and insert values in the same statement.
+    [CREATE TABLE AS SELECT](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-as-select-ctas) is used to create table and insert values in the same statement. It derives the physical column data types and names (from aliased columns), the changelog.mode (from involved tables, operations, and upsert keys), and the primary key.
     
     By using a primary key:
 
@@ -315,6 +327,13 @@ Changelog in Flink SQL is used to record the data changes in order to achieve in
 
     On CCF the watermark is on the `$rowtime` by default.
 
+???- question "Change system watermark"
+
+    ```sql
+    ALTER TABLE table_name MODIFY WATERMARK FOR $rowtime AS $rowtime - INTERVAL '1' SECOND;
+    -- in case we need to reverse back
+    ALTER TABLE table_name DROP WATERMARK;
+    ```
 
 ???- question "Create a table with topic as one day persistence"
     See the [WITH options](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#with-options).
@@ -340,7 +359,7 @@ Changelog in Flink SQL is used to record the data changes in order to achieve in
 
 * For each topic there is an inferred table created. The catalog is the Confluent environment and the Kafka cluster is the databsase. We can use the ALTER TABLE statement to evolve schemas for those inferred tables.
 
-* A table by default is mapped to a topic with 6 partitions, in changelog being append. Primary key leads to an implicit DISTRIBUTED BY(k), and value and key schemas are created in Schema Registry. It is possible to create table with primary key and append mode, while by default it is a upsert mode. 
+* A table by default is mapped to a topic with 6 partitions, and the changelog being append. Primary key leads to an implicit DISTRIBUTED BY(k), and value and key schemas are created in Schema Registry. It is possible to create table with primary key and append mode, while by default it is a upsert mode. 
 
 ```sql
 CREATE TABLE telemetries (
@@ -353,7 +372,7 @@ WITH ('changelog.mode' = 'append');
 
 The statement above also creates a metadata column for writing a Kafka message timestamp. This timestamp will not be defined in the schema registry. Compared to `$rowtime` which is declared as a `METADATA VIRTUAL` column, `ts` is selected in a `SELECT *` and is writable.
 
-* When the primary key is specified, then it will not be part of the value, except if we specify that the value contains the full table schema. The payload of k is stored twice in Kafka message:
+* When the primary key is specified, then it will not be part of the value schema, except if we specify (using `value.fields-include' = 'all'`) that the value contains the full table schema. The payload of k is stored twice in Kafka message:
 
 ```sql
 CREATE TABLE telemetries (k INT, v STRING)
@@ -361,11 +380,11 @@ DISTRIBUTED BY (k)
 WITH ('value.fields-include' = 'all');
 ```
 
-* If the key is a string it may make sense to do not have a schema for the key in this case declare (the key columns are determined by the DISTRIBUTED BY clause):
+* If the key is a string, it may make sense to do not have a schema for the key in this case declare (the key columns are determined by the DISTRIBUTED BY clause): This does not work if the key name is not `key`.
 
 ```sql
 CREATE TABLE telemetries (device_id STRING, metric BIGINT)
-DISTRIBUTED BY (device_id)
+DISTRIBUTED BY (key)
 WITH ('key.format' = 'raw');
 ```
 
@@ -376,7 +395,6 @@ WITH ('key.format' = 'raw');
 "micro", "microsecond", "ns", "nano", "nanosecond"
 ```
 
---- 
 
 ## DML statements
 
@@ -384,9 +402,15 @@ Data modification language, is used to define statements which modify the data a
 
 ### Common patterns
 
+This is important to recal that a select apply. to stream of record so the result will change at each new record. A query like below will show the last top 10 orders, and when a new record arrive this list changes. 
+
+```sql
+select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
+```
+
 ???- question "How to filter out records?"
 
-    using the [WHERE clause]()
+    using the [WHERE clause](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/select/)
 
     ```sql
     select * from flight_events where status = 'cancelled';
@@ -400,12 +424,47 @@ Data modification language, is used to define statements which modify the data a
 
     Recall that this results produces a dynamic table.
 
+???- question "How to combine records from multiple tables?"
+    When the two tables has the same number of columns of the same type, then we can combine them:
+
+    ```sql
+    SELECT * FROM T1
+    UNION ALL
+    SELECT * FROM T2;
+    ```
+
+???- question "How to Aggregating a field into an ARRAY?"
+    Let start by simple array indexing (the index is between 1 to nn_element). Below the values array create test data into a n memory table aliased a T:
+
+    ```sql
+    SELECT array_field[4] FROM ((VALUES ARRAY[5,4,3,2,1])) AS T(array_field)
+    ```
+
+    The following is creating a view with an [array of aggregates](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions), which in this case concatenating the urls over a 1 minute tumble window.
+
+    ```sql
+    CREATE VIEW visited_pages_per_minute AS 
+    SELECT 
+    window_time,
+    user_id, 
+    ARRAY_AGG(url) AS urls
+    FROM TABLE(TUMBLE(TABLE examples.marketplace.clicks, DESCRIPTOR(`$rowtime`), INTERVAL '1' MINUTE))
+    GROUP BY window_start, window_end, window_time, user_id;
+    -- once the view is created
+    SELECT * from visited_pages_per_minute;
+    -- it is possible to expand an array into multiple rows
+    SELECT v.window_time, v.user_id, u.url FROM visited_pages_per_minute AS v
+    CROSS JOIN UNNEST(v.urls) AS u(url)
+    ```
+
 ???- questiom "How to transform a field representing epoch to a timestamp?"
+
     ```sql
      TO_TIMESTAMP(FROM_UNIXTIME(click_ts_epoch)) as click_ts
     ```
 
 ???- question "How to change a date string to a timestamp?"
+
     ```sql
     TO_TIMESTAMP('2024-11-20 12:34:568Z'),
     ```
@@ -454,17 +513,6 @@ Data modification language, is used to define statements which modify the data a
 
 ???- question "When and how to use custom watermark?"
     Developer should use their own [watermark strategy](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#watermark-clause) when there are not a lot of records per topic/partition, there is a need for a large watermark delay, and need to use another timestamp. 
-
-???- info "How to join two tables on a key within a time window and store results in target table?"
-    ```sql
-    create table Transactions (ts TIMESTAMP(3), tid BIGINT, amount INT);
-    create table Payments (ts TIMESTAMP(3), tid BIGINT, type STRING);
-    create table Matched (tid BIGINT, amount INT, type STRING);
-    insert into Matched 
-        select T.tid, T.amount, P.type
-        from Transactions T join Payments P ON T.tid = P.tid 
-        where P.ts between T.ts and T.ts + interval '10' minutes;
-    ```
     
 ???- question "Deduplication example"
 
@@ -478,6 +526,19 @@ Data modification language, is used to define statements which modify the data a
     ```
 
     [See this example](https://docs.confluent.io/cloud/current/flink/how-to-guides/deduplicate-rows.html#flink-sql-deduplicate-topic-action).
+
+### Joins
+
+???- info "How to join two tables on a key within a time window and store results in target table?"
+    ```sql
+    create table Transactions (ts TIMESTAMP(3), tid BIGINT, amount INT);
+    create table Payments (ts TIMESTAMP(3), tid BIGINT, type STRING);
+    create table Matched (tid BIGINT, amount INT, type STRING);
+    insert into Matched 
+        select T.tid, T.amount, P.type
+        from Transactions T join Payments P ON T.tid = P.tid 
+        where P.ts between T.ts and T.ts + interval '10' minutes;
+    ```
 
 ### Windowing / Table Value Functions
 
@@ -573,7 +634,7 @@ Data modification language, is used to define statements which modify the data a
     The logical components of the row pattern variables are specified in the DEFINE clause.
     B is defined implicitly as not being A.
 
-## Confluent Cloud Specific
+### Confluent Cloud Specific
 
 [See Flink Confluent Cloud queries documentation.](https://docs.confluent.io/cloud/current/flink/reference/queries/overview.html)
 
@@ -605,11 +666,19 @@ Each topic is automatically mapped to a table with some metadata fields added, l
 
     The [scripts and readme](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/01-confluent-kafka-local-flink) .
 
-???- question "Supported connector for Flink SQL and Confluent Cloud"
-    See the [product documentation at this link]().
+???- question "Reading from a topic specific offsets"
+    ```sql
+    ALTER TABLE table_name SET (
+        'scan.startup.mode' = 'specific-offsets',
+        'scan.startup.specific-offsets' = 'partition:0,offset:25; partition:1,offset:10'
+    );
+    -- Returns from offsets 26 and 11
+    SELECT * FROM table_name;
+    ```
 
 ???- question "create a long running SQL with cli"
     Get or create a service account.
+    
     ```sh
     confluent iam service-account create my-service-account --description "new description"
     confluent iam service-account list

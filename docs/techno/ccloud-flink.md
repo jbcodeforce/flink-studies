@@ -2,7 +2,7 @@
 
 ???- info "Chapter updates"
     * Created 10/2024 
-    * Review 10/31/24
+    * Review 10/31/24 Update 12/06/2024
 
 [Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/flink/overview.html) is a cloud-native, managed service, for Flink in parallel of the Kafka managed service.
 
@@ -129,7 +129,6 @@ confluent flink compute-pool list
 export ENV_ID=$(confluent environment list -o json | jq -r '.[] | select(.name == "aws-west") | .id')
 export COMPUTE_POOL_ID=$(confluent flink compute-pool list -o json | jq -r '.[0].id')
 confluent flink shell --compute-pool $COMPUTE_POOL_ID --environment $ENV_ID
-
 ```
 
 ### Using the Flink editor in Confluent Cloud
@@ -140,7 +139,7 @@ Nothing special, except that once the job is started we cannot modify it, we nee
 
 The approach is to create a maven Java project with a main class to declare the data flow.  [Read this chapter](../coding/table-api.md).
 
-## Netwoorking overview
+## Networking overview
 
 [See the product documentation for managing Networking on Confluent Cloud, here.](https://docs.confluent.io/cloud/current/networking/overview.html) includes Kafka cluster access with the following major items:
 
