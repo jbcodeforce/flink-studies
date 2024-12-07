@@ -124,9 +124,32 @@ Stateless applications are designed to tolerate data loss and prioritize rapid r
 
 When checkpointing is disabled, Apache Flink does not provide built-in guarantees against failures. As a result, you may encounter issues such as data loss, duplicate messages, and a complete loss of application state. This lack of reliability necessitates careful consideration when designing stateless systems, particularly in environments where data integrity is crucial.
 
+The following queries are stateless:
+
+```sql
+INSERT INTO, FROM (reading and writing to Kafka)
+WHERE (filters)
+CROSS JOIN UNNEST & LATERAL
+SELECT (projection)
+scalar and table functions
+```
+
 ## Stateful Processing
 
-Stateful applications require the retention of state information, particularly when using aggregate or window operators. To ensure fault tolerance, Flink employs [checkpoints](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/ops/state/checkpoints/) and savepoints.
+Stateful applications require the retention of state information, particularly when using aggregate or window operators. The following operations lead to stateful queries:
+
+```sql
+JOIN (except CROSS JOIN UNNEST & LATERAL)
+-- 
+GROUP BY windowed or non-windowed aggregation
+--
+OVER aggregation
+-- for pattern matching:
+MATCH_RECOGNIZE
+```
+
+
+To ensure fault tolerance, Flink employs [checkpoints](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/ops/state/checkpoints/) and savepoints.
 
 [See the checkpointing section for details](./architecture/index.md#checkpointing)
 

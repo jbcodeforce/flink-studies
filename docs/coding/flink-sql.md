@@ -529,15 +529,28 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 ### Joins
 
-???- info "How to join two tables on a key within a time window and store results in target table?"
+When doing a join, Flink needs to materialize both tables `orders` and `customers` fully in state, which can cost a lot of memory, because if a row in the
+left-hand table (LHT) is updated, the operator needs to emit an updated match for with all matching rows in the right-hand table (RHT). The cardinality of customers will be mostly bounded at a given point of time, but order may vary a lot. A join emit matching row to downstream processing.
+
+
+???- info "How to join two tables on a key within a time window and store results in a target table?"
+    Full examples:
+
     ```sql
+    -- use separate statements to create the tables
     create table Transactions (ts TIMESTAMP(3), tid BIGINT, amount INT);
     create table Payments (ts TIMESTAMP(3), tid BIGINT, type STRING);
     create table Matched (tid BIGINT, amount INT, type STRING);
+
+    execute statement set
+    begin
+    insert into Transactions values(now(), 10,20),(now(),11,25),(now(),12,34);
+    insert into Payments values(now(), 10, 'debit'),(now(),11,'debit'),(now(),12,'credit');
     insert into Matched 
         select T.tid, T.amount, P.type
         from Transactions T join Payments P ON T.tid = P.tid 
-        where P.ts between T.ts and T.ts + interval '10' minutes;
+        where P.ts between T.ts and T.ts + interval '1' minutes;
+    end
     ```
 
 ### Windowing / Table Value Functions

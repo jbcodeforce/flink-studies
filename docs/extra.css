@@ -18,7 +18,12 @@
   --md-hue: 232;
   --md-code-fg-color: #f5f5f5;
   --md-code-bg-color: #652C37;
-  --md-code-hl-color: #33914f75;
+  --md-code-hl-color: #33914f;
+}
+
+.md-typeset question {
+    background-color: #652C37;
+    border-color: #652C37;
 }
 
 code>* {
