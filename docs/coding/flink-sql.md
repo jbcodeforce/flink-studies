@@ -17,7 +17,7 @@ Use one of the following approaches:
 * Use Confluent Cloud Flink console to write SQL Statements in a Workspace, and run them directly from the there: statements may run on a compute pool nd may run forever.
 * Use Confluent cli connected to a compute pool defined in a **Confluent Cloud** environment. (To create a new environment using Terraform see [this note](terraform.md))
 
-???- info "Local SQL client"
+???- tip "Local SQL client"
     The SQL Client aims to provide an easy way to write, debug, and submit table programs to a Flink cluster without a single line of code in any programming language. To interact with Flink using the SQL client, open a bash in the running container:
 
     ```sh
@@ -27,7 +27,7 @@ Use one of the following approaches:
     ```
 
 
-???- info "SQL client with Confluent cli"
+???- example  "SQL client with Confluent cli"
     [See quick start note](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-shell.html) which is summarized as:
 
     * Connect to Confluent Cloud with CLI, then get environment and compute pool identifiers
@@ -103,7 +103,7 @@ Changelog in Flink SQL is used to record the data changes in order to achieve in
 
 ### Table creation
 
-???- info "Primary key considerations"
+???- tip "Primary key considerations"
     * Primary key can have one or more columns, all of them are not null
     * In Flink the keys can only be `NOT ENFORCED`
     * The PRIMARY KEY declaration partitions the table implicitly by the key column(s)
@@ -118,7 +118,7 @@ Changelog in Flink SQL is used to record the data changes in order to achieve in
     CREATE TABLE humans (race INT, s STRING) DISTRIBUTED BY (race) INTO 4 BUCKETS;
     ```
 
-???- info "Create a table with csv file as persistence - Flink OSS"
+???- tip "Create a table with csv file as persistence - Flink OSS"
     We need to use file system connector.
 
     ```sql
@@ -222,7 +222,7 @@ Changelog in Flink SQL is used to record the data changes in order to achieve in
     alter table flight_schedules add(dt string);
     ```
 
-???- question "Create a table as another table by inserting all records (CTAS create table as select)"
+???- tip "Create a table as another table by inserting all records (CTAS create table as select)"
     [CREATE TABLE AS SELECT](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-as-select-ctas) is used to create table and insert values in the same statement. It derives the physical column data types and names (from aliased columns), the changelog.mode (from involved tables, operations, and upsert keys), and the primary key.
     
     By using a primary key:
@@ -234,7 +234,7 @@ Changelog in Flink SQL is used to record the data changes in order to achieve in
     as select id, first_name, last_name, email from shoe_customers;
     ```
 
-???- question "Combine deduplication with table creation as select"
+???- example "Combine deduplication with table creation as select"
     Attention thr '`' is important.
     
     ```sql

@@ -34,6 +34,8 @@ theme:
   palette:
     scheme: default
   language: en
+  admonition:
+      example: octicons/beaker-16
   features:
       - content.code.annotation
       - content.code.copy
