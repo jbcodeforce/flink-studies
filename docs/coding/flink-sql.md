@@ -457,7 +457,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     CROSS JOIN UNNEST(v.urls) AS u(url)
     ```
 
-???- questiom "How to transform a field representing epoch to a timestamp?"
+???- question "How to transform a field representing epoch to a timestamp?"
 
     ```sql
      TO_TIMESTAMP(FROM_UNIXTIME(click_ts_epoch)) as click_ts
@@ -529,9 +529,14 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 ### Joins
 
-When doing a join, Flink needs to materialize both tables `orders` and `customers` fully in state, which can cost a lot of memory, because if a row in the
-left-hand table (LHT) is updated, the operator needs to emit an updated match for with all matching rows in the right-hand table (RHT). The cardinality of customers will be mostly bounded at a given point of time, but order may vary a lot. A join emit matching row to downstream processing.
+When doing a join, Flink needs to materialize both the right qnd left of the join tables fully in state, which can cost a lot of memory, because if a row in the left-hand table (LHT) is updated, the operator needs to emit an updated match for all matching rows in the right-hand table (RHT). The cardinality of right side will be mostly bounded at a given point of time, but the left side may vary a lot. A join emit matching row to downstream processing.
 
+Here are important tutorials:
+
+* [Confluent Cloud: video on joins.](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html)
+* [Confluent -developer: How to join a stream and a stream](https://developer.confluent.io/tutorials/join-a-stream-to-a-stream/flinksql.html): use local Flink and one Kafka Kraft broker. The matching content is in [flink-sql/04-joins folder](), with a docker for CP 7.8.0.
+* [Confluent temporal join](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html#temporal-joins)
+* [Window Join Queries in Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/flink/reference/queries/window-join.html)
 
 ???- info "How to join two tables on a key within a time window and store results in a target table?"
     Full examples:
