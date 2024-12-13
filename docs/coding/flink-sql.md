@@ -529,7 +529,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 ### Joins
 
-When doing a join, Flink needs to materialize both the right qnd left of the join tables fully in state, which can cost a lot of memory, because if a row in the left-hand table (LHT) is updated, the operator needs to emit an updated match for all matching rows in the right-hand table (RHT). The cardinality of right side will be mostly bounded at a given point of time, but the left side may vary a lot. A join emit matching row to downstream processing.
+When doing a join, Flink needs to materialize both the right and left of the join tables fully in state, which can cost a lot of memory, because if a row in the left-hand table (LHT), also named the **probe side**, is updated, the operator needs to emit an updated match for all matching rows in the right-hand table (RHT) or **build side**. The cardinality of right side will be mostly bounded at a given point of time, but the left side may vary a lot. A join emit matching row to downstream processing.
 
 Here are important tutorials:
 
@@ -538,8 +538,22 @@ Here are important tutorials:
 * [Confluent temporal join](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html#temporal-joins)
 * [Window Join Queries in Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/flink/reference/queries/window-join.html)
 
-???- info "How to join two tables on a key within a time window and store results in a target table?"
-    Full examples:
+???- info "Inner knowledge on temporal join"
+    Event-time temporal joins are used to join two or more tables based on a **common** event time (in one of the record table or the kafka record: `$rowtime` system column). With an event-time attribute, the operator can retrieve the value of a key as it was at some point in the past. The right-side, versioned table, stores all versions, identified by time, since the last watermark.
+
+    The temporal Flink sql looks like:
+    
+    ```sql
+    SELECT [column_list]
+    FROM table1 [AS <alias1>]
+    [LEFT] JOIN table2 FOR SYSTEM_TIME AS OF table1.{ rowtime } [AS <alias2>]
+    ON table1.column-name1 = table2.column-name1
+    ```
+
+    When enriching a particular `table1`, an event-time temporal join waits until the watermark on the table2 stream reaches the timestamp of that `table1` row, because only then is it reasonable to be confident that the result of the join is being produced with complete knowledge of the relevant `table2` data. This table2 record can be old as the watermark on that table being late.
+
+???- info "How to join two tables on a key within a time window using event column as timestamp and store results in a target table?"
+    Full example:
 
     ```sql
     -- use separate statements to create the tables
@@ -720,8 +734,23 @@ Each topic is automatically mapped to a table with some metadata fields added, l
 
 * [Shoe Store lab](https://github.com/griga23/shoe-store) to run demonstrations on Confluent Cloud. 
 * [confluent Flink how to](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#)
-* [Flink cookbook](https://github.com/ververica/flink-sql-cookbook/blob/main/README.md)
 
+### Quick personal demo on Confluent Cloud
+
+Using the data generator and the `confluent flink shell`
+
+* Login to Confluent using cli
+* Be sure to use the environment with the compute pool: 
+
+```sh
+confluent environment list
+confluent environment use <env_id>
+confluent flink compute-pool list
+# get the region and cloud and the current max CFU
+confluent flink compute-pool use <pool_id>
+```
+
+* Start on of the Datagen in the Confluent Console. 
 
 ## End to end demonstrations
 

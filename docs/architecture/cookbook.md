@@ -6,6 +6,49 @@ All the examples can be run inside an IDE or in terminal, they are on Flink 1.19
 
 ## Understand the Flink UI
 
+## Troubleshooting
+
+### A SQL statement not returning any result
+
+This could be linked to multiple reasons so verify the following:
+
+* Verify there is no exception in the statement itself
+* Query logic being too restrictive or the joins may not match any records. For aggregation, may be the field used get null values.
+* Source table may be empty, or it consumes the table from a different starting offset (specified via `scan.bounded.mode`) then expected.
+* Use `show create table <table_name>` to assess the starting offset strategy or specific values
+* Count all records in a table using `SELECT COUNT(*) FROM table_name;` , and it should be greater then 0.
+* When the statement uses event-time based operation like windowing, top N, OVER, MATCH_RECOGNIZE and temporal joins then verify the watermarks. The following example is from Confluent Cloud for Flink query using the event time from the record, and it should return result. Check if you have produced a minimum of records per Kafka partition, or if the producer has stopped producing data all together.
+
+```sql
+SELECT ROW_NUMBER() OVER (ORDER BY $rowtime ASC) AS `number`, *   FROM <table_name>
+```
+
+* When Data are in topic but not seen by flink `select * from ` statement, it may be due to idle partitions and the way watermarks advance and are propagated. Flink automatically marks a Kafka partition as idle if no events come within `sql.tables.scan.idle-timeout` duration. When a partition is marked as idle, it does not contribute to the watermark calculation until a new event arrives. Try to set the idle timeout for table scans to ensure that Flink considers partitions idle after a certain period of inactivity. May be try to create a table with a watermark definition to handle idle partitions and ensure that watermarks advance correctly
+
+
+### Identify which watermark is calculated
+
+Add a virtual column to keep the Kafka partition number by doing:
+
+```sql
+ALTER TABLE <table_name> ADD _part INT METADATA FROM 'partition' VIRTUAL;
+```
+
+Assess there is a value on the "Operator Watermark" column with
+
+```sql
+SELECT
+  *,
+  _part AS `Row Partition`,
+  $rowtime AS `Row Timestamp`,
+  CURRENT_WATERMARK($rowtime) AS `Operator Watermark`
+FROM  <table_name>;
+```
+
+If not all the partitions are in the result, this may be the partitions having the watermark issue. We need to be sure events are send across all partitions. If we want to test a statement, we can also set the statement to not be an unbounded query, but consume until the latest offset by setting: `SET 'sql.tables.scan.bounded.mode' = 'latest-offset';`
+
+Flink statement consumes data up to the most recent available offset at the submission moment. Upon reaching this time, Flink ensures that a final watermark is propagated, indicating that all results are complete and ready for reporting. The statement then transitions into a 'COMPLETED' state."
+
 ## Security
 
 ## Deduplication
@@ -48,3 +91,8 @@ Full checkpoints and savepoints take a long time, but incremental checkpoints ar
 * 
 
 ## Measuring Latency 
+
+## Other sources
+
+* [Confluent Flink Cookbook](https://github.com/confluentinc/flink-cookbook)
+* [Ververica Flink cookbook](https://github.com/ververica/flink-sql-cookbook/blob/main/README.md)
