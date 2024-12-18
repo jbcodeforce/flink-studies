@@ -1,0 +1,16 @@
+chroma: local
+flink_sql:
+  urls:
+    - https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/overview/
+    - https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/with/
+    - https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/select/
+    - https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/select-distinct/
+    - https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/window-tvf/
+    - https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/create/
+    - https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/drop/
+    - https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/alter/
+    - https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/insert/
+    - https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/analyze/
+    - https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/set/
+    - https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/timezone/
+    - https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/materialized-table/statements/

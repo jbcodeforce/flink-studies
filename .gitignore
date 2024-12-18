@@ -3,3 +3,4 @@ site/
 flink-training/
 **.env
 **/cloud.properties
+**/agent_domain_store/
