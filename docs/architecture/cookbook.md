@@ -53,6 +53,46 @@ Flink statement consumes data up to the most recent available offset at the subm
 
 ## Deduplication
 
+Deduplication is documented [here](../coding/flink-sql.md#table-creation) and [here](https://docs.confluent.io/cloud/current/flink/reference/queries/deduplication.html#flink-sql-deduplication) and at its core principal, it uses a CTE to add a row number, as a unique sequential number to each row. The columns used to de-deplicate are defined in the partitioning and ordering is used using a timestamp to keep the last record.
+
+```sql
+SELECT [column_list]
+FROM (
+   SELECT [column_list],
+     ROW_NUMBER() OVER ([PARTITION BY column1[, column2...]]
+       ORDER BY time_attr [asc|desc]) AS rownum
+   FROM table_name)
+WHERE rownum = 1
+```
+
+When using Kafka Topic to persist Flink table, it is possible to use the `upsert` change log, and define the primary key(s) to remove duplicate using a CTAS statement:
+
+```sql
+CREATE TABLE orders_deduped (
+  PRIMARY KEY( order_id, member_id) NOT ENFORCED) DISTRIBUTED BY (order_id, member_id) INTO 1 BUCKETS 
+WITH (
+  'changelog.mode' = 'upsert',
+  'value.fields-include' = 'all'
+) AS
+SELECT
+  *
+FROM (
+  SELECT
+      *,
+      ROW_NUMBER() OVER (
+        PARTITION BY `order_id`, `member_id`
+        ORDER
+          BY $rowtime ASC
+      ) AS row_num
+    FROM
+      orders_raw
+  )
+WHERE
+  row_num = 1;
+```
+
+Duplicates may still occur on the Sink side, as it is linked to the type of connector used and its configuration. 
+
 ## Change Data Capture
 
 ## Late Data
@@ -93,6 +133,8 @@ Full checkpoints and savepoints take a long time, but incremental checkpoints ar
 ## Measuring Latency 
 
 ## Other sources
+
+The current content is sourced from the following cookbooks and lesson learnt while engaging with customers.
 
 * [Confluent Flink Cookbook](https://github.com/confluentinc/flink-cookbook)
 * [Ververica Flink cookbook](https://github.com/ververica/flink-sql-cookbook/blob/main/README.md)

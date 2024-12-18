@@ -1,5 +1,10 @@
 # Confluent Platform for Flink
 
+[The official documentation after 12/2024 release.](https://docs.confluent.io/platform/current/flink/get-started.html) The main points are:
+
+* Fully compatible with open-source Flink. 
+* Deploy on Kubernetes using 
+
 ### Metadata management service for RBAC
 
 * [Metadata Service Overview](https://docs.confluent.io/platform/current/kafka/configure-mds/index.html#configure-mds-long-in-cp)

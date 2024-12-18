@@ -4,11 +4,11 @@
     * Created 10/2024 
     * Review 10/31/24 Update 12/06/2024
 
-[Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/flink/overview.html) is a cloud-native, managed service, for Flink in parallel of the Kafka managed service.
+[Confluent Cloud for Apache Flink®](https://docs.confluent.io/cloud/current/flink/overview.html) is a cloud-native, managed service, for Flink in parallel of the Kafka managed service.
 
 ![](./diagrams/ccloud-flink.drawio.png){ width=600 }
 
-Confluent Cloud Flink is built on the same open-source version as Apache Flink with additional features:
+Confluent Cloud Flink is built on the same open-source version as Apache Flink® with additional features:
 
 * Auto-inference of the Confluent Cloud environment, including Kafka cluster , topics and schemas, to Flink SQL constructs of catalog, databases and tables.
 * Autoscaling capabilities.
@@ -30,11 +30,11 @@ Confluent Cloud Flink is built on the same open-source version as Apache Flink w
 * Any table created in CC Flink appears as a topic in CC Kafka.
 * A catalog is a collection of databases. A database is a collection of tables.
 * The differences with the OSS version, is that the DDL statements of catalog, database, table are mapped to physical kafka objects. Table is a schema and a topic, catalog is an environment, and database is a cluster.
-* Developers work in a [**workspace**](https://www.confluent.io/blog/flink-sql-workspaces/), to manage their Apache Flink streaming applications, allowing them to easily write, execute, and monitor real-time data processing queries using a user-friendly SQL editor. A running SQL Statement run within a workspace. From a Kafka topic it is possible to directly go to the workspace. 
+* Developers work in a [**workspace**](https://www.confluent.io/blog/flink-sql-workspaces/), to manage their Apache Flink® streaming applications, allowing them to easily write, execute, and monitor real-time data processing queries using a user-friendly SQL editor. A running SQL Statement run within a workspace. From a Kafka topic it is possible to directly go to the workspace. 
 * CC offers the **Autopilot**, to automatically adjusts resources for SQL statements based on demand.
 * Supports role-based access control for both user and service accounts.
 * **Stream lineage** provides insights at the topic level about data origins.. 
-* For **Watermark** configuration, Confluent Cloud for Apache Flink manages it automatically, by using the `$rowtime` column, which is mapped to the Kafka record timestamp, and by observing the behavior of the streams to dynamically adapt the configuration.
+* For **Watermark** configuration, Confluent Cloud for Apache Flink® manages it automatically, by using the `$rowtime` column, which is mapped to the Kafka record timestamp, and by observing the behavior of the streams to dynamically adapt the configuration.
 * When messages processing starts to be behind, **Autopilot** adjusts resource allocation.
 * [Service accounts](https://docs.confluent.io/cloud/current/security/authenticate/workload-identities/service-accounts/overview.html#service-accounts) are used for production deployment to enforce security boundaries. Permissions are done with ACL and role binding. They can own any type of API keys that can be used for CLI or API access.
 
@@ -49,7 +49,7 @@ Confluent Cloud Flink is built on the same open-source version as Apache Flink w
     Once running a DML statements will run for ever. it is possible to pause and resume it. See cookbook for the practices and process to update existing statements. 
 
 ???- question "How to change the CFU limit?"
-    CFU can be changed via the console or the cli, up to the limit of 50. Going above need to be via ticket to Confluent support.
+    CFU can be changed via the console or the cli, up to the limit of 50. Going above developers need to open a ticket to the Confluent support.
 
 
 ## Getting Started
@@ -161,5 +161,5 @@ Within an environment there is one schema registry. We can have one Kafka cluste
 
 ## Deeper dive
 
-* [Confluent Flink workshop](https://github.com/confluentinc/commercial-workshops/tree/master/series-getting-started-with-cc/workshop-flink) to learn how to build stream processing applications using Apache Flink on Confluent Cloud.
+* [Confluent Flink workshop](https://github.com/confluentinc/commercial-workshops/tree/master/series-getting-started-with-cc/workshop-flink) to learn how to build stream processing applications using Apache Flink® on Confluent Cloud.
 * [Shoe-store workshop](https://github.com/griga23/shoe-store) with Terraform and SQL demonstration using DataGen.
