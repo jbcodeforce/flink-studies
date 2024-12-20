@@ -12,6 +12,20 @@ This chapter reviews the different environments for deploying Flink jobs on a de
 * Get docker cli, helm, and kubectl
 * Clone this repository.
 
+## Colima with Kubernetes
+
+As an alternate to use Docker Desktop, the open source approach is to use Container Linux Manangement or Colima. 
+
+Start a k3s cluster:
+
+```sh
+colima start --kubernetes
+```
+
+Deploy the Flink and Confluent Platform operators (see Makefile in deployment/k8s and its readme). 
+
+Define a Kafka cluster and start Flink SQL client
+
 ## Minikube
 
 * Install [Minikube](https://minikube.sigs.k8s.io/), and review some [best practices](https://jbcodeforce.github.io/techno/minikube/)

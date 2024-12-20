@@ -6,8 +6,8 @@ metadata:
 spec:
   dataVolumeCapacity: 10G
   image:
-    application: docker.io/confluentinc/cp-server:7.7.0
-    init: confluentinc/confluent-init-container:2.9.0
+    application: docker.io/confluentinc/cp-server:latest
+    init: confluentinc/confluent-init-container:2.9.3
   replicas: 1
 ---
 apiVersion: platform.confluent.io/v1beta1

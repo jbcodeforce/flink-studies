@@ -1,8 +1,8 @@
-# Flink SQL and Table API
+# Flink SQL
 
 ???- Info "Updates"
     - Created 02/2021 
-    - Modified 11/3/24 - Still need to work on the java section
+    - Updated 12/20/24
 
 ## Introduction
 
@@ -16,9 +16,9 @@ Both the Table API and SQL operate on top of a lower-level stream operator API, 
 
 ![](./diagrams/flink-apis.drawio.png){ width=500}
 
-The optimizer and planner APIs transform SQL statements for execution across distributed nodes, leveraging the lower-level stream operator API.With Flink SQL, we work with **dynamic tables**, a concept similar to materialized views, while abstracting away the stream construct from the developer.You can write SQL and use the Table API in Java, Scala, or Python, or leverage the SQL client, an interactive tool for submitting SQL queries to Flink and visualizing the results.
+The optimizer and planner APIs transform SQL statements for execution across distributed nodes, leveraging the lower-level stream operator API. With Flink SQL, developers work with **dynamic tables**, a concept similar to materialized views in DB, while abstracting away the stream construct from the developers. Developers may write SQL and use the Table API in Java, Scala, or Python, or leverage the SQL client, an interactive tool for submitting SQL queries to Flink and visualizing the results.
 
-Stream or bounded data are mapped to Table. The following command loads data from a csv file and [creates a dynamic table](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html) in Flink:
+Streams or bounded data are mapped to Tables. The following command loads data from a csv file and [creates a dynamic table](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html) in Flink:
 
 ```sql
 CREATE TABLE car_rides (
@@ -43,13 +43,13 @@ Show how the table is created:
 show create table orders;
 ```
 
-[See the getting started](../coding/getting-started.md) to run locally with a sql client connected to a Job Manager and Tsk manager running in docker.
+[See the getting started](../coding/getting-started.md) to run Flink open-source locally with a sql client connected to a Job Manager and Task manager running in container.
 
 ### Main use cases
 
 Flink and Flink SQL can be used in two main categories of application:
 
-1. Reactive application, event-driven
+1. Reactive application, event-driven function
 1. Data products with real-time white box ETL pipeline: schematizing, cleaning, enriching for data lake, lake house, feature store or vector store. 
 
 ## Parallel with Database

@@ -1,7 +1,7 @@
-# Flink SQL and Table API
+# Flink SQL 
 
 ???- Info "Updates"
-    Created 10/24
+    Created 10/24, Updated 12/20/24
     Revised 12/06/24
 
 
