@@ -2,19 +2,34 @@
 
 ???- info "Update"
     * Created 2018 
-    * Updated 11/27/2024 - review done.
+    * Updated 12/21/2024 - review done. 
 
-This chapter reviews the different environments for deploying Flink jobs on a developer's workstation. Options include using Docker Compose, Minikube, or a hybrid approach that combines a Confluent Cloud Kafka cluster with a local Flink instance. For Confluent Cloud for Flink [see this note](../techno/ccloud-flink.md).
+This chapter reviews the different environments for deploying Flink jobs on a developer's workstation. Options include using downloading product tar file, Docker Compose, Minikube ot Colima -k3s, or a hybrid approach that combines a Confluent Cloud Kafka cluster with a local Flink instance. For Confluent Cloud for Flink [see this note](../techno/ccloud-flink.md).
 
-## Pre-requisites
+## Install locally
 
-* Need a docker engine, with docker compose CLIs or Minikube and docker-ce engine.
+The tar file can be downloaded from the open-source web site as a tar file and untar. The script in 'deployment/product-tar` folder does this download and untar.
+
+Once done start flink using the `start-cluster.sh` script in `flink-1.19.1/bin`. See [product documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/try-flink/local_installation/).
+
+```sh
+ ./bin/start-cluster.sh
+```
+
+## With docker images
+
+### Pre-requisites
+
+
 * Get docker cli, helm, and kubectl
 * Clone this repository.
+* For docker container execution, you need a docker engine, with docker compose CLIs, Colima or Minikube and docker-ce engine.
 
-## Colima with Kubernetes
+Three choices: Colima with Kubernetes, Minikube or docker compose, for each of those environment see the next section and for Flink Kubernetes operator deployment and configuratuin see [the dedicated chapter](./k8s-deploy.md).
 
-As an alternate to use Docker Desktop, the open source approach is to use Container Linux Manangement or Colima. 
+### Colima with Kubernetes
+
+An alternate to use Docker Desktop, [Colima](https://github.com/abiosoft/colima) is an open source to run container on Linux or Mac. 
 
 Start a k3s cluster:
 
@@ -24,9 +39,9 @@ colima start --kubernetes
 
 Deploy the Flink and Confluent Platform operators (see Makefile in deployment/k8s and its readme). 
 
-Define a Kafka cluster and start Flink SQL client
+Define a Flink cluster, optional a Kafka Cluster.
 
-## Minikube
+### Minikube
 
 * Install [Minikube](https://minikube.sigs.k8s.io/), and review some [best practices](https://jbcodeforce.github.io/techno/minikube/)
 * Start with enough memory and cpu
@@ -59,15 +74,8 @@ Define a Kafka cluster and start Flink SQL client
 
     with [Apicu.io](https://www.apicur.io/registry/docs/apicurio-registry-operator/1.2.0-dev-v2.6.x/assembly-operator-quickstart.html) for Operator for schema management.
 
-## Flink Kubernetes deployment
 
-[See dedicated chapter](./k8s-deploy.md)
-
-## Running Flink Java in Standalone JVM
-
-TBD
-
-## Docker Desktop and Compose
+### Docker Desktop and Compose
 
 During development, we can use docker-compose to start a simple `Flink session` cluster or a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image. We can use this same environment to do SQL based Flink apps. 
 
@@ -122,7 +130,7 @@ The docker compose mounts the local folder to `/home` in both the job manager an
 
 [See this section to deploy an application with flink]()
 
-## Docker compose with Kafka and Flink
+### Docker compose with Kafka and Flink
 
 In the `deployment/local` folder the docker compose start a one node kafka broker, one zookeeper, one job manager and one task manager.
 
