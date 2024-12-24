@@ -62,34 +62,10 @@ See those tutorials for getting started.
 * [Apache Flink® SQL](https://developer.confluent.io/courses/flink-sql/overview/)
 * [Java Table API Quick Start](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-java-table-api.html)
 
-There is also a new confluent cli plugin: `confluent-flink-quickstart` to create an environment, a compute pool, enable schema registry, create a kafka cluster and starts a Flink shell. 
+There is also a new confluent cli plugin: `confluent-flink-quickstart` to create an environment, a Flink compute pool, enable a schema registry, create a kafka cluster and starts a Flink shell. 
 
 ```sh
 confluent flink quickstart --name my-flink-sql --max-cfu 10 --region us-west-2 --cloud aws
-```
-
-For study and demonstration purpose, there is a read-only catalog named [`examples`](https://docs.confluent.io/cloud/current/flink/reference/example-data.html) with database called `marketplace` which has data generators for different SQL tables. 
-
-Set the namespace for future query work using:
-
-```sql
-use catalog examples;
-use marketplace;
-show tables;
-```
-
-To use your dedicated environment use the following syntax:
-
-```sql
-use catalog my-flink-sql_environment;
-use  my-flink-sql_kafka-cluster;
-```
-
-To shutdown everything:
-
-```sh
-confluent environment list
-confluent environment delete <ENVIRONMENT_ID>
 ```
 
 ### Some common commands to manage Confluent Cloud environment
@@ -114,6 +90,26 @@ confluent schema-registry cluster describe
 confluent api-key create --resource <schema registry cluster>
 # Get the user id
 confluent iam user list
+# To shutdown everything:
+confluent environment list
+confluent environment delete <ENVIRONMENT_ID>
+```
+
+For study and demonstration purpose, there is a read-only catalog named [`examples`](https://docs.confluent.io/cloud/current/flink/reference/example-data.html) with database called `marketplace` which has data generators for different SQL tables. 
+
+Set the namespace for future query work using:
+
+```sql
+use catalog examples;
+use marketplace;
+show tables;
+```
+
+To use your dedicated environment use the following syntax:
+
+```sql
+use catalog my-flink-sql_environment;
+use  my-flink-sql_kafka-cluster;
 ```
 
 ### Use the Flink SQL shell
@@ -154,6 +150,18 @@ The approach is to create a maven Java project with a main class to declare the 
 ![](https://docs.confluent.io/cloud/current/_images/flink-private-networking.svg)
 
 * PLATT is independant of the network type: PrivateLink, VPC peering or transit GTW.
+
+## Autopilot
+
+[Autopilot](https://docs.confluent.io/cloud/current/flink/concepts/autopilot.html) automatically scales up and down compute pool resources needed by SQL statements. It uses the property of parallelism for operator to be able to scale up and down. `SELECT` always runs a parallelism of 1. Only `CREATE TABELE AS`, `INSERT INTO` and `EXECUTE STATEMENT SET` are considered by Autopilot for scaling. Global aggregate are not parallelized. 
+
+The SQL workspace reports the [scaling status](https://docs.confluent.io/cloud/current/flink/concepts/autopilot.html#scaling-status).  
+
+Kafka sources scaling is limited by number of partition in the topic.
+
+If there is some data skewed and one operator is a parallel of 1 then there is no need to scale.
+
+When the compute pool is exhausted, try to add more CFU or stop some running statements to free up resources.
 
 ## Cross-region processing
 

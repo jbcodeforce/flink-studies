@@ -28,9 +28,7 @@ sql-client.sh
 show tables;
 ```
 
-The following job is a batch processing and uses the a DDL to create a table matching the column of a employee csv file. 
-
-* Get data from csv: Enter the following statement in a SQL client session:
+The following job is a batch processing and uses a DDL to create a table matching the column of a employee csv file. 
 
 ```sql
 SET execution.runtime-mode=BATCH;
@@ -46,7 +44,7 @@ CREATE TABLE employes (
 );
 ```
 
-Using the SQL client we can select some data from this table: 
+Using the SQL client, we can select some data from this table: 
 
 ```sql
 SELECT * from employee_info WHERE dept_id = 101;
@@ -58,9 +56,9 @@ Or count the employees per department, with this static query:
 select dept_id, count(*) from employee_info group by dept_id;
 ```
 
-When moving to streaming, aggregations on continuous streams need to store aggregated results continuously during the execution of the query. Therefore the query needs to maintain the most up to date count for each department to output timely results as new rows are processed. This is a **Stateful** query.  Flink’s advanced fault-tolerance mechanism will maintain internal state and consistency, so queries always return the correct result, even in the face of hardware failure.
+When moving to data streaming, aggregations need to store aggregated results continuously during the execution of the query. Therefore the query needs to maintain the most up to date count for each department to output timely results as new rows are processed. This is a **Stateful** query.  Flink’s advanced fault-tolerance mechanism maintains internal state and consistency, so queries always return the correct result, even in the face of hardware failure.
 
-To get results for external application, we need to define sinks by adding a sink table:
+To get the analytic results to external applications, we need to define sinks by adding a sink table like below:
 
 ```sql
 CREATE TABLE department_counts (

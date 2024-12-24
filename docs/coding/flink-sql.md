@@ -49,9 +49,9 @@ Use one of the following approaches:
 ???- info "Run SQL in Kubernetes application" 
     Write SQL statements and test them with Java SQL runner. The Class is in [https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) folder. Then package the java app and sql script into a docker image then use a FlinkDeployment  descriptor; (see [this git doc](https://github.com/apache/flink-kubernetes-operator/tree/main/examples/flink-sql-runner-example)).
 
-[See the Flink SQL CLI commands documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sqlclient/)).
+[See the Flink SQL CLI commands documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sqlclient/).
 
-See [this folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/00-basic-sql) to get some basic examples.
+See [the flink-sql/00-basic-sql folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/00-basic-sql) to get some basic examples.
 
 ## Show commands and basic commands
 
@@ -70,7 +70,7 @@ See [this folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink
 ???- info "Understand a type of attribute or get table structure with metadata"
     ```sql
     show create table 'tablename';
-    # for a specific attribute
+    -- for a specific attribute
     select typeof(column_name) from table_name limit 1;
     ```
 
