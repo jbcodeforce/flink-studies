@@ -4,7 +4,9 @@
     Created from Flink Study 2021 
     Updated 10/2024 from Confluent Flink studies
 
-Start one Flink **Job manager** and **Task manager** containers, using the docker compose in deployment-local folder of this project. The docker engine mounts this project folder in `/home`, so content of the data will be in `/home/flink-sql/data` 
+Start one Flink **Job manager** and one **Task manager** container, using the docker compose in deployment-local folder of this project. The docker engine mounts this project folder in `/home`, so content of the data will be in `/home/flink-sql/data` 
+
+As an alternate, it is easy to install Flink locally and start the cluster and SQL client. [See this note](https://jbcodeforce.github.io/flink-studies/coding/getting-started/#install-locally).
 
 ## Pre-requisite
 
@@ -14,7 +16,7 @@ Start one Flink **Job manager** and **Task manager** containers, using the docke
 
 ## First demo 
 
-This demonstration is based on the SQL getting started [doc example](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/gettingstarted/) from Flink documentation.
+This demonstration is based on the SQL getting started [Flink documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/gettingstarted/).
 
 The [data/employee.csv](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql/00-basic-sql/data/employes.csv) has 15 records.
 

@@ -16,6 +16,28 @@ Once done start flink using the `start-cluster.sh` script in `flink-1.19.1/bin`.
  ./bin/start-cluster.sh
 ```
 
+* Access [Web UI](http://localhost:8081/#/overview) and submit one of the example: `./bin/flink run examples/streaming/WordCount.jar`.
+
+* Start SQL client:
+
+```sh
+./bin/sql-client.sh
+```
+
+* [Optional] Start SQL Gateway to be able to have multiple client apps to submit SQL queries in concurrency.
+
+```sh
+./bin/sql-gateway.sh start -Dsql-gateway.endpoint.rest.address=localhost
+# stop it
+./bin/sql-gateway.sh stop-all -Dsql-gateway.endpoint.rest.address=localhost
+```
+
+* Stop the Flink job and task managers cluster:
+
+```sh
+./bin/stop-cluster.sh
+```
+
 ## With docker images
 
 ### Pre-requisites

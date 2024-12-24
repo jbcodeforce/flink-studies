@@ -222,6 +222,68 @@ Changelog in Flink SQL is used to record the data changes in order to achieve in
     alter table flight_schedules add(dt string);
     ```
 
+???- info "OVER aggregations"
+    [OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) compute an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY, but produce one result for every input row. This is helpful when we need to act on each input row, but consider some time interval. To get number of order in the last 10 seconds.
+
+    ```sql
+    SELECT 
+        order_id,
+        customer_id,
+        `$rowtime`,
+        SUM(price) OVER w AS total_price_ten_secs, 
+        COUNT(*) OVER w AS total_orders_ten_secs
+    FROM `examples`.`marketplace`.`orders`
+    WINDOW w AS (
+        PARTITION BY customer_id
+        ORDER BY `$rowtime`
+        RANGE BETWEEN INTERVAL '10' SECONDS PRECEDING AND CURRENT ROW
+    )
+    ```
+
+    To get the order exceeding some limits for the first time and then when the computed aggregates go below other limits. [LAG]()
+
+    ```sql
+    -- compute the total price and # of orders for a period of 10s for each customer
+    WITH orders_ten_secs AS ( 
+    SELECT 
+        order_id,
+        customer_id,
+        `$rowtime`,
+        SUM(price) OVER w AS total_price_ten_secs, 
+        COUNT(*) OVER w AS total_orders_ten_secs
+    FROM `examples`.`marketplace`.`orders`
+    WINDOW w AS (
+        PARTITION BY customer_id
+        ORDER BY `$rowtime`
+        RANGE BETWEEN INTERVAL '10' SECONDS PRECEDING AND CURRENT ROW
+        )
+    ),
+    -- get previous orders and current order per customer
+    orders_ten_secs_with_lag AS (
+    SELECT 
+        *,
+        LAG(total_price_ten_secs, 1) OVER w AS total_price_ten_secs_lag, 
+        LAG(total_orders_ten_secs, 1) OVER w AS total_orders_ten_secs_lag
+    FROM orders_ten_secs
+    WINDOW w AS (
+        PARTITION BY customer_id
+        ORDER BY `$rowtime`
+        )
+    -- Filter orders when the order price and number of orders were above some limits for previous or current order aggregates
+    )
+    SELECT customer_id, 'BLOCK' AS action, `$rowtime` AS updated_at 
+    FROM orders_ten_secs_with_lag 
+    WHERE 
+        (total_price_ten_secs > 300 AND total_price_ten_secs_lag <= 300) OR
+        (total_orders_ten_secs > 5 AND total_orders_ten_secs_lag <= 5)
+    UNION ALL 
+    SELECT customer_id, 'UNBLOCK' AS action, `$rowtime` AS updated_at 
+    FROM orders_ten_secs_with_lag 
+    WHERE 
+        (total_price_ten_secs <= 300 AND total_price_ten_secs_lag > 300) OR
+        (total_orders_ten_secs <= 5 AND total_orders_ten_secs_lag > 5);
+    ```
+
 ???- tip "Create a table as another table by inserting all records (CTAS create table as select)"
     [CREATE TABLE AS SELECT](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-as-select-ctas) is used to create table and insert values in the same statement. It derives the physical column data types and names (from aliased columns), the changelog.mode (from involved tables, operations, and upsert keys), and the primary key.
     
@@ -353,6 +415,20 @@ Changelog in Flink SQL is used to record the data changes in order to achieve in
     ```
     `distributed by hash(order_id)` and `into 1 buckets` specify that the table is backed by a Kafka topic with 1 partitions, and the order_id field will be used as the partition key. 
 
+
+???- question "How to support nested rows?"
+    Avro, Protobuf or Json schemas are very often hierarchical per design. It is possible to use CTAS to name a column within a sub-schema:
+
+    ```sql
+    -- example of defining attribute from the n element of an array from a nested json schema:
+      CAST(StatesTable.states[6] AS DECIMAL(10, 4)) AS longitude,
+      CAST(StatesTable.states[7] AS DECIMAL(10, 4)) AS latitude,
+    ```
+
+    See the [CROSS JOIN UNNEST](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/joins/#array-expansion) keywords.
+
+    See also running demo in [flink-sql/03-nested-row](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/03-nested-row)
+
 #### Confluent Cloud Flink table creation
 
 [See the product documentation](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-statement-in-af-long) with some specificities, like source and sink tables are mapped to Kafka Topics. The `$rowtime` TIMESTAMP_LTZ(3) NOT NULL is provided as a system column.
@@ -361,36 +437,36 @@ Changelog in Flink SQL is used to record the data changes in order to achieve in
 
 * A table by default is mapped to a topic with 6 partitions, and the changelog being append. Primary key leads to an implicit DISTRIBUTED BY(k), and value and key schemas are created in Schema Registry. It is possible to create table with primary key and append mode, while by default it is a upsert mode. 
 
-```sql
-CREATE TABLE telemetries (
-    device_id INT PRIMARY KEY NOT ENFORCED, 
-    geolocation STRING, metric BIGINT,
-    ts TIMESTAMP_LTZ(3) NOT NULL METADATA FROM 'timestamp')
-DISTRIBUTED INTO 4 BUCKETS
-WITH ('changelog.mode' = 'append');
-```
+    ```sql
+    CREATE TABLE telemetries (
+        device_id INT PRIMARY KEY NOT ENFORCED, 
+        geolocation STRING, metric BIGINT,
+        ts TIMESTAMP_LTZ(3) NOT NULL METADATA FROM 'timestamp')
+    DISTRIBUTED INTO 4 BUCKETS
+    WITH ('changelog.mode' = 'append');
+    ```
 
 The statement above also creates a metadata column for writing a Kafka message timestamp. This timestamp will not be defined in the schema registry. Compared to `$rowtime` which is declared as a `METADATA VIRTUAL` column, `ts` is selected in a `SELECT *` and is writable.
 
 * When the primary key is specified, then it will not be part of the value schema, except if we specify (using `value.fields-include' = 'all'`) that the value contains the full table schema. The payload of k is stored twice in Kafka message:
 
-```sql
-CREATE TABLE telemetries (k INT, v STRING)
-DISTRIBUTED BY (k)
-WITH ('value.fields-include' = 'all');
-```
+    ```sql
+    CREATE TABLE telemetries (k INT, v STRING)
+    DISTRIBUTED BY (k)
+    WITH ('value.fields-include' = 'all');
+    ```
 
 * If the key is a string, it may make sense to do not have a schema for the key in this case declare (the key columns are determined by the DISTRIBUTED BY clause): This does not work if the key name is not `key`.
 
-```sql
-CREATE TABLE telemetries (device_id STRING, metric BIGINT)
-DISTRIBUTED BY (key)
-WITH ('key.format' = 'raw');
-```
+    ```sql
+    CREATE TABLE telemetries (device_id STRING, metric BIGINT)
+    DISTRIBUTED BY (key)
+    WITH ('key.format' = 'raw');
+    ```
 
 * To keep the record in the topic forever add this `kafka.retention.time' = '0'` as options in the WITH. The supported units are:
 
-```
+```sh
 "d", "day", "h", "hour", "m", "min", "minute", "ms", "milli", "millisecond",
 "micro", "microsecond", "ns", "nano", "nanosecond"
 ```
@@ -458,7 +534,9 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     ```
 
 ???- question "How to transform a field representing epoch to a timestamp?"
-
+    
+    epoch is a BIGINT.
+    
     ```sql
      TO_TIMESTAMP(FROM_UNIXTIME(click_ts_epoch)) as click_ts
     ```
@@ -468,12 +546,15 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     ```sql
     TO_TIMESTAMP('2024-11-20 12:34:568Z'),
     ```
+
     See all the [date and time functions](https://docs.confluent.io/cloud/current/flink/reference/functions/datetime-functions.html).
 
 ???- question "How to compare a date field with current system time?"
+
     ```sql
     WHEN TIMESTAMPDIFF(day, event.event_launch_date, now()) > 120 THEN ...
     ```
+
     The table used as target to this processing, if new records are added to it, then needs to be append log, as if it is upsert then the now() time is not determenistic for each row to process.
 
 ???- question "How to mask a field?"
@@ -511,8 +592,30 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     ![](./images/changelog-exec-mode.png)
 
 
+???- question "How to use conditional functions?"
+    [Flink has built-in conditional functions](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#conditional-functions) (See also [Confluent support](https://docs.confluent.io/cloud/current/flink/reference/functions/conditional-functions.html)) and specially the CASE WHEN:
+
+    ```sql
+    SELECT 
+        *
+        FROM `stocks`
+        WHERE  
+        CASE 
+            WHEN price > 200 THEN 'high'
+            WHEN price <=200 AND price > 150 THEN 'medium'
+            ELSE 'low'
+        END;
+    ```
+
 ???- question "When and how to use custom watermark?"
     Developer should use their own [watermark strategy](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#watermark-clause) when there are not a lot of records per topic/partition, there is a need for a large watermark delay, and need to use another timestamp. 
+    The default watermark strategy in SOUCE_WATERMARK(), a watermark defined by the source. The common strategy used is the `maximim-out-of-orderness` to allow messages arriving later to be part of the window, to ensure more accurate results, as a tradeoff of latency. It can be defined using:
+
+    ```sql
+    ALTER TABLE <table_name> MODIFY WATERMARK for `$rowtime` as `$rowtime` - INTERVAL '20' SECONDS
+    ```
+
+    The minimum out-of-orderness is 50ms and can be set up to 7 days. See [Confluent documentation.](https://docs.confluent.io/cloud/current/flink/reference/functions/datetime-functions.html#flink-sql-source-watermark-function) 
     
 ???- question "Deduplication example"
 
@@ -526,6 +629,30 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     ```
 
     [See this example](https://docs.confluent.io/cloud/current/flink/how-to-guides/deduplicate-rows.html#flink-sql-deduplicate-topic-action).
+
+???- question "How to manage late message to be sent to a DLQ?"
+    First create a DLQ table like late_orders based on the order table:
+    
+    ```sql
+        create table late_orders
+        with (
+            'connector'= ''
+        ) 
+        LIKE orders (EXCLUDING OPTIONS)
+    ```
+
+    Groups the main stream processing and late arrival in a statement set:
+
+    ```sql
+    EXECUTE STATEMENT SET
+    BEGIN
+        INSERT INTO late_orders SELECT from orders WHERE `$rowtime` < CURRENT_WATERMARK(`$rowtime`);
+        INSERT INTO order_counts -- the sink table
+        SELECT window_time, COUNT(*) as cnt
+        FROM TABLE(TUMBLE(TABLE orders DESCRIPTOR(`$rowtime`), INTERVAL '1' MINUTE))
+        GROUP BY window_start, window_end, window_time
+    END
+    ```
 
 ### Joins
 
@@ -733,7 +860,9 @@ Each topic is automatically mapped to a table with some metadata fields added, l
 ## Recommended Labs and demos
 
 * [Shoe Store lab](https://github.com/griga23/shoe-store) to run demonstrations on Confluent Cloud. 
-* [confluent Flink how to](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#)
+* [Confluent Flink how to](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#)
+* [Confluent scene](https://github.com/confluentinc/demo-scene)
+* [Confluent developer SQL training]()
 
 ### Quick personal demo on Confluent Cloud
 
@@ -750,9 +879,7 @@ confluent flink compute-pool list
 confluent flink compute-pool use <pool_id>
 ```
 
-* Start on of the Datagen in the Confluent Console. 
+* Start one of the Datagen in the Confluent Console. 
 
-## End to end demonstrations
 
-* [Products, orders and customers]()
 
