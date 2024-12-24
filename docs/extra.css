@@ -29,7 +29,7 @@
 .md-typeset pre>code {
   --md-hue: 232;
   --md-code-fg-color: #f5f5f5;
-  --md-code-bg-color: #6d4049;
+  --md-code-bg-color: #46292f;
   --md-code-hl-color: #33914f;
 }
 
@@ -39,7 +39,7 @@ code>* {
   --md-code-hl-special-color:        hsla(340, 83%, 66%, 1);
   --md-code-hl-function-color:       hsla(291, 57%, 65%, 1);
   --md-code-hl-constant-color:       rgb(184, 174, 236);
-  --md-code-hl-keyword-color:        hsla(219, 66%, 64%, 1);
+  --md-code-hl-keyword-color:        rgb(139, 176, 244);
   --md-code-hl-string-color:         rgb(65, 219, 142);
   --md-code-hl-name-color:           var(--md-code-fg-color);
   --md-code-hl-operator-color:       var(--md-default-fg-color--light);

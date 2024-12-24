@@ -99,7 +99,7 @@ The `change.log` property is set up using the `WITH ('changelog.mode' = 'upsert'
 
 Changelog in Flink SQL is used to record the data changes in order to achieve incremental data processing. Some operations in Flink such as group by aggregation and deduplication can produce update events.
 
-[See the concept of changelog and dynamic tables in Confluent's documentation.](https://docs.confluent.io/cloud/current/flink/concepts/dynamic-tables.html). 
+[See the concept of changelog and dynamic tables in Confluent's documentation](https://docs.confluent.io/cloud/current/flink/concepts/dynamic-tables.html). 
 
 ### Table creation
 
@@ -322,9 +322,8 @@ Changelog in Flink SQL is used to record the data changes in order to achieve in
         ) WHERE row_num = 1;
     ```
 
-??? - question "How to generate data using [Flink Faker](https://github.com/knaufk/flink-faker)? (Flink OSS)"
-    Create at table with records generated with `faker` connector using the [DataFaker expressions.](https://github.com/datafaker-net/datafaker). 
-    Valid only on OSS Flink or Confluent platform for Flink.
+??? - question "How to generate data using Flink Faker? (Flink OSS)"
+    Create at table with records generated with [Flink faker](https://github.com/knaufk/flink-faker) connector using the [DataFaker expressions.](https://github.com/datafaker-net/datafaker). Valid only on OSS Flink or Confluent platform for Flink.
 
     ```sql
     CREATE TABLE `bounded_pageviews` (
@@ -415,6 +414,36 @@ Changelog in Flink SQL is used to record the data changes in order to achieve in
     ```
     `distributed by hash(order_id)` and `into 1 buckets` specify that the table is backed by a Kafka topic with 1 partitions, and the order_id field will be used as the partition key. 
 
+???- tip "Table with Kafka Topic metadata"
+    The headers and timestamp are the only options not read-only, all are VIRTUAL. Virtual columns are by default excluded from a SELECT * similar to the system column like `$rowtime`. 
+
+    ```sql
+    ALTER TABLE <table_name> ADD (
+        `headers` MAP<STRING,STRING> METADATA,
+        `leader-epoch`INT METADATA VIRTUAL,
+        `offset` BIGINT METADATA VIRTUAL,
+        `partition` BIGINT METADATA VIRTUAL,
+        `timestamp` TIMESTAMP_LTZ(3) METADATA,
+        `timestamp-type` STRING METADATA VIRTUAL,
+        `topic` STRING METADATA VIRTUAL
+    );
+    ```
+
+    The headers can be updated within SQL statements, some values may be static or coming from the value of one of the selected field. The timestamp can also being updated and for example in most time window queries will be set to the `window_time`.
+
+    ```sql
+    CREATE TABLE clicks_per_seconds (
+        events_per_second BIGINT,
+        window_time TIMESTAMP_LTZ(3) METADATA FROM 'timestamp'
+        )
+
+    INSERT INTO clicks_per_seconds
+    SELECT
+        COUNT(*) AS events_per_second,
+        window_time
+    FROM TABLE(TUMBLE(TABLE clicks, DESCRIPTOR(`$rowtime`), INTERVAL '1' SECOND))
+    GROUP BY window_time, window_end, window_start
+    ``` 
 
 ???- question "How to support nested rows?"
     Avro, Protobuf or Json schemas are very often hierarchical per design. It is possible to use CTAS to name a column within a sub-schema:
@@ -429,7 +458,7 @@ Changelog in Flink SQL is used to record the data changes in order to achieve in
 
     See also running demo in [flink-sql/03-nested-row](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/03-nested-row)
 
-#### Confluent Cloud Flink table creation
+### Confluent Cloud Flink table creation
 
 [See the product documentation](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-statement-in-af-long) with some specificities, like source and sink tables are mapped to Kafka Topics. The `$rowtime` TIMESTAMP_LTZ(3) NOT NULL is provided as a system column.
 

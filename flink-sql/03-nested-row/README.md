@@ -11,10 +11,10 @@ confluent flink quickstart --name jb-demo --max-cfu 10 --region us-west-2 --clou
 * Start the SQL client
 
 ```sh
-confluent flink shell --compute-pool --environment
+confluent flink shell --compute-pool $CPOOL --environment $CENV
 ```
 
-## Access user information from nested schema
+## Access user information from nested schemas
 
 1. Create a mockup of nested schema with the `vw.nested_user.sql` file
 
@@ -29,15 +29,15 @@ confluent flink shell --compute-pool --environment
     FROM `examples`.`marketplace`.`clicks`;
     ```
 
-    Recall to create those statement using CLI:
+    Recall to create those statements using CLI the commands look like:
     
     ```sh
-    confluent flink statement create $statement_name --sql "$sql_statement" --database $DB_NAME --compute-pool $CPOOL_ID --wait 
+    confluent flink statement create $statement_name --sql "$sql_statement_file_as_string" --database $DB_NAME --compute-pool $CPOOL_ID --wait 
     ```
 
 1. Access the nested schema in the SELECT (see `dml.nested_user.sql`)
-
-For array iteration and aggregation for example see the `vw.arrray_of_rows.sql` and a unnesting of the array with
+    
+    For array iteration and aggregation for example see the `vw.arrray_of_rows.sql` and a unnesting of the array with
 
     ```sql
     SELECT window_time, url, T.*
@@ -83,7 +83,7 @@ Example of output:
 The SQL expands the states array in each row of the all_flights table into new rows, one per array element, by performing a cross join against the UNNEST'ing of the states array.
 
 ```sql
-INSERT INTO all_flights_cleansed
+INSERT INTO all_flights_cleaned
     SELECT TO_TIMESTAMP_LTZ(`time`, 0) AS poll_timestamp,
       RTRIM(StatesTable.states[1]) AS icao24,
       RTRIM(StatesTable.states[2]) AS callsign,
