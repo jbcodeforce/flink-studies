@@ -4,12 +4,19 @@ This chapter tries to assess what needs to be considered when transforming logic
 
 Most of the filtering and selection can be ported 1 to 1.
 
+There is [a repository](https://jbcodeforce.github.io/shift_left_utils/) with tools using LLM to help on the shift-left migration.
+
 ## Time condiderations
 
 ## Joins considerations
 
 
-In SQL LEFT JOIN joins records that match and don’t match on the condition specified. For non matching record the left columns are populated with NULL. SQL supports Left anti join, but not Flink, but can be done using a null filter on the left join condition:
+The SQL, LEFT JOIN, joins records that match and don’t match on the condition specified. For non matching record the left columns are populated with NULL. SQL supports LEFT ANTI JOIN, but not Flink. So one solution in Flink AQL is to use a null filter on the left join condition:
 
+```sql
+from table_left
+left join table_right
+    on table_left.column_used_for_join = table_right.column_used_for_join
+    where table_right.column_used_for_join is NULL;
 ```
-```
+
