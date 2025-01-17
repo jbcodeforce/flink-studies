@@ -9,6 +9,7 @@
     * Created 2018 
     * 10/24: rework intro and stream processing description. Move fault tolerance to architecture
     * 12/24: work on cookbook and add more SQL how to
+    * 1/18/25: update to sql
 
 ## Why Flink?
 
@@ -155,15 +156,27 @@ To ensure fault tolerance, Flink employs [checkpoints](https://nightlies.apache.
 
 ## Windowing
 
-[Windows](https://ci.apache.org/projects/flink/flink-docs-release-1.12/dev/stream/operators/windows.html) are buckets within a Stream and can be defined with times, or count of elements.
+[Windows](https://ci.apache.org/projects/flink/flink-docs-release-1.12/dev/stream/operators/windows.html) are buckets within a Stream of finite size and can be defined with times, or count of elements. Flink provides several window table-valued functions (TVF) which are invoked inside a FROM clause of a SELECT: Timbling, Hop, Cumulate, session.
 
-* **Tumbling** window assigns events to non-overlapping buckets of fixed size. Once the window boundary is crossed, all events within that window are sent to an evaluation function for processing. 
+The results include all columns of original relation and the `window_start`, `window_end`, `window_time` columns to indicate the assigned window.
+
+* **Tumbling** window assigns events to non-overlapping buckets of fixed size. Records are assigned to the window based on an event-time attribute field, specified by the DESCRIPTOR() function. Once the window boundary is crossed, all events within that window are sent to an evaluation function for processing. 
 
     * **Count-based tumbling** windows define how many events are collected before triggering evaluation. 
     * **Time-based** tumbling** windows define time interval (e.g., n seconds) during which events are collected. The amount of data within a window can vary depending on the incoming event rate. 
     
     ```java
     .keyBy(...).window(TumblingProcessingTimeWindows.of(Time.seconds(2)))
+    ```
+
+    in SQL:
+
+    ```sql
+    -- computes the sum of the price in the orders table within 10-minute tumbling windows
+    SELECT window_start, window_end, SUM(price) as `sum`
+    FROM TABLE(
+        TUMBLE(TABLE `examples`.`marketplace`.`orders`, DESCRIPTOR($rowtime), INTERVAL '10' MINUTES))
+    GROUP BY window_start, window_end;
     ```
 
 ![](./images/tumbling.png){ width=500 }
@@ -196,6 +209,8 @@ To ensure fault tolerance, Flink employs [checkpoints](https://nightlies.apache.
 	.trigger(CountTrigger.of(5))
     ```
 
+[See Windowing Table-Valued Functions details in Confluent documentation](https://docs.confluent.io/cloud/current/flink/reference/queries/window-tvf.html).
+
 ## Event time
 
 **Time** is a central concept in stream processing and can have different interpretations based on the context of the flow or environment:
@@ -210,9 +225,9 @@ The watermark serves as a heuristic for this purpose.
 
 ### Watermarks
 
-Watermarks are special markers that indicate the progress of event time in the stream. They help manage late arrivals by allowing the system to understand when it can safely close a window, ensuring that all necessary events have been accounted for before processing the aggregate.
+Watermarks are special markers that indicate the progress of event time in the stream. This is the core mechanims to trigger computation at  event-time. They help manage late arrivals by allowing the system to understand when it can safely close a window, ensuring that all necessary events have been accounted for, before processing the aggregate.
 
-[Watermarks](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/event_timestamps_watermarks.html) are generated in the data stream at regular intervals and serve as indicators of the progression of time. They are special messages intermingled with other data records. Each watermark carries a timestamp that is calculated by subtracting an estimate of out-of-orderness from the largest timestamp encountered so far. This timestamp are always increasing. All records following a watermark should have a higher timestamp than the watermark, if not they are considered late data, and will be discarded. This mechanism allows the stream processing system to make informed decisions about when to close windows and process aggregates, ensuring that all relevant events are considered while still accommodating the inherent variability in event arrival times.
+[Watermarks](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/event_timestamps_watermarks.html) are generated in the data stream at regular intervals and serve as indicators of the progression of time. They are special messages intermingled with other data records. Each watermark carries a timestamp that is calculated by subtracting an estimate of out-of-orderness from the largest timestamp encountered so far. This timestamp are always increasing. All records following a watermark should have a higher timestamp than the watermark, if not they are considered late records, and will be discarded. This mechanism allows the stream processing system to make informed decisions about when to close windows and to process aggregates, ensuring that all relevant events are considered while still accommodating the inherent variability in event arrival times.
 
 
 ![](./diagrams/watermark.drawio.png)
@@ -221,7 +236,7 @@ Late arrived events are ignored as the complete information window is already go
 
 The out-of-orderness estimate serves as an educated guess and is defined for each individual stream. Watermarks are essential for comparing timestamps of events, allowing the system to assert that no earlier events will arrive after the watermark's timestamp.
 
-Watermarks are crucial for effectively processing out-of-order events, especially when dealing with multiple sources. In scenarios involving IoT devices and network latency, it’s possible to receive an event with an earlier timestamp even after the operator has already processed events with that timestamp from other sources. Importantly, watermarks are applicable to any timestamps and are not limited to window semantics.
+Watermarks are crucial when dealing with multiple sources. In scenarios involving IoT devices and network latency, it’s possible to receive an event with an earlier timestamp even after the operator has already processed events with that timestamp from other sources. Importantly, watermarks are applicable to any timestamps and are not limited to window semantics.
 
 When working with Kafka topic partitions, the absence of watermarks may represent some challenges. Watermarks are generated independently for each stream and partition. When two partitions are combined, the resulting watermark will be the oldest of the two, reflecting the point at which the system has complete information. If one partition stops receiving new events, the watermark for that partition will not progress. To ensure that processing continues over time, an idle timeout configuration can be implemented.
 
@@ -231,15 +246,19 @@ When using open source Flink, developers need to define 1/ the watermark delay, 
 
 With the windowing operator, event timestamps are utilized, but the windows themselves are defined based on elapsed time—such as a 10-minute duration. Watermarks are crucial for tracking the point in time beyond which no more delayed events are expected to arrive.
 
-When using processing time, the watermark advances at regular intervals, typically every second. Events within the window are emitted for processing once the watermark surpasses the end of that window.
+When using processing time, the watermark advances at regular intervals, typically every second. Events within the window are emitted for processing, once the watermark surpasses the end of that window.
 
-The Flink API requires a `WatermarkStrategy`, which  consists of  both a `TimestampAssigner` and a `WatermarkGenerator`. A `TimestampAssigner` is a simple function that extracts a timestamp from a specific field in each event. Flink provides several common strategies as static methods within the `WatermarkStrategy` class.
+The Flink API requires a `WatermarkStrategy`, which  consists of  both a `TimestampAssigner` and a `WatermarkGenerator`. A `TimestampAssigner` is a simple function that extracts a timestamp from a specific field in each event. Flink provides several common strategies as static methods within the `WatermarkStrategy` class. The `WatermarkGenerator` has two important methods: 1/ `onEvent(T event, long evt_time, WatermarkOutput output)` that is called for each produced event, that may update internal state and may emit a new watermark or not. 2/ `onPeriodicEmit(WatermarkOutput output)` to emit a watermark at specific period, configured via a job or Flink config. Developers may implement their own generator in the stream source operator. Operator broadcasts the watermarks to all its out going connection. 
+
+![](./diagrams/watermark_prop.drawio.png)
+
+Each task has its own watermark, and at the arrival of a new watermark it checks if it needs to advance its own watermark. When it is advanced, the task performs all triggered computations and emits all result records. The watermark is broadcasted to all output of the task.
+
+The watermark of a task is the mininum of all per-connection watermarks. Task with multiple input, like JOINs or UNIONs maintains a single watermark, which is the minimum between the input watermarks.
 
 Additionally, it is possible to configure the system to accept late events by specifying an `allowed lateness` period. This defines how late an element can arrive before it is discarded. Flink maintains the state of the window until the allowed lateness time has expired, allowing for flexible handling of late-arriving data while ensuring that the processing remains efficient and accurate.
 
---- 
-
-#### Some examples 
+#### Some watermark processing examples 
 
 Parallel watermarking is an example of getting data from 4 partitions with 2 kafka consumers and 2 windows:
 
@@ -247,7 +266,7 @@ Parallel watermarking is an example of getting data from 4 partitions with 2 kaf
 
 Shuffling is done as windows are computing some COUNT or GROUP BY operations. Event A arriving at 3:13, and B[3:20] on green partitions, and are processed by Window 1 which considers 60 minutes time between 3:00 and 4:00. 
 
-The connector sends a Watermark for each partition independently. If the out-of-orderness is set to be 5 minutes, so a watermark is created with a timestamp 3:08 = 3:13 - 5 (partition 0) and at 3:15 for partition 1. The generator sends the minimum of both. The timestamp reflects how complete the stream is so far: it could not be no more complete than the further behind which was event at 3:13, 
+The source connector sends a Watermark for each partition independently. If the out-of-orderness is set to be 5 minutes, a watermark is created with a timestamp 3:08 = 3:13 - 5 (partition 0) and at 3:15 (3:20 - 5) for partition 1. The generator sends the minimum of both. The timestamp reflects how complete the stream is so far: it could not be no more completed than the further behind which was event at 3:13, 
 
 In the case of a partition does not get any events, as there is no watermark generated for this partition, it may mean the watermark does no advance, and as a side effect it prevents windows from producing events. To avoid this problem, we need to balance kafka partitions so none are empty or idle, or configure the watermarking to use idleness detection.
 
@@ -266,6 +285,16 @@ java -cp target/my-flink-1.0.0-SNAPSHOT.jar jbcodeforce.sale.SaleDataServer
 (July,Steamer,Category5,123,6)
 ...
 ```
+
+#### Monitoring watermark
+
+The following metrics are used at the operator and task level:
+
+* `currentInputWatermark`: the last watermark received by the operator in its n inputs.
+* `currentOutputWatermark`: last emitted watermark by the operator
+* `watermarkAlignmentDrift`: current drift from the minimal watermakr emitted by all sources beloging to the same watermark group.
+
+Watermarks can be seen in Apache flink Console. 
 
 ### Trigger
 
@@ -294,7 +323,7 @@ The predefined evictors:
 * **TimeEvictor** removes elements based on time, allowing you to keep only the most recent elements within a given time frame.
 
 
-## Source of kanowledge
+## Source of knowledge
 
 * [x] [Product documentation](https://flink.apache.org/flink-architecture.html). 
 * [x] [Official training](https://ci.apache.org/projects/flink/flink-docs-release-1.20/learn-flink/).

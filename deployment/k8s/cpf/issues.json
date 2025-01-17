@@ -1,0 +1,78 @@
+{
+  "apiVersion": "cmf.confluent.io/v1alpha1",
+  "kind": "FlinkApplication",
+  "metadata": {
+    "name": "job-with-issues"
+  },
+  "spec": {
+    "image": "confluentinc/cp-flink:1.19.1-cp1",
+    "flinkVersion": "v1_19",
+    "flinkConfiguration": {
+      "taskmanager.numberOfTaskSlots": "4"
+    },
+    "serviceAccount": "flink",
+    "podTemplate": {
+        "spec": {
+          "containers": [
+            {
+              "name": "flink-main-container",
+              "volumeMounts": [
+                {
+                  "mountPath": "/opt/flink/downloads",
+                  "name": "downloads"
+                }
+              ]
+            }
+          ],
+          "volumes": [
+            {
+              "name": "downloads",
+              "emptyDir": {}
+            }
+          ]
+        }
+      },
+    "jobManager": {
+      "podTemplate": {
+
+        "spec": {
+            "initContainers": [
+    {
+      "name": "mc",
+      "image": "minio/mc",
+      "volumeMounts": [
+        {
+          "mountPath": "/opt/flink/downloads",
+          "name": "downloads"
+        }
+      ],
+      "command": [
+        "/bin/sh",
+        "-c",
+        "mc alias set dev-minio http://minio-service.minio-dev.svc.cluster.local:9000 minioadmin minioadmin && mc cp dev-minio/flink/jobs-with-issues.jar /opt/flink/downloads/jobs-with-issues.jar"
+      ]
+    }
+  ]
+        }
+      },
+      "resource": {
+        "memory": "1024m",
+        "cpu": 1
+      }
+    },
+    "taskManager": {
+      "resource": {
+        "memory": "1024m",
+        "cpu": 1
+      }
+    },
+    "job": {
+      "jarURI": "local:///opt/flink/downloads/jobs-with-issues.jar",
+      "entryClass": "io.confluent.JobWithIssues1",
+      "state": "running",
+      "parallelism": 4,
+      "upgradeMode": "stateless"
+    }
+  },
+  "status": null
+}

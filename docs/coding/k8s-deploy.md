@@ -3,6 +3,7 @@
 ???- info "This chapter updates"
     * Created 10/2024
     * 12/24: move some content to hands-on readme, clean content
+    * 01/25: sql processing section
 
 Flink offers [a k8s Operator](https://flink.apache.org/news/2022/04/03/release-kubernetes-operator-0.1.0.html) to deploy and manage applications. This note summarize how to use this operator, with basic getting started yaml files. 
 
@@ -295,7 +296,7 @@ The Application Mode makes sure that all Flink components are properly cleaned u
 
 ### Flink SQL processing
 
-There are multiple choices to run Flink SQL, using the SQL client, or package the SQL scripts and get a [java SQL runner] (https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) executing the SQL, so the application deployment is Java based even if SQL scripts are used for stream processing.
+There are multiple choices to run Flink SQL, using the SQL client, or package the SQL scripts and get a [java SQL runner](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) executing the SQL statements from a file, so the application deployment is Java based even if SQL scripts are used for stream processing.
 
 ## Practices
 

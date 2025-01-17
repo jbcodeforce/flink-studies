@@ -2,13 +2,13 @@
 
 #### Version
     Created from Flink Study 2021 
-    Updated 10/2024 from Confluent Flink studies
+    Updated 1/2025 from Confluent Flink studies
 
 Start one Flink **Job manager** and one **Task manager** container, using the docker compose in deployment-local folder of this project. The docker engine mounts this project folder in `/home`, so content of the data will be in `/home/flink-sql/data` 
 
 As an alternate, it is easy to install Flink locally and start the cluster and SQL client. [See this note](https://jbcodeforce.github.io/flink-studies/coding/getting-started/#install-locally).
 
-## Pre-requisite
+## Pre-requisites
 
 * Build custom flink image using dockerfile under `deployment/custom-flink-image`
 * Start docker compose under `deployment/docker`.
@@ -122,5 +122,6 @@ set 'sql-client.execution.result-mode' = 'changelog';
 select count(*) AS `count` from bounded_pageviews;
 ```
 
+## Some examples with CC
 
 [Next will be Kafka integration running locally or on Confluent Cloud](../01-confluent-kafka-local-flink/README.md)

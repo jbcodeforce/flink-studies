@@ -1,8 +1,18 @@
-# Programming guidances and examples
+# DataStreams Programming guidances and examples
+
+This chapter is a set of links to existing examples for Flink DataStream.
+
+## Datastream deeper dive
+
+* [Open source documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream/overview/) with [the API](https://nightlies.apache.org/flink/flink-docs-master/api/java/).
+* [Confluent Flink Cookbook](https://github.com/confluentinc/flink-cookbook), is a set of recipes around Flink using DataStream. Once clone, load one of the folder as a java project in IDE.
 
 ## Data set basic apps
 
-See those examples directly in the [my-flink project under the  jbcodeforce.p1 package](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1):
+!!!- Error "Attention Scala and DataSet aPi do not exist anymore"
+    Deprecated from Flink 1.18.
+
+The examples directly in the [my-flink project under the  jbcodeforce.p1 package](https://github.com/jbcodeforce/flink-studies/blob/master/flink-java/my-flink/src/main/java/jbcodeforce/p1):
 
 * [PersonFiltering.java](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/PersonFiltering.java) filter a persons datastream using person's age to create a new "adult" output data stream. This example uses test data from a list of person and uses a filtering class which implements the filter method. This code can execute in VSCode or any IDE
 * [InnerJoin](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/InnerJoin.java) Proceed two files and do an inner join by using the same key on both files. See next section for details.

@@ -7,14 +7,14 @@
 
 This chapter offers a compilation of best practices for implementing Flink SQL solutions, applicable to local Flink open-source, the Confluent Platform for Flink or the Confluent Cloud for Flink.
 
-## Getting Started with a SQL client
+## Getting started with a SQL client
 
-Confluent Cloud supports writing SQL statements using the web console or a cli shell, while Flink Open Source has a sql-client shell which commmucates with an existing job manager. The Flink Kubernetes operator does not support SQL client to Session Cluster. Using Kubernetes deployment, any SQL script needs to be packaged with a Java program, called SQL Runner, and deployed as a Flink Application using a FlinkDeployment descriptor.
+Confluent Cloud enables users to write Flink SQL statements through the web console or a CLI shell, while Flink Open Source features a `sql-client` shell that communicates with an existing job manager. However, the Flink Kubernetes operator does not support the SQL client for Session Clusters. When using Kubernetes deployment, any SQL script must be packaged with a Java program called SQL Runner and deployed as a Flink Application using a FlinkDeployment descriptor."
 
 Use one of the following approaches:
 
-* When using Flink with docker compose: the SQL client in docker container runs against local Flink cluster (see [deployment/custom-flink-image](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/custom-flink-image) folder to build a custom image using the dockerfile with the sql-client service and any specific connector jars).
-* Use Confluent Cloud Flink console to write SQL Statements in a Workspace, and run them directly from the there: statements may run on a compute pool nd may run forever.
+* When using Flink with docker compose: the SQL client in the docker container runs against local Flink cluster (see [deployment/custom-flink-image](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/custom-flink-image) folder to build a custom image using the dockerfile with the `sql-client` service and any specific connector jars).
+* Use Confluent Cloud Flink console to write SQL Statements in a Workspace, and run them directly from there: statements may run on a compute pool and may run forever.
 * Use Confluent cli connected to a compute pool defined in a **Confluent Cloud** environment. (To create a new environment using Terraform see [this note](terraform.md))
 
 ???- tip "Local SQL client"
@@ -53,7 +53,7 @@ Use one of the following approaches:
 
 See [the flink-sql/00-basic-sql folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/00-basic-sql) to get some basic examples.
 
-## Show commands and basic commands
+## Basic commands
 
 * Show catalogs, tables...
 
@@ -91,13 +91,15 @@ A table registered with the CREATE TABLE statement can be used as a table source
 
 There are [three different modes](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#changelog-mode) to persist table rows in a log (Kafka topic in Confluent Cloud): append, retract or upsert. 
 
-* **append** means that every insertion can be treated as an independent immutable fact. Records can be distributed using round robin to the different partitions.
-* **upsert** means that all rows with same primary key are related and must be partitioned together. Events are upsert or delete for a primary key.
+* **append** means that every insertion can be treated as an independent immutable fact. Records can be distributed using round robin to the different partitions. Do not use primary key with append, as windowing or aggregation will product undefined, may be wrong results. Regular joins between two append only streams may not make any sense at the semantic level. While [temporal join](https://developer.confluent.io/courses/flink-sql/streaming-joins/) may be possible. Some query will create append output, like window aggregation, or any operations using the watermark.
+* **upsert** means that all rows with same primary key are related and must be partitioned together. Events are upsert or delete for a primary key. Upsert needs a primary key.
 * **retract** means a fact can be undone, and the combination of +X and -X are related and must be partitioned together. Records are related by all the columns so the entire row is the key.
 
 The `change.log` property is set up using the `WITH ('changelog.mode' = 'upsert')` options when creating the table.
 
-Changelog in Flink SQL is used to record the data changes in order to achieve incremental data processing. Some operations in Flink such as group by aggregation and deduplication can produce update events.
+Changelog in Flink SQL is used to record the data changes in order to achieve incremental data processing. Some operations in Flink such as group by, aggregation and deduplication can produce update events.
+
+Looking at the physical plan with `EXPLAIN create...` demonstrates the changelog mode and the state size used per operator.
 
 [See the concept of changelog and dynamic tables in Confluent's documentation](https://docs.confluent.io/cloud/current/flink/concepts/dynamic-tables.html). 
 
@@ -107,7 +109,7 @@ Changelog in Flink SQL is used to record the data changes in order to achieve in
     * Primary key can have one or more columns, all of them are not null
     * In Flink the keys can only be `NOT ENFORCED`
     * The PRIMARY KEY declaration partitions the table implicitly by the key column(s)
-    * The primary key is becoming the kafka key implicitly and in Confluent will generate a key schema, except if using the option (`   'key.format' = 'raw'`)
+    * The primary key is becoming the kafka key implicitly and in Confluent will generate a key schema, except if using the option (`'key.format' = 'raw'`)
 
     ```sql
     -- simplest one
@@ -222,67 +224,6 @@ Changelog in Flink SQL is used to record the data changes in order to achieve in
     alter table flight_schedules add(dt string);
     ```
 
-???- info "OVER aggregations"
-    [OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) compute an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY, but produce one result for every input row. This is helpful when we need to act on each input row, but consider some time interval. To get number of order in the last 10 seconds.
-
-    ```sql
-    SELECT 
-        order_id,
-        customer_id,
-        `$rowtime`,
-        SUM(price) OVER w AS total_price_ten_secs, 
-        COUNT(*) OVER w AS total_orders_ten_secs
-    FROM `examples`.`marketplace`.`orders`
-    WINDOW w AS (
-        PARTITION BY customer_id
-        ORDER BY `$rowtime`
-        RANGE BETWEEN INTERVAL '10' SECONDS PRECEDING AND CURRENT ROW
-    )
-    ```
-
-    To get the order exceeding some limits for the first time and then when the computed aggregates go below other limits. [LAG]()
-
-    ```sql
-    -- compute the total price and # of orders for a period of 10s for each customer
-    WITH orders_ten_secs AS ( 
-    SELECT 
-        order_id,
-        customer_id,
-        `$rowtime`,
-        SUM(price) OVER w AS total_price_ten_secs, 
-        COUNT(*) OVER w AS total_orders_ten_secs
-    FROM `examples`.`marketplace`.`orders`
-    WINDOW w AS (
-        PARTITION BY customer_id
-        ORDER BY `$rowtime`
-        RANGE BETWEEN INTERVAL '10' SECONDS PRECEDING AND CURRENT ROW
-        )
-    ),
-    -- get previous orders and current order per customer
-    orders_ten_secs_with_lag AS (
-    SELECT 
-        *,
-        LAG(total_price_ten_secs, 1) OVER w AS total_price_ten_secs_lag, 
-        LAG(total_orders_ten_secs, 1) OVER w AS total_orders_ten_secs_lag
-    FROM orders_ten_secs
-    WINDOW w AS (
-        PARTITION BY customer_id
-        ORDER BY `$rowtime`
-        )
-    -- Filter orders when the order price and number of orders were above some limits for previous or current order aggregates
-    )
-    SELECT customer_id, 'BLOCK' AS action, `$rowtime` AS updated_at 
-    FROM orders_ten_secs_with_lag 
-    WHERE 
-        (total_price_ten_secs > 300 AND total_price_ten_secs_lag <= 300) OR
-        (total_orders_ten_secs > 5 AND total_orders_ten_secs_lag <= 5)
-    UNION ALL 
-    SELECT customer_id, 'UNBLOCK' AS action, `$rowtime` AS updated_at 
-    FROM orders_ten_secs_with_lag 
-    WHERE 
-        (total_price_ten_secs <= 300 AND total_price_ten_secs_lag > 300) OR
-        (total_orders_ten_secs <= 5 AND total_orders_ten_secs_lag > 5);
-    ```
 
 ???- tip "Create a table as another table by inserting all records (CTAS create table as select)"
     [CREATE TABLE AS SELECT](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-as-select-ctas) is used to create table and insert values in the same statement. It derives the physical column data types and names (from aliased columns), the changelog.mode (from involved tables, operations, and upsert keys), and the primary key.
@@ -395,6 +336,8 @@ Changelog in Flink SQL is used to record the data changes in order to achieve in
     -- in case we need to reverse back
     ALTER TABLE table_name DROP WATERMARK;
     ```
+
+    This can be used when doing enrichment join on reference table. We do not want to wait for watermark arriving on the reference table, so set the watermark of this reference table to the max INT using `ALTER TABLE table_name SET `$rowtime` TO_TIMESTAMP(,0)`
 
 ???- question "Create a table with topic as one day persistence"
     See the [WITH options](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#with-options).
@@ -538,6 +481,69 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     SELECT * FROM T2;
     ```
 
+
+???- info "OVER aggregations"
+    [OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) compute an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY, but produce one result for every input row. This is helpful when we need to act on each input row, but consider some time interval. To get number of order in the last 10 seconds.
+
+    ```sql
+    SELECT 
+        order_id,
+        customer_id,
+        `$rowtime`,
+        SUM(price) OVER w AS total_price_ten_secs, 
+        COUNT(*) OVER w AS total_orders_ten_secs
+    FROM `examples`.`marketplace`.`orders`
+    WINDOW w AS (
+        PARTITION BY customer_id
+        ORDER BY `$rowtime`
+        RANGE BETWEEN INTERVAL '10' SECONDS PRECEDING AND CURRENT ROW
+    )
+    ```
+
+    To get the order exceeding some limits for the first time and then when the computed aggregates go below other limits. [LAG]()
+
+    ```sql
+    -- compute the total price and # of orders for a period of 10s for each customer
+    WITH orders_ten_secs AS ( 
+    SELECT 
+        order_id,
+        customer_id,
+        `$rowtime`,
+        SUM(price) OVER w AS total_price_ten_secs, 
+        COUNT(*) OVER w AS total_orders_ten_secs
+    FROM `examples`.`marketplace`.`orders`
+    WINDOW w AS (
+        PARTITION BY customer_id
+        ORDER BY `$rowtime`
+        RANGE BETWEEN INTERVAL '10' SECONDS PRECEDING AND CURRENT ROW
+        )
+    ),
+    -- get previous orders and current order per customer
+    orders_ten_secs_with_lag AS (
+    SELECT 
+        *,
+        LAG(total_price_ten_secs, 1) OVER w AS total_price_ten_secs_lag, 
+        LAG(total_orders_ten_secs, 1) OVER w AS total_orders_ten_secs_lag
+    FROM orders_ten_secs
+    WINDOW w AS (
+        PARTITION BY customer_id
+        ORDER BY `$rowtime`
+        )
+    -- Filter orders when the order price and number of orders were above some limits for previous or current order aggregates
+    )
+    SELECT customer_id, 'BLOCK' AS action, `$rowtime` AS updated_at 
+    FROM orders_ten_secs_with_lag 
+    WHERE 
+        (total_price_ten_secs > 300 AND total_price_ten_secs_lag <= 300) OR
+        (total_orders_ten_secs > 5 AND total_orders_ten_secs_lag <= 5)
+    UNION ALL 
+    SELECT customer_id, 'UNBLOCK' AS action, `$rowtime` AS updated_at 
+    FROM orders_ten_secs_with_lag 
+    WHERE 
+        (total_price_ten_secs <= 300 AND total_price_ten_secs_lag > 300) OR
+        (total_orders_ten_secs <= 5 AND total_orders_ten_secs_lag > 5);
+    ```
+
 ???- question "How to Aggregating a field into an ARRAY?"
     Let start by simple array indexing (the index is between 1 to nn_element). Below the values array create test data into a n memory table aliased a T:
 
@@ -620,6 +626,13 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     ![](./images/changelog-exec-mode.png)
 
+???- question "How to expand a column being an array into new rows?"
+
+    The table order has n product ids in the product_ids column.
+
+    ```sql
+    
+    ```
 
 ???- question "How to use conditional functions?"
     [Flink has built-in conditional functions](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#conditional-functions) (See also [Confluent support](https://docs.confluent.io/cloud/current/flink/reference/functions/conditional-functions.html)) and specially the CASE WHEN:
@@ -909,6 +922,4 @@ confluent flink compute-pool use <pool_id>
 ```
 
 * Start one of the Datagen in the Confluent Console. 
-
-
 

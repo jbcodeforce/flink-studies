@@ -2,14 +2,15 @@
 
 ???- info "Chapter updates"
     * Created 10/2024 
-    * Review 10/31/24 Update 12/06/2024
+    * Review 10/31/24 Updated 1/12/2025
 
-[Confluent Cloud for Apache Flink®](https://docs.confluent.io/cloud/current/flink/overview.html) is a cloud-native, managed service, for Flink in parallel of the Kafka managed service.
+[Confluent Cloud for Apache Flink®](https://docs.confluent.io/cloud/current/flink/overview.html) is a cloud-native, managed service, for Flink, in parallel of the Kafka managed service.
 
 ![](./diagrams/ccloud-flink.drawio.png){ width=600 }
 
 Confluent Cloud Flink is built on the same open-source version as Apache Flink® with additional features:
 
+* Regional service to run Flink in a serverless mode
 * Auto-inference of the Confluent Cloud environment, including Kafka cluster , topics and schemas, to Flink SQL constructs of catalog, databases and tables.
 * Autoscaling capabilities.
 * Default system column for timestamps using the `$rowtime` column.
@@ -51,6 +52,18 @@ Confluent Cloud Flink is built on the same open-source version as Apache Flink®
 ???- question "How to change the CFU limit?"
     CFU can be changed via the console or the cli, up to the limit of 50. Going above developers need to open a ticket to the Confluent support.
 
+### Confluent Cloud Architecture
+
+The Confluent Cloud for Kafka and for Flink is based on the pattern of control and data planes. [See this presentation - video from Frank Greco Jr](https://youtu.be/ss5OEBejFCs).
+
+![](./diagrams/ccloud-architecture.drawio.png)
+
+* Each data plane is made of a VPC, a kubernetes cluster, a set of Kafka cluster and some management services to support platform management and communication with the control plane
+* The control plane is called  the mothership, and refers to VPC, services, Database persistence to manage the multi-tenancy platform, a kubernetes cluster, kafka cluster... This is where the Confluent console runs for users to administer the Kafka cluster. 
+* For each data plance VPC, outbound connections are allowed through internet gateways.
+* There is a scheduler service to provision resources or assign cluster to existing resources. Target states are saved in a SQL database, while states are propgated from the different data planes to the mothership. This communication is async and leverage a global Kafka cluster.
+* In Kubernetes the Kafka Clusters are defined with CRD and manage current versus desired states.
+* There are the concepts of physical kafka clusters and logical clusters. Logical clusters are groupings of topics on the physical clusters isolated from each other via a prefix. Professional Confluent Cloud organization can only have logical cluster. Enterprise can have physical cluster.
 
 ## Getting Started
 
@@ -131,9 +144,33 @@ confluent flink shell --compute-pool $COMPUTE_POOL_ID --environment $ENV_ID
 
 Nothing special, except that once the job is started we cannot modify it, we need to stop before any future edition. The job can run forever. 
 
-### Use Java Table API
+## Use Java Table API
 
 The approach is to create a maven Java project with a main class to declare the data flow.  [Read this chapter](../coding/table-api.md).
+
+## Statement Deployment and life cycle
+
+### Schema compatibility
+
+### Statement evolution
+
+* what can be changed
+
+* Separate statement with big state in separate compute pool
+
+#### Change stateful statement
+
+Deploy the new statement to comput the stateful operation, and use a template like the following. Then stop the first. 
+
+```sql
+insert into table_2
+select * from table_output_1
+where window_time <= midnight
+union 
+select ( from (tumble table)
+where the $rowtime > midnight
+order by window_time
+```
 
 ## Networking overview
 
@@ -166,6 +203,26 @@ When the compute pool is exhausted, try to add more CFU or stop some running sta
 ## Cross-region processing
 
 Within an environment there is one schema registry. We can have one Kafka cluster per region and one Flink compute pool per region. Any tables created in both region with the same name will have the value and key schemas shared in the central schema registry. The SQL Metastore, Flink compute pools and Kafka clusters are regional. 
+
+## Monitoring and troubleshouting
+
+Once the Flink SQL statement runs, use the Console, Environment > Flink > Flink page > Flink statements. Look at the statement status, consider failed, pending, degraded. Some issues are recoverables, some not.
+
+| | Recoverable | Non-recoverable |
+| --- | --- | --- |
+| **User** | Kafka topic deletion, loss of access to cloud resources | De/Serialization exception, arithmetic exception, any exception thrown in user code |
+| **System** | checkpointing failure, networking disruption |  |
+| **Actions** | If recovery takes a long time or fails repeatedly, and if this is a user execption, the message will be in the status.detail of the statement, else the user may reach to the support. | User needs to fix the query or data. |
+
+Be sure to enable cloud notifications and at least monitor topic consumer lag. As a general practices, monitoring for `current_cfus = cfu_limit` to avoid exhaustion of compute pools.  The flink/pending.records is the most important metrics to consider. It corresponds to consumer lag in Kafka and “Messages Behind” in the Confluent Cloud UI. Monitor for high and increasing consumer lag. |
+
+
+
+* [Product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html)
+* [demo]
+
+### Restart a statement from a specific offset
+
 
 ## Deeper dive
 
