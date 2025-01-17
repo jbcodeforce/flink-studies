@@ -2,41 +2,43 @@
 
 ???- info "Update"
     * Created 2018 
-    * Updated 12/21/2024 - review done. 
+    * Updated 1/18/2025 - imporve note, review done. 
 
-This chapter reviews the different environments for deploying Flink jobs on a developer's workstation. Options include using downloading product tar file, Docker Compose, Minikube ot Colima -k3s, or a hybrid approach that combines a Confluent Cloud Kafka cluster with a local Flink instance. For Confluent Cloud for Flink [see this note](../techno/ccloud-flink.md).
+This chapter reviews the different environments for deploying Flink, Flink jobs on a developer's workstation. Options include  downloading product tar file, using Docker Compose, Minikube ot Colima -k3s, or adopting an hybrid approach that combines a Confluent Cloud Kafka cluster with a local Flink instance. This last option is not supported for production but is helpful for development purpose. To get started with Confluent Cloud for Flink [see this summary chapter](../techno/ccloud-flink.md).
+
+The section includes Open Source product, or Confluent Platform for Flink or Confluent Cloud for Flink.
 
 ## Install locally
 
-The tar file can be downloaded from the open-source web site as a tar file and untar. The script in 'deployment/product-tar` folder does this download and untar.
+The Flink Open Source tar file can be downloaded. The `install-local.sh` script in 'deployment/product-tar` folder does this download and untar operations.
 
-Once done start flink using the `start-cluster.sh` script in `flink-1.19.1/bin`. See [product documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/try-flink/local_installation/).
+* Once done, start Flink using the `start-cluster.sh` script in `flink-1.19.1/bin`. See [Flink OSS product documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/try-flink/local_installation/).
 
-```sh
- ./bin/start-cluster.sh
-```
+  ```sh
+  ./bin/start-cluster.sh
+  ```
 
-* Access [Web UI](http://localhost:8081/#/overview) and submit one of the example: `./bin/flink run examples/streaming/WordCount.jar`.
+* Access [Web UI](http://localhost:8081/#/overview) and submit one of the example using the flink client cli: `./bin/flink run examples/streaming/WordCount.jar`.
 
-* Start SQL client:
+* As an option, start the SQL client:
 
-```sh
-./bin/sql-client.sh
-```
+  ```sh
+  ./bin/sql-client.sh
+  ```
 
 * [Optional] Start SQL Gateway to be able to have multiple client apps to submit SQL queries in concurrency.
 
-```sh
-./bin/sql-gateway.sh start -Dsql-gateway.endpoint.rest.address=localhost
-# stop it
-./bin/sql-gateway.sh stop-all -Dsql-gateway.endpoint.rest.address=localhost
-```
+  ```sh
+  ./bin/sql-gateway.sh start -Dsql-gateway.endpoint.rest.address=localhost
+  # stop it
+  ./bin/sql-gateway.sh stop-all -Dsql-gateway.endpoint.rest.address=localhost
+  ```
 
-* Stop the Flink job and task managers cluster:
+* Stop the Flink job and the Task manager cluster:
 
-```sh
-./bin/stop-cluster.sh
-```
+  ```sh
+  ./bin/stop-cluster.sh
+  ```
 
 ## With docker images
 
@@ -45,27 +47,33 @@ Once done start flink using the `start-cluster.sh` script in `flink-1.19.1/bin`.
 
 * Get docker cli, helm, and kubectl
 * Clone this repository.
-* For docker container execution, you need a docker engine, with docker compose CLIs, Colima or Minikube and docker-ce engine.
+* For docker container execution, you need a docker engine, with docker compose CLIs. As an option, we can use Colima or Minikube with docker-ce engine.
 
-Three choices: Colima with Kubernetes, Minikube or docker compose, for each of those environment see the next section and for Flink Kubernetes operator deployment and configuratuin see [the dedicated chapter](./k8s-deploy.md).
+Three options: 
+
+1. Colima with Kubernetes
+1. Minikube 
+1. docker compose
+
+For each of those environment, see the next sections and for Flink Kubernetes operator deployment and configuratuin see [the dedicated k8s deployment chapter](./k8s-deploy.md).
 
 ### Colima with Kubernetes
 
-An alternate to use Docker Desktop, [Colima](https://github.com/abiosoft/colima) is an open source to run container on Linux or Mac. 
+As an alternative to use Docker Desktop, [Colima](https://github.com/abiosoft/colima) is an open source to run container on Linux or Mac. 
 
-Start a k3s cluster:
+* Start a k3s cluster:
 
-```sh
-colima start --kubernetes
-```
+  ```sh
+  colima start --kubernetes
+  ```
 
-Deploy the Flink and Confluent Platform operators (see Makefile in deployment/k8s and its readme). 
+Deploy the Flink and Confluent Platform operators (see Makefile in [deployment/k8s and its readme](ttps://jbcodeforce.github.io/flink-studies/deployment/k8s)). 
 
-Define a Flink cluster, optional a Kafka Cluster.
+Define a Flink cluster, and a Kafka Cluster if needed.
 
 ### Minikube
 
-* Install [Minikube](https://minikube.sigs.k8s.io/), and review some [best practices](https://jbcodeforce.github.io/techno/minikube/)
+* Install [Minikube](https://minikube.sigs.k8s.io/), and review some [best practices](https://jbcodeforce.github.io/techno/minikube/) on how to configure and use it.
 * Start with enough memory and cpu
 
   ```sh
@@ -73,7 +81,7 @@ Define a Flink cluster, optional a Kafka Cluster.
   ```
 
 * Only to newly created minikube profile, [install Flink Operator for kubernetes](./k8s-deploy.md#deploy-flink-kubernetes-operator)
-* If we want integration with Kafka and Schema registry select one platform:
+* If we want integration with Kafka and Schema registry select one of the Kafka platform:
 
     * Install [Confluent Plaform Operator](https://docs.confluent.io/operator/current/co-quickstart.html)
     
@@ -85,7 +93,7 @@ Define a Flink cluster, optional a Kafka Cluster.
     helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes
     ```
 
-    * Or [Strimzi Operator](https://strimzi.io/quickstarts/) in the `kafka` namespace:
+    * Or [Kafka OSS Strimzi Operator](https://strimzi.io/quickstarts/) in the `kafka` namespace:
 
     ```sh
     kubectl create namespace kafka
@@ -101,7 +109,7 @@ Define a Flink cluster, optional a Kafka Cluster.
 
 During development, we can use docker-compose to start a simple `Flink session` cluster or a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image. We can use this same environment to do SQL based Flink apps. 
 
-As Task manager will execute the job, it is important that the container running the flink has access to jars needed to connect to external sources like Kafka or other tools like FlinkFaker. Therefore there is a [Dockerfile](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/custom-flink-image/Dockerfile) to get some important jars to build a custom Flink image that we will use for Taskmanager and SQL client.
+As Task manager will execute the job, it is important that the container running the flink code has access to jars needed to connect to external sources like Kafka or other tools like FlinkFaker. Therefore there is a [Dockerfile](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/custom-flink-image/Dockerfile) to get some important jars to build a custom Flink image that we will use for Taskmanager and SQL client. Always update the jar version with new Flink version.
 
 * If specific integrations are needed, get the needed jar references, update the dockerfile and then build the Custom Flink image, under `deployment/custom-flink-image` folder
 
@@ -112,11 +120,11 @@ As Task manager will execute the job, it is important that the container running
 * Start Flink session cluster using the following command: 
 
   ```shell
-  # under this repository and deployment/local folder
+  # under this repository and deployment/docker folder
   docker compose up -d
   ```
 
-The docker compose starts one job manager and one task manager server:
+The [Flink OSS docker compose](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/docker/flink-oss-docker-compose.yaml) starts one job manager and one task manager server:
 
 ```yaml
 services:
@@ -148,13 +156,13 @@ services:
         taskmanager.numberOfTaskSlots: 4
 ```
 
-The docker compose mounts the local folder to `/home` in both the job manager and task manager containers so that, we can submit jobs from the job manager (accessing the compiled jar) and also access the input data files in the task manager container.
+The docker compose mounts the local folder to `/home` in both the job manager and task manager containers so that, we can submit jobs from the job manager (accessing the compiled jar) and also access the input data files and connector jars in the task manager container.
 
 [See this section to deploy an application with flink]()
 
 ### Docker compose with Kafka and Flink
 
-In the `deployment/local` folder the docker compose start a one node kafka broker, one zookeeper, one job manager and one task manager.
+In the `deployment/docker` folder the docker compose starts one node OSS kafka broker, one zookeeper, one OSS Flink job manager and one task manager.
 
 ```sh
 docker compose -f kafka-docker-compose.yaml up -d
@@ -183,11 +191,11 @@ The application sends events like the following:
 * Use the [Kafdrop interface to verify the messages in the topic](http://localhost:9000/topic/ecommerce_events)
 * Connect to SQL client container
 
-```sh
-docker exec -ti sql-client bash
-# in the shell
-./sql-client.sh
-```
+  ```sh
+  docker exec -ti sql-client bash
+  # in the container shell, start sql cli
+  ./sql-client.sh
+  ```
 
 ```sql title="User page view on kafka stream"
 CREATE TABLE user_page_views (

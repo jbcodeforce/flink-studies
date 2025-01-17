@@ -3,7 +3,8 @@
 
 ???- info "Site updates"
     * Created 2018 
-    * Updated 10/2024: reorganize the content, separate SQL versus Java, add Confluent Cloud and Platform contents in technology chapters.
+    * Updates 10/2024: reorganize the content, separate SQL versus Java, add Confluent Cloud and Platform contents in technology chapters.
+    * Updates 01/25: Terraform deployment for kafka and flink. Add more examples for sql.
 
 ???- info "This chapter updates"
     * Created 2018 
