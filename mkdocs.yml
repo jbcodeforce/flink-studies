@@ -9,16 +9,16 @@ nav:
     - Flink Architecture: architecture/index.md
     - Fit for purpose: architecture/fitforpurpose.md
     - Flink SQL concepts: architecture/flink-sql.md
-    - Java Table API: coding/table-api.md
-    - Stateful function: coding/stateful-func.md
-    - Complex Event Processing: coding/cep.md
 
   - Practices:
     - Flink SQL coding: coding/flink-sql.md
     - First Java Apps: coding/firstapp.md
     - Kubernetes Deployment: coding/k8s-deploy.md
-    - Programming examples: coding/programming.md
+    - DataStreams: coding/programming.md
     - Flink Cookbook: architecture/cookbook.md
+    - Java Table API: coding/table-api.md
+    - Stateful function: coding/stateful-func.md
+    - Complex Event Processing: coding/cep.md
     - IaC wt Terraform: coding/terraform.md
     - Flink on k8s Monitoring: techno/fk-k8s-monitor.md
   - Techno:

@@ -18,10 +18,14 @@
 
 package org.myorg.quickstart;
 
+import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.core.fs.Path;
+import org.apache.flink.connector.file.src.FileSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.sink.PrintSink;
 
 /**
- * Skeleton for a Flink DataStream Job.
+ * A basic read text file and output the word occurance
  *
  * <p>For a tutorial how to write a Flink application, check the
  * tutorials and examples on the <a href="https://flink.apache.org">Flink Website</a>.
@@ -32,21 +36,22 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
  * <p>If you change the name of the main class (with the public static void main(String[] args))
  * method, change the respective entry in the POM.xml file (simply search for 'mainClass').
  */
-public class DataStreamJob {
+public class WordCountJob {
 
 	public static void main(String[] args) throws Exception {
 		// Sets up the execution environment, which is the main entry point
 		// to building Flink applications.
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-
+		final ParameterTool parameters = ParameterTool.fromArgs(args);
+		Path inputFile = new Path(parameters.getRequired("inputFile"));
+		defineWorkflow(env, inputFile, workflow -> workflow.sinkTo(new PrintSink<>()));
 		// Execute program, beginning computation.
 		env.execute("Flink Java API Skeleton");
 	}
 
-	private static defineWorkflow(StreamExecutionEnvironment env, Consumer<DataStream<Event>> sinkApplier) {
-
-		/*
-		 * Here, you can start creating your execution plan for Flink.
+	static void defineWorkflow(StreamExecutionEnvironment env, Path inputFile, Consumer<DataStream<Event>> sinkApplier) {
+		env.
+		/* Here, you can start creating your execution plan for Flink.
 		 *
 		 * Start with getting some data from the environment, like
 		 * 	env.fromSequence(1, 10);

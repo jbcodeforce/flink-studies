@@ -57,6 +57,10 @@ public class DataStreamJob {
 	}
 }
 
+private static void defineWorkflow() {
+    
+}
+
 class EcommerceEvent {
     private String eventType;
     private String timestamp;

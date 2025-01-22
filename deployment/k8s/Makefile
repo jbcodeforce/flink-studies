@@ -43,6 +43,7 @@ deploy_cp_flink_operator:
 
 define_flink_cluster:
 	@kubectl apply -f 
+
 deploy_cp_operator:
 	@helm install confluent-operator confluentinc/confluent-for-kubernetes --set namespaceList="{confluent,cfk}" --set namespaced=true -n $(CFNT_NS)
 
@@ -63,7 +64,7 @@ deploy_kafbat_ui:
 	@kubectl apply -f cfk/kafbat-ui-deployment.yaml -n $(CFNT_NS);\
 	export POD_NAME=$(kubectl get pods --namespace confluent -l "app=kafbat-ui" -o jsonpath="{.items[0].metadata.name}"); \
 	echo "$(POD_NAME) and the Kafka cluster to configure is kafka.confluent.svc.cluster.local port 9071";\
-	echo "then do a port-forward on 8080"
+	echo "then do a port-forward on 8080: k port-forward podi 8080"
 
 delete_kafbat_ui:
 	@helm delete -f cfk/kafbat-ui-deployment.yaml -n $(CFNT_NS)

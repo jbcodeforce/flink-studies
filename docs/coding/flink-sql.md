@@ -9,16 +9,17 @@ This chapter offers a compilation of best practices for implementing Flink SQL s
 
 ## Getting started with a SQL client
 
-Confluent Cloud enables users to write Flink SQL statements through the web console or a CLI shell, while Flink Open Source features a `sql-client` shell that communicates with an existing job manager. However, the Flink Kubernetes operator does not support the SQL client for Session Clusters. When using Kubernetes deployment, any SQL script must be packaged with a Java program called SQL Runner and deployed as a Flink Application using a FlinkDeployment descriptor."
+Confluent Cloud enables users to write Flink SQL statements through the web console or a CLI shell, while Flink Open Source features a `sql-client` shell that communicates with an existing job manager. Currently, the Flink Kubernetes operator does not support the SQL client for Session Clusters. When using Kubernetes deployment, any SQL script must be packaged with a Java program called SQL Runner and deployed as a Flink Application using a FlinkDeployment descriptor."
 
 Use one of the following approaches:
 
+* Once Flink project is downloaded locally, and the cluster started, use `sql-client.sh` to connect to the cluster.
 * When using Flink with docker compose: the SQL client in the docker container runs against local Flink cluster (see [deployment/custom-flink-image](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/custom-flink-image) folder to build a custom image using the dockerfile with the `sql-client` service and any specific connector jars).
 * Use Confluent Cloud Flink console to write SQL Statements in a Workspace, and run them directly from there: statements may run on a compute pool and may run forever.
 * Use Confluent cli connected to a compute pool defined in a **Confluent Cloud** environment. (To create a new environment using Terraform see [this note](terraform.md))
 
 ???- tip "Local SQL client"
-    The SQL Client aims to provide an easy way to write, debug, and submit table programs to a Flink cluster without a single line of code in any programming language. To interact with Flink using the SQL client, open a bash in the running container:
+    The SQL Client aims to provide an easy way to write, debug, and submit table programs to a Flink cluster without a single line of code in any programming language. To interact with Flink using the SQL client, open a bash in the running container, or in the flink bin folder:
 
     ```sh
     docker exec -ti sql-client bash
@@ -55,9 +56,10 @@ See [the flink-sql/00-basic-sql folder](https://github.com/jbcodeforce/flink-stu
 
 ## Basic commands
 
-* Show catalogs, tables...
+* Show catalogs, tables... By default there is a default catalog and database withour any table.
 
     ```sql
+    SHOW CATALOGS;
     USE CATALOG `examples`;
     USE `marketplace`;
     SHOW TABLES;

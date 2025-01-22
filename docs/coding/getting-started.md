@@ -14,31 +14,36 @@ The Flink Open Source tar file can be downloaded. The `install-local.sh` script 
 
 * Once done, start Flink using the `start-cluster.sh` script in `flink-1.19.1/bin`. See [Flink OSS product documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/try-flink/local_installation/).
 
-  ```sh
-  ./bin/start-cluster.sh
-  ```
+    ```sh
+    ./flink-1.19.1/bin/start-cluster.sh
+    ```
 
 * Access [Web UI](http://localhost:8081/#/overview) and submit one of the example using the flink client cli: `./bin/flink run examples/streaming/WordCount.jar`.
+* Once flink java datastream or table api programs are packaged as uber-jar, use the `flink` cli to submit the application.
+
+    ```sh
+    ./flink-1.19.1/bin/flink run 
+    ```
 
 * As an option, start the SQL client:
 
-  ```sh
-  ./bin/sql-client.sh
-  ```
+    ```sh
+    ./flink-1.19.1/bin/sql-client.sh
+    ```
 
 * [Optional] Start SQL Gateway to be able to have multiple client apps to submit SQL queries in concurrency.
 
-  ```sh
-  ./bin/sql-gateway.sh start -Dsql-gateway.endpoint.rest.address=localhost
-  # stop it
-  ./bin/sql-gateway.sh stop-all -Dsql-gateway.endpoint.rest.address=localhost
-  ```
+    ```sh
+    ./flink-1.19.1/bin/sql-gateway.sh start -Dsql-gateway.endpoint.rest.address=localhost
+    # stop it
+    ./flink-1.19.1/bin/sql-gateway.sh stop-all -Dsql-gateway.endpoint.rest.address=localhost
+    ```
 
 * Stop the Flink job and the Task manager cluster:
 
-  ```sh
-  ./bin/stop-cluster.sh
-  ```
+    ```sh
+    ./flink-1.19.1/bin/stop-cluster.sh
+    ```
 
 ## With docker images
 
@@ -63,9 +68,9 @@ As an alternative to use Docker Desktop, [Colima](https://github.com/abiosoft/co
 
 * Start a k3s cluster:
 
-  ```sh
-  colima start --kubernetes
-  ```
+    ```sh
+    colima start --kubernetes
+    ```
 
 Deploy the Flink and Confluent Platform operators (see Makefile in [deployment/k8s and its readme](ttps://jbcodeforce.github.io/flink-studies/deployment/k8s)). 
 
@@ -76,9 +81,9 @@ Define a Flink cluster, and a Kafka Cluster if needed.
 * Install [Minikube](https://minikube.sigs.k8s.io/), and review some [best practices](https://jbcodeforce.github.io/techno/minikube/) on how to configure and use it.
 * Start with enough memory and cpu
 
-  ```sh
-  minikube start --cpus='3' --memory='4096'
-  ```
+    ```sh
+    minikube start --cpus='3' --memory='4096'
+    ```
 
 * Only to newly created minikube profile, [install Flink Operator for kubernetes](./k8s-deploy.md#deploy-flink-kubernetes-operator)
 * If we want integration with Kafka and Schema registry select one of the Kafka platform:
@@ -113,16 +118,16 @@ As Task manager will execute the job, it is important that the container running
 
 * If specific integrations are needed, get the needed jar references, update the dockerfile and then build the Custom Flink image, under `deployment/custom-flink-image` folder
 
-  ```sh
-  docker build -t jbcodeforce/myflink .
-  ```
+    ```sh
+    docker build -t jbcodeforce/myflink .
+    ```
 
 * Start Flink session cluster using the following command: 
 
-  ```shell
-  # under this repository and deployment/docker folder
-  docker compose up -d
-  ```
+    ```shell
+    # under this repository and deployment/docker folder
+    docker compose up -d
+    ```
 
 The [Flink OSS docker compose](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/docker/flink-oss-docker-compose.yaml) starts one job manager and one task manager server:
 
@@ -162,7 +167,7 @@ The docker compose mounts the local folder to `/home` in both the job manager an
 
 ### Docker compose with Kafka and Flink
 
-In the `deployment/docker` folder the docker compose starts one node OSS kafka broker, one zookeeper, one OSS Flink job manager and one task manager.
+In the `deployment/docker` folder the docker compose starts one OSS kafka broker, one zookeeper, one OSS Flink job manager and one Flink Task manager.
 
 ```sh
 docker compose -f kafka-docker-compose.yaml up -d
@@ -171,6 +176,7 @@ docker compose -f kafka-docker-compose.yaml up -d
 The SQL client can be used to compute some aggregation on the sale events created by the `E-commerce simulator`. To start the simulator using a Python virtual environment do:
 
 ```sh 
+# under e2e-demos/e-com-sale-simulator
 pip install -r requirements.txt
 python simulator.py
 ```
@@ -191,39 +197,41 @@ The application sends events like the following:
 * Use the [Kafdrop interface to verify the messages in the topic](http://localhost:9000/topic/ecommerce_events)
 * Connect to SQL client container
 
-  ```sh
-  docker exec -ti sql-client bash
-  # in the container shell, start sql cli
-  ./sql-client.sh
-  ```
+    ```sh
+    docker exec -ti sql-client bash
+    # in the container shell, start sql cli
+    ./sql-client.sh
+    ```
 
-```sql title="User page view on kafka stream"
-CREATE TABLE user_page_views (
-    event_type STRING,
-    user_id STRING,
-    action STRING,
-    page STRING,
-    product STRING,
-    timestamp_str STRING,        # (1)
-    timestamp_sec TIMESTAMP(3),  # derived field
-    WATERMARK FOR timestamp_sec AS TO_TIMESTAMP(timestamp_str, 'yyyy-MM-dd HH:mm:ss') - INTERVAL '5' SECOND
-) WITH (
-    'connector' = 'kafka',
-    'topic' = 'ecommerce_events',
-    'properties.bootstrap.servers' = 'kafka:29092',
-    'properties.group.id' = 'sql-flink-grp-1',
-    'properties.auto.offset.reset' = 'earliest',
-    'format' = 'json'  
-);
-```
+* Define the user page view table:
 
-1. The event timestamp is a string created by the Kafka producer
+    ```sql title="User page view on kafka stream"
+    CREATE TABLE user_page_views (
+        event_type STRING,
+        user_id STRING,
+        action STRING,
+        page STRING,
+        product STRING,
+        timestamp_str STRING,        # (1)
+        timestamp_sec TIMESTAMP(3),  # derived field
+        WATERMARK FOR timestamp_sec AS TO_TIMESTAMP(timestamp_str, 'yyyy-MM-dd HH:mm:ss') - INTERVAL '5' SECOND
+    ) WITH (
+        'connector' = 'kafka',
+        'topic' = 'ecommerce_events',
+        'properties.bootstrap.servers' = 'kafka:29092',
+        'properties.group.id' = 'sql-flink-grp-1',
+        'properties.auto.offset.reset' = 'earliest',
+        'format' = 'json'  
+    );
+    ```
+
+    1. The event timestamp is a string created by the Kafka producer
 
 **WATERMARK** statement is used to define a watermark strategy for handling event time in streaming applications. Watermarks are crucial for dealing with out-of-order events, allowing Flink to manage late arrivals and trigger processing based on event time rather than processing time. A watermark is a timestamp that indicates that no events with a timestamp earlier than the watermark will arrive. 
 
 It is important to set the consumer properties like consumer group id, the offset reset strategy...
 
-The next SQL statement is to count the number of page per user
+The following SQL statement is to count the number of page per user
 
 ```sql
 SELECT 
