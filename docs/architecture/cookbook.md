@@ -1,8 +1,12 @@
 # Flink Cookbook
 
-There is a [Github for best practices](https://github.com/confluentinc/flink-cookbook) to run Flink into production as a cookbook. The content of this page is to get a summary with some hands-on exercises for the different Flink deployment environment when it is relevant.
+???- info "Chapter updates"
+    * Created 12/2024 
+    * Updated 1/24/2025
 
-All the examples can be run inside an IDE or in terminal, they are on Flink 1.19.1 and Java 11. Use [sdkman](https://sdkman.io/) to manage different java version. 
+There is a [Confluent cookbook for best practices](https://github.com/confluentinc/flink-cookbook) to run Flink into production. The content of this page is to get a summary of those practices, enhanced from other customers' engagements. It also references hands-on exercises within this repository. 
+
+All the examples can be run inside an IDE or in a terminal console, they are on Flink 1.19.1 and Java 11. Use [sdkman](https://sdkman.io/) to manage different java version. 
 
 ## Understand the Flink UI
 
@@ -13,17 +17,18 @@ All the examples can be run inside an IDE or in terminal, they are on Flink 1.19
 This could be linked to multiple reasons so verify the following:
 
 * Verify there is no exception in the statement itself
-* Query logic being too restrictive or the joins may not match any records. For aggregation, may be the field used get null values.
+* Query logic being too restrictive or the joins may not match any records. 
+* For aggregation, assess if the field used get null values.
 * Source table may be empty, or it consumes the table from a different starting offset (specified via `scan.bounded.mode`) then expected.
 * Use `show create table <table_name>` to assess the starting offset strategy or specific values
-* Count all records in a table using `SELECT COUNT(*) FROM table_name;` , and it should be greater then 0.
-* When the statement uses event-time based operation like windowing, top N, OVER, MATCH_RECOGNIZE and temporal joins then verify the watermarks. The following example is from Confluent Cloud for Flink query using the event time from the record, and it should return result. Check if you have produced a minimum of records per Kafka partition, or if the producer has stopped producing data all together.
+* Count all records in a table using `SELECT COUNT(*) FROM table_name;`, it should be greater then 0.
+* When the statement uses event-time based operation like `windowing, top N, OVER, MATCH_RECOGNIZE` and temporal joins then verify the watermarks. The following example is from Confluent Cloud for Flink query using the event time from the record, and it should return result. Check if you have produced a minimum of records per Kafka partition, or if the producer has stopped producing data all together.
 
 ```sql
-SELECT ROW_NUMBER() OVER (ORDER BY $rowtime ASC) AS `number`, *   FROM <table_name>
+SELECT ROW_NUMBER() OVER (ORDER BY $rowtime ASC) AS number, *   FROM <table_name>
 ```
 
-* When Data are in topic but not seen by flink `select * from ` statement, it may be due to idle partitions and the way watermarks advance and are propagated. Flink automatically marks a Kafka partition as idle if no events come within `sql.tables.scan.idle-timeout` duration. When a partition is marked as idle, it does not contribute to the watermark calculation until a new event arrives. Try to set the idle timeout for table scans to ensure that Flink considers partitions idle after a certain period of inactivity. May be try to create a table with a watermark definition to handle idle partitions and ensure that watermarks advance correctly
+* When Data are in topic but not seen by flink `select * from <table_name>` statement, it may be due to idle partitions and the way watermarks advance and are propagated. Flink automatically marks a Kafka partition as idle if no events come within `sql.tables.scan.idle-timeout` duration. When a partition is marked as idle, it does not contribute to the watermark calculation until a new event arrives. Try to set the idle timeout for table scans to ensure that Flink considers partitions idle after a certain period of inactivity. Try to create a table with a watermark definition to handle idle partitions and ensure that watermarks advance correctly.
 
 
 ### Identify which watermark is calculated
@@ -45,9 +50,9 @@ SELECT
 FROM  <table_name>;
 ```
 
-If not all the partitions are in the result, this may be the partitions having the watermark issue. We need to be sure events are send across all partitions. If we want to test a statement, we can also set the statement to not be an unbounded query, but consume until the latest offset by setting: `SET 'sql.tables.scan.bounded.mode' = 'latest-offset';`
+If not all partitions are included in the result, it may indicate a watermark issue with those partitions. We need to ensure that events are sent across all partitions. To test a statement, we can configure it to avoid being an unbounded query by consuming until the latest offset. This can be done by setting: `SET 'sql.tables.scan.bounded.mode' = 'latest-offset';`
 
-Flink statement consumes data up to the most recent available offset at the submission moment. Upon reaching this time, Flink ensures that a final watermark is propagated, indicating that all results are complete and ready for reporting. The statement then transitions into a 'COMPLETED' state."
+Flink statement consumes data up to the most recent available offset at the job submission moment. Upon reaching this time, Flink ensures that a final watermark is propagated, indicating that all results are complete and ready for reporting. The statement then transitions into a 'COMPLETED' state."
 
 ## Security
 
@@ -61,11 +66,11 @@ FROM (
    SELECT [column_list],
      ROW_NUMBER() OVER ([PARTITION BY column1[, column2...]]
        ORDER BY time_attr [asc|desc]) AS rownum
-   FROM table_name)
-WHERE rownum = 1
+   FROM table_name
+) WHERE rownum = 1
 ```
 
-When using Kafka Topic to persist Flink table, it is possible to use the `upsert` change log, and define the primary key(s) to remove duplicate using a CTAS statement:
+When using Kafka Topic to persist Flink table, it is possible to use the `upsert` change log, and define the primary key(s) to remove duplicate using a CTAS statement like:
 
 ```sql
 CREATE TABLE orders_deduped (
@@ -84,14 +89,11 @@ FROM (
         ORDER
           BY $rowtime ASC
       ) AS row_num
-    FROM
-      orders_raw
-  )
-WHERE
-  row_num = 1;
+    FROM orders_raw
+) WHERE row_num = 1;
 ```
 
-Duplicates may still occur on the Sink side, as it is linked to the type of connector used and its configuration. 
+Duplicates may still occur on the Sink side of the pipeline, as it is linked to the type of connector used and its configuration, for example reading un-committed offset. 
 
 ## Change Data Capture
 
@@ -101,11 +103,76 @@ Duplicates may still occur on the Sink side, as it is linked to the type of conn
 
 ## Query Evolution
 
-The classical pattern is to consume streams from Kafka Topics and then add different stateful processing using Flink SQL, Table API or DataStreams. The question is **when we need to stop such processing how to restart them?**. We have seen the [stateful processing](../index.md/#stateful-processing) leverages checkpoints and savepoints. Developers need to enable checkpointing and manually triggering a savepoint when needed to restart from a specific point in time.
+This section summarizes the Flink statement deployment and life cycle management. Confluent Cloud for Flink
+
+The classical pattern is to consume streams from Kafka Topics and then add different stateful processing using Flink SQL, Table API or DataStreams. The question is **when we need to stop such processing how to restart them?**. 
+
+The Flink SQL statements has limited parts that are mutables. See [product documentation for details](https://docs.confluent.io/cloud/current/flink/concepts/schema-statement-evolution.html). Any SQL code is immutable. The principal and compute pool metadata are mutable when stopping and resuming the statement.
+
+Developers may stop and resume a statment using Console, CLI, API or even Terraform scripts.
+
+Here are example using confluent cli:
+
+```sh
+confluent flink statement stop $1 --cloud $(CLOUD) --region $(REGION) 
+
+confluent flink statement resume $1 --cloud $(CLOUD) --region $(REGION) 
+```
 
 When a SQL statement is started, it reads the source tables from the beginning (or any specified offset). It also uses the latest schema version for key and value.
 
-The common practice, developers replace existing statement and tables with a new statement and new tables using CTAS. Once the statement started, wait for the new statement to get the latest messages of the source tables, then migrate existing consumers to the new table. It is possible to start from a specific offset or a specific timestamp. Reading back from an offset will work for stateless statements only to ensure exactly-once delivery.
+### Schema compatibility
+
+CC Flink works best when consuming topics with FULL_TRANSITIVE compatibility mode. The following table list the schema compatibility types with what can be done:
+
+| Compatibility type | Change allowed | Flink impact |
+| --- | --- | --- |
+| BACKWARD | Delete fields, add optional field | Does not allow to replay from earliest |
+| BACKWARD_TRANSITIVE | Delete fields, add optional fields | Require all Statements reading from impacted topic to be updated prior to the schema change |
+| FORWARD | Add fields, delete optional fields | Does not allow to replay from earliest |
+| FORWARD_TRANSITIVE | Add fields, delete optional fields | Does not allow to replay from earliest |
+| FULL | Add optional fields, delete optional fields | Does not allow to replay from earliest |
+| FULL_TRANSITIVE | Add optional fields, delete optional fields  | Reprocessing and bootstrapping is always possible: Statements do not need to be updated prior to compatible schema changes. Compatibility rules & migration rules can be used for incompatible changes |
+| NONE | All changes accepted | Very risky. Does not allow to replay from earliest |
+
+### Statement evolution
+
+At the high level, stateless statement can be updated by stopping the old statment, create a new one and carry over the offsets from the old statements. Stateful statement need to be bootstrapped from history.
+
+* Separate statement with big state in separate compute pool
+
+#### Restart a statement from a specific offset
+
+#### Change stateful statement
+
+We have seen the [stateful processing](../index.md/#stateful-processing) leverages checkpoints and savepoints. Developers need to enable checkpointing and manually triggering a savepoint when needed to restart from a specific point in time.
+
+The following figure illustrates a stateful statement, stopped at a given point in the input streaming. The blue records were processed so part of any states (for example count os element at this point if time is 200):
+
+![](./diagrams/schema_evolution.drawio.png)
+
+We assume the topic has all the history, we will see how to manage more complex case where historical messages are not all in the topic in next section.
+
+Common practice for developers involves replacing existing statements and tables with new ones using the CTAS (Create Table As Select) approach. 
+After initiating the new statement, wait for it to retrieve the latest messages from the source tables before migrating existing consumers to the new table. 
+
+![](./diagrams/schema_evolution_2.drawio.png)
+
+It is possible to start from a specific offset or timestamp. Note that reading from an offset is applicable only for stateless statements to ensure exactly-once delivery.
+
+Deploy the new statement to compute the stateful operation, and use a template like the following. Then stop the first. 
+
+```sql
+insert into table_2
+select * from table_output_1
+where window_time <= a_time_stamp_when_stopped
+union 
+select * from (tumble table)
+where the $rowtime > a_time_stamp_when_stopped
+order by window_time
+```
+
+
 
 It is possible to do an in-place upgrade if the table use primary key.
 
@@ -117,10 +184,7 @@ Savepoints are manually triggered snapshots of the job state, which can be used 
 
 Full checkpoints and savepoints take a long time, but incremental checkpoints are faster.
 
-### Confluent Cloud for Flink
-
-[See this product documentation](https://docs.confluent.io/cloud/current/flink/concepts/schema-statement-evolution.html) for details about what can be changed in a SQL statement. 
-
+### 
 #### Demonstrate in-place upgrade of stateless statement
 
 #### Demonstrate stateful statement upgrade
