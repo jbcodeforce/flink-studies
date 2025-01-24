@@ -172,8 +172,6 @@ where the $rowtime > a_time_stamp_when_stopped
 order by window_time
 ```
 
-
-
 It is possible to do an in-place upgrade if the table use primary key.
 
 Restarting a job is not a retry mechanism but a fault tolerance one. Normally only cluster level issues should ever cause a job to restart. When doing Java or Python application, developers need to do not throw exceptions within the main function but handle them and perform retries, backoff, and loop forever. as part of the exception management it is important to provide diagnostic data to administrators.
