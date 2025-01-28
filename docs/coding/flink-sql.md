@@ -485,7 +485,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 
 ???- info "OVER aggregations"
-    [OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) compute an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY, but produce one result for every input row. This is helpful when we need to act on each input row, but consider some time interval. To get number of order in the last 10 seconds.
+    [OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) compute an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY, but produce one result for every input row. This is helpful when we need to act on each input row, but consider some time interval. To get the number of order in the last 10 seconds.
 
     ```sql
     SELECT 
@@ -671,6 +671,8 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
         )
     WHERE rownum = 1;
     ```
+
+  
 
     [See this example](https://docs.confluent.io/cloud/current/flink/how-to-guides/deduplicate-rows.html#flink-sql-deduplicate-topic-action).
 
