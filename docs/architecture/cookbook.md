@@ -214,18 +214,25 @@ The general strategy for query evolution is to replace the existing statement an
 
 ![](./diagrams/generic_schema_evolution.drawio.png)
 
-1. create a CTAS statement to replicate data from table v1 to v2
-1. Deploy new statement with v2 name, reading from the earliest records to keep the semantic. It could be offset 0
-1. Once the statement runs, it will be its own state, and continue processing new records. Wait for it to retrieve the latest messages from the source tables before migrating existing consumers to the new table
+**Figure: A generic schema evolution process**
+
+The starting state of the process is to have a pipeline of Flink SQL statements and consumers processing Kafka Records from topics. We assume the blue records are processed end to end, and the upgrade process is started at a given points, so all the green records have to be processed. The stop should start from the Flink statement to change and go right to the sink. 
+
+The migration process includes the followinf steps:
+
+
+1. Create a DDL statement to define the new schema for the table v2
 1. Stop processing first statement
-1. Stop any consumers of the downstream flow, keep their offset
-1. Reconnect consumers to the new table. Which mean for Flink statement as consumer, they need to do their own upgrades.
+1. Stop any consumers of the downstream flow, keep their offsets
+1. Deploy new statement with v2 name, reading from the earliest records to keep the semantic identical for the blue records. It should be earliest offset.
+1. Once the statement runs, it will build its own state, and continue processing new records. Wait for it to retrieve the latest messages from the source tables before migrating existing consumers to the new table v2
+1. Reconnect consumers to the new table. Which means for Flink statement as consumer, they need to do their own upgrades.
 
 At the high level, stateless statement can be updated by stopping the old statment, create a new one and carry over the offsets from the old statements. As seen above, we need to support FULL TRANSITIVE update, to add optional or delete optional column/field. 
 
-For Stateful statements, they need to be bootstrapped from history.
+For Stateful statements, they need to be bootstrapped from history, the process above does this bootstrapping. 
 
-In managed service, the state content may not be easy to reconcile so the process is to do not use the snapshot to restart the statement from.
+Using Open Source Flink, creating a snapshot is one of the potential solution to restart from. But it could not be guaranty if the DML logic changed, as it will not be prossible to rebuild the DAG and state for a deeply change flow. So in managed service, the approach is to do not use the snapshot to restart the statement from.
 
 If the size of the state is too big, separate the new statement in separate compute pool.
 
@@ -243,19 +250,18 @@ For offset, the `status.latest_offsets` includes the lastest offset read for eac
 or
 
 ```sql
-SET `sql.tables.scan.startup.mode`=
+SET `sql.tables.scan.startup.mode`= "earliest"
 ```
+
+---
+
+TO CONTINUE
 
 #### Change stateful statement
 
-We have seen the [stateful processing](../index.md/#stateful-processing) leverages checkpoints and savepoints. Developers need to enable checkpointing and manually triggering a savepoint when needed to restart from a specific point in time.
+We have seen the [stateful processing](../index.md/#stateful-processing) leverages checkpoints and savepoints. With the open source Flink, developers need to enable checkpointing and manually triggering a savepoint when they need to restart from a specific point in time.
 
-The following figure illustrates a stateful statement, stopped at a given point in the input streaming.
-
-We assume the topic has all the history (we will see how to manage more complex case where historical messages are not all in the topic in next section).
-
-
-Deploy the new statement to compute the stateful operation, and use a template like the following. Then stop the first. 
+Deploy the new statement to compute the stateful operation, and use a template like the following. Then stop the first statement.
 
 ```sql
 create table table_v2

@@ -1,5 +1,13 @@
 # Joins playground
 
+## Understanding Basic Joins
+
+[Based on the How to join a stream and a stream](https://developer.confluent.io/tutorials/join-a-stream-to-a-stream/flinksql.html) but adapted to Confluent Cloud.
+
+1. Create orders and shipments tables in CC, use cc_s2s_ddl_orders.sql and shipments.sql
+1. Use insert to orders and shipments scripts in CC: use *insert_orders.sql and shipments.sql.
+1. Implements an inner join between the orders and shipments. This kind of join only emits events when there’s a match on the criteria of both sides of the join. It also uses the INTERVAL function to perform an interval join, which also needs a sql timestamp to specify an addition join requirement that order and shipment occured within seven days of eachother: `cc_s2s_join-1.sql`. To make it persistent, meaning results in an output topic, use: `cc_s2s_ctas_join-1.sql`
+
 
 ## Confluent Flink examples
 

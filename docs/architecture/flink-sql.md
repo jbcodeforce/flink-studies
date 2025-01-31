@@ -85,16 +85,16 @@ In streaming, the "ORDER BY" statement applies only to timestamps in ascending o
 In a pure Kafka integration architecture, such as Confluent Cloud, the data lifecycle follows these steps:
 
 * Data is read from a Kafka topic to a Flink SQL table.
-* Data is processed using SQL statements.
+* Data is processed using Flink SQL statements.
 * Results are returned as result sets in interactive mode, or to a table (mapped to a topic) in continuous streaming mode.
 
 ### Some SQL operators
 
 | Type | Operators | Comments|
 | --- | --- | --- |
-| **Stateless** | SELECT <projection | transformation> WHERE <filter> | Can be distributed |
+| **Stateless** | SELECT {projection, transformation} WHERE {filter}; UNION ... | Can be distributed |
 | **Materialized** | GROUP BY <aggregationss> or JOINS | Dangerously Stateful, keep an internal copy of the data related to the query |
-| **Temporal** | time windowed operations, interval **joins**, time-versioned joins, MATCH_RECOGNIZE <pattern> | Stateful but contrained in size |
+| **Temporal** | Time windowed operations, interval **joins**, time-versioned joins, MATCH_RECOGNIZE <pattern> | Stateful but contrained in size |
 
 As elements are stored for computing materialized projections, it's crucial to assess the number of elements to retain. Millions to billions of small items are possible. However, if a query runs indefinitely, it may eventually overflow the data store. In such cases, the Flink task will ultimately fail.
 
