@@ -1,10 +1,10 @@
 # Those settings may need to be changed
-ENV_NAME=prod
+ENV_NAME=j9r-env
 CLOUD=aws
-REGION=us-east-1
+REGION=us-west-2
 MY_CONTEXT= login-jboyer@confluent.io-https://confluent.cloud 
 #DB_NAME=lkc-663njj
-DB_NAME=marketplace
+DB_NAME=j9r-kafka
 
 	
 
@@ -23,20 +23,24 @@ delete_schema = \
 	fi
 
 create_flink_statement = \
-	ENV_ID=$$(confluent environment list | grep ${ENV_NAME} | awk -F '|' '{sub(/^[ \t]+/,"",$$2);sub(/[ \t]+$$/,"",$$2); print $$2}'); \
+	ENV_ID=$$(confluent environment list | grep ${ENV_NAME} | awk -F '[|\t]' '{ print $$2}' | tr -d ' '); \
 	sql_statement=$$(cat $2);\
 	CPOOL_ID=$$(confluent flink compute-pool list | awk -F '|' '{sub(/^[ \t]+/,"",$$2);sub(/[ \t]+$$/,"",$$2); print $$2}' | tail -1);\
-	echo $$CPOOL_ID;\
 	confluent flink statement create $1 --sql "$$sql_statement" --database $(DB_NAME) --compute-pool $$CPOOL_ID  --environment $$ENV_ID --context $(MY_CONTEXT) --wait 
 
-pause_flink_statement = \
+show_create_table = \
+	ENV_ID=$$(confluent environment list | grep ${ENV_NAME} | awk -F '[|\t]' '{ print $$2}' | tr -d ' '); \
+	sql_statement="show create table $2";\
 	CPOOL_ID=$$(confluent flink compute-pool list | awk -F '|' '{sub(/^[ \t]+/,"",$$2);sub(/[ \t]+$$/,"",$$2); print $$2}' | tail -1);\
-	echo $$CPOOL_ID;\
+	confluent flink statement create $1 --sql "$$sql_statement" --database $(DB_NAME) --compute-pool $$CPOOL_ID  --environment $$ENV_ID --context $(MY_CONTEXT) --wait 
+
+describe_flink_statement = \
+	confluent flink statement describe $1 --cloud $(CLOUD) --region $(REGION) 
+
+pause_flink_statement = \
 	confluent flink statement stop $1 --cloud $(CLOUD) --region $(REGION) 
 
 resume_flink_statement = \
-	CPOOL_ID=$$(confluent flink compute-pool list | awk -F '|' '{sub(/^[ \t]+/,"",$$2);sub(/[ \t]+$$/,"",$$2); print $$2}' | tail -1);\
-	echo $$CPOOL_ID;\
 	confluent flink statement resume $1 --cloud $(CLOUD) --region $(REGION) 
 
 delete_flink_statement = \
@@ -55,7 +59,8 @@ list_topics:
 	
 # -- some useful targets
 flink_list_statements:
-	export CPOOL_ID=$$(confluent flink compute-pool list | awk -F '|' '{sub(/^[ \t]+/,"",$$2);sub(/[ \t]+$$/,"",$$2); print $$2}' | tail -1); \
+	ENV_ID=$$(confluent environment list | grep ${ENV_NAME} | awk -F '|' '{sub(/^[ \t]+/,"",$$2);sub(/[ \t]+$$/,"",$$2); print $$2}'); \
+	export CPOOL_ID=$$(confluent flink compute-pool list --environment $$ENV_ID | awk -F '|' '{sub(/^[ \t]+/,"",$$2);sub(/[ \t]+$$/,"",$$2); print $$2}' | tail -1); \
 	confluent flink statement list --context $(MY_CONTEXT) --output human --cloud $(CLOUD) --region $(REGION)   --compute-pool $$CPOOL_ID
 
 start_flink_shell:
@@ -66,6 +71,8 @@ start_flink_shell:
 init: 
 	@echo "Set env variables from $(ENV_NAME)"; \
 	export ENV_ID=$$(confluent environment list | grep ${ENV_NAME} | awk -F '|' '{sub(/^[ \t]+/,"",$$2);sub(/[ \t]+$$/,"",$$2); print $$2}'); \
+	confluent environment use $$ENV_ID; \
 	export CLUSTER_ID=$$(confluent kafka cluster list --environment $$ENV_ID | awk -F '|' '{sub(/^[ \t]+/,"",$$2);sub(/[ \t]+$$/,"",$$2); print $$2}' | tail -1); \
+	confluent kafka cluster use $$CLUSTER_ID; \
 	export CPOOL_ID=$$(confluent flink compute-pool list | awk -F '|' '{sub(/^[ \t]+/,"",$$2);sub(/[ \t]+$$/,"",$$2); print $$2}' | tail -1); \
 	echo $$ENV_ID $$CLUSTER_ID $$CPOOL_ID

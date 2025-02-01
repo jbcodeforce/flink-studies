@@ -4,16 +4,64 @@
 
 [Based on the How to join a stream and a stream](https://developer.confluent.io/tutorials/join-a-stream-to-a-stream/flinksql.html) but adapted to Confluent Cloud.
 
-1. Create orders and shipments tables in CC, use cc_s2s_ddl_orders.sql and shipments.sql
-1. Use insert to orders and shipments scripts in CC: use *insert_orders.sql and shipments.sql.
-1. Implements an inner join between the orders and shipments. This kind of join only emits events when there’s a match on the criteria of both sides of the join. It also uses the INTERVAL function to perform an interval join, which also needs a sql timestamp to specify an addition join requirement that order and shipment occured within seven days of eachother: `cc_s2s_join-1.sql`. To make it persistent, meaning results in an output topic, use: `cc_s2s_ctas_join-1.sql`
+1. Create orders and shipments tables in CC, use cc_s2s_ddl_orders.sql and cc_s2__ddl_shipments.sql
+
+    ```sh
+    make create_orders
+    make create_products
+    make create_shipments
+    ```
+
+    The schemas are defined for the key and the value.
+
+1. Add 3 products for 1 to 3 and all the orders ().
+1. To do a first simple left join between orders and products: `make cc_s2s_order_product_join.sql` so all orders will have a product name added from the join. Let it runs.
+
+The results looks like the following table, where the product_id 4 not being on the right side the generation is NULL
+
+| id | product_id | product_name |
+| --- | --- | --- |
+| 1   | 1  |  Product-1 |
+| 5   | 1  |  Product-1 |
+| 6   | 1  |  Product-1 |
+| 7   | 1  |  Product-1 |
+| 2   | 2  |  Product-2 |
+| 3   | 3  |  Product-3 |
+| 4   | 3  |  Product-3 |
+| 8   | 2  |  Product-2 |
+| 9   | 4  | NULL |
+| 10 | 3  |  Product-3 |
+
+1. Add the 4th product with  `INSERT INTO products VALUES    ( 4,   'Product-4',    1692812175 );` Now the row 9 is modified with the `product-4`. As this table was not materialized. we can retry by doing a CTAS of the join (see `cc_s2s_ctas_join_1.sql`), the created topic has 1 partition and get the good results. It is an upsert table, which is mandatory as soon as there is left outer join in the statement. Flink must handle the scenario where left-side events do not have corresponding right-side events at the time of processing. The Upsert table allows Flink to store unmatched left records and update them when matching right records arrive later, ensuring all left records are included in the result, thus supporting the LEFT JOIN semantics effectively in a streaming context.
+1. Next is to add an order without matching product: `INSERT INTO orders VALUES ( 11, 200.89, 'Art Vandelay', 1692812175, 5);`. The created event in the order_enriched topic is `1738379770426, {"id":11} {"id":11,"product_id":{"long":"5"},"product_name":null}`. Adding the missing product: `insert into products values ( 5,  'Product-5',    1692812190)` it will generate TWO records in the kafka topic: one delete and one new:
+
+  ```sh
+  Key       Value
+  {"id":11} ""
+  {"id":11} {"id":11,"product_id":{"long":"5"},"product_name": { "string": "Product-5"}}
+  ```
+
+  The left join emits the record without product name, while the join once the product arrived, generates 2 messages to support an upsert. 
+
+1. Use insert shipments scripts in CC.
+1. Implements an inner join between the orders and shipments. This kind of join only emits events when there’s a match on the criteria of both sides of the join. It also uses the INTERVAL function to perform an interval join, which also needs a sql timestamp to specify an addition join requirement that order and shipment occured within seven days of each other: See `cc_s2s_join-2.sql`. To make it persistent, meaning results will be in an output topic, use: `cc_s2s_ctas_join-2.sql` which creates 1 partition topic. 
+
+  ```sql
+  select ...
+  ROM orders o inner join shipments s ON o.id = s.order_id
+    AND TO_TIMESTAMP(FROM_UNIXTIME(s.ship_ts_raw))
+     BETWEEN TO_TIMESTAMP(FROM_UNIXTIME(o.order_ts_raw))
+     AND TO_TIMESTAMP(FROM_UNIXTIME(o.order_ts_raw))  + INTERVAL '7' HOURS;
+  ```
+
+The results will include only 8 records as record 9 and 10 has more than 7 hours difference. 
 
 
-## Confluent Flink examples
+## Confluent Flink more advance problems
 
 ### 1- Compute the number of orders per customer per minute (non-overlapping window)
 
-The marketplace.orders source table is:
+The `marketplace.orders` source table is:
 
 ```sql
 TABLE `prod`.`marketplace`.`orders` (

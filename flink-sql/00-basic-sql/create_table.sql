@@ -1,4 +1,4 @@
-CREATE TABLE employes (
+CREATE TABLE IF NOT EXISTS employes (
     id INT,
     name VARCHAR, 
     dept_id INT
