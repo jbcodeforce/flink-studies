@@ -99,7 +99,7 @@ With the open source version, we have access to a lot of different connectors, f
 
 ## Submit job to Flink
 
-* Start a job manager and task manager with the docker compose under `deployment/docker` folder or `flink-1.19.1/bin/start_cluster.sh` for [local installation](getting-started.md#install-locally).
+* Start a job manager and task manager with the docker compose under `deployment/docker` folder or `flink-1.19.1/bin/start_cluster.sh` for [local installation](getting-started.md#install-flink-locally).
 * To submit a job to a Session cluster, use the following command which uses the `flink` cli. This can be done usin the flink cli on the local install or inside the running `JobManager` container when using docker or k8s:
 
 ```shell

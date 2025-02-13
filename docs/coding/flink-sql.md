@@ -97,7 +97,7 @@ There are [three different modes](https://docs.confluent.io/cloud/current/flink/
 * **upsert** means that all rows with same primary key are related and must be partitioned together. Events are upsert or delete for a primary key. Upsert needs a primary key.
 * **retract** means a fact can be undone, and the combination of +X and -X are related and must be partitioned together. Records are related by all the columns so the entire row is the key.
 
-The `change.log` property is set up using the `WITH ('changelog.mode' = 'upsert')` options when creating the table.
+The `change.log` property is set up by using the `WITH ('changelog.mode' = 'upsert')` options when creating the table.
 
 Changelog in Flink SQL is used to record the data changes in order to achieve incremental data processing. Some operations in Flink such as group by, aggregation and deduplication can produce update events.
 
@@ -108,22 +108,22 @@ Looking at the physical plan with `EXPLAIN create...` demonstrates the changelog
 ### Table creation
 
 ???- tip "Primary key considerations"
-    * Primary key can have one or more columns, all of them are not null
+    * Primary key can have one or more columns, all of them should be not null
     * In Flink the keys can only be `NOT ENFORCED`
     * The PRIMARY KEY declaration partitions the table implicitly by the key column(s)
-    * The primary key is becoming the kafka key implicitly and in Confluent will generate a key schema, except if using the option (`'key.format' = 'raw'`)
+    * The primary key is becoming the kafka key implicitly and in Confluent Cloud, it will generate a key schema, except if using the option (`'key.format' = 'raw'`)
 
     ```sql
-    -- simplest one
+    -- simplest table
     CREATE TABLE human (race STRING, origin STRING);
     -- with primary key 
     CREATE TABLE manufactures (m_id INT PRIMARY KEY NOT ENFORCED, site_name STRING);
-    -- with hash distribution
-    CREATE TABLE humans (race INT, s STRING) DISTRIBUTED BY (race) INTO 4 BUCKETS;
+    -- with hash distribution to 4 partitions
+    CREATE TABLE humans (race INT, s STRING) DISTRIBUTED BY HASH (race) INTO 4 BUCKETS;
     ```
 
 ???- tip "Create a table with csv file as persistence - Flink OSS"
-    We need to use file system connector.
+    We need to use the file system connector.
 
     ```sql
     create table user (
@@ -239,8 +239,8 @@ Looking at the physical plan with `EXPLAIN create...` demonstrates the changelog
     as select id, first_name, last_name, email from shoe_customers;
     ```
 
-???- example "Combine deduplication with table creation as select"
-    Attention thr '`' is important.
+???- example "Combine deduplication with create table as select"
+    Attention the '`' is important. Ordering with DESC means takes the earliest record
     
     ```sql
     CREATE TABLE tenant_dedup (
@@ -259,7 +259,7 @@ Looking at the physical plan with `EXPLAIN create...` demonstrates the changelog
             ROW_NUMBER() OVER (
                 PARTITION BY `tenantId`
                 ORDER
-                BY $rowtime ASC
+                BY $rowtime DESC
             ) AS row_num
             FROM tenants
         ) WHERE row_num = 1;

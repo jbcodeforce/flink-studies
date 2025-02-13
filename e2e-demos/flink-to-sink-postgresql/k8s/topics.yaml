@@ -1,0 +1,11 @@
+apiVersion: apps.cpc.platform.confluent.io/v1beta1
+kind: KafkaTopic
+spec:
+  name:   
+  kafkaClusterRef:     --- [2]
+    - name:            --- [3]
+      namespace:       --- [4]
+  parameters:
+    configs:           --- [5]
+    partitions:        --- [6]
+    replicationFactor: --- [7]

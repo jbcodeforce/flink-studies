@@ -1,10 +1,10 @@
 # Local Flink with Local or Remote Kafka and some Flink SQL examples 
 
-## Local Kafka Cluster
+## Local Kafka Cluster - docker compose
 
 Start the Confluent Platform using the docker compose in [deployment/docker](../../deployment/docker) folder using `cp-docker-compose.yaml`.
 
-The data will be generate with open Source Flink "Faker" connector. 
+The data will be generated with open Source Flink "Faker" connector. 
 
 ### [optional] Use Kafka Connect Datagen connector
 
@@ -13,7 +13,7 @@ Use the Docker image based on Kafka Connect with the [kafka-connect-datagen](htt
 
 * Use on Datagen Kafka connector configuration and post to the /connectors API:
 
-```
+```sh
 curl -X POST -H "Content-Type: application/json" --data @datagen-config/shoe-products.json http://localhost:8083/connectors
 ```
 
@@ -82,7 +82,7 @@ confluent kafka cluster describe <cluster-id>
 ```
 
 * Use the same local docker compose with just task manager, job manager and SQL client containers
-* Create a table to connect to Kafka change the attributes with API_KEY, API_SECRETS and BOOTSTRAP_SERVER
+* Create a table to connect to Kafka. Change the attributes with API_KEY, API_SECRETS and BOOTSTRAP_SERVER for the remote cluster
 
 ```sql
 CREATE TABLE pageviews_kafka (

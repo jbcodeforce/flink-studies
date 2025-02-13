@@ -2,7 +2,7 @@ terraform {
   required_providers {
     confluent = {
       source  = "confluentinc/confluent"
-      version = "2.12.0"
+      version = "2.16.0"
     }
   }
 }
@@ -16,7 +16,6 @@ data "confluent_flink_region" "flink_region" {
   region = var.cloud_region
   
 }
-
 
 data "confluent_organization" "my_org" {}
 

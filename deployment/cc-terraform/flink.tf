@@ -1,5 +1,5 @@
 resource "confluent_flink_compute_pool" "default" {
-  display_name     = "${var.lab_name}-default"
+  display_name     = "${var.lab_name}-pool"
   cloud            =  upper(data.confluent_flink_region.flink_region.cloud)
   region           =  data.confluent_flink_region.flink_region.region
   max_cfu          = 50

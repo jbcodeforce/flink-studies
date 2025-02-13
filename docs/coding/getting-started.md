@@ -8,7 +8,7 @@ This chapter reviews the different environments for deploying Flink, Flink jobs 
 
 The section includes Open Source product, or Confluent Platform for Flink or Confluent Cloud for Flink.
 
-## Install locally
+## Install Flink locally
 
 The Flink Open Source tar file can be downloaded. The `install-local.sh` script in 'deployment/product-tar` folder does this download and untar operations.
 
@@ -72,7 +72,7 @@ As an alternative to use Docker Desktop, [Colima](https://github.com/abiosoft/co
     colima start --kubernetes
     ```
 
-Deploy the Flink and Confluent Platform operators (see Makefile in [deployment/k8s and its readme](ttps://jbcodeforce.github.io/flink-studies/deployment/k8s)). 
+If not done, deploy the Flink and Confluent Platform operators (see Makefile in [deployment/k8s and its readme](ttps://jbcodeforce.github.io/flink-studies/deployment/k8s)). 
 
 Define a Flink cluster, and a Kafka Cluster if needed.
 

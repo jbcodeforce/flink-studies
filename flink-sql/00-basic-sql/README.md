@@ -2,17 +2,17 @@
 
 #### Version
     Created from Flink Study 2021 
-    Updated 1/2025 from Confluent Flink studies
+    Updated 1/2025 from Confluent Flink studies - 
 
-Start one Flink **Job manager** and one **Task manager** container, using the docker compose in deployment-local folder of this project. The docker engine mounts this project folder in `/home`, so content of the data will be in `/home/flink-sql/data` 
+This folder includes some basic SQL to be used with local Flink OSS or Confluent Platform for Flink running locally. There are multiple ways to run flink locally:
 
-As an alternate, it is easy to install Flink locally and start the cluster and SQL client. [See this note](https://jbcodeforce.github.io/flink-studies/coding/getting-started/#install-locally).
+1. install Apache Flink binary locally and start the cluster and SQL client. [See this note](https://jbcodeforce.github.io/flink-studies/coding/getting-started/#install-locally)
+1. Use docker images and docker-compose. See the docker compose in deployment-local folder of this project. The docker engine mounts this project folder in `/home`, so content of the data will be in `/home/flink-sql/data`. As it may not be possible to have Docker Desktop on your machine, consider minikube
+1. K8S minikube
 
-## Pre-requisites
+For each installation, start one Flink **Job manager** and one **Task manager** container. 
 
-* Build custom flink image using dockerfile under `deployment/custom-flink-image`
-* Start docker compose under `deployment/docker`.
-* Access Flink dashboard at [localhost:8081](http://localhost:8081/). See [this tutorial for UI introduction](https://developer.confluent.io/courses/apache-flink/web-ui-exercise/).
+[For setup see this note](https://jbcodeforce.github.io/flink-studies/coding/getting-started/)
 
 ## First demo 
 
