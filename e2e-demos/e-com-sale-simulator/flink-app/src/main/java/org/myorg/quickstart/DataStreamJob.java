@@ -39,7 +39,7 @@ public class DataStreamJob {
         properties.setProperty("group.id", "flink-ecommerce-group");
 
         DataStream<EcommerceEvent> dataStream = env
-            .addSource(new FlinkKafkaConsumer<>("ecommerce_events", new JSONDeserializationSchema<>(EcommerceEvent.class), properties))
+            .addSource(new FlinkKafkaConsumer<>("ecommerce-events", new JSONDeserializationSchema<>(EcommerceEvent.class), properties))
             .map(new MapFunction<EcommerceEvent, EcommerceEvent>() {
                 @Override
                 public EcommerceEvent map(EcommerceEvent event) throws Exception {

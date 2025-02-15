@@ -6,7 +6,7 @@ metadata:
 spec:
   dataVolumeCapacity: 3G
   image:
-    application: docker.io/confluentinc/cp-server:7.8.0
+    application: docker.io/confluentinc/cp-server:7.8.1
     init: confluentinc/confluent-init-container:2.9.4
   replicas: 1
 ---
@@ -18,7 +18,7 @@ metadata:
 spec:
   dataVolumeCapacity: 3G
   image:
-    application: docker.io/confluentinc/cp-server:7.8.0
+    application: docker.io/confluentinc/cp-server:7.8.1
     init: confluentinc/confluent-init-container:2.9.4
   replicas: 1  # need 3 for control center to start
   dependencies:
@@ -46,6 +46,6 @@ metadata:
 spec:
   replicas: 1
   image:
-    application: confluentinc/cp-schema-registry:7.8.0
+    application: confluentinc/cp-schema-registry:7.8.1
     init: confluentinc/confluent-init-container:2.9.4
 

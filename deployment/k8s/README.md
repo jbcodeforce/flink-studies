@@ -56,13 +56,17 @@ kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.
 helm repo add kafbat-ui https://kafbat.github.io/helm-charts
 ```
 
-## Setup the environment with minikube
+### Setup the environment with minikube
 
 1. Start minikube
 
     ```sh
     minikube start --cpus 4 --memory 8g --driver docker
     ```
+
+1. Start `minikube dashboard`
+
+## Deploy Flink
 
 1. Create `flink` and `confluent` namespaces: `make create_ns`
 
@@ -72,6 +76,45 @@ helm repo add kafbat-ui https://kafbat.github.io/helm-charts
     make deploy_cp_flink_operator
     ```
 
+1. Deploy Confluent Manager for Apache Flink
+
+    ```sh
+    make deploy_cmf
+    ```
+
+1. Define a Flink environment:
+
+    ```sh
+    # in one terminal
+    kubectl port-forward svc/cmf-service 8084:80 -n flink
+    # in a second terminal
+    make create_flink_env
+    ```
+
+1. To change the kubectl context to use Flink namespace the command is:
+
+    ```sh
+    kubectl config set-context --current --namespace=flink
+    ```
+
+1. Validate installation with simple application job
+
+    Deploy a stateless app and validate it runs with the Flink Dashboard
+
+    ```sh
+    make deploy_flink_demo_app
+
+    confluent flink application web-ui-forward flink-basic-example --environment env1 --port 8090 --url http://localhost:8084
+    ```
+
+1. Undeploy this application
+
+    ```sh
+    confluent flink application delete flink-basic-example --environment env1  --url http://localhost:8084
+    ```
+
+## Deploy Confluent Platform 
+
 1. Deploy Confluent Platform operator to get Kafka brokers deployed
 
     ```sh
@@ -79,8 +122,6 @@ helm repo add kafbat-ui https://kafbat.github.io/helm-charts
     ```
 
 1. Or use one command to do all the previous steps: `make install_operators`
-
-1. Start `minikube dashboard`
 
 1. Verify the k8s deployment for the operator
 
@@ -110,19 +151,10 @@ helm repo add kafbat-ui https://kafbat.github.io/helm-charts
 
 * To connect a local producer running on the host machine we need to add in /etc/hosts the alias to localhost as ` kafka-0.kafka.confluent.svc.cluster.local` as even if we do a port-forward from the kafka broker pod to 9092 then returned url is the dns name.
 
-* To change the kubectl context  to use Flink namespace the command is:
+* To change the kubectl context  to use Confluent namespace the command is:
 
 ```sh
-kubectl config set-context --current --namespace=flink
-```
-
-## Validate installation with simple application job
-
-Deploy a stateless app and validate it runs with the Flink Dashboard
-
-```sh
-kubectl apply  -f flink/StateMachineExample.yaml
-kubectl port-forward service/basic-example-rest 8081:8081
+kubectl config set-context --current --namespace=confluent
 ```
 
 ## Monitoring with Prometheus and Grafana
@@ -144,10 +176,26 @@ helm upgrade --install my-prometheus prometheus-community/prometheus \
  --namespace default
 ```
 
+```
+The Prometheus PushGateway can be accessed via port 9091 on the following DNS name from within your cluster:
+my-prometheus-prometheus-pushgateway.default.svc.cluster.local
+
+
+Get the PushGateway URL by running these commands in the same shell:
+  export POD_NAME=$(kubectl get pods --namespace default -l "app=prometheus-pushgateway,component=pushgateway" -o jsonpath="{.items[0].metadata.name}")
+  kubectl --namespace default port-forward $POD_NAME 9091
+```
+
 * Install Grafana
 
-```sql
+```sh
 helm upgrade --install grafana grafana/grafana --namespace default
+```
+
+* Get admin user password with:
+
+```sh
+kubectl get secret --namespace default grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
 ```
 
 * Access to Grafana console

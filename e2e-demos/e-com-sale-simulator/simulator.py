@@ -9,8 +9,8 @@ KAFKA_BROKERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS','localhost:9092')
 KAFKA_CERT = os.getenv('KAFKA_CERT','')
 KAFKA_USER =  os.getenv('KAFKA_USER','')
 KAFKA_PASSWORD =  os.getenv('KAFKA_PASSWORD','')
-KAFKA_SASL_MECHANISM=  os.getenv('KAFKA_SASL_MECHANISM','SCRAM-SHA-512')
-TOPIC_NAME=os.getenv("KAFKA_MAIN_TOPIC","ecommerce_events")
+KAFKA_SASL_MECHANISM=  os.getenv('KAFKA_SASL_MECHANISM','PLAINTEXT')
+TOPIC_NAME=os.getenv("KAFKA_MAIN_TOPIC","ecommerce-events")
 
 
 # Sample data

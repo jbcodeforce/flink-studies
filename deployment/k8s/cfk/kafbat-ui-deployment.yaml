@@ -52,7 +52,7 @@ metadata:
   name: kafbat-ui
 spec:
   ports:
-  - port: 8080
+  - port: 8082
     protocol: TCP
     targetPort: 8080
   selector:
