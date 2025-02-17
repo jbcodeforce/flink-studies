@@ -30,17 +30,25 @@ under the License.
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<flink.version>1.20.0</flink.version>
-		 <confluent-plugin.version>1.20-42</confluent-plugin.version>
+		<confluent-plugin.version>1.20-42</confluent-plugin.version>
+		<confluent-cmf.version>1.19.1-cp1</confluent-cmf.version>
 		<target.java.version>11</target.java.version>
 		<maven.compiler.source>${target.java.version}</maven.compiler.source>
 		<maven.compiler.target>${target.java.version}</maven.compiler.target>
 		<log4j.version>2.17.1</log4j.version>
+		<spotless.version>2.43.0</spotless.version>
 	</properties>
 
 	<repositories>
 	    <repository>
             <id>confluent</id>
             <url>https://packages.confluent.io/maven/</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
         </repository>
 		<repository>
 			<id>apache.snapshots</id>
@@ -60,10 +68,27 @@ under the License.
 		<!-- These dependencies are provided, because they should not be packaged into the JAR file. -->
 		<dependency>
 			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-table-api-java</artifactId>
+			<version>${flink.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.confluent.flink</groupId>
+			<artifactId>confluent-flink-table-api-java-plugin</artifactId>
+			<version>${confluent-plugin.version}</version>
+		</dependency>
+		 <dependency>
+			<groupId>io.confluent.flink</groupId>
+			<artifactId>flink-streaming-java</artifactId>
+			<version>${confluent-cmf.version}</version>
+		</dependency>
+		<!--
+		<dependency>
+			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-streaming-java</artifactId>
 			<version>${flink.version}</version>
 			<scope>provided</scope>
 		</dependency>
+		 -->
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-clients</artifactId>
@@ -73,7 +98,7 @@ under the License.
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-connector-kafka</artifactId>
-			<version>3.0.0-1.17</version>
+			<version>3.4.0-1.20</version>
 		</dependency>
 
 		<!-- Add connector dependencies here. They must be in the default scope (compile). -->
@@ -153,7 +178,7 @@ under the License.
 							<transformers>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<mainClass>org.myorg.quickstart.DataStreamJob</mainClass>
+									<mainClass>org.myorg.quickstart.EcommerceAnalyticsJob</mainClass>
 								</transformer>
 							</transformers>
 						</configuration>

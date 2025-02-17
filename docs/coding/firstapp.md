@@ -85,9 +85,9 @@ Once developers build the application jar file, they use Flink CLI to send the j
 1. Define event structure as POJO, as a separate Java Bean in the `event` folder.
 1. Implement the process logic and the event mapping, filtering logic... We will see more examples later.
 1. Package with `mvn package`
-1. Access to a Flink compute pool, locally using locak installation, or docker, or Kubernetes or using Confluent Cloud for Flink. Use the flink cli to submit the job. 
+1. Access to a Flink compute pool, locally using local installation, docker, Kubernetes or Confluent Cloud for Flink. Use the flink cli to submit the job for a local cluster, use FlinkDeployment(KFF) or FlinkApplication (CMF) 
 
-With the open source version, we have access to a lot of different connectors, for example to load data from csv file. This is convenient to do local testing. With Confluent Cloud only Kafka can be used as source and sink.
+With the open source version, we have access to a lot of different connectors, for example to load data from csv file. This is convenient to do local testing. With Confluent Cloud only Kafka topics can be used as source and sink.
 
 ## Create a Quarkus java app
 

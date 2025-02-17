@@ -28,62 +28,11 @@ The custom resource definition that describes the schema of a FlinkDeployment is
 
 [Flink Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/) acts as a control plane to manage the complete deployment lifecycle of Apache Flink applications.
 
-For hands-on instructions and Makefile to deploy Flink, Confluent Kafka on Minikube see [this readme](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/README.md). Some of the basic steps are:
-
-```sh
-kubectl create namespace flink
-# Set the cert manager if not done before
-# Open source
-helm install flink-kubernetes-operator flink-operator-repo/flink-kubernetes-operator
-# Confluent packaging
-helm install cp-flink-kubernetes-operator confluentinc/flink-kubernetes-operator  --set webhook.create=false
-
-# output
-NAME: flink-kubernetes-operator
-LAST DEPLOYED: Thu Jul 28 19:00:31 2022
-STATUS: deployed
-REVISION: 1
-TEST SUITE: None
-```
-
-* Then verify deployment
-
-```sh
-helm list -ns flink
-NAME                      NAMESPACE   REVISION  UPDATED                            STATUS  CHART APP VERSION
-flink-kubernetes-operator flink-demo  1    	2022-07-28 19:00:31.459524 -0700 PDT	deployed flink-kubernetes-operator-1.0.1	1.0.1
-# OR if Confluent is used
-cp-flink-kubernetes-operator    flink           1               2024-12-02 14:47:30.994521496 -0800 PST deployed       flink-kubernetes-operator-1.80.1 1.8.0-cp1
-```
-
-* Verify the k8s deployment for the operator
-
-```sh
-k describe deployment flink-kubernetes-operator
-```
-
-???- info "resources"
-    The operator uses a config map to define its  own configuration mounted to `/opt/flink/conf` and a volume to `/opt/flink/artifacts`, and a secrets to hold the certificates for the flink webhook.
-
-* In case of ImageBackOff issue, for example using minikube, it may come from the image name and the adoption of a private registry. (Using a minikube image load <> takes the image from docker and upload to private minikube registry)
-
-* If the pod is not running verify in the deployment the condition, we may need to add security policy, like in this OpenShift example:
-
-```sh
-oc adm policy add-scc-to-user privileged -z default
-```
-
-and remove runAs elements in the deployment.yaml.
-
-* To remove the operator
-
-```sh
-helm uninstall flink-kubernetes-operator
-```
+For hands-on instructions and Makefile to deploy Flink, Confluent Kafka on k8s (local colima or minikube) see [this readme](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/README.md).
 
 ## Custom Resources
 
-Once the operator is running, we can submit jobs using  `FlinkDeployment` (for Flink Application) and `FlinkSessionJob` Custom Resources for Session (Confluent flink supports application mode only).
+Once the operator is running, we can submit jobs using  `FlinkDeployment` (for Flink Application) and `FlinkSessionJob` Custom Resources for Session (Confluent Managed for Flink supports application mode only and is using a new CRD for `FlinkApplication`).
 
 The [FlinkDeployment spec is here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/) and is used to define Flink application (will have a job section) or session cluster (only job and task managers configuration).
 
@@ -168,10 +117,10 @@ job:
     state: running
 ```
 
-`flinkConfiguration` is a hash map used to define  the Flink configuration, like, task slot, HA and checkpointing parameters.
+`flinkConfiguration` is a hash map used to define the Flink configuration, such as the task slot, HA and checkpointing parameters.
 
 ```yaml
-   flinkConfiguration:
+  flinkConfiguration:
     high-availability.type: org.apache.flink.kubernetes.highavailability.KubernetesHaServicesFactory
     high-availability.storageDir: 'file:///opt/flink/volume/flink-ha'
     restart-strategy: failure-rate

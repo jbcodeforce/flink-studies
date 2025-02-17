@@ -17,7 +17,7 @@ nav:
     - Kubernetes Deployment: coding/k8s-deploy.md
     - DataStreams: coding/programming.md
     - Flink Cookbook: architecture/cookbook.md
-    - Java Table API: coding/table-api.md
+    - Table API: coding/table-api.md
     - Stateful function: coding/stateful-func.md
     - Complex Event Processing: coding/cep.md
     - IaC wt Terraform: coding/terraform.md
