@@ -125,18 +125,18 @@ FROM (
       ROW_NUMBER() OVER (
         PARTITION BY `order_id`, `member_id`
         ORDER
-          BY $rowtime ASC
+          BY $rowtime DESC
       ) AS row_num
     FROM orders_raw
 ) WHERE row_num = 1;
 ```
 
-To validate there is no duplicate records in the output table, use a query with tumble window:
+To validate there is no duplicate records in the output table, use a query with tumble window like:
 
 ```sql
   SELECT
       `order_id`, 
-      `member_id`,
+      `user_id`,
     COUNT(*) AS cnt
     FROM
     TABLE(
@@ -147,7 +147,7 @@ To validate there is no duplicate records in the output table, use a query with 
         )
     )
     GROUP
-    BY  `order_id`, `member_id` HAVING COUNT(*) > 1;
+    BY  `order_id`, `user_id` HAVING COUNT(*) > 1;
 ```
 
 Duplicates may still occur on the Sink side of the pipeline, as it is linked to the type of connector used and its configuration, for example reading un-committed offset. 
@@ -213,30 +213,43 @@ Assuming the goal is to cover FULL_TRANSITIVE, it means adding column will have 
     
 ### Statement evolution
 
-The general strategy for query evolution is to replace the existing statement and the corresponding tables it maintains with a new statement and new tables. The process is described in [this product chapter](https://docs.confluent.io/cloud/current/flink/concepts/schema-statement-evolution.html#query-evolution) and illustrated in the following figure:
+The general strategy for query evolution is to replace the existing statement and the corresponding tables it maintains with a new statement and new tables. The process is described in [this product chapter](https://docs.confluent.io/cloud/current/flink/concepts/schema-statement-evolution.html#query-evolution) and should be viewed within two folds depending of stateless or statefule statements. The initial state of the process involves a pipeline of Flink SQL statements and consumers processing Kafka records from various topics. We assume that the blue records are processed end-to-end, and the upgrade process begins at a specific point, from where all green records to be processed. The migration should start with the Flink statement that needs modification and proceed step by step to the statement creating the sink.
 
-![](./diagrams/generic_schema_evolution.drawio.png)
+For ^^stateless statement evolution^^ the figure below illustrates the process:
 
-**Figure: A generic schema evolution process**
+![](./diagrams/stateless_evolution.drawio.png)
 
-The initial state of the process involves a pipeline of Flink SQL statements and consumers processing Kafka records from various topics. We assume that the blue records are processed end-to-end, and the upgrade process begins at a specific point, from where all green records to be processed. The migration should start with the Flink statement that needs modification and proceed step by step to the statement creating the sink.
+**Figure: Stateless schema evolution process**
 
-The migration process consists of the following steps:
-
-1. Create a DDL statement to define the new schema for table v2
-1. Stop processing first statement
-1. Halt any downstream consumers, retaining their offsets.
-1. Deploy the new statement with the v2 name, starting from the earliest records to ensure semantic consistency for the blue records. This should commence from the earliest offset.
-1. Once the statement is running, it will build its own state and continue processing new records. Wait for it to retrieve the latest messages from the source tables before migrating existing consumers to the new table v2.
-1. Reconnect the consumers to the new table. For Flink statements acting as consumers, they will need to manage their own upgrades. To avoid dupllicates or not missing records, the offset for the consumers to the new topic needs ot be carrefuly selected.
+1. The blue statement, version 1, is stopped, and from the output, developer gets the last offset
+1. The green statement includes a DDL to create the new table with schema v2.
+1. The green DML statement, version 2, is started from the last offset or timestamp and produces records to the new table/topic
+1. Consumers are stopped. They have produced so far records to their own output topic with source from blue records.
+1. Consumers restarted with the new table name. Which means changing their own SQL statements, but now producing output with green records as source.
 
 At a high level, stateless statements can be updated by stopping the old statement, creating a new one, and transferring the offsets from the old statement. As mentioned, we need to support FULL TRANSITIVE updates to add or delete optional columns/fields.
 
-For stateful statements, it is necessary to bootstrap from history, which the above process accomplishes.
+For ^^stateful statements^^, it is necessary to bootstrap from history, which the below process accomplishes:
 
-Using Open Source Flink, creating a snapshot is one potential solution for restarting. However, if the DML logic has changed, it may not be possible to rebuild the DAG and state for a significantly altered flow. Thus, in a managed service, the approach is to avoid using snapshots to restart the statement.
+![](./diagrams/stateful_evolution.drawio.png)
 
-If the state size is too large, consider separating the new statement into a different compute pool.
+**Figure: Stateful schema evolution process**
+
+The migration process consists of the following steps:
+
+1. Create a DDL statement to define the new schema for `table_v2` which means topic v2.
+1. Deploy the new statement with the v2 name, starting from the earliest records to ensure semantic consistency for the blue records, when they are stateful, or from the last offset when stateless.
+1. Once the new statement is running, it will build its own state and continue processing new records. Wait for it to retrieve the latest messages from the source tables before migrating existing consumers to the new table v2. The old blue records will be re-emitted. While the new statement 
+1. Stop processing first statement.
+1. Halt any downstream consumers, retaining their offsets if those are stateless or idempotent, if they are stateful they will process from the earliest.
+1. Reconnect the consumers to the new table. For Flink statements acting as consumers, they will need to manage their own upgrades. To avoid duplicates or not missing records, the offset for the consumers to the new topic needs ot be carrefuly selected.
+1. Once all consumers have migrated to the new output topic, the original statement and output topic can be deprovisioned.
+
+This process requires to centrally control the deployment of those pipeline.
+
+Using Open Source Flink, creating a snapshot is one potential solution for restarting. However, if the DML logic has changed, it may not be possible to rebuild the DAG and the state for a significantly altered flow. Thus, in a managed service, the approach is to avoid using snapshots to restart the statements.
+
+Also when the state size is too large, consider separating the new statement into a different compute pool than the older one.
 
 #### Restart a statement from a specific time or offset
 
