@@ -4,7 +4,7 @@ metadata:
   name: ecom-flink-app
   namespace: flink
 spec:
-  image: jbcodeforce/ecom-flink-app:1.19.1-cp1
+  image: jbcodeforce/ecom-flink-app:0.1.0
   flinkVersion: v1_19
   imagePullPolicy: Never
   serviceAccount: flink

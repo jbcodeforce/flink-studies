@@ -1,5 +1,5 @@
 
-IMAGE_NAME=jbcodeforce/ecom-flink-app:1-19.1-cp1
+IMAGE_NAME=jbcodeforce/ecom-flink-app:0.1.0
 APP_NAME=ecom-flink-app
 ENV_NAME=env1
 

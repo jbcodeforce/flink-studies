@@ -168,9 +168,9 @@ TO BE DONE
 
 This section summarizes the Flink statement deployment and life cycle management. 
 
-The classical pattern is to consume streams from Kafka Topics and then add different stateful processing using Flink SQL, Table API or DataStreams. The question is **when we need to stop such processing to change the logic and how to restart them?**. 
+The classical pattern is to consume streams from Kafka Topics and then adds different stateful processing using Flink SQL, Table API or DataStreams jobs. The question is **when we need to stop such processing to change the logic and how to restart them?**. 
 
-Any Flink DAG code is immutable, therefore a quick answer is to do not modify Flink process flow! Which may not be a realistic in our IT world. So developers and SREs need to take a lot of care for this life cycle management. 
+Any Flink DAG code is immutable, therefore a quick answer is: to do not modify Flink process flow! Which may not be a realistic in our IT world. So developers and SREs need to take a lot of care for this statement life cycle management. 
 
 The Flink SQL statements has limited parts that are mutables. See [Confluent Cloud product documentation for details](https://docs.confluent.io/cloud/current/flink/concepts/schema-statement-evolution.html).  The principal name and compute pool metadata are mutable when stopping and resuming the statement. Developers may stop and resume a statement using Console, CLI, API or even Terraform scripts.
 
@@ -184,7 +184,7 @@ confluent flink statement resume $1 --cloud $(CLOUD) --region $(REGION)
 
 Most other parts are immutables. 
 
-When a SQL statement is started, it reads the source tables from the beginning (or any specified offset) and the operators, defined in the statement, build their state. Source or sink operators use the latest schema version for key and value at the time of deployment. There is a snapshot of the different dependecies configuration saved for the statement: the reference to the dependants tables, user-defined functions... 
+When a SQL statement is started, it reads the source tables from the beginning (or any specified offset) and the operators, defined in the statement, build their state. Source or sink operators use the latest schema version for key and value at the time of deployment. There is a snapshot of the different dependency configuration saved for the statement: the reference to the dependants tables, user-defined functions... 
 
 ### Schema compatibility
 
@@ -219,25 +219,24 @@ The general strategy for query evolution is to replace the existing statement an
 
 **Figure: A generic schema evolution process**
 
-The starting state of the process is to have a pipeline of Flink SQL statements and consumers processing Kafka Records from topics. We assume the blue records are processed end to end, and the upgrade process is started at a given points, so all the green records have to be processed. The stop should start from the Flink statement to change and go right to the sink. 
+The initial state of the process involves a pipeline of Flink SQL statements and consumers processing Kafka records from various topics. We assume that the blue records are processed end-to-end, and the upgrade process begins at a specific point, from where all green records to be processed. The migration should start with the Flink statement that needs modification and proceed step by step to the statement creating the sink.
 
-The migration process includes the followinf steps:
+The migration process consists of the following steps:
 
-
-1. Create a DDL statement to define the new schema for the table v2
+1. Create a DDL statement to define the new schema for table v2
 1. Stop processing first statement
-1. Stop any consumers of the downstream flow, keep their offsets
-1. Deploy new statement with v2 name, reading from the earliest records to keep the semantic identical for the blue records. It should be earliest offset.
-1. Once the statement runs, it will build its own state, and continue processing new records. Wait for it to retrieve the latest messages from the source tables before migrating existing consumers to the new table v2
-1. Reconnect consumers to the new table. Which means for Flink statement as consumer, they need to do their own upgrades.
+1. Halt any downstream consumers, retaining their offsets.
+1. Deploy the new statement with the v2 name, starting from the earliest records to ensure semantic consistency for the blue records. This should commence from the earliest offset.
+1. Once the statement is running, it will build its own state and continue processing new records. Wait for it to retrieve the latest messages from the source tables before migrating existing consumers to the new table v2.
+1. Reconnect the consumers to the new table. For Flink statements acting as consumers, they will need to manage their own upgrades. To avoid dupllicates or not missing records, the offset for the consumers to the new topic needs ot be carrefuly selected.
 
-At the high level, stateless statement can be updated by stopping the old statment, create a new one and carry over the offsets from the old statements. As seen above, we need to support FULL TRANSITIVE update, to add optional or delete optional column/field. 
+At a high level, stateless statements can be updated by stopping the old statement, creating a new one, and transferring the offsets from the old statement. As mentioned, we need to support FULL TRANSITIVE updates to add or delete optional columns/fields.
 
-For Stateful statements, they need to be bootstrapped from history, the process above does this bootstrapping. 
+For stateful statements, it is necessary to bootstrap from history, which the above process accomplishes.
 
-Using Open Source Flink, creating a snapshot is one of the potential solution to restart from. But it could not be guaranty if the DML logic changed, as it will not be prossible to rebuild the DAG and state for a deeply change flow. So in managed service, the approach is to do not use the snapshot to restart the statement from.
+Using Open Source Flink, creating a snapshot is one potential solution for restarting. However, if the DML logic has changed, it may not be possible to rebuild the DAG and state for a significantly altered flow. Thus, in a managed service, the approach is to avoid using snapshots to restart the statement.
 
-If the size of the state is too big, separate the new statement in separate compute pool.
+If the state size is too large, consider separating the new statement into a different compute pool.
 
 #### Restart a statement from a specific time or offset
 
