@@ -1,4 +1,4 @@
-# E-commerce rela-time analytics
+# E-commerce real-time analytics
 
 This demonstration presents a real-time data processing with Kafka local cluster combined with Flink app used for real-time analytics.
 
@@ -22,16 +22,27 @@ The SQL client can be used to compute some aggregation on the sale events create
 
 ## Setup
 
+* If not done  yet, go to the k8s deployment for CP for Flink and the Confluent Platform deployment [here](../../deployment/k8s/README.md) and use the makefile to deploy all the needed components.
+* Once Kafka runs, deploy the 3 topics needed for the demo: `kubectl apply -f k8s/topics.yaml`.
+
+## The Flink Application
+
+### 
+### Unit tests
+
+The unit tests use the Flink MiniCluster extension. 
+
+## Start the simulator
+
 To start the simulator using a Python virtual environment do:
 
 ```sh 
-# under e2e-demos/e-com-sale-simulator
+# under e2e-demos/e-com-sale
 pip install -r requirements.txt
 python simulator.py
 ```
 
-The application sends events like the following:
-
+The application sends three type of event: user-action, purchase, or inventory_update like the following:
 
 ```json
 {'event_type': 'user_action', 
@@ -42,6 +53,8 @@ The application sends events like the following:
  'product': 'headphones'
 }
 ```
+
+Each event type will be in 3 different topics.
 
 * Use the [Kafdrop interface to verify the messages in the topic](http://localhost:9000/topic/ecommerce_events)
 * Connect to SQL client container

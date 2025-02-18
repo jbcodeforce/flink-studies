@@ -18,6 +18,8 @@ brew install helm
 # for WSL2 - ubuntu
 sudo apt-get install helm
 ```
+
+* Get the [list of Flink releases and tags here](https://downloads.apache.org/flink/) or [Confluent one](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
 * Add Helm repo: 
 
 ```sh
@@ -39,13 +41,10 @@ helm repo update
 
 ```sh
 make deploy_cert_manager
-# or explicitly
-
+# or explicitly using:
 kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.16.2/cert-manager.yaml
 ```
 
-* Get the [list of Flink releases and tags here](https://downloads.apache.org/flink/) or [Confluent one](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
-* Add Helm repo: `helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.9.0`
 * Install the Flink Kubernetes operator (See below)
 
 (See also the [Flink pre-requisites documentation.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/docs/try-flink-kubernetes-operator/quick-start/))
@@ -56,6 +55,9 @@ kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.
 helm repo add kafbat-ui https://kafbat.github.io/helm-charts
 ```
 
+* Install Minio to persist jar or expose object storage in the K8S. [See Minio quickstart.](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart)
+
+
 ### Setup the environment with minikube
 
 1. Start minikube
@@ -65,6 +67,16 @@ helm repo add kafbat-ui https://kafbat.github.io/helm-charts
     ```
 
 1. Start `minikube dashboard`
+
+### Setup with Colima
+
+1. Start colima:
+
+```sh
+colima start --cpu 4 --memory 10 --kubernetes
+# or under deployment/k8s
+make start_colima
+```
 
 ## Deploy Flink
 
@@ -86,7 +98,7 @@ helm repo add kafbat-ui https://kafbat.github.io/helm-charts
 
     ```sh
     # in one terminal
-    kubectl port-forward svc/cmf-service 8084:80 -n flink
+    kubectl port-forward svc/cmf-service 8080:80 -n flink
     # in a second terminal
     make create_flink_env
     ```
@@ -113,7 +125,7 @@ helm repo add kafbat-ui https://kafbat.github.io/helm-charts
     confluent flink application delete flink-basic-example --environment env1  --url http://localhost:8084
     ```
 
-## Deploy Confluent Platform 
+## Deploy Confluent Platform
 
 1. Deploy Confluent Platform operator to get Kafka brokers deployed
 
@@ -210,7 +222,9 @@ kubectl port-forward \
 
 ## Some application examples
 
+* [E-commerce demo with 3 topics and a Flink join SQL using Table API](../../e2e-demos/e-com-sale/README.md).
 * [Validate savepoint processing with stop and restart job](../../e2e-demos/savepoint-demo/readme.md).
+* [Older demo doe 2e2 streaming](../../e2e-demos/e2e-streaming-demo/README.md).
 
 ## Troubleshooting
 

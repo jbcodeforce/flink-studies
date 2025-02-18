@@ -48,14 +48,17 @@ theme:
       - navigation.instant.progress
       - navigation.tabs
       - navigation.tabs.sticky
-      - navigation.instant
       - navigation.tracking
       - navigation.sections
       - navigation.expand
       - navigation.top
       - navigation.footer
 extra_css: ["extra.css"]
-
+plugins:
+  - search:
+      lang: en
+  - minify:
+      minify_html: true
 markdown_extensions:
   - abbr
   - attr_list
@@ -77,10 +80,18 @@ markdown_extensions:
       pygments_lang_class: true
   - pymdownx.details
   - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.tilde
   - pymdownx.snippets
   - pymdownx.mark
   - pymdownx.tasklist:
       custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 extra:
   social:
     - icon: fontawesome/brands/github

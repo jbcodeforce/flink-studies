@@ -36,9 +36,11 @@ Once the operator is running, we can submit jobs using  `FlinkDeployment` (for F
 
 The [FlinkDeployment spec is here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/) and is used to define Flink application (will have a job section) or session cluster (only job and task managers configuration).
 
+It is important to note that FlinkDeployment CRD has a podTemplate, so config map and secrets can be used to configure environment variables for the flink app.
+
 A RWX, shared PersistentVolumeClaim (PVC) for the Flink JobManagers and TaskManagers provides persistence for stateful checkpoint and savepoint of Flink jobs. 
 
-A flow is a packaged as a jar, so developers need to define a docker image with the Flink API and any connector executable.
+A flow is a packaged as a jar, so developers need to define a docker image with the Flink API and any connector jars.
 
 ### HA configuration
 
@@ -60,19 +62,19 @@ JobManager Pod that crashed are restarted automatically by the kubernetes schedu
 
 ```yaml
 podTemplate:
-    spec:
-      containers:
-        - name: flink-main-container
-          volumeMounts:
-          - mountPath: /flink-data
-            name: flink-volume
-      volumes:
-      - name: flink-volume
-        hostPath:
-          # directory location on host
-          path: /tmp/flink
-          # this field is optional
-          type: Directory
+  spec:
+    containers:
+      - name: flink-main-container
+        volumeMounts:
+        - mountPath: /flink-data
+          name: flink-volume
+    volumes:
+    - name: flink-volume
+      hostPath:
+        # directory location on host
+        path: /tmp/flink
+        # this field is optional
+        type: Directory
 ```
 
 Recall that `podTemplate` is a base declaration common for job and task manager pods. Can be overridden by the jobManager and taskManager pod template sub-elements. The previous declaration will work for minikube with hostPath access, for Kubernetes cluster with separate storage class then the volume declaration is:
@@ -89,6 +91,7 @@ For Flink job or application, it is important to enable checkpointing and savepo
 ```
 job:
   jarURI: local:///opt/flink/examples/streaming/StateMachineExample.jar
+
   parallelism: 2
   upgradeMode: savepoint
   #savepointTriggerNonce: 0
@@ -107,15 +110,19 @@ job:
 
 ### Application deployment 
 
-An **application deployment** must define the job (JobSpec) field with the `jarURI`, `parallelism`, `upgradeMode` one of (stateless/savepoint/last-state) and the desired `state` of the job (running/suspended). [See this sample app](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/basic-sample.yaml).
+An **application deployment** must define the job (JobSpec) field with the `jarURI`, `parallelism`, `upgradeMode` one of (stateless/savepoint/last-state) and the desired `state` of the job (running/suspended). [See this sample app](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/basic-sample.yaml) or the [cmf_app_deployment.yaml](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale-simulator/k8s/cmf_app_deployment.yaml) in the e-com-sale demonstration.
 
 ```yaml
 job:
     jarURI: local:///opt/flink/examples/streaming/StateMachineExample.jar
+    # your own deployment
+    jarURI: local:///opt/flink/usrlib/yourapp01.0.0.jar
     parallelism: 2
     upgradeMode: stateless
     state: running
 ```
+
+The application jar needs to be in a custom Flink docker image built using the [Dockerfile as in e-com-sale-demo](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale-simulator/flink-app/Dockerfile).
 
 `flinkConfiguration` is a hash map used to define the Flink configuration, such as the task slot, HA and checkpointing parameters.
 
@@ -139,11 +146,22 @@ job:
     table.exec.source.idle-timeout: '30 s'
 ```
 
+With CP for Flink:
+
+```sh
+# First be sure the service is expose
+kubectl port-forward svc/cmf-service 8080:80 -n flink
+# Deploy the app given its deployment
+confluent flink application create k8s/cmf_app_deployment.yaml  --environment $(ENV_NAME) --url http://localhost:8080 
+```
+
 ???- info "Access to user interface"
     To forward your jobmanager’s web ui port to local 8081.
 
     ```sh
     kubectl port-forward ${flink-jobmanager-pod} 8081:8081 
+    # Or using CP for Flink
+    confluent flink application web-ui-forward $(APP_NAME) --environment $(ENV_NAME) --port 8081 --url http://localhost:8080
     ```
 
     And navigate to [http://localhost:8081](http://localhost:8081).

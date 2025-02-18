@@ -9,9 +9,11 @@ KAFKA_BROKERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS','localhost:9092')
 KAFKA_CERT = os.getenv('KAFKA_CERT','')
 KAFKA_USER =  os.getenv('KAFKA_USER','')
 KAFKA_PASSWORD =  os.getenv('KAFKA_PASSWORD','')
-KAFKA_SASL_MECHANISM=  os.getenv('KAFKA_SASL_MECHANISM','PLAINTEXT')
-TOPIC_NAME=os.getenv("KAFKA_MAIN_TOPIC","ecommerce-events")
-
+KAFKA_SASL_MECHANISM=  os.getenv('KAFKA_SASL_MECHANISM','PLAIN')
+KAFKA_SECURITY_PROTOCOL= os.getenv('KAFKA_SECURITY_PROTOCOL','PLAINTEXT')
+USER_ACTION_TOPIC_NAME=os.getenv("KAFKA_USER_ACTION_TOPIC_NAME","ecommerce-events")
+TX_TOPIC_NAME=os.getenv("KAFKA_TX_TOPIC","ecommerce-purchases")
+INVENTORY_TOPIC_NAME=os.getenv("KAFKA_IVT_TOPIC","ecommerce-inventory")
 
 # Sample data
 USERS = ['user1', 'user2', 'user3', 'user4', 'user5']
@@ -39,10 +41,12 @@ def generate_purchase():
     }
 
 def generate_inventory_update():
+    product = random.choice(PRODUCTS)
     return {
         'event_type': 'inventory_update',
         'timestamp': datetime.now().isoformat(),
-        'product': random.choice(PRODUCTS),
+        'product': product,
+        'description': f"The description of {product}",
         'quantity': random.randint(-10, 50)
     }
 
@@ -62,8 +66,7 @@ def create_kafka_producer():
         }
     print("kafka-user: " + KAFKA_USER)
     if (KAFKA_USER != ''):
-        # options['security.protocol'] = 'SASL_SSL'
-        options['security.protocol'] = 'PLAINTEXT'
+        options['security.protocol'] = KAFKA_SECURITY_PROTOCOL
         options['sasl.mechanisms'] = KAFKA_SASL_MECHANISM
         options['sasl.username'] = KAFKA_USER
         options['sasl.password'] = KAFKA_PASSWORD
@@ -83,13 +86,18 @@ def main():
         while True:
             event = generate_event()
             print(event)
-            if event['event_type'] == 'inventory_update':
-                key=event['product']
-            else:
-                key=event['user_id']
-            producer.produce(TOPIC_NAME, key=key, value= json.dumps(event))
+            match event['event_type']:
+                case 'inventory_update':
+                    key=event['product']
+                    producer.produce(INVENTORY_TOPIC_NAME, key=key, value= json.dumps(event))
+                case 'purchase':
+                    key=event['purchase']
+                    producer.produce(TX_TOPIC_NAME, key=key, value= json.dumps(event))
+                case _:
+                    key=event['user_id']
+                    producer.produce(USER_ACTION_TOPIC_NAME, key=key, value= json.dumps(event))
             print(f"Sent event: {event}")
-            time.sleep(random.uniform(0.1, 2))  # Random delay between 0.1 and 2 seconds
+            time.sleep(random.uniform(0.5, 5))  # Random delay between 0.5 and 5 seconds
     except KeyboardInterrupt:
         print("Stopping data generation...")
 

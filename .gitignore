@@ -10,3 +10,4 @@ flink-training/
 **/terraform.tfstate.backup
 **/.terraform.lock.hcl
 **/*.tfvars
+**/.idea
