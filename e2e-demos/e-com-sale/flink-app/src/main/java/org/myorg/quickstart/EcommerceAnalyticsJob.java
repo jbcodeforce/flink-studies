@@ -29,13 +29,17 @@ import org.apache.flink.table.api.DataTypes;
 import org.apache.flink.table.api.Schema;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableDescriptor;
+import org.apache.flink.table.api.FormatDescriptor;
 
 /**
  * Demonstrate a join between two streams:
  * - purchase done by a user and product description
  */
 public class EcommerceAnalyticsJob {
-    private static String PURCHASE_SOURCE = "ecommerce-purchases";
+    // keys for env variables
+    public static final String FLINK_DB_NAME="FLINK_DB_NAME";
+    public static final String KAFKA_TX_TOPIC="KAFKA_TX_TOPIC";
+    public static final String PURCHASE_TABLE_NAME="PurchaseTable";
 
 	public static void main(String[] args) throws Exception {
 		// Sets up the execution environment, which is the main entry point
@@ -45,27 +49,35 @@ public class EcommerceAnalyticsJob {
                         .inStreamingMode()
                         .build();
         TableEnvironment tableEnv = TableEnvironment.create(settings);
-        TableDescriptor table_descriptor = purchase_stream_source();
-        tableEnv.createTable(PURCHASE_SOURCE, table_descriptor);
+        String PURCHASE_SOURCE=System.getenv(KAFKA_TX_TOPIC);
+        TableDescriptor table_descriptor = purchase_stream_source(PURCHASE_SOURCE);
+        // Registers the given TableDescriptor as a catalog table. The first parameter needs to be camelcase only and represent the name of the table in the catalog
+        tableEnv.createTable(PURCHASE_TABLE_NAME, table_descriptor);
 
-        Table transactionsTable = tableEnv.from(PURCHASE_SOURCE).select(withAllColumns());
+        Table transactionsTable = tableEnv.from(PURCHASE_TABLE_NAME).select(withAllColumns());
         transactionsTable.printSchema();
         transactionsTable.execute().print();
-	}
+	} // main
 
-    public static TableDescriptor purchase_stream_source() {
+    /**
+     * Return a template for creating a CatalogTable instance.
+     */
+    public static TableDescriptor purchase_stream_source(String topic_name) {
+
         return TableDescriptor.forConnector("kafka")
                     .schema(
-                            Schema.newBuilder()
+                        Schema.newBuilder()
                             .column("event_type", DataTypes.STRING())
+                            .column("purchase_id", DataTypes.STRING())
+                            .column("timestamp", DataTypes.STRING())
                             .column("user_id", DataTypes.STRING())
                             .column("product", DataTypes.STRING())
                             .column("quantity", DataTypes.BIGINT())
                             .column("price", DataTypes.BIGINT())
                         .build()
                         )
-                    .format("avro-confluent")
-                    .option("topic", PURCHASE_SOURCE)
+                    .format("json")
+                    .option("topic", topic_name)
                     .option("properties.group.id", "appGroup")
                     .option("scan.startup.mode", "earliest-offset")
                     .option("properties.bootstrap.servers", System.getenv("KAFKA_BOOTSTRAP_SERVERS"))

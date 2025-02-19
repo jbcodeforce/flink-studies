@@ -4,8 +4,9 @@ metadata:
   name: flink-app-cm
 data:
   KAFKA_BOOTSTRAP_SERVERS: kafka.confluent.svc.cluster.local:9092
-  KAFKA_USER_ACTION_TOPIC_NAME: ecommerce-events
-  KAFKA_TX_TOPIC: ecommerce-purchases
-  KAFKA_IVT_TOPIC: ecommerce-inventory
+  FLINK_DB_NAME: default_catalog.default_database
+  KAFKA_USER_ACTION_TOPIC_NAME: ecommerce.events
+  KAFKA_TX_TOPIC: ecommerce.purchases
+  KAFKA_IVT_TOPIC: ecommerce.inventory
   KAFKA_SASL_MECHANISM: PLAIN
   KAFKA_SECURITY_PROTOCOL: PLAINTEXT

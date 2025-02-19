@@ -1,1 +1,9 @@
-export KAFKA_PASSWORD
+export KAFKA_PASSWORD=''
+export KAFKA_BROKERS='kafka.confluent.svc.cluster.local:9092'
+export KAFKA_CERT=''
+export KAFKA_USER=''
+export KAFKA_SASL_MECHANISM='PLAIN'
+export KAFKA_SECURITY_PROTOCOL='PLAINTEXT'
+export KAFKA_USER_ACTION_TOPIC_NAME='ecommerce.events'
+export KAFKA_TX_TOPIC='ecommerce.purchases'
+export KAFKA_IVT_TOPIC='ecommerce.inventory'

@@ -24,10 +24,38 @@ The SQL client can be used to compute some aggregation on the sale events create
 
 * If not done  yet, go to the k8s deployment for CP for Flink and the Confluent Platform deployment [here](../../deployment/k8s/README.md) and use the makefile to deploy all the needed components.
 * Once Kafka runs, deploy the 3 topics needed for the demo: `kubectl apply -f k8s/topics.yaml`.
+* Expose Kafka bootstrap endpoint via port-forward
+
+```
+kubectl port-forward svc/kafka 9092:9092 -n confluent
+```
+
+* Expose the Confluent Managed Flink URL: `make port-forward` 
+* Package and deploy the Flink App: 
+
+```sh
+make build
+make create_flink_app
+```
 
 ## The Flink Application
 
-### 
+The Flink job sets up a Kafka consumer to read the data from the "ecommerce.purchase" topic. The FlinkKafkaConsumer is configured with the necessary Kafka properties, including the bootstrap servers and the consumer group. The data stream is then mapped to the EcommerceEvent class.
+
+The EcommerceEventProcessor class may do the process logic like:
+
+* Calculating real-time sales metrics (e.g., revenue per minute, top-selling products)
+* Detecting and alerting on low inventory levels
+* Analyzing user behavior patterns (e.g., most viewed products, conversion rates)
+* Implementing a simple recommendation system based on user actions
+
+### First approach use enrichment with a simple join
+
+Enrich the purchase from the product table
+
+```
+```
+
 ### Unit tests
 
 The unit tests use the Flink MiniCluster extension. 
@@ -39,6 +67,9 @@ To start the simulator using a Python virtual environment do:
 ```sh 
 # under e2e-demos/e-com-sale
 pip install -r requirements.txt
+# Be sure the bootstrap URL is expose via port-forward
+kubectl port-forward svc/kafka 9092:9092 -n confluent
+# Create the topics
 python simulator.py
 ```
 
@@ -56,88 +87,4 @@ The application sends three type of event: user-action, purchase, or inventory_u
 
 Each event type will be in 3 different topics.
 
-* Use the [Kafdrop interface to verify the messages in the topic](http://localhost:9000/topic/ecommerce_events)
-* Connect to SQL client container
-
-    ```sh
-    docker exec -ti sql-client bash
-    # in the container shell, start sql cli
-    ./sql-client.sh
-    ```
-
-* Define the user page view table:
-
-    ```sql title="User page view on kafka stream"
-    CREATE TABLE user_page_views (
-        event_type STRING,
-        user_id STRING,
-        action STRING,
-        page STRING,
-        product STRING,
-        timestamp_str STRING,        # (1)
-        timestamp_sec TIMESTAMP(3),  # derived field
-        WATERMARK FOR timestamp_sec AS TO_TIMESTAMP(timestamp_str, 'yyyy-MM-dd HH:mm:ss') - INTERVAL '5' SECOND
-    ) WITH (
-        'connector' = 'kafka',
-        'topic' = 'ecommerce_events',
-        'properties.bootstrap.servers' = 'kafka:29092',
-        'properties.group.id' = 'sql-flink-grp-1',
-        'properties.auto.offset.reset' = 'earliest',
-        'format' = 'json'  
-    );
-    ```
-
-    1. The event timestamp is a string created by the Kafka producer
-
-**WATERMARK** statement is used to define a watermark strategy for handling event time in streaming applications. Watermarks are crucial for dealing with out-of-order events, allowing Flink to manage late arrivals and trigger processing based on event time rather than processing time. A watermark is a timestamp that indicates that no events with a timestamp earlier than the watermark will arrive. 
-
-It is important to set the consumer properties like consumer group id, the offset reset strategy...
-
-The following SQL statement is to count the number of page per user
-
-```sql
-SELECT 
-    user_id, 
-    page,
-    COUNT(page) AS page_views 
-FROM 
-    user_page_views 
-GROUP BY 
-    user_id,
-    page;
-```
-
-The results
-
-![](./images/query_result.png)
-
-## Run the simulator
-
-* Start the Kafka cluster and Flink job manager and task manager
-* Adjust the KAFKA_BOOTSTRAP_SERVERS, KAFKA_USER, KAFKA_PASSWORD, KAFKA_CERT environment variables as needed. To get those values from a local deployment using kubernetes:
-
-```sh
-kubectl describe kafka -n confluent
-kubectl port-forward service/kafka 9092:9092 -n confluent
-```
-* Create the `ecommerce-events` topic
-
-```sh
-kubectl apply -f k8s/topics.yaml
-```
-
-* Start the simulator
-```sh
-python simulator.py
-```
-
-## Flink app
-
-The Flink job sets up a Kafka consumer to read the data from the "ecommerce-events" topic. The FlinkKafkaConsumer is configured with the necessary Kafka properties, including the bootstrap servers and the consumer group. The data stream is then mapped to the EcommerceEvent class.
-
-The EcommerceEventProcessor class may do the process logic like:
-
-* Calculating real-time sales metrics (e.g., revenue per minute, top-selling products)
-* Detecting and alerting on low inventory levels
-* Analyzing user behavior patterns (e.g., most viewed products, conversion rates)
-* Implementing a simple recommendation system based on user actions
+* Use the [Kafbat UI interface to verify the messages in the topic](http://localhost:9000/ui/clusters/kafka/all-topics/ecommerce.inventory)

@@ -1,7 +1,7 @@
 apiVersion: platform.confluent.io/v1beta1
 kind: KafkaTopic
 metadata:
-  name: ecommerce-events
+  name: ecommerce.events
   namespace: confluent
 spec:
   kafkaClusterRef: 
@@ -12,7 +12,7 @@ spec:
 apiVersion: platform.confluent.io/v1beta1
 kind: KafkaTopic
 metadata:
-  name: ecommerce-purchases
+  name: ecommerce.purchases
   namespace: confluent
 spec:
   kafkaClusterRef: 
@@ -24,7 +24,7 @@ spec:
 apiVersion: platform.confluent.io/v1beta1
 kind: KafkaTopic
 metadata:
-  name: ecommerce-inventory
+  name: ecommerce.inventory
   namespace: confluent
 spec:
   kafkaClusterRef: 

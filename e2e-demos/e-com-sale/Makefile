@@ -22,3 +22,10 @@ delete_flink_app:
 
 access_flink_ui:
 	@confluent flink application web-ui-forward $(APP_NAME) --environment $(ENV_NAME) --port 8090 --url http://localhost:8080
+
+get_logs:
+	export POD_NAME=`kubectl get pods --namespace flink -l "app=ecom-flink-app" -o jsonpath="{.items[0].metadata.name}"`; \
+	kubectl logs $$POD_NAME -n flink
+
+delete_image:
+	@docker rmi `docker images | grep flink-app | awk '{print $3}'` -f

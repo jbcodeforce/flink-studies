@@ -11,9 +11,9 @@ KAFKA_USER =  os.getenv('KAFKA_USER','')
 KAFKA_PASSWORD =  os.getenv('KAFKA_PASSWORD','')
 KAFKA_SASL_MECHANISM=  os.getenv('KAFKA_SASL_MECHANISM','PLAIN')
 KAFKA_SECURITY_PROTOCOL= os.getenv('KAFKA_SECURITY_PROTOCOL','PLAINTEXT')
-USER_ACTION_TOPIC_NAME=os.getenv("KAFKA_USER_ACTION_TOPIC_NAME","ecommerce-events")
-TX_TOPIC_NAME=os.getenv("KAFKA_TX_TOPIC","ecommerce-purchases")
-INVENTORY_TOPIC_NAME=os.getenv("KAFKA_IVT_TOPIC","ecommerce-inventory")
+USER_ACTION_TOPIC_NAME=os.getenv("KAFKA_USER_ACTION_TOPIC_NAME","ecommerce.events")
+TX_TOPIC_NAME=os.getenv("KAFKA_TX_TOPIC","ecommerce.purchases")
+INVENTORY_TOPIC_NAME=os.getenv("KAFKA_IVT_TOPIC","ecommerce.inventory")
 
 # Sample data
 USERS = ['user1', 'user2', 'user3', 'user4', 'user5']
@@ -33,6 +33,7 @@ def generate_user_action():
 def generate_purchase():
     return {
         'event_type': 'purchase',
+        'purchase_id':  f"P0_{random.choice(USERS)}",
         'timestamp': datetime.now().isoformat(),
         'user_id': random.choice(USERS),
         'product': random.choice(PRODUCTS),
@@ -80,8 +81,22 @@ def create_kafka_producer():
     return Producer(options)
         
 
+def send_basic_inventory(producer):
+    for p in PRODUCTS:
+        key=p
+        product={
+            'event_type': 'inventory_update',
+            'timestamp': datetime.now().isoformat(),
+            'product': p,
+            'description': f"The description of {p}",
+            'quantity': 50
+        }
+        producer.produce(INVENTORY_TOPIC_NAME, key=key, value= json.dumps(product))
+
+        
 def main():
     producer = create_kafka_producer()
+    send_basic_inventory(producer)
     try:
         while True:
             event = generate_event()
@@ -91,7 +106,7 @@ def main():
                     key=event['product']
                     producer.produce(INVENTORY_TOPIC_NAME, key=key, value= json.dumps(event))
                 case 'purchase':
-                    key=event['purchase']
+                    key=event['purchase_id']
                     producer.produce(TX_TOPIC_NAME, key=key, value= json.dumps(event))
                 case _:
                     key=event['user_id']

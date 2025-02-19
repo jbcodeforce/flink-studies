@@ -45,14 +45,14 @@ Use one of the following approaches:
     confluent flink shell --compute-pool $COMPUTE_POOL_ID --environment $ENV_ID
     ```
 
-    * Write SQL statements
+    * Write SQL statements, results are visible in the active session.
 
 ???- info "Run SQL in Kubernetes application" 
     Write SQL statements and test them with Java SQL runner. The Class is in [https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) folder. Then package the java app and sql script into a docker image then use a FlinkDeployment  descriptor; (see [this git doc](https://github.com/apache/flink-kubernetes-operator/tree/main/examples/flink-sql-runner-example)).
 
 [See the Flink SQL CLI commands documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sqlclient/).
 
-See [the flink-sql/00-basic-sql folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/00-basic-sql) to get some basic examples.
+See [the flink-sql/00-basic-sql folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/00-basic-sql) to get some getting started with Flink SQL examples.
 
 ## Basic commands
 
@@ -485,7 +485,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 
 ???- info "OVER aggregations"
-    [OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) compute an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY, but produce one result for every input row. This is helpful when we need to act on each input row, but consider some time interval. To get the number of order in the last 10 seconds.
+    [OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) compute an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY, but produces one result for every input row. This is helpful when we need to act on each input row, but consider some time interval. As classical example is to get the number of orders in the last 10 seconds.
 
     ```sql
     SELECT 
@@ -546,14 +546,14 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
         (total_orders_ten_secs <= 5 AND total_orders_ten_secs_lag > 5);
     ```
 
-???- question "How to Aggregating a field into an ARRAY?"
-    Let start by simple array indexing (the index is between 1 to nn_element). Below the values array create test data into a n memory table aliased a T:
+???- question "How to Aggregate a field into an ARRAY?"
+    Let start by simple array indexing (the index is between 1 to n_element). Below, the values array creates test data into a n memory table aliased a T:
 
     ```sql
     SELECT array_field[4] FROM ((VALUES ARRAY[5,4,3,2,1])) AS T(array_field)
     ```
 
-    The following is creating a view with an [array of aggregates](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions), which in this case concatenating the urls over a 1 minute tumble window.
+    The following is creating a view with an [array of aggregates](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions), which in this case, is concatenating the urls over a 1 minute tumble window.
 
     ```sql
     CREATE VIEW visited_pages_per_minute AS 
@@ -628,7 +628,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     ![](./images/changelog-exec-mode.png)
 
-???- question "How to expand a column being an array into new rows?"
+???- question "How to expand a column being an array of fields into new row?"
 
     The table order has n product ids in the product_ids column.
 
@@ -667,7 +667,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     SELECT ip_address, url, TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) as click_timestamp
     FROM (
         SELECT *,
-        ROW_NUMBER() OVER ( PARTITION BY ip_address ORDER BY TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) ) as rownum FROM clicks
+        ROW_NUMBER() OVER ( PARTITION BY ip_address ORDER BY TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) DESC) as rownum FROM clicks
         )
     WHERE rownum = 1;
     ```
@@ -702,14 +702,16 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 ### Joins
 
-When doing a join, Flink needs to materialize both the right and left of the join tables fully in state, which can cost a lot of memory, because if a row in the left-hand table (LHT), also named the **probe side**, is updated, the operator needs to emit an updated match for all matching rows in the right-hand table (RHT) or **build side**. The cardinality of right side will be mostly bounded at a given point of time, but the left side may vary a lot. A join emit matching row to downstream processing.
+When doing a join, Flink needs to materialize both the right and left of the join tables fully in state, which can cost a lot of memory, because if a row in the left-hand table (LHT), also named the **probe side**, is updated, the operator needs to emit an updated match for all matching rows in the right-hand table (RHT) or **build side**. The cardinality of right side will be mostly bounded at a given point of time, but the left side may vary a lot. A join emits matching rows to downstream processing.
 
-Here are important tutorials:
+Here is a list of important tutorials:
 
 * [Confluent Cloud: video on joins.](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html)
-* [Confluent -developer: How to join a stream and a stream](https://developer.confluent.io/tutorials/join-a-stream-to-a-stream/flinksql.html): use local Flink and one Kafka Kraft broker. The matching content is in [flink-sql/04-joins folder](), with a docker for CP 7.8.0.
+* [Confluent -developer: How to join streams](https://developer.confluent.io/tutorials/join-a-stream-to-a-stream/flinksql.html). The matching content is in [flink-sql/04-joins folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/04-joins) for Confluent Cloud or Platform for Flink. This folder also includes more SQL exercises.
 * [Confluent temporal join](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html#temporal-joins)
 * [Window Join Queries in Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/flink/reference/queries/window-join.html)
+
+???- tutorial "Left Join"
 
 ???- info "Inner knowledge on temporal join"
     Event-time temporal joins are used to join two or more tables based on a **common** event time (in one of the record table or the kafka record: `$rowtime` system column). With an event-time attribute, the operator can retrieve the value of a key as it was at some point in the past. The right-side, versioned table, stores all versions, identified by time, since the last watermark.

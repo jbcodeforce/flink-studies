@@ -208,6 +208,9 @@ Confluent Schema Registry supports Avro, Json or Protobuf, but Avro was designed
 
 Assuming the goal is to cover FULL_TRANSITIVE, it means adding column will have default value. And developers may only delete optional columns. During the migration, all current source tables coming as outcome of the Debezium process are not deletable. Columns can be added to the source with default value to support FULL_TRANSITIVE. 
 
+???- danger "Key schema evolution"
+    It is discouraged from any changes to the key schema in order to do not adversely affect partitioning for the new topic/ table.
+
 ???- info "Updating schema in schema registry"
     Adding a field directly in the avro-schema with default value, will be visible in the next command like: `show create table <table_name>`, as tables in flink are virtuals, and the Confluent Cloud the schema definition comes from the Schema Registry.
     
