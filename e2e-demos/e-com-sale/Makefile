@@ -29,3 +29,7 @@ get_logs:
 
 delete_image:
 	@docker rmi `docker images | grep flink-app | awk '{print $3}'` -f
+
+sql-client:
+	export POD_NAME=`kubectl get pods --namespace flink -l "app=ecom-flink-app" -o jsonpath="{.items[0].metadata.name}"`; \
+	kubectl exec -ti $$POD_NAME -n flink -- bash 

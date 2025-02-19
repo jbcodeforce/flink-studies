@@ -33,7 +33,8 @@ import org.apache.flink.table.api.FormatDescriptor;
 
 /**
  * Demonstrate a join between two streams:
- * - purchase done by a user and product description
+ * - purchase done by a user and 
+ * - the product information to enrich with one field: the product description.
  */
 public class EcommerceAnalyticsJob {
     // keys for env variables

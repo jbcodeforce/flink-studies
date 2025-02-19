@@ -61,6 +61,7 @@ See [the flink-sql/00-basic-sql folder](https://github.com/jbcodeforce/flink-stu
     ```sql
     SHOW CATALOGS;
     USE CATALOG `examples`;
+    SHOW DATABASES;
     USE `marketplace`;
     SHOW TABLES;
     SHOW TABLES LIKE '*_raw'
@@ -79,7 +80,7 @@ See [the flink-sql/00-basic-sql folder](https://github.com/jbcodeforce/flink-stu
     Flink SQL planner performs type checking. Assessing type of inferred table is helpful specially around timestamp. See [Data type mapping documentation.](https://docs.confluent.io/cloud/current/flink/reference/serialization.html)
 
 ???- info "Understand the execution plan for SQL query"
-    The [explain keyword](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/explain/)
+    See the [explain keyword](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/explain/) for generated output explanations.
 
     ```sql
     explain select ...
@@ -93,7 +94,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
 
 There are [three different modes](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#changelog-mode) to persist table rows in a log (Kafka topic in Confluent Cloud): append, retract or upsert. 
 
-* **append** means that every insertion can be treated as an independent immutable fact. Records can be distributed using round robin to the different partitions. Do not use primary key with append, as windowing or aggregation will product undefined, may be wrong results. Regular joins between two append only streams may not make any sense at the semantic level. While [temporal join](https://developer.confluent.io/courses/flink-sql/streaming-joins/) may be possible. Some query will create append output, like window aggregation, or any operations using the watermark.
+* **append** means that every insertion can be treated as an independent immutable fact. Records can be distributed using round robin to the different partitions. Do not use primary key with append, as windowing or aggregation will produce undefined, and may be wrong results. Regular joins between two append only streams may not make any sense at the semantic level. While [temporal join](https://developer.confluent.io/courses/flink-sql/streaming-joins/) may be possible. Some query will create append output, like window aggregation, or any operations using the watermark.
 * **upsert** means that all rows with same primary key are related and must be partitioned together. Events are upsert or delete for a primary key. Upsert needs a primary key.
 * **retract** means a fact can be undone, and the combination of +X and -X are related and must be partitioned together. Records are related by all the columns so the entire row is the key.
 
@@ -103,13 +104,14 @@ Changelog in Flink SQL is used to record the data changes in order to achieve in
 
 Looking at the physical plan with `EXPLAIN create...` demonstrates the changelog mode and the state size used per operator.
 
-[See the concept of changelog and dynamic tables in Confluent's documentation](https://docs.confluent.io/cloud/current/flink/concepts/dynamic-tables.html). 
+[See the concept of changelog and dynamic tables in Confluent's documentation](https://docs.confluent.io/cloud/current/flink/concepts/dynamic-tables.html) and see [this example](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/05-append-log) to study the behavior with a kafka topic as output. 
+
 
 ### Table creation
 
 ???- tip "Primary key considerations"
     * Primary key can have one or more columns, all of them should be not null
-    * In Flink the keys can only be `NOT ENFORCED`
+    * In Flink the primary key can only be `NOT ENFORCED`
     * The PRIMARY KEY declaration partitions the table implicitly by the key column(s)
     * The primary key is becoming the kafka key implicitly and in Confluent Cloud, it will generate a key schema, except if using the option (`'key.format' = 'raw'`)
 
@@ -120,6 +122,31 @@ Looking at the physical plan with `EXPLAIN create...` demonstrates the changelog
     CREATE TABLE manufactures (m_id INT PRIMARY KEY NOT ENFORCED, site_name STRING);
     -- with hash distribution to 4 partitions
     CREATE TABLE humans (race INT, s STRING) DISTRIBUTED BY HASH (race) INTO 4 BUCKETS;
+    ```
+
+???- info "Append log mode"
+    Create the orders table with a primary key, then insert element with same key. Be sure to get the key as part of the values, if not it will not be possible to group by the key
+
+    ```sql
+    create table if not exists orders (
+            order_id STRING primary key not enforced,
+            product_id STRING,
+            quantity INT
+        ) DISTRIBUTED into '1' BUCKETS 
+        with (
+            'changelog.mode' = 'append',
+            'value.fields-include' = 'all'
+        );
+    ```
+
+    The outcome includes records in topics that are insert records:
+
+    ![](./images/append-mode-table.png)
+
+    while running the following statement, in session job returns the last two records: (ORD_1, BANANA, 13), (ORD_2, APPLE, 23)
+    
+    ```sql
+    SELECT * FROM `orders` LIMIT 10;
     ```
 
 ???- tip "Create a table with csv file as persistence - Flink OSS"
