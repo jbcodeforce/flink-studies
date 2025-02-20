@@ -28,7 +28,7 @@ The custom resource definition that describes the schema of a FlinkDeployment is
 
 [Flink Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/) acts as a control plane to manage the complete deployment lifecycle of Apache Flink applications.
 
-For hands-on instructions and Makefile to deploy Flink, Confluent Kafka on k8s (local colima or minikube) see [this readme](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/README.md).
+For hands-on instructions and Makefile to deploy Flink, Confluent Platform on k8s (local colima or minikube) see [this readme](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/README.md).
 
 ## Custom Resources
 
@@ -36,11 +36,24 @@ Once the operator is running, we can submit jobs using  `FlinkDeployment` (for F
 
 The [FlinkDeployment spec is here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/) and is used to define Flink application (will have a job section) or session cluster (only job and task managers configuration).
 
-It is important to note that FlinkDeployment CRD has a podTemplate, so config map and secrets can be used to configure environment variables for the flink app.
+It is important to note that `FlinkDeployment` and `FlinkApplication` CRD have a podTemplate, so config map and secrets can be used to configure environment variables for the flink app. (Be sure to keep the name `flink-main-container`)
+
+```yaml
+spec:
+  podTemplate:
+    spec:
+      containers:
+        - name: flink-main-container
+          envFrom:
+            - configMapRef:
+                name: flink-app-cm
+```
 
 A RWX, shared PersistentVolumeClaim (PVC) for the Flink JobManagers and TaskManagers provides persistence for stateful checkpoint and savepoint of Flink jobs. 
 
-A flow is a packaged as a jar, so developers need to define a docker image with the Flink API and any connector jars.
+A flow is a packaged as a jar, so developers need to define a docker image with the Flink API and any connector jars. Example of [Dockerfile](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale/flink-app/Dockerfile) and [FlinkApplication manifest](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale/k8s/cmf_app_deployment.yaml).
+
+Also one solution includes using MinIO to persist application jars.
 
 ### HA configuration
 
@@ -88,7 +101,7 @@ volumes:
 
 For Flink job or application, it is important to enable checkpointing and savepointing:
 
-```
+```yaml
 job:
   jarURI: local:///opt/flink/examples/streaming/StateMachineExample.jar
 
@@ -107,65 +120,6 @@ job:
     Savepoints are manually triggered snapshots of the job state, which can be used to upgrade a job or to perform manual recovery.
     To trigger a savepoint we need to set a value into `savepointTriggerNonce` in the FlinkDeployment descriptor and then apply the changes. 
     Get the location of the save point and then add to the yaml `initialSavepointPath` to redeploy the applicationL: it will reload its state from the savepoint. There is a custom resource definition ([FlinkStateSnapshotSpec](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/#flinkstatesnapshotspec)) to trigger savepoints. 
-
-### Application deployment 
-
-An **application deployment** must define the job (JobSpec) field with the `jarURI`, `parallelism`, `upgradeMode` one of (stateless/savepoint/last-state) and the desired `state` of the job (running/suspended). [See this sample app](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/basic-sample.yaml) or the [cmf_app_deployment.yaml](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale-simulator/k8s/cmf_app_deployment.yaml) in the e-com-sale demonstration.
-
-```yaml
-job:
-    jarURI: local:///opt/flink/examples/streaming/StateMachineExample.jar
-    # your own deployment
-    jarURI: local:///opt/flink/usrlib/yourapp01.0.0.jar
-    parallelism: 2
-    upgradeMode: stateless
-    state: running
-```
-
-The application jar needs to be in a custom Flink docker image built using the [Dockerfile as in e-com-sale-demo](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale-simulator/flink-app/Dockerfile).
-
-`flinkConfiguration` is a hash map used to define the Flink configuration, such as the task slot, HA and checkpointing parameters.
-
-```yaml
-  flinkConfiguration:
-    high-availability.type: org.apache.flink.kubernetes.highavailability.KubernetesHaServicesFactory
-    high-availability.storageDir: 'file:///opt/flink/volume/flink-ha'
-    restart-strategy: failure-rate
-    restart-strategy.failure-rate.max-failures-per-interval: '10'
-    restart-strategy.failure-rate.failure-rate-interval: '10 min'
-    restart-strategy.failure-rate.delay: '30 s'
-    execution.checkpointing.interval: '5000'
-    execution.checkpointing.unaligned: 'false'
-    state.backend.type: rocksdb
-    state.backend.incremental: 'true'
-    state.backend.rocksdb.use-bloom-filter: 'true'
-    state.checkpoints.dir: 'file:///opt/flink/volume/flink-cp'
-    state.checkpoints.num-retained: '3'
-    state.savepoints.dir: 'file:///opt/flink/volume/flink-sp'
-    taskmanager.numberOfTaskSlots: '10'
-    table.exec.source.idle-timeout: '30 s'
-```
-
-With CP for Flink:
-
-```sh
-# First be sure the service is expose
-kubectl port-forward svc/cmf-service 8080:80 -n flink
-# Deploy the app given its deployment
-confluent flink application create k8s/cmf_app_deployment.yaml  --environment $(ENV_NAME) --url http://localhost:8080 
-```
-
-???- info "Access to user interface"
-    To forward your jobmanager’s web ui port to local 8081.
-
-    ```sh
-    kubectl port-forward ${flink-jobmanager-pod} 8081:8081 
-    # Or using CP for Flink
-    confluent flink application web-ui-forward $(APP_NAME) --environment $(ENV_NAME) --port 8081 --url http://localhost:8080
-    ```
-
-    And navigate to [http://localhost:8081](http://localhost:8081).
-
 
 ### Flink Config Update
 
@@ -226,8 +180,6 @@ kubectl apply -f basic-job-task-mgrs.yaml
 
 Once the job is deployed we can see the pod and then using the user interface the job continuously running:
 
-
-
 * Example of deploying Java based [SQL Runner](https://github.com/apache/flink-kubernetes-operator/blob/main/examples/flink-sql-runner-example/README.md) to interpret a Flink SQL script: package it as docker images, and deploy it with a Session Job. There is a equivalent for Python using [Pyflink](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/overview/).
 
     * [See the ported code for Java](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/sql-runner)
@@ -239,11 +191,46 @@ Once the job is deployed we can see the pod and then using the user interface th
 To help managing snapshots, there is another CR called [FlinkStateSnapshot](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/#flinkstatesnapshotspec)
 
 
----
+## Flink Application deployment 
 
-## Flink application deployment
+An **application deployment** must define the job (JobSpec) field with the `jarURI`, `parallelism`, `upgradeMode` one of (stateless/savepoint/last-state) and the desired `state` of the job (running/suspended). [See this sample app](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/basic-sample.yaml) or the [cmf_app_deployment.yaml](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale/k8s/cmf_app_deployment.yaml) in the e-com-sale demonstration.
 
-The following Dockerfile is used for deploying a solution in **application mode**, which packages the Java Flink jars with the app, and starts the main() function.
+```yaml
+job:
+    jarURI: local:///opt/flink/examples/streaming/StateMachineExample.jar
+    # your own deployment
+    jarURI: local:///opt/flink/usrlib/yourapp01.0.0.jar
+    parallelism: 2
+    upgradeMode: stateless
+    state: running
+```
+
+`flinkConfiguration` is a hash map used to define the Flink configuration, such as the task slot, HA and checkpointing parameters.
+
+```yaml
+  flinkConfiguration:
+    high-availability.type: org.apache.flink.kubernetes.highavailability.KubernetesHaServicesFactory
+    high-availability.storageDir: 'file:///opt/flink/volume/flink-ha'
+    restart-strategy: failure-rate
+    restart-strategy.failure-rate.max-failures-per-interval: '10'
+    restart-strategy.failure-rate.failure-rate-interval: '10 min'
+    restart-strategy.failure-rate.delay: '30 s'
+    execution.checkpointing.interval: '5000'
+    execution.checkpointing.unaligned: 'false'
+    state.backend.type: rocksdb
+    state.backend.incremental: 'true'
+    state.backend.rocksdb.use-bloom-filter: 'true'
+    state.checkpoints.dir: 'file:///opt/flink/volume/flink-cp'
+    state.checkpoints.num-retained: '3'
+    state.savepoints.dir: 'file:///opt/flink/volume/flink-sp'
+    taskmanager.numberOfTaskSlots: '10'
+    table.exec.source.idle-timeout: '30 s'
+```
+
+
+The application jar needs to be in a custom Flink docker image built using the [Dockerfile as in e-com-sale-demo](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale/flink-app/Dockerfile), or uploaded to MinIO.
+
+The following Dockerfile is used for deploying a solution in **application mode**, which packages the Java Flink jars with the app, and any connector jars needed for the integration and starts the `main()` function.
 
 ```dockerfile
 FROM flink
@@ -251,15 +238,63 @@ RUN mkdir -p $FLINK_HOME/usrlib
 COPY /path/of/my-flink-job-*.jar $FLINK_HOME/usrlib/my-flink-job.jar
 ```
 
-As an example the `kafka-flink-demo` has such dockerfile.
 
-We need to define following components (See yaml files in the `kafka-flink-demo`):
+* With CP for Flink:
 
-* an Application which runs a JobManager
-* Deployment for a pool of TaskManagers
-* Service exposing the JobManager’s REST and UI ports
+```sh
+# First be sure the service is expose
+kubectl port-forward svc/cmf-service 8080:80 -n flink
+# Deploy the app given its deployment
+confluent flink application create k8s/cmf_app_deployment.yaml  --environment $(ENV_NAME) --url http://localhost:8080 
+```
 
-The Application Mode makes sure that all Flink components are properly cleaned up after the termination of the application.
+???- info "Access to user interface"
+    To forward your jobmanager’s web ui port to local 8081.
+
+    ```sh
+    kubectl port-forward ${flink-jobmanager-pod} 8081:8081 
+    # Or using CP for Flink
+    confluent flink application web-ui-forward $(APP_NAME) --environment $(ENV_NAME) --port 8081 --url http://localhost:8080
+    ```
+
+    And navigate to [http://localhost:8081](http://localhost:8081).
+
+### Using MinIO
+
+MinIO is an object storage solution that provides an Amazon Web Services S3-compatible API and supports all core S3 features, on k8s.
+
+* First be sure [the MinIO](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) is installed on k8s. See [minio-dev.yaml](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/MinIO/minio-dev.yaml)
+* Access MinIO S3 API and Console
+
+```sh
+kubectl port-forward pod/minio 9000 9090 -n minio-dev
+```
+* Log in to the Console with the credentials minioadmin | minioadmin
+* Setup a minio client: 
+
+  ```sh
+  mc alias set dev-minio http://localhost:9000 minioadmin minioadmin
+  mc mb dev-minio/flink
+  ```
+
+* Upload an application:
+
+  ```sh
+  mc cp ./target/flink-app-0.1.0.jar dev-minio/flink/flink-app-0.1.0.jar
+  mc ls dev-minio/flink
+  ```
+
+* Start application:
+
+  ```sh
+  confluent flink application create --environment env1 --url http://localhost:8080 app-deployment.json
+  ```
+
+* Open Flink UI:
+
+  ```sh
+  confluent flink application web-ui-forward --environment env1 flink-app --url http://localhost:8080
+  ```
 
 ### Flink SQL processing
 

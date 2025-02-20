@@ -88,13 +88,13 @@ See [the flink-sql/00-basic-sql folder](https://github.com/jbcodeforce/flink-stu
 
 ## DDL statements
 
-Data Definition Language (DDL) are statements to define metadata in Flink SQL by creating, updating, or deleting tables.
+Data Definition Language (DDL) are statements to define metadata in Flink SQL by creating, updating, or deleting tables. [See the Flink SQL Examples in Confluent Cloud for Apache Flink documentation.](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#flink-sql-examples-in-af-long)
 
 A table registered with the CREATE TABLE statement can be used as a table source or a table sink.
 
 There are [three different modes](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#changelog-mode) to persist table rows in a log (Kafka topic in Confluent Cloud): append, retract or upsert. 
 
-* **append** means that every insertion can be treated as an independent immutable fact. Records can be distributed using round robin to the different partitions. Do not use primary key with append, as windowing or aggregation will produce undefined, and may be wrong results. Regular joins between two append only streams may not make any sense at the semantic level. While [temporal join](https://developer.confluent.io/courses/flink-sql/streaming-joins/) may be possible. Some query will create append output, like window aggregation, or any operations using the watermark.
+* **append** is the simplest mode where records are only added to the result stream, never updated or retracted. It means that every insertion can be treated as an independent immutable fact. Records can be distributed using round robin to the different partitions. Do not use primary key with append, as windowing or aggregation will produce undefined, and may be wrong results. Regular joins between two append only streams may not make any sense at the semantic level. While [temporal join](https://developer.confluent.io/courses/flink-sql/streaming-joins/) may be possible. Some query will create append output, like window aggregation, or any operations using the watermark.
 * **upsert** means that all rows with same primary key are related and must be partitioned together. Events are upsert or delete for a primary key. Upsert needs a primary key.
 * **retract** means a fact can be undone, and the combination of +X and -X are related and must be partitioned together. Records are related by all the columns so the entire row is the key.
 
@@ -125,7 +125,7 @@ Looking at the physical plan with `EXPLAIN create...` demonstrates the changelog
     ```
 
 ???- info "Append log mode"
-    Create the orders table with a primary key, then insert element with same key. Be sure to get the key as part of the values, if not it will not be possible to group by the key
+    Create the orders table with a primary key, then insert elements with same key. Be sure to get the key as part of the values, if not it will not be possible to group by the key.
 
     ```sql
     create table if not exists orders (
@@ -141,7 +141,7 @@ Looking at the physical plan with `EXPLAIN create...` demonstrates the changelog
 
     The outcome includes records in topics that are insert records:
 
-    ![](./images/append-mode-table.png)
+    ![](./images/append-mode-table.png){ width=600 }
 
     while running the following statement, in session job returns the last two records: (ORD_1, BANANA, 13), (ORD_2, APPLE, 23)
     
