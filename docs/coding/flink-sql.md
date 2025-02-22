@@ -358,7 +358,7 @@ Looking at the physical plan with `EXPLAIN create...` demonstrates the changelog
 
     On CCF the watermark is on the `$rowtime` by default.
 
-???- question "Change system watermark"
+???- question "How to change system watermark?"
 
     ```sql
     ALTER TABLE table_name MODIFY WATERMARK FOR $rowtime AS $rowtime - INTERVAL '1' SECOND;
@@ -629,6 +629,26 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     INSERT INTO users_msk SELECT ..., REGEXP_REPLACE(credit_card,'(\w)','*') as credit_card FROM users;
     ```
 
+???- question "How to filter row that has column content not matching a regular expression?"
+
+    Use [REGEX](https://docs.confluent.io/cloud/current/flink/reference/functions/string-functions.html#flink-sql-regexp-function)
+
+    ```sql
+    WITH filtered_data AS (
+    SELECT *,
+        CASE 
+            WHEN NOT REGEXP(user_agent, '.*Opera/.*') 
+            THEN TRUE  -- Keep this row
+            ELSE FALSE -- Filter out rows that match "Opera/"
+        END AS keep_row
+    FROM examples.marketplace.clicks
+    )
+
+    SELECT * 
+    FROM filtered_data
+    WHERE keep_row = TRUE;
+    ```
+
 ???- question "What are the different SQL execution modes?"
 
     Using previous table it is possible to count the elements in the table using:
@@ -655,12 +675,33 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     ![](./images/changelog-exec-mode.png)
 
+???- question "How to access json data from a string column being a json object?"
+    
+    Use json_query function in the select.
+
+    ```sql
+     json_query(task.object_state, '$.dueDate') AS due_date,
+    ```
+
 ???- question "How to expand a column being an array of fields into new row?"
 
     The table order has n product ids in the product_ids column.
 
     ```sql
     
+    ```
+
+???- question "How to transform a json array column (named data) into an array then generate n rows?"
+    Returning an array from a json string:
+    ```sql
+    json_query(`data`, '$' RETURNING ARRAY<STRING>) as anewcolumn
+    ```
+
+    To create as many rows as there are elements in the nest array:
+    
+    ```sql
+    SELECT existing_column, anewcolumn from table_name
+    cross join unnest (json_query(`data`, '$' RETURNING ARRAY<STRING>)) as t (anewcolumn)
     ```
 
 ???- question "How to use conditional functions?"

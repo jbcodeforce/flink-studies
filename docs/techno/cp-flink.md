@@ -1,13 +1,13 @@
 # Confluent Platform for Flink
 
-[The official documentation after 12/2024 release.](https://docs.confluent.io/platform/current/flink/get-started.html) The main points are:
+[The official product documentation after 12/2024 release is here.](https://docs.confluent.io/platform/current/flink/get-started.html) The main points are:
 
 * Fully compatible with open-source Flink. 
 * Deploy on Kubernetes using Helm
 * Define environment, which group applications
 * Deploy application with user interface and task manager cluster
 * Exposes custom kubernetes operator for specific CRD
-* 
+
 
 The figure below presents the Confluent Flink components deployed on Kubernetes:
 
@@ -20,47 +20,15 @@ The figure below presents the Confluent Flink components deployed on Kubernetes:
 
 Be sure to have [confluent cli.](https://docs.confluent.io/confluent-cli/current/install.html#install-confluent-cli)
 
-## Local deployment using Minikube
+[See dedicated session for Kubernetes deployment](../coding/k8s-deploy.md)
 
-See [product instructions](https://docs.confluent.io/platform/current/flink/get-started.html#step-1-install-cmf-long)
 
-* Start `minikube start --cpus 4 --memory 8048` 
-* Add the Confluent Platform repository:
-
-    ```sh
-    helm repo add confluentinc https://packages.confluent.io/helm
-    helm repo update
-    helm repo list
-    ```
-
-* Install certificate manager under the `cert-manager` namespace
-
-    ```sh
-    kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.8.2/cert-manager.yaml
-    kubeclt get pods -n cert-manager
-    ```
-
-* Create 3 namespaces:
-
-    ```sh
-    kubectl create namespace cpf
-    kubectl create namespace confluent
-    kubectl create namespace flink
-    ```
 
 * Install the Flink Kubernetes Operator (FKO), to the default namespace. It can take sometime to pull the image.
 
     ```sh
     helm upgrade --install cp-flink-kubernetes-operator confluentinc/flink-kubernetes-operator --set watchNamespaces={flink}
     ```
-
-* [Install Minio operator](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) for object storage, to be able : 
-
-    ```sh
-    brew install minio/stable/mc
-    # Verify installation
-    mc --help
-    ``` 
 
 * Install Confluent Manager for Flink using the `cmf` helm chart to the `cpf` namespace:
 
@@ -69,13 +37,7 @@ See [product instructions](https://docs.confluent.io/platform/current/flink/get-
     kubectl get pods -n cpf
     ```
 
-* Config minio under minio-dev namespace
 
-    ```sh
-    # under deploymenet/k8s/cpf
-    kubectl apply -f minio-dev.yaml
-    kubectl get pods -n minio-dev
-    ```
 
 * Install Confluent Platform (Kafka) operator for kubernetes:
 
@@ -99,78 +61,7 @@ See [product instructions](https://docs.confluent.io/platform/current/flink/get-
     confluent flink environment create development --kubernetes-namespace flink --url http://localhost:8080
     ```
 
-### Deploy a sample app
 
-* Validate installation with a sample app:
-
-    ```sh
-    confluent flink application create --environment development --url http://localhost:8080 example-deployment.json
-    ```
-
-* Access Web UI
-
-    ```sh
-    confluent flink application web-ui-forward --environment development basic-example --url http://localhost:8080
-    ```
-
-* Delete the application
-
-    ```sh
-    confluent flink application delete --environment development basic-example --url http://localhost
-    ```
-
-### Deploy a custom app using minio
-
-* Setup minio Client, with credential saved to  $HOME/.mc/config.json`
-
-    ```sh
-    kubectl port-forward pod/minio 9000 9090 -n minio-dev
-    # manage server credentials in configuration file
-    mc alias set dev-minio http://localhost:9000 minioadmin minioadmin
-    # make a bucket
-    mc mb dev-minio/flink
-    ```
-
-* Upload application to minio bucket:
-
-    ```sh
-    mc cp ./kafka-reader-writer-1.0-SNAPSHOT.jar dev-minio/flink/kafka-reader-writer-1.0-SNAPSHOT.jar
-    # list buckets and objects  
-    mc ls dev-minio/flink
-    ```
-
-* Start application
-
-    ```sh
-    confluent flink application create --environment development --url http://localhost:8080 kafka-deployment.json
-    # Open web UI
-    confluent flink application web-ui-forward --environment development kafka-reader-writer-example --url http://localhost:8080
-    ```
-    
-* Produce messages to kafka topic
-
-    ```sh
-    echo 'message1' | kubectl exec -i -n confluent kafka-0 -- /bin/kafka-console-producer --bootstrap-server kafka.confluent.svc.cluster.local:9092 --topic in
-    ```
-    
-* Cleanup
-
-    ```sh
-    # the Flink app
-    confluent flink application delete kafka-reader-writer-example --environment development --url http://localhost:8080
-    # the Kafka cluster
-    # the operators
-    ```
-
-### Some troubleshooting commands
-
-* Get node resource capacity
-
-    ```sh
-    k describe node minikube
-    ```
-
-* Use kubectl describe pod <podid> to understand what happen for a pod, and logs on the flink operator.
 
 ## Important source of information for deployment
 

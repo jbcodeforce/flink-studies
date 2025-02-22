@@ -20,7 +20,7 @@ sudo apt-get install helm
 ```
 
 * Get the [list of Flink releases and tags here](https://downloads.apache.org/flink/) or [Confluent one](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
-* Add Helm repo: 
+* Add the Confluent Platform Helm repository: 
 
 ```sh
 helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.9.0
@@ -43,6 +43,8 @@ helm repo update
 make deploy_cert_manager
 # or explicitly using:
 kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.16.2/cert-manager.yaml
+# verify
+kubeclt get pods -n cert-manager
 ```
 
 * Install the Flink Kubernetes operator (See below)
@@ -55,7 +57,7 @@ kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.
 helm repo add kafbat-ui https://kafbat.github.io/helm-charts
 ```
 
-* Install Minio to persist jar or expose object storage in the K8S. [See Minio quickstart.](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart)
+* Install Minio to persist jar or expose object storage in the K8S. [See Minio quickstart](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) and [this section.](https://jbcodeforce.github.io/flink-studies/coding/k8s-deploy/#using-minio)
 
 
 ### Setup the environment with minikube

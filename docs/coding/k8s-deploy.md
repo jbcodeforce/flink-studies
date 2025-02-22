@@ -11,7 +11,7 @@ The [operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs
 
 ![](./diagrams/fk-operator-hl.drawio.png)
 
-t fully automates the entire lifecycle of job manager, task managers, and applications. Failures of Job Manager pods are handled by the Deployment Controller which will take care of spawning a new Job Manager.
+The operator fully automates the entire lifecycle of job manager, task managers, and applications. Failures of Job Manager pods are handled by the Deployment Controller which will take care of spawning a new Job Manager.
 
 As other operator it can run **namespace-scoped**, to get multiple versions of the operator in the same Kubernetes cluster, or **cluster-scoped** for highly distributed  deployment. 
 
@@ -28,7 +28,7 @@ The custom resource definition that describes the schema of a FlinkDeployment is
 
 [Flink Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/) acts as a control plane to manage the complete deployment lifecycle of Apache Flink applications.
 
-For hands-on instructions and Makefile to deploy Flink, Confluent Platform on k8s (local colima or minikube) see [this readme](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/README.md).
+For hands-on instructions and Makefile to deploy Flink, Confluent Platform on k8s (local colima or minikube) see [this readme](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/README.md) and the [Confluent product instructions](https://docs.confluent.io/platform/current/flink/get-started.html#step-1-install-cmf-long).
 
 ## Custom Resources
 
@@ -241,12 +241,12 @@ COPY /path/of/my-flink-job-*.jar $FLINK_HOME/usrlib/my-flink-job.jar
 
 * With CP for Flink:
 
-```sh
-# First be sure the service is expose
-kubectl port-forward svc/cmf-service 8080:80 -n flink
-# Deploy the app given its deployment
-confluent flink application create k8s/cmf_app_deployment.yaml  --environment $(ENV_NAME) --url http://localhost:8080 
-```
+    ```sh
+      # First be sure the service is expose
+      kubectl port-forward svc/cmf-service 8080:80 -n flink
+      # Deploy the app given its deployment
+      confluent flink application create k8s/cmf_app_deployment.yaml  --environment $(ENV_NAME) --url http://localhost:8080 
+    ```
 
 ???- info "Access to user interface"
     To forward your jobmanager’s web ui port to local 8081.
@@ -264,37 +264,69 @@ confluent flink application create k8s/cmf_app_deployment.yaml  --environment $(
 MinIO is an object storage solution that provides an Amazon Web Services S3-compatible API and supports all core S3 features, on k8s.
 
 * First be sure [the MinIO](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) is installed on k8s. See [minio-dev.yaml](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/MinIO/minio-dev.yaml)
+
+  ```sh
+    brew install minio/stable/mc
+    # Verify installation
+    mc --help
+    ``` 
+
+* Config minio under minio-dev namespace
+
+    ```sh
+    # under deploymenet/k8s/cpf
+    kubectl apply -f minio-dev.yaml
+    kubectl get pods -n minio-dev
+    ```
+
 * Access MinIO S3 API and Console
 
-```sh
-kubectl port-forward pod/minio 9000 9090 -n minio-dev
-```
+    ```sh
+    kubectl port-forward pod/minio 9000 9090 -n minio-dev
+    ```
+
 * Log in to the Console with the credentials minioadmin | minioadmin
-* Setup a minio client: 
+* Setup a minio client with credential saved to  $HOME/.mc/config.json
 
-  ```sh
-  mc alias set dev-minio http://localhost:9000 minioadmin minioadmin
-  mc mb dev-minio/flink
-  ```
+    ```sh
+    mc alias set dev-minio http://localhost:9000 minioadmin minioadmin
+    # make a bucket
+    mc mb dev-minio/flink
+    ```
 
-* Upload an application:
+* Upload an application to minio bucket:
 
-  ```sh
-  mc cp ./target/flink-app-0.1.0.jar dev-minio/flink/flink-app-0.1.0.jar
-  mc ls dev-minio/flink
-  ```
+    ```sh
+    mc cp ./target/flink-app-0.1.0.jar dev-minio/flink/flink-app-0.1.0.jar
+    mc ls dev-minio/flink
+    ```
 
-* Start application:
+* Start the application:
 
-  ```sh
-  confluent flink application create --environment env1 --url http://localhost:8080 app-deployment.json
-  ```
+    ```sh
+    confluent flink application create --environment env1 --url http://localhost:8080 app-deployment.json
+    ```
 
 * Open Flink UI:
 
-  ```sh
-  confluent flink application web-ui-forward --environment env1 flink-app --url http://localhost:8080
-  ```
+    ```sh
+    confluent flink application web-ui-forward --environment env1 flink-app --url http://localhost:8080
+    ```
+
+* Produce messages to kafka topic
+
+    ```sh
+    echo 'message1' | kubectl exec -i -n confluent kafka-0 -- /bin/kafka-console-producer --bootstrap-server kafka.confluent.svc.cluster.local:9092 --topic in
+    ```
+
+* Cleanup
+
+    ```sh
+    # the Flink app
+    confluent flink application delete kafka-reader-writer-example --environment development --url http://localhost:8080
+    # the Kafka cluster
+    # the operators
+    ```
 
 ### Flink SQL processing
 
