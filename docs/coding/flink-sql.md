@@ -95,7 +95,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
 There are [three different modes](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#changelog-mode) to persist table rows in a log (Kafka topic in Confluent Cloud): append, retract or upsert. 
 
 * **append** is the simplest mode where records are only added to the result stream, never updated or retracted. It means that every insertion can be treated as an independent immutable fact. Records can be distributed using round robin to the different partitions. Do not use primary key with append, as windowing or aggregation will produce undefined, and may be wrong results. Regular joins between two append only streams may not make any sense at the semantic level. While [temporal join](https://developer.confluent.io/courses/flink-sql/streaming-joins/) may be possible. Some query will create append output, like window aggregation, or any operations using the watermark.
-* **upsert** means that all rows with same primary key are related and must be partitioned together. Events are upsert or delete for a primary key. Upsert needs a primary key.
+* **upsert** means that all rows with the same primary key are related and must be partitioned together. Events are upsert or delete for a primary key. Upsert needs a primary key. 
 * **retract** means a fact can be undone, and the combination of +X and -X are related and must be partitioned together. Records are related by all the columns so the entire row is the key.
 
 The `change.log` property is set up by using the `WITH ('changelog.mode' = 'upsert')` options when creating the table.
@@ -110,9 +110,8 @@ Looking at the physical plan with `EXPLAIN create...` demonstrates the changelog
 ### Table creation
 
 ???- tip "Primary key considerations"
-    * Primary key can have one or more columns, all of them should be not null
-    * In Flink the primary key can only be `NOT ENFORCED`
-    * The PRIMARY KEY declaration partitions the table implicitly by the key column(s)
+    * Primary key can have one or more columns, all of them should be not null, and only being `NOT ENFORCED`
+    * The primary key declaration partitions the table implicitly by the key column(s)
     * The primary key is becoming the kafka key implicitly and in Confluent Cloud, it will generate a key schema, except if using the option (`'key.format' = 'raw'`)
 
     ```sql
@@ -124,8 +123,8 @@ Looking at the physical plan with `EXPLAIN create...` demonstrates the changelog
     CREATE TABLE humans (race INT, s STRING) DISTRIBUTED BY HASH (race) INTO 4 BUCKETS;
     ```
 
-???- info "Append log mode"
-    Create the orders table with a primary key, then insert elements with same key. Be sure to get the key as part of the values, if not it will not be possible to group by the key.
+???- info "Change log - append mode"
+    With append mode, it is possible to create a table with a primary key, and inserting duplicate record with the same key, will be insert events. 
 
     ```sql
     create table if not exists orders (
@@ -143,11 +142,13 @@ Looking at the physical plan with `EXPLAIN create...` demonstrates the changelog
 
     ![](./images/append-mode-table.png){ width=600 }
 
-    while running the following statement, in session job returns the last two records: (ORD_1, BANANA, 13), (ORD_2, APPLE, 23)
+    while running the following statement, in a session job, returns the last records per key: (ORD_1, BANANA, 13), (ORD_2, APPLE, 23).
     
     ```sql
     SELECT * FROM `orders` LIMIT 10;
     ```
+
+    Also be sure to get the key as part of the values, using the `'value.fields-include' = 'all'` option, if not it will not be possible to group by the key.
 
 ???- tip "Create a table with csv file as persistence - Flink OSS"
     We need to use the file system connector.
@@ -683,6 +684,8 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
      json_query(task.object_state, '$.dueDate') AS due_date,
     ```
 
+    Use json_value() instead if the column content is a dict or json {}.
+
 ???- question "How to expand a column being an array of fields into new row?"
 
     The table order has n product ids in the product_ids column.
@@ -772,14 +775,12 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 When doing a join, Flink needs to materialize both the right and left of the join tables fully in state, which can cost a lot of memory, because if a row in the left-hand table (LHT), also named the **probe side**, is updated, the operator needs to emit an updated match for all matching rows in the right-hand table (RHT) or **build side**. The cardinality of right side will be mostly bounded at a given point of time, but the left side may vary a lot. A join emits matching rows to downstream processing.
 
-Here is a list of important tutorials:
+Here is a list of important tutorials on Joins:
 
 * [Confluent Cloud: video on joins.](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html)
 * [Confluent -developer: How to join streams](https://developer.confluent.io/tutorials/join-a-stream-to-a-stream/flinksql.html). The matching content is in [flink-sql/04-joins folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/04-joins) for Confluent Cloud or Platform for Flink. This folder also includes more SQL exercises.
 * [Confluent temporal join](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html#temporal-joins)
 * [Window Join Queries in Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/flink/reference/queries/window-join.html)
-
-???- tutorial "Left Join"
 
 ???- info "Inner knowledge on temporal join"
     Event-time temporal joins are used to join two or more tables based on a **common** event time (in one of the record table or the kafka record: `$rowtime` system column). With an event-time attribute, the operator can retrieve the value of a key as it was at some point in the past. The right-side, versioned table, stores all versions, identified by time, since the last watermark.
@@ -814,6 +815,9 @@ Here is a list of important tutorials:
         where P.ts between T.ts and T.ts + interval '1' minutes;
     end
     ```
+
+???- warning "Join on 1x1 relationship"
+    In current Flink SQL it is not possible to *efficiently* join elements from two tables when we know the relation is 1 to 1: one transaction to one account, one shipment to one order. As soon as there is a match, normally we want to emit the result and clear the state. This is possible to do so with the DataStream API, not SQL.
 
 ### Windowing / Table Value Functions
 

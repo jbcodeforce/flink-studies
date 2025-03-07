@@ -16,8 +16,12 @@ Confluent Cloud Flink is built on the same open-source version as Apache Flink®
 * Default system column for timestamps using the `$rowtime` column.
 * Default watermark strategy based on $rowtime.
 * Support for Avro, JSON Schema, and Protobuf.
-* CREATE statements provision resources as Kafka topics and schemas (temporary tables not supported).
+* CREATE TABLE statements provision resources as Kafka topics and schemas (temporary tables not supported).
 * Read from and write to Kafka in two modes: append-stream or update-stream.
+
+Some **limitations**:
+
+* No support for DataStream apps.
 
 ## Key Concepts
 

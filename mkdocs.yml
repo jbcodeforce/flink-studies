@@ -9,7 +9,6 @@ nav:
     - Flink Architecture: architecture/index.md
     - Fit for purpose: architecture/fitforpurpose.md
     - Flink SQL concepts: architecture/flink-sql.md
-
   - Practices:
     - Shift Left: shift_left.md
     - Flink SQL coding: coding/flink-sql.md
@@ -22,6 +21,9 @@ nav:
     - Complex Event Processing: coding/cep.md
     - IaC wt Terraform: coding/terraform.md
     - Flink on k8s Monitoring: techno/fk-k8s-monitor.md
+  - Methodology:
+    - Shift Left: methodology/shift_left.md
+    - Event Storming: https://jbcodeforce.github.io/eda-studies/methodology/event-storming/
   - Techno:
     - Confluent Cloud Flink: techno/ccloud-flink.md 
     - Confluent Cloud Platform Flink: techno/cp-flink.md 
