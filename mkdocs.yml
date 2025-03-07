@@ -22,7 +22,7 @@ nav:
     - IaC wt Terraform: coding/terraform.md
     - Flink on k8s Monitoring: techno/fk-k8s-monitor.md
   - Methodology:
-    - Shift Left: methodology/shift_left.md
+    - Data as a product: methodology/shift_left.md
     - Event Storming: https://jbcodeforce.github.io/eda-studies/methodology/event-storming/
   - Techno:
     - Confluent Cloud Flink: techno/ccloud-flink.md 

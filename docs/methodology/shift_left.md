@@ -1,9 +1,18 @@
-# Moving to a data product architecture
+# Moving to a data as a product architecture
 
-This chapter aims to present 
-evaluate the considerations necessary for transforming logic and SQL scripts designed for batch processing into those suitable for real-time processing. 
+This chapter aims to summarize the current challenges of big data / data lake or lakehouse practices and architecture, and how to adopt a data as a product architecture in the context of understanding how  real-time streaming capability fits into this paradigm shift of designing solutions.
 
 ## Context
+
+### Operational Data and Analytical data
+
+The data landscape is split between operational data, which powers real-time applications, and analytical data, which provides historical insights for decision-making and machine learning. This separation has created complex and fragile data architectures, marked by problematic ETL processes and intricate data pipelines. The challenge lies in effectively bridging these two distinct data planes to ensure seamless data flow and integration.
+
+![](./diagrams/data_op_data_planes.drawio.png)
+
+The first implementation generation of those two planes where based on database on the left side, data warehouse on the right, and ETL jobs for pipelines. Because of scaling needs and the need to support unstructurured data, the 2nd generation, starting mid 2000s adopts distributed object storage, forming the Data Lake.   
+
+TBC 
 
 The traditional architecture to organize data lakes is to use the 3 layers or medallion architecture as illustrated in the following figure:
 
@@ -18,6 +27,7 @@ The main motivations for the adoption of this architecture can be seen as:
 
 ### Challenges
 
+* We observe complex ETL jobs landscape, with high failure rate
 * Not all data needs the 3 layers architecture and but a more service contract type of data usage. Data becoming a product like a microservice.
 * There is a latecy issue to get the data, we talk about T + 1 to get fresh data. The + 1 can be one day or one hour, but it has latency that may not what business requirements need.
 * Simple transformations need to be done with the ETL or ELT tool with the predefined staging. Not specific use-case driven implementation of the data retrieval and processing. 
@@ -45,7 +55,47 @@ A more detailed view, using Kafka Connectors will look like in the diagram below
 
 ## A data product approach
 
-Data product is designed with a domain-driven model combined with analytical and operational use cases. The methodology to define data product may be compared to the microservice adoption, and even the event-driven microservice. The core paradigm shift is to move to a push mechanism where data applications push business context data with a use case centric serving capability. Aggregation processing is considered as a service pushing data product to other consumers. The aggregate models make specific queries on other data products and serve the results with SLOs.
+### Data products
+
+Data products serve analytical data, they are self-contained, deployable, valuable and exhibit eight characteristics:
+
+* **Discoverable**: data consumers can easily find the data product for their use case
+* **Addressable**: with a unique address accessible programmatically
+* **Self describable**: Clear description of the purpose and usage patterns 
+* **Trustworthy**: clear Service Level Objectives and Service Level Indicators conformance
+* **Native access**: adapt the access interface to the consumer: APIs, events, SQL views, reports, widgets
+* **Composable**: integrate with other data products, for joining, filtering and aggregation
+* **Valuable**: represent a cohesive concept within its domain. Sourced from unstructured, semi-structured and structured data. To maximize value within a data mesh, data products should have narrow, specific definitions, enabling reusable blueprints and efficient management.
+* **Secure**: with access control rules and enforcement
+
+They are not data applications, data warehouses, PDF reports, dashboards, tables (without proper metadata), or kafka topics.
+
+### Methodology
+
+Defining, designing and implementing data products follow the same principles as other software development and should start by the end goal and use case. This should solidify clear product objectives. Do not start from data sources. Some example of use cases:
+
+<style>
+table th:first-of-type {
+    width: 60%;
+}
+table th:nth-of-type(2) {
+    width: 40%;
+}
+</style>
+| User Story| Data Products |
+| --- | --- |
+| As a **marketing strategist**, I need to provide predictive churn scores and customer segmentation based on behavior and demographics. This will allow me to proactively target at-risk customers with personalized retention campaigns and optimize marketing spend. | <ul><li>Churn probability scores for each customer.</li><li>Customer segments based on churn risk and value.</li> <li>Key factors influencing churn.</li></ul> |
+| As a **product manager**, I need to visualize key product usage metrics and performance indicators. This will enable me to monitor product adoption, identify usage patterns, and make data-driven decisions for product improvements. |  <ul><li>Active users, feature usage, and conversion rates.</li><li>Historical trends and comparisons of product performance.</li><li>Breakdowns of product usage by customer segment</li><li>Alerts for anomalies or significant changes in product usage</li></ul>
+| As a **supply chain manager**, I need to get real-time visibility into inventory levels, supplier performance, and delivery timelines. This will help me proactively identify potential disruptions, optimize inventory management, and ensure timely product delivery. | <ul><li>Real-time inventory levels across all warehouses.</li><li>Supplier performance metrics, such as on-time delivery rates and quality scores.</li><li>Predictive alerts for potential stockouts or delivery delays.</li><li>Visualizations of delivery routes and timelines.</li><li>Historical data that can be used to perform trend analysis, and find bottlenecks.</li></ul>| 
+
+Using classical system context diagram we can define an high level view of a data product as:
+
+![](./diagrams/dp_sys_ctx.drawio.png)
+
+
+Data as a product is designed with a domain-driven model combined with analytical and operational use cases. 
+
+The methodology to define data product may be compared to the microservice adoption, and even the event-driven microservice. The core paradigm shift is to move to a push mechanism where data applications push business context data with a use case centric serving capability. Aggregation processing is considered as a service pushing data product to other consumers. The aggregate models make specific queries on other data products and serve the results with SLOs.
 
 The design starts by the user input, which are part of a business domain and business context. The data may be represented as DDD aggregate with a semantic model. [Entities and Value objects](https://jbcodeforce.github.io/eda-studies/methodology/ddd/#entities-and-value-objects) are represented to assess the need to reuse other data product and potentially assess the need for anti corruption layer. 
 
@@ -55,6 +105,7 @@ Data pushed to higher consumer are part of the semantic model, and event-driven 
 
 Moving from technical data delivery to product thinking requires changes in how organizations approach data management. New requirements are added to the context of the source semantic model.
 
+### 
 ## Motivations for moving to data stream processing
 
 The Data integration adoption is evolving with new needs to act on real-time data and reduce batch processing cost and complexity. The following table illustrates the pros and cons of data integration practices for two axes: time to insights and data integity
