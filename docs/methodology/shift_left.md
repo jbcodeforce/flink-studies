@@ -104,7 +104,12 @@ To address the concerns of siloed and incompatible data, while addressing scalin
 
 ## A data product approach
 
-As seen previously, domains need to host and serve their domain datasets in an easily consumable way, rather than flowing the data from domains into a centrally owned data lake or platform. Dataset from one domain may be consumed by another domain in a format suitable for its own application. Consumer pulls the dataset.
+As seen previously, domains need to host and serve their domain datasets in an easily consumable way, rather than flowing the data from domains into a centrally owned data lake or platform. Dataset from one domain may be consumed by another domains in a format suitable for its own application. Consumer pulls the dataset.
+
+<figure markdown="span">
+![](./diagrams/rti_dps.drawio.png)
+ <figcaption>Data product reused by other domains</figcaption>
+</figure>
 
 So developing data as a product means shifting from push and ingest of ETL and ELT processes to serving and pull model across all domains. 
 
@@ -112,14 +117,14 @@ So developing data as a product means shifting from push and ingest of ETL and E
 
 Data products serve analytical data, they are self-contained, deployable, valuable and exhibit eight characteristics:
 
-* **Discoverable**: data consumers can easily find the data product for their use case
-* **Addressable**: with a unique address accessible programmatically
-* **Self describable**: Clear description of the purpose and usage patterns 
-* **Trustworthy**: clear Service Level Objectives and Service Level Indicators conformance
+* **Discoverable**: data consumers can easily find the data product for their use case.  A common implementation is to have a registry, a data catalogue, of all available data products with their meta information. Domain data products need to register themselves to the catalog.
+* **Addressable**: with a unique address accessible programmatically. This implies to define naming convention and may be SDK code.
+* **Self describable**: Clear description of the purpose and usage patterns as well as the semantics and syntax. The schema definition and registry are used for that purpose. 
+* **Trustworthy**: clear definition of the [Service Level Objectives](https://en.wikipedia.org/wiki/Service-level_objective) and Service Level Indicators conformance. 
 * **Native access**: adapt the data access interface to the consumer: APIs, events, SQL views, reports, widgets
-* **Composable**: integrate with other data products, for joining, filtering and aggregation
+* **Composable**: integrate with other data products, for joining, filtering and aggregation. Nedd to define standards for field type formatting, identifying polysemes across different domains, datasets address conventions, common metadata fields, event formats such as CloudEvents. Federated identity may also being used to keep unique identifier cross domain for a business entity.
 * **Valuable**: represent a cohesive concept within its domain. Sourced from unstructured, semi-structured and structured data. To maximize value within a data mesh, data products should have narrow, specific definitions, enabling reusable blueprints and efficient management.
-* **Secure**: with access control rules and enforcement
+* **Secure**: with access control rules and enforcement, and single sign on capability.
 
 To support the implementation of those characteristics, it is relevant to name a *domain data product owner*, who is also responsible to measure data quality, the decreased lead time of data consumption, and the data user satisfaction, or net promoter score. The most important questions a product owner should be able to answer are:
 
@@ -138,10 +143,13 @@ The following elements are part of a data product owner to develop and manage, w
 * Event model definition for asynch consumptions
 * Storage definition, service account, roles and access policies
 * Table definitions
-* Flink statement definitions for deduplication enrichment, aggregation, and deployment definitions
+* Flink statement definitions for deduplication, enrichment, aggregation, and deployment definitions
 * Microservice code implementation, packaging and deployment definitions
 
 All those elements can be defined as code in a git repository or between a gitops repo and a code repository. It is recommended to keep one bounded context per repository.
+
+???- info "Data lake, lakehouse and data warehouse"
+    Data lake is no more a central piece of the architecture with complex pipelines, they are becoming a node in the data mesh, to expose a dataset. It may not be used as the source of truth is becoming the immutable distributes logs and storage that holds the dataset available for replayability. Datawarehouse for business intelligence is also a node, and consumer of the data product.
 
 ### Methodology
 
@@ -172,7 +180,7 @@ Using a classical system context diagram for the supply chain management use cas
 
 <figure markdown="span">
 ![](./diagrams/dp_sys_ctx.drawio.png)
- <figcaption>Data as a product: system context view/figcaption>
+ <figcaption>Data as a product: system context view</figcaption>
 </figure>
 
 The skill analysis use case may define the following data product:
@@ -211,11 +219,19 @@ Data pushed to higher consumer are part of the semantic model, and of the event-
 
 Source data domains need to make easily consumable historical snapshots of their datasets available, not just timed events. These snapshots should be aggregated based on a time frame that matches the typical rate of change within their domain.
 
-While the datasets’ ownership is delegated from the central platform to the domains, the need for cleansing, preparing, aggregating and serving data remains, so does the usage of data pipelines which are 
-now part of the domain logic.
+Even though domains now own their datasets instead of a central platform, the essential tasks of cleansing, preparing, aggregating, and serving data persist, as does the use of data pipelines, which are now integrated into domain logic.
 
 
-Moving from technical data delivery to product thinking requires changes in how organizations approach data management. New requirements are added to the context of the source semantic model.
+<figure markdown="span">
+![](./diagrams/bdctx_dp_view.drawio.png)
+ <figcaption>Data product within bounded context</figcaption>
+</figure>
+
+Each domain dataset must establish Service Level Objectives for the quality of the data it provides: timeliness, error rates...
+
+Moving from technical data delivery to product thinking requires changes in how organizations approach data management. The data product is decomposed of real-time events exposed on event streams, and aggregated analytical data exposed as serialized files on an object store.
+
+New requirements are added to the context of the source semantic model.
 
 ### 
 
@@ -237,8 +253,8 @@ table th:nth-of-type(3) {
 | Time to insights | | Data integrity | 
 | --- | --- | --- |
 | | **Low**  | **High**       |
-| **High** | **Lakehouse or ELT:** + Self-service. - Runaway cost, - No knowledge of data lost, - complext data governance, - data silos. | **Data Stream Platform:** + RT decision making, + Operation and analytics on same platform. + Single source of truth, + Reduced TCO, + Governance | 
-| **Low** | **Hand coding:** + customized solution specific to needs. - Slow, - difficult to scale, - opaque, - challenging governance. | **ETL:** + Rigorous, + data model design, + governed, + reliable. - Slow, - Point to point, - Difficult to scale. | 
+| **High** | **Lakehouse or ELT:** <ul><li>+ Self-service</li><li>- Runaway cost</li><li>- No knowledge of data lost</li><li>- complext data governance</li><li>- data silos.</li></ul> | **Data Stream Platform:** <ul><li>+ RT decision making</li><li>+ Operation and analytics on same platform</li><li>+ Single source of truth</li><li>+ Reduced TCO</li><li>+ Governance</li></ul> | 
+| **Low** | **Hand coding:** <ul><li>+ customized solution specific to needs.</li><li>- Slow</li><li>- difficult to scale</li><li>- opaque</li><li>- challenging governance.</li></ul> | **ETL:**<ul><li>+ Rigorous</li><li>+ data model design</li><li>+ governed</li><li>+ reliable</li><li>- Slow</li><li>- Point to point</li><li>- Difficult to scale.</li></ul> | 
 
 ### Assessment questions
 
@@ -302,4 +318,4 @@ left join table_right
 
 * [Martin Fowler - Designing Data Product](https://martinfowler.com/articles/designing-data-products.html)
 * [Data Mesh Principals - Zhamak Dehghani](https://martinfowler.com/articles/data-mesh-principles.html)
-* [How to Move Beyond a Monolithic Data Lake to a Distributed Data Mesh]()
+* [How to Move Beyond a Monolithic Data Lake to a Distributed Data Mesh](https://martinfowler.com/articles/data-monolith-to-mesh.html)
