@@ -10,7 +10,6 @@ nav:
     - Fit for purpose: architecture/fitforpurpose.md
     - Flink SQL concepts: architecture/flink-sql.md
   - Practices:
-    - Shift Left: shift_left.md
     - Flink SQL coding: coding/flink-sql.md
     - First Java Apps: coding/firstapp.md
     - Kubernetes Deployment: coding/k8s-deploy.md
@@ -68,6 +67,7 @@ markdown_extensions:
   - admonition
   - codehilite
   - footnotes
+  - pymdownx.blocks.caption
   - pymdownx.smartsymbols
   - pymdownx.arithmatex:
       generic: true

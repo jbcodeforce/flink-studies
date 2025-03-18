@@ -1,6 +1,6 @@
 # E-commerce real-time analytics
 
-This demonstration presents a real-time data processing with Kafka local cluster combined with Flink app used for real-time analytics.
+This demonstration presents a real-time data processing with a local Kafka cluster combined with Flink app used for real-time analytics.
 
 **Context**: An online retail company wants to analyze customer behavior and sales performance in real-time. They need to track user actions, purchases, and inventory levels to make quick business decisions and optimize their operations.
 
@@ -10,7 +10,7 @@ This demonstration presents a real-time data processing with Kafka local cluster
 * Purchases
 * Inventory updates
 
-The Flink job consumes this data from the Kafka topic and performs various analyses, such as:
+The Flink job consumes this data from the Kafka topic and performs various analysis, such as:
 
 * Calculate real-time sales metrics (e.g., revenue per minute, top-selling products)
 * Detect and alert on low inventory levels
@@ -49,7 +49,7 @@ The EcommerceEventProcessor class may do the process logic like:
 * Analyzing user behavior patterns (e.g., most viewed products, conversion rates)
 * Implementing a simple recommendation system based on user actions
 
-### First approach use enrichment with a simple join
+### First approach: use enrichment with a simple join
 
 Enrich the purchase from the product table
 

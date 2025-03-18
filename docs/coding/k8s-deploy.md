@@ -265,11 +265,13 @@ MinIO is an object storage solution that provides an Amazon Web Services S3-comp
 
 * First be sure [the MinIO](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) is installed on k8s. See [minio-dev.yaml](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/MinIO/minio-dev.yaml)
 
-  ```sh
+    ```sh
     brew install minio/stable/mc
     # Verify installation
     mc --help
     ``` 
+
+    [mc cli command summary](https://min.io/docs/minio/linux/reference/minio-mc.html)
 
 * Config minio under minio-dev namespace
 
