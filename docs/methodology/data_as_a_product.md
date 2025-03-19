@@ -320,4 +320,5 @@ left join table_right
 
 * [Martin Fowler - Designing Data Product](https://martinfowler.com/articles/designing-data-products.html)
 * [Data Mesh Principals - Zhamak Dehghani](https://martinfowler.com/articles/data-mesh-principles.html)
-* [How to Move Beyond a Monolithic Data Lake to a Distributed Data Mesh](https://martinfowler.com/articles/data-monolith-to-mesh.html)
+* [How to Move Beyond a Monolithic Data Lake to a Distributed Data Mesh - Zhamak Dehghani](https://martinfowler.com/articles/data-monolith-to-mesh.html)
+* [Confluent Blog - Data Products, Data Contracts, and Change Data Capture - Adam Bellemare](https://www.confluent.io/blog/implementing-streaming-data-products/)
