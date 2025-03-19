@@ -16,10 +16,10 @@ metadata:
   name: kafka
   namespace: confluent
 spec:
-  dataVolumeCapacity: 3G
+  dataVolumeCapacity: 1G
   image:
-    application: docker.io/confluentinc/cp-server:7.8.1
-    init: confluentinc/confluent-init-container:2.9.4
+    application: docker.io/confluentinc/cp-server:7.9.0
+    init: confluentinc/confluent-init-container:2.11.0
   replicas: 1  # need 3 for control center to start
   dependencies:
     kRaftController:
@@ -46,6 +46,6 @@ metadata:
 spec:
   replicas: 1
   image:
-    application: confluentinc/cp-schema-registry:7.8.1
-    init: confluentinc/confluent-init-container:2.9.4
+    application: confluentinc/cp-schema-registry:7.9.0
+    init: confluentinc/confluent-init-container:2.11.0
 

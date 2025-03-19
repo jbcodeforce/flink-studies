@@ -21,6 +21,6 @@ curl -X POST -H "Content-Type: application/json" --data @config/sink-connector.j
 
 ## Setup
 
-* Start Minikube with `minikube start --cpus 4 --memory 8G `
-* As Flink can run on Kubernetes all the demonstration uses open-source flink with kubernetes operator on Minikube.
+* Start colima with `colima start --cpus 4 --memory 8G --kubernetes`
+* As Flink can run on Kubernetes all the demonstration uses open-source flink with kubernetes operator.
 * Postgresql runs on k8s with postgresql operator.

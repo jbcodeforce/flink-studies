@@ -272,11 +272,13 @@ Try to get an understanding of the data integration requirements by looking at:
 
 ## Migration Context
 
-A direct "lift and shift" approach—where SQL scripts are converted to Flink statements on a one-to-one basis—is not feasible. Refactoring is essential, as SQL processing often differs significantly in cases involving complexity and stateful operators, such as joins.
+A direct "lift and shift" approach—where batch SQL scripts are converted to Flink statements on a one-to-one basis—is not recommended. Refactoring is essential, as SQL processing often differs significantly in the cases involving complexity and stateful operators, such as joins.
 
 Most of the filtering and selection scripts can be ported 1 to 1. While most stateful processing needs to be refactorized and deeply adapted to better manage states and complexity.
 
-There is [a repository](https://jbcodeforce.github.io/shift_left_utils/) with tools to process existing dbt project to find dependencies between tables, use local LLM to do some transformations, and create target pipelines per sink table.
+There is [a repository](https://jbcodeforce.github.io/shift_left_utils/) with tools to process existing dbt project to find dependencies between tables, use local LLM to do some migrations, and create target pipelines per sink table. 
+
+---
 
 ## Time condiderations
 
