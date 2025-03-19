@@ -251,3 +251,114 @@ Some code is in [this folder](https://github.com/jbcodeforce/flink-studies/tree/
 * [See this git repo: Learn-apache-flink-table-api-for-java-exercises](https://github.com/confluentinc/learn-apache-flink-table-api-for-java-exercises). 
 * See the [Table API in Java documentation](https://docs.confluent.io/cloud/current/flink/reference/table-api.html).
 * [Connecting the Apache Flink Table API to Confluent Cloud](https://developer.confluent.io/courses/flink-table-api-java/exercise-connecting-to-confluent-cloud/) with matching [github](https://github.com/confluentinc/learn-apache-flink-table-api-for-java-exercises) which part of this code was ported into [flink-sql-demos/02-table-api-java](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/02-table-api-java)
+
+
+---
+
+TO WORK ON
+
+## Lower level Java based programming model
+
+* Start Flink server using docker ([start with docker compose](../coding/getting-started.md#docker-compose-with-kafka-and-flink) or on [k8s](../coding/k8s-deploy.md)). 
+* Start by creating a java application (quarkus create app for example or using maven) and a Main class. See code in [flink-sql-quarkus](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql/flink-sql-quarkus/) folder.
+* Add dependencies in the pom
+
+```xml
+      <dependency>
+        <groupId>org.apache.flink</groupId>
+        <artifactId>flink-table-api-java-bridge</artifactId>
+        <version>${flink-version}</version>
+      </dependency>
+        <dependency>
+        <groupId>org.apache.flink</groupId>
+        <artifactId>flink-table-runtime</artifactId>
+        <version>${flink-version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.flink</groupId>
+        <artifactId>flink-table-planner-loader</artifactId>
+        <version>${flink-version}</version>
+        <scope>provided</scope>
+      </dependency>
+```
+
+
+
+```java
+
+public class FirstSQLApp {
+ public static void main(String[] args) {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env);
+```
+
+The `TableEnvironment` is the entrypoint for Table API and SQL integration. See [Create Table environment](https://nightlies.apache.org/flink/flink-docs-release-1.19/docs/dev/table/common/#create-a-tableenvironment)
+
+A TableEnvironment maintains a map of catalogs of tables which are created with an identifier. Each identifier consists of 3 parts: catalog name, database name and object name.
+
+
+```java
+    // build a dynamic view from a stream and specifies the fields. here one field only
+    Table inputTable = tableEnv.fromDataStream(dataStream).as("name");
+
+    // register the Table object in default catalog and database, as a view and query it
+    tableEnv.createTemporaryView("clickStreamsView", inputTable);
+```
+
+![](./diagrams/sql-concepts.drawio.png)
+
+
+Tables can be either temporary, tied to the lifecycle of a single Flink session, or permanent, making them visible across multiple Flink sessions and clusters.
+
+Queries such as SELECT ... FROM ... WHERE which only consist of field projections or filters are usually stateless pipelines. However, operations such as joins, aggregations, or deduplications require keeping intermediate results in a fault-tolerant storage for which Flink’s state abstractions are used.
+
+
+### ETL with Table API
+
+See code: [TableToJson](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql-quarkus/src/test/java/org/acme/TableToJson.java)
+
+```java
+public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment streamEnv = StreamExecutionEnvironment.getExecutionEnvironment();
+        StreamTableEnvironment tableEnv = StreamTableEnvironment.create(streamEnv);
+
+        final Table t = tableEnv.fromValues(
+                
+            row(12L, "Alice", LocalDate.of(1984, 3, 12)),
+            row(32L, "Bob", LocalDate.of(1990, 10, 14)),
+            row(7L, "Kyle", LocalDate.of(1979, 2, 23)))
+        .as("c_id", "c_name", "c_birthday")
+        .select(
+                jsonObject(
+                JsonOnNull.NULL,
+                    "name",
+                    $("c_name"),
+                    "age",
+                    timestampDiff(TimePointUnit.YEAR, $("c_birthday"), currentDate())
+                )
+        );
+
+        tableEnv.toChangelogStream(t).print();
+        streamEnv.execute();
+    }
+```
+
+### Join with a kafka streams
+
+Join transactions coming from Kafka topic with customer information.
+
+```java
+    // customers is reference data loaded from file or DB connector
+    tableEnv.createTemporaryView("Customers", customerStream);
+    // transactions come from kafka
+    DataStream<Transaction> transactionStream =
+        env.fromSource(transactionSource, WatermarkStrategy.noWatermarks(), "Transactions");
+    tableEnv.createTemporaryView("Transactions", transactionStream
+    tableEnv
+        .executeSql(
+            "SELECT c_name, CAST(t_amount AS DECIMAL(5, 2))\n"
+                + "FROM Customers\n"
+                + "JOIN (SELECT DISTINCT * FROM Transactions) ON c_id = t_customer_id")
+        .print();
+```

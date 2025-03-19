@@ -91,23 +91,8 @@ See [the flink-sql/00-basic-sql folder](https://github.com/jbcodeforce/flink-stu
 Data Definition Language (DDL) are statements to define metadata in Flink SQL by creating, updating, or deleting tables. [See the Flink SQL Examples in Confluent Cloud for Apache Flink documentation.](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#flink-sql-examples-in-af-long)
 
 A table registered with the CREATE TABLE statement can be used as a table source or a table sink.
-
-There are [three different modes](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#changelog-mode) to persist table rows in a log (Kafka topic in Confluent Cloud): append, retract or upsert. 
-
-* **append** is the simplest mode where records are only added to the result stream, never updated or retracted. It means that every insertion can be treated as an independent immutable fact. Records can be distributed using round robin to the different partitions. Do not use primary key with append, as windowing or aggregation will produce undefined, and may be wrong results. Regular joins between two append only streams may not make any sense at the semantic level. While [temporal join](https://developer.confluent.io/courses/flink-sql/streaming-joins/) may be possible. Some query will create append output, like window aggregation, or any operations using the watermark.
-* **upsert** means that all rows with the same primary key are related and must be partitioned together. Events are upsert or delete for a primary key. Upsert needs a primary key. 
-* **retract** means a fact can be undone, and the combination of +X and -X are related and must be partitioned together. Records are related by all the columns so the entire row is the key.
-
-The `change.log` property is set up by using the `WITH ('changelog.mode' = 'upsert')` options when creating the table.
-
-Changelog in Flink SQL is used to record the data changes in order to achieve incremental data processing. Some operations in Flink such as group by, aggregation and deduplication can produce update events.
-
-Looking at the physical plan with `EXPLAIN create...` demonstrates the changelog mode and the state size used per operator.
-
-[See the concept of changelog and dynamic tables in Confluent's documentation](https://docs.confluent.io/cloud/current/flink/concepts/dynamic-tables.html) and see [this example](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/05-append-log) to study the behavior with a kafka topic as output. 
-
-
-### Table creation
+ 
+### Table creation how to
 
 ???- tip "Primary key considerations"
     * Primary key can have one or more columns, all of them should be not null, and only being `NOT ENFORCED`

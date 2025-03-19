@@ -6,6 +6,8 @@ The demonstration is to address:
 * Use Confluent for kubernetes operator and a single node cluster
 * Deploying CDC Debezium on Kafka Connect
 
+See [Debezium PostgreSQL Source Connector for Confluent Platform](https://docs.confluent.io/kafka-connectors/debezium-postgres-source/current/overview.html).
+
 ## Setup
 
 * Create the PG Cluster
@@ -20,6 +22,8 @@ k apply infrastructure/pg-cluster.yaml
 ```sh
 k apply -f basic-kraft-cluster.yaml -n confluent
 ```
+
+To deploy a Debezium connector, you need to deploy a Kafka Connect cluster with the required connector plug-in(s), before instantiating the actual connector itself.
 
 * Deploy Kafka Connect
 

@@ -60,11 +60,29 @@ Databases consist of catalogs, databases, tables, views, and materialized views.
 
 **Views** are virtual tables derived from the results of SQL queries. Some databases also support **materialized views**, which cache the results in a physical table. For example, a GROUP BY operation on an aggregate can store the results based on grouping elements and aggregates in a new table. Materialized views can be updated through a full refresh (by re-executing the query) or through incremental updates.
 
-Flink SQL utilizes dynamic tables derived from data streams and employs materialized views with incremental updates. While it is not a traditional database, Flink functions as a query processor. In Confluent Cloud, the catalog accesses the schema registry for a topic, and query execution occurs on a Flink cluster that retrieves records from topics.
+Flink SQL utilizes dynamic tables derived from data streams and employs materialized views with incremental updates. While it is not a traditional database, Flink functions as a query processor.The processor runs [continuous queries](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/concepts/dynamic_tables/#continuous-queries). In Confluent Cloud, the catalog accesses the schema registry for a topic, and query execution occurs on a Flink cluster that retrieves records from topics.
 
 Flink can provide either "exactly once" or "at least once" guarantees (with the possibility of duplicates), depending on the configuration and the external systems used for input and output tables.
 
 For effective "exactly once" processing, the source must be replayable, and the sink must support transactions. Kafka topics support both of these requirements, and the consumer protocol adheres to the read-committed semantics. However, transaction scope in Kafka is at the single-key level, whereas ACID transactions in databases maintain integrity across multiple keys.
+
+## Changelog mode
+
+when mapping table view to stream, a query can generate two different type of messages: 1/ containing insert, update or delete changes or 2/ only insert changes. Attention, Queries that make update changes usually have to maintain more state. See [Flink table to stream conversion](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/concepts/dynamic_tables/#table-to-stream-conversion) documentation.
+
+There are [three different modes](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#changelog-mode) to persist table rows in a log (Kafka topic in Confluent Cloud): append, retract or upsert. 
+
+* **append** is the simplest mode where records are only added to the result stream, never updated or retracted. It means that every insertion can be treated as an independent immutable fact. Records can be distributed using round robin to the different partitions. Do not use primary key with append, as windowing or aggregation will produce undefined, and may be wrong results. Regular joins between two append only streams may not make any sense at the semantic level. While [temporal join](https://developer.confluent.io/courses/flink-sql/streaming-joins/) may be possible. Some query will create append output, like window aggregation, or any operations using the watermark.
+* **upsert** means that all rows with the same primary key are related and must be partitioned together. Events are only **U**psert or **D**elete for a primary key. Upsert needs a primary key. 
+* **retract** means a fact can be undone, The stream includes only add (+X) or retract (-X) messages. An update is done with a -X followed by a +X. The combination of +X and -X are related and must be partitioned together. Records are related by all the columns so the entire row is the key.
+
+The `change.log` property is set up by using the `WITH ('changelog.mode' = 'upsert')` options when creating the table.
+
+Changelog in Flink SQL is used to record the data changes in order to achieve incremental data processing. Some operations in Flink such as group by, aggregation and deduplication can produce update events.
+
+Looking at the physical plan with `EXPLAIN create...` demonstrates the changelog mode and the state size used per operator.
+
+[See the concept of changelog and dynamic tables in Confluent's documentation](https://docs.confluent.io/cloud/current/flink/concepts/dynamic-tables.html) and see [this example](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/05-append-log) to study the behavior with a kafka topic as output.
 
 ## SQL Programming Basics
 
@@ -94,129 +112,11 @@ In a pure Kafka integration architecture, such as Confluent Cloud, the data life
 | --- | --- | --- |
 | **Stateless** | SELECT {projection, transformation} WHERE {filter}; UNION ... | Can be distributed |
 | **Materialized** | GROUP BY <aggregationss> or JOINS | Dangerously Stateful, keep an internal copy of the data related to the query |
-| **Temporal** | Time windowed operations, interval **joins**, time-versioned joins, MATCH_RECOGNIZE <pattern> | Stateful but contrained in size |
+| **Temporal** | Time windowed operations, interval **joins**, time-versioned joins, MATCH_RECOGNIZE <pattern> | Stateful but constrained in size |
 
 As elements are stored for computing materialized projections, it's crucial to assess the number of elements to retain. Millions to billions of small items are possible. However, if a query runs indefinitely, it may eventually overflow the data store. In such cases, the Flink task will ultimately fail.
 
-Below is an example of Join query:
-
-```sql
-SELECT transactions.amount, products.price
-FROM transactions
-JOIN products
-ON transactions.product_id = products.id
-```
-
-Any previously processed records can be used potentially to process the join operation on new arrived records, which means keeping a lot of records in memory. As memory will be bounded, there are other mechanisms to limit those joins or aggregation, for example using time windows.
-
-
----
-
-## Lower level Java based programming model
-
-* Start Flink server using docker ([start with docker compose](../coding/getting-started.md#docker-compose-with-kafka-and-flink) or on [k8s](../coding/k8s-deploy.md)). 
-* Start by creating a java application (quarkus create app for example or using maven) and a Main class. See code in [flink-sql-quarkus](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql/flink-sql-quarkus/) folder.
-* Add dependencies in the pom
-
-```xml
-      <dependency>
-        <groupId>org.apache.flink</groupId>
-        <artifactId>flink-table-api-java-bridge</artifactId>
-        <version>${flink-version}</version>
-      </dependency>
-        <dependency>
-        <groupId>org.apache.flink</groupId>
-        <artifactId>flink-table-runtime</artifactId>
-        <version>${flink-version}</version>
-        <scope>provided</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.flink</groupId>
-        <artifactId>flink-table-planner-loader</artifactId>
-        <version>${flink-version}</version>
-        <scope>provided</scope>
-      </dependency>
-```
-
-
-
-```java
-
-public class FirstSQLApp {
- public static void main(String[] args) {
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env);
-```
-
-The `TableEnvironment` is the entrypoint for Table API and SQL integration. See [Create Table environment](https://nightlies.apache.org/flink/flink-docs-release-1.19/docs/dev/table/common/#create-a-tableenvironment)
-
-A TableEnvironment maintains a map of catalogs of tables which are created with an identifier. Each identifier consists of 3 parts: catalog name, database name and object name.
-
-
-```java
-    // build a dynamic view from a stream and specifies the fields. here one field only
-    Table inputTable = tableEnv.fromDataStream(dataStream).as("name");
-
-    // register the Table object in default catalog and database, as a view and query it
-    tableEnv.createTemporaryView("clickStreamsView", inputTable);
-```
-
-![](./diagrams/sql-concepts.drawio.png)
-
-
-Tables can be either temporary, tied to the lifecycle of a single Flink session, or permanent, making them visible across multiple Flink sessions and clusters.
-
-Queries such as SELECT ... FROM ... WHERE which only consist of field projections or filters are usually stateless pipelines. However, operations such as joins, aggregations, or deduplications require keeping intermediate results in a fault-tolerant storage for which Flink’s state abstractions are used.
-
-
-### ETL with Table API
-
-See code: [TableToJson](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql-quarkus/src/test/java/org/acme/TableToJson.java)
-
-```java
-public static void main(String[] args) throws Exception {
-        StreamExecutionEnvironment streamEnv = StreamExecutionEnvironment.getExecutionEnvironment();
-        StreamTableEnvironment tableEnv = StreamTableEnvironment.create(streamEnv);
-
-        final Table t = tableEnv.fromValues(
-                
-            row(12L, "Alice", LocalDate.of(1984, 3, 12)),
-            row(32L, "Bob", LocalDate.of(1990, 10, 14)),
-            row(7L, "Kyle", LocalDate.of(1979, 2, 23)))
-        .as("c_id", "c_name", "c_birthday")
-        .select(
-                jsonObject(
-                JsonOnNull.NULL,
-                    "name",
-                    $("c_name"),
-                    "age",
-                    timestampDiff(TimePointUnit.YEAR, $("c_birthday"), currentDate())
-                )
-        );
-
-        tableEnv.toChangelogStream(t).print();
-        streamEnv.execute();
-    }
-```
-
-### Join with a kafka streams
-
-Join transactions coming from Kafka topic with customer information.
-
-```java
-    // customers is reference data loaded from file or DB connector
-    tableEnv.createTemporaryView("Customers", customerStream);
-    // transactions come from kafka
-    DataStream<Transaction> transactionStream =
-        env.fromSource(transactionSource, WatermarkStrategy.noWatermarks(), "Transactions");
-    tableEnv.createTemporaryView("Transactions", transactionStream
-    tableEnv
-        .executeSql(
-            "SELECT c_name, CAST(t_amount AS DECIMAL(5, 2))\n"
-                + "FROM Customers\n"
-                + "JOIN (SELECT DISTINCT * FROM Transactions) ON c_id = t_customer_id")
-        .print();
-```
+In a join any previously processed records can be used potentially to process the join operation on new arrived records, which means keeping a lot of records in memory. As memory will be bounded, there are other mechanisms to limit those joins or aggregation, for example using time windows.
 
 ## Challenges
 
