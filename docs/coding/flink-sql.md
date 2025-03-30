@@ -986,3 +986,14 @@ confluent flink compute-pool use <pool_id>
 
 * Start one of the Datagen in the Confluent Console. 
 
+## User Defined Function
+
+[Flink User Defined Function](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/udfs/) allows developers to upload custom logic, complex calculation, data manipulation (XML, custom AVRO), within a SQL or TableAPI queries. Developers can leverage existing libraries like Geospatial calculation, Math computation... 
+At the deployment level it can be considered as FaaS. Not optimized for cold start, it could be P90 at 25s. 
+
+For developer the steps are:
+
+1. Develop a functin to extends a `org.apache.flink.table.functions.ScalarFunction`
+1. Build a uber jar
+1. Register the UDF as a Flink artifact. On Confluent Cloud, artifacts are environment scoped.
+1. Configure SQL to use this function using: `CREATE FUNCTION fct_name as 'fully.qualified.classname' USING JAR 'confluent-artifact://....'

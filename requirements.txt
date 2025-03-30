@@ -2,3 +2,4 @@ mkdocs-material
 mkdocs-minify-plugin
 mkdocs<3.4
 mkdocs-mermaid2-plugin
+pymdown-extensions

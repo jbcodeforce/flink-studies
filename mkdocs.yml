@@ -60,6 +60,7 @@ plugins:
       lang: en
   - minify:
       minify_html: true
+  - mkdocstrings
 markdown_extensions:
   - abbr
   - attr_list

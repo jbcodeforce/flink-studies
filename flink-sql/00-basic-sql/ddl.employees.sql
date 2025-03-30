@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS employees (
-	employee_id SERIAL PRIMARY KEY,
+	employee_id SERIAL PRIMARY KEY not enforced,
 	first_name CHARACTER VARYING (20),
 	last_name CHARACTER VARYING (25) NOT NULL,
 	email CHARACTER VARYING (100) NOT NULL,

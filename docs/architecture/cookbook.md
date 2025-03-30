@@ -313,7 +313,7 @@ Full checkpoints and savepoints take a long time, but incremental checkpoints ar
 
 ## Testing SQL statement during pipeline development
 
-We should differentiate two types of testing: Flink statement developer testing, like unit / component tests, and integration tests with other table and with real time data streams.
+We should differentiate two types of testing: Flink statement developer testing, like unit / component tests, and integration tests with other tables and with real data streams.
 
 
 The objective of a test harness for developer and system integration is to validate the quality of a new Flink SQL statement deployed on Confluent Cloud (or Flink managed service) to address at least the following needs:
@@ -326,6 +326,7 @@ The objective of a test harness for developer and system integration is to valid
 
 The following diagram illustrates the global infrastructure deployment context:
 
+![](./diagrams/test_frwk_infra.drawio.png)
 
 The following diagram illustrates the target unit testing environment:
 

@@ -46,6 +46,15 @@ The development approach includes at least the following steps:
         TableEnvironment env = TableEnvironment.create(settings);
         ```
 
+        When using private endpoint, there is a need to be at the 1.20.50 version of the plugin (`confluent_flink_table_api_python_plugin=">=1.20.50" `) and use code (python example) like:
+
+        ```python
+        settings = ConfluentSettings.new_builder_from_file(CLOUD_PROPERTIES_PATH) 
+        .set_context_name("my-context") 
+        .set_rest_endpoint("private.confluent.cloud") 
+        .build()
+        ```
+
     1. Set environment variables to specify API key and secrets, Confluent Cloud environment, compute poll... 
 
         ```sh title="Confluent Cloud related  environment variables "
