@@ -3,13 +3,13 @@ repo_url: https://github.com/jbcodeforce/flink-studies.git
 site_url: https://jeromeboyer.net/flink-studies
 copyright: Copyright &copy; 2018 - 2024 Jerome Boyer
 nav:
-  - Introduction: 
+  - Home: 
     - Concepts: index.md
     - Getting started: coding/getting-started.md
     - Flink Architecture: architecture/index.md
     - Fit for purpose: architecture/fitforpurpose.md
+  - Recipes:
     - Flink SQL concepts: architecture/flink-sql.md
-  - Practices:
     - Flink SQL coding: coding/flink-sql.md
     - First Java Apps: coding/firstapp.md
     - Kubernetes Deployment: coding/k8s-deploy.md
@@ -20,10 +20,11 @@ nav:
     - Complex Event Processing: coding/cep.md
     - IaC wt Terraform: coding/terraform.md
     - Flink on k8s Monitoring: techno/fk-k8s-monitor.md
+    - Labs-Demos: labs/index.md
   - Methodology:
     - Data as a product: methodology/data_as_a_product.md
     - Event Storming: https://jbcodeforce.github.io/eda-studies/methodology/event-storming/
-  - Techno:
+  - Related Technologies:
     - Confluent Cloud Flink: techno/ccloud-flink.md 
     - Confluent Cloud Platform Flink: techno/cp-flink.md 
     - Kafka Integration: architecture/kafka.md

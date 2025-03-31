@@ -5,9 +5,9 @@
     * 12/24: move some content to hands-on readme, clean content
     * 01/25: sql processing section
 
-Flink offers [a k8s Operator](https://flink.apache.org/news/2022/04/03/release-kubernetes-operator-0.1.0.html) to deploy and manage applications. This note summarize how to use this operator, with basic getting started yaml files. 
+[Flink Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/) acts as a control plane to manage the complete deployment lifecycle of Apache Flink applications. This note summarizes how to use this operator, with present the different getting started yaml files. 
 
-The [operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) takes care of submitting, savepointing, upgrading and generally managing Flink jobs using the built-in Flink Kubernetes integration. I
+The [operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) takes care of submitting, savepointing, upgrading and generally managing Flink jobs using the built-in Flink Kubernetes integration. 
 
 ![](./diagrams/fk-operator-hl.drawio.png)
 
@@ -15,18 +15,67 @@ The operator fully automates the entire lifecycle of job manager, task managers,
 
 As other operator it can run **namespace-scoped**, to get multiple versions of the operator in the same Kubernetes cluster, or **cluster-scoped** for highly distributed  deployment. 
 
-The following figure represents a simple deployment view of a Flink and a Kafka clusters on kubernetes platform:
+The following figure represents a simple deployment view of a Flink and a Kafka clusters on a kubernetes platform:
 
 ![](./diagrams/k8s-deploy.drawio.png)
 
 The custom resource definition that describes the schema of a FlinkDeployment is a cluster wide resource. The Operator continuously tracks cluster events relating to the `FlinkDeployment` and `FlinkSessionJob` custom resources. [The operator control flow is described in this note.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/concepts/controller-flow/) 
 
-[Confluent Platform for Flink has also an operator](https://docs.confluent.io/platform/current/flink/get-started-cpf.html) compatible with the open-source one.
+**Important documentations:**
+
+* [Confluent Platform for Flink has also an operator](https://docs.confluent.io/platform/current/flink/get-started-cpf.html) compatible with the open-source one.
+* [Getting started with Flink OSS Standalone Kubernetes Setup.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/)
+* [Apache Flink Native Kubernetes deployment.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/native_kubernetes/)
+
+## Colima or Minikube playground
+
+* Start a kubernetes cluster, for colima do:
+
+  ```sh
+  colima start --kubernetes
+  # or under deployment/k8s folder
+  ./start_colima.sh
+  ```
+
+* For [Minikube](https://minikube.sigs.k8s.io/), review some [best practices](https://jbcodeforce.github.io/techno/minikube/) on how to configure and use it.
+
+  ```sh
+    minikube start --cpus='3' --memory='4096'
+  ```
+
+* Get [helm cli](https://helm.sh/docs/intro/install/)
+* Add [flink-operator-repo helm repo]: 
+* [Install Flink Operator for kubernetes](./k8s-deploy.md#deploy-flink-kubernetes-operator)
+* Install Confluent plugin for kubectl
+* Deploy Confluent Platform Flink operator: `make deploy_cp_flink_operator`  (see Makefile in [deployment/k8s and its readme](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s)) with  makefile to simplify the deployment.
+* Deploy Confluent Platform operator to get Kafka brokers deployed: `make deploy_cp_operator`
+* Deploy Confluent Kafka Broker using one Kraft controller, one broker, with REST api and schema registry: `make deploy_cp_cluster`
+* Then deploy Flink applications.
+* If you want integration with Kafka and Schema registry select one of the Kafka platform:
+
+    * Install [Confluent Plaform Operator](https://docs.confluent.io/operator/current/co-quickstart.html)
+    
+    ```sh
+    kubectl create namespace confluent
+    kubectl config set-context --current --namespace confluent
+    helm repo add confluentinc https://packages.confluent.io/helm
+    helm repo update
+    helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes
+    ```
+
+    * Or [Kafka OSS Strimzi Operator](https://strimzi.io/quickstarts/) in the `kafka` namespace:
+
+    ```sh
+    kubectl create namespace kafka
+    kubectl config set-context --current --namespace kafka
+    kubectl create -f 'https://strimzi.io/install/latest?namespace=kafka' -n kafka
+
+    ```
+
+    with [Apicu.io](https://www.apicur.io/registry/docs/apicurio-registry-operator/1.2.0-dev-v2.6.x/assembly-operator-quickstart.html) for Operator for schema management.
 
 
 ## Deploy Flink Kubernetes Operator
-
-[Flink Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/) acts as a control plane to manage the complete deployment lifecycle of Apache Flink applications.
 
 For hands-on instructions and Makefile to deploy Flink, Confluent Platform on k8s (local colima or minikube) see [this readme](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/README.md) and the [Confluent product instructions](https://docs.confluent.io/platform/current/flink/get-started.html#step-1-install-cmf-long).
 

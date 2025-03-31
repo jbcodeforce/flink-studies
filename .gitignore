@@ -11,3 +11,5 @@ flink-training/
 **/.terraform.lock.hcl
 **/*.tfvars
 **/.idea
+**/.venv
+deployment/product-tar/flink-*/
