@@ -1,5 +1,5 @@
 mkdocs-material
 mkdocs-minify-plugin
 mkdocs
-mkdocs-mermaid2-plugin
 pymdown-extensions
+mkdocstrings

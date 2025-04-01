@@ -1,13 +1,14 @@
 CFNT_NS=confluent
 FLCK_NS=flink
-CERT_MGR_VERSION=v1.16.2
+CERT_MGR_VERSION=v1.17.1
+FLINK_OPERATOR_VERSION=1.11.0
 
 prepare: create_ns install_operators
 
 start_colima:
 	@colima start --cpu 4 --memory 10 --kubernetes
 
-stop_olima:
+stop_colima:
 	@colima stop
 
 ensure_ns = \
@@ -17,6 +18,15 @@ ensure_ns = \
 	else \
 			echo "$1 exists";\
 	fi
+
+verify_installation:
+	@helm list
+	@echo "Certification managers  -> should get 3 pods"
+	@kubectl get pods -n cert-manager
+	@echo "Apache Flink Operator  -> should get 3 pods"
+	@kubectl get pods -n flink
+	@echo "Confluent Platform for Flink Operator  -> should get 3 pods"
+	@kubectl get pods -n confluent
 
 create_ns:
 	$(call ensure_ns, $(CFNT_NS))
@@ -38,10 +48,46 @@ deploy_cert_manager:
 		echo "cert manager already deployed"; \
 	fi
 
-# ---------------------- Confluent Platform Flink --------------------------------
+deploy_minio:
+	@kubectl apply -f MinIO/minio-dev.yaml 
 
-deploy_oss_flink_operator: 
+minio_console:
+	@kubectl port-forward pod/minio 9000 9090 -n minio-dev
+
+verify_minio:
+	@kubectl get pods -n minio-dev
+
+# ---------------------- Apache Flink ----------------------
+update_helm_flink_repo:
+	@helm repo remove flink-operator-repo
+	@helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-$(FLINK_OPERATOR_VERSION)
+
+deploy_apache_flink_operator: 
 	@helm install flink-kubernetes-operator flink-operator-repo/flink-kubernetes-operator -n $(FLCK_NS)
+
+uninstall_apache_flink_operator: 
+	@helm uninstall flink-kubernetes-operator  flink-operator-repo/flink-kubernetes-operator -n $(FLCK_NS)
+
+verify_flink:
+	@kubectl get deployments -n $(FLCK_NS)
+	@kubectl get pods -n $(FLCK_NS)
+
+deploy_jobmanager:
+	@kubectl apply -f flink/flink-configuration-configmap.yaml  -n $(FLCK_NS)
+	@kubectl apply -f flink/jobmanager-service.yaml  -n $(FLCK_NS)
+	@kubectl apply -f flink/jobmanager-rest-service.yaml  -n $(FLCK_NS)
+	@kubectl apply -f flink/jobmanager-session-deployment-non-ha.yaml  -n $(FLCK_NS)
+
+deploy_taskmanager:
+	@kubectl apply -f flink/taskmanager-session-deployment.yaml -n $(FLCK_NS)
+
+flink_console:
+	POD_NAME=$$(kubectl get pods --namespace $(FLCK_NS) -l "app=flink" -o jsonpath="{.items[0].metadata.name}"); \
+	echo $$POD_NAME; kubectl port-forward $$POD_NAME 8082:8081 -n $(FLCK_NS);
+	
+# ---------------------- Confluent Platform Flink --------------------------------
+update_help_confluent_repo:
+	@helm repo add confluentinc https://packages.confluent.io/helm
 
 deploy_cp_flink_operator: 
 	@helm install cp-flink-kubernetes-operator confluentinc/flink-kubernetes-operator -n $(FLCK_NS)

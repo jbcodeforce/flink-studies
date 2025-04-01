@@ -32,7 +32,7 @@ spec:
     - mountPath: /data
       name: localvolume # Corresponds to the `spec.volumes` Persistent Volume
   nodeSelector:
-    kubernetes.io/hostname: kubealpha.local # Specify a node label associated to the Worker Node on which you want to deploy the pod.
+    kubernetes.io/hostname: colima # Specify a node label associated to the Worker Node on which you want to deploy the pod.
   volumes:
   - name: localvolume
     hostPath: # MinIO generally recommends using locally-attached volumes

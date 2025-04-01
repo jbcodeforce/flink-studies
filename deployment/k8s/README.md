@@ -1,53 +1,27 @@
 # Flink on k8s with the operator (Open-source or Confluent Platform)
 
-The approach is to simplify the commands using `make`. Confluent on kubernetes is a k8s operator based, so the makefile can install the Confluent Platform operator and the open-source flink operator.
+This folder includes different deployment manifests for Apache Flink OSS or Confluent Platform for Flink. The approach is to encapsulate some of the kubectl commands using `make` targets. 
 
-[Flink operator - open source](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/)
-
-[Confluent platform for flink operator](https://docs.confluent.io/platform/current/flink/get-started.html)
+See the [Flink operator - open source](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/) and the [Confluent platform for flink operator](https://docs.confluent.io/platform/current/flink/get-started.html) for details.
 
 ## Pre-requisites
 
-Any Flink on Kubernetes deployment should include the following pre-requisites:
+* [See the pre-requisites note for CLIs installation and other general dependencies](https://github.com/jbcodeforce/flink-studies/coding/k8-deploy/#pre-requisites)
 
-* Be sure to have helm cli installed: ([see installation instructions](https://helm.sh/docs/intro/install/))
+* Access to a Kubernetes cluster: `make start_colima`
 
-```sh
-# for mac
-brew install helm
-# for WSL2 - ubuntu
-sudo apt-get install helm
-```
-
-* Get the [list of Flink releases and tags here](https://downloads.apache.org/flink/) or [Confluent one](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
-* Add the Confluent Platform Helm repository: 
-
-```sh
-helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.9.0
-# or Confluent
-helm repo add confluentinc https://packages.confluent.io/helm
-# Verify help repo entry exist
-helm repo list
-# Be sure to change the repo as the URL may not be valid anymore
-helm repo remove  flink-operator-repo
-# try to update repo content
-helm repo update
-```
-
-* Access to a Kubernetes cluster
-* Get kubectl cli
 * Install [Confluent plugin for kubectl](https://docs.confluent.io/operator/current/co-deploy-cfk.html#co-install-plugin)
-* Install certification manager (only one time per k8s cluster): See [Release version here.](https://github.com/cert-manager/cert-manager/)
+
+* Install certification manager (only one time per k8s cluster): See [Release version here](https://github.com/cert-manager/cert-manager/) and the make commands:
 
 ```sh
 make deploy_cert_manager
-# or explicitly using:
-kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.16.2/cert-manager.yaml
 # verify
 kubeclt get pods -n cert-manager
 ```
 
-* Install the Flink Kubernetes operator (See below)
+* Create `flink` and `confluent` namespaces: `make create_ns`
+* Install the Apache Flink Kubernetes operator.
 
 (See also the [Flink pre-requisites documentation.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/docs/try-flink-kubernetes-operator/quick-start/))
 
@@ -60,29 +34,11 @@ helm repo add kafbat-ui https://kafbat.github.io/helm-charts
 * Install Minio to persist jar or expose object storage in the K8S. [See Minio quickstart](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) and [this section.](https://jbcodeforce.github.io/flink-studies/coding/k8s-deploy/#using-minio)
 
 
-### Setup the environment with minikube
+## Deploy Apache Flink
 
-1. Start minikube
 
-    ```sh
-    minikube start --cpus 4 --memory 8g --driver docker
-    ```
 
-1. Start `minikube dashboard`
-
-### Setup with Colima
-
-1. Start colima:
-
-```sh
-colima start --cpu 4 --memory 10 --kubernetes
-# or under deployment/k8s
-make start_colima
-```
-
-## Deploy Flink
-
-1. Create `flink` and `confluent` namespaces: `make create_ns`
+## Deploy Confluent Platform for Flink
 
 1. Deploy Confluent Platform Flink operator:
 
@@ -251,3 +207,15 @@ The `org.apache.flink.connector.file.src.reader.StreamFormat` class is part of t
 ## Sources of information
 
 * [Deploy Confluent Platform with Kraft.](https://github.com/confluentinc/confluent-kubernetes-examples/tree/master/quickstart-deploy)
+
+
+
+## Setup the environment with minikube
+
+1. Start minikube
+
+    ```sh
+    minikube start --cpus 4 --memory 8g --driver docker
+    ```
+
+1. Start `minikube dashboard`

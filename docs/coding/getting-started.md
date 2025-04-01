@@ -141,11 +141,15 @@ As an alternative to Docker Desktop, [Colima](https://github.com/abiosoft/colima
 
 * Get helm, and kubectl
 * Add flink-operator-repo helm repo
+
+For Confluent Platform for Flink add the following steps:
 * Install Confluent plugin for kubectl
 * Deploy Confluent Platform Flink operator, `make deploy_cp_flink_operator`  (see Makefile in [deployment/k8s and its readme](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s)) with  makefile to simplify the deployment.
 * Deploy Confluent Platform operator to get Kafka brokers deployed: `make deploy_cp_operator`
 * Deploy Confluent Kafka Broker using one Kraft controller, one broker, with REST api and schema registry: `make deploy_cp_cluster`
-* Then deploy Flink applications.
+
+
+* Finally deploy Flink applications.
 
 [See Kubernetes deployment dedicated chapter](./k8s-deploy.md).
 

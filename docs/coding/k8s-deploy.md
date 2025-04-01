@@ -27,6 +27,43 @@ The custom resource definition that describes the schema of a FlinkDeployment is
 * [Getting started with Flink OSS Standalone Kubernetes Setup.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/)
 * [Apache Flink Native Kubernetes deployment.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/native_kubernetes/)
 
+## Pre-requisites
+
+
+Any Flink on Kubernetes deployment should include the following pre-requisites:
+
+* Be sure to have helm cli installed: ([see installation instructions](https://helm.sh/docs/intro/install/))
+
+  ```sh
+  # for mac
+  brew install helm
+  # or 
+  brew upgrade helm
+  # for WSL2 - ubuntu
+  sudo apt-get install helm
+  ```
+
+* Get [kubectl cli](https://kubernetes.io/docs/tasks/tools/)
+* Add the Apache Flink and Confluent Platform **Helm** repositories: 
+
+  ```sh
+  helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.11.0
+  # or Confluent
+  helm repo add confluentinc https://packages.confluent.io/helm
+  # Verify help repo entry exist
+  helm repo list
+  # Be sure to change the repo as the URL may not be valid anymore
+  helm repo remove  flink-operator-repo
+  # try to update repo content
+  helm repo update
+  helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes
+  ```
+
+    
+
+* Get [Confluent Platform releases information.](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
+
+
 ## Colima or Minikube playground
 
 * Start a kubernetes cluster, for colima do:
@@ -37,15 +74,82 @@ The custom resource definition that describes the schema of a FlinkDeployment is
   ./start_colima.sh
   ```
 
-* For [Minikube](https://minikube.sigs.k8s.io/), review some [best practices](https://jbcodeforce.github.io/techno/minikube/) on how to configure and use it.
+* For [Minikube](https://minikube.sigs.k8s.io/), review some [best practices](https://jbcodeforce.github.io/techno/minikube/) on how to configure and use it. Start the mono node cluster with:
 
   ```sh
     minikube start --cpus='3' --memory='4096'
   ```
 
-* Get [helm cli](https://helm.sh/docs/intro/install/)
-* Add [flink-operator-repo helm repo]: 
-* [Install Flink Operator for kubernetes](./k8s-deploy.md#deploy-flink-kubernetes-operator)
+* Create `flink` and `confluent` namespaces
+* Install Certification manager: 
+
+  ```sh
+  kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.17.1/cert-manager.yaml
+  # verify
+  kubeclt get pods -n cert-manager
+  ```
+
+* [Install Apache Flink Operator for kubernetes](#deploy-apache-flink-kubernetes-operator)
+* Install Minio to expose object storage in the K8S, [see this section.](#using-minio)
+
+* For Confluent Platform for Flink [see details](#deploy-confluent-platform-for-flink)
+
+
+## Using MinIO
+
+MinIO is an object storage solution that provides an Amazon Web Services S3-compatible API and supports all core S3 features, on k8s.
+
+* First be sure [the MinIO](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) is installed on k8s. 
+
+    ```sh
+    brew install minio/stable/mc
+    # or for a new version
+    brew upgrade minio/stable/mc
+    # Verify installation
+    mc --help
+    ``` 
+
+    [mc cli command summary](https://min.io/docs/minio/linux/reference/minio-mc.html)
+
+* Config minio under `minio-dev` namespace
+
+    ```sh
+    # under deploymenet/k8s/cpf
+    kubectl apply -f minio-dev.yaml
+    kubectl get pods -n minio-dev
+    ```
+
+* Access MinIO S3 API and Console
+
+    ```sh
+    kubectl port-forward pod/minio 9000 9090 -n minio-dev
+    ```
+
+* Log in to the Console with the credentials `minioadmin | minioadmin`
+* Setup a minio client with credential saved to  $HOME/.mc/config.json
+
+    ```sh
+    mc alias set dev-minio http://localhost:9000 minioadmin minioadmin
+    # make a bucket
+    mc mb dev-minio/flink
+    ```
+
+## Deploy Apache Flink Kubernetes Operator
+
+The [Apache flink kubernetes operator product documentation](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-release-1.11/docs/try-flink-kubernetes-operator/quick-start/) lists the setup steps.
+
+* Get the [list of Apache Flink releases and tags here](https://downloads.apache.org/flink/) 
+
+* To get access to k8s deployment manifests and a Makefile to simplify deployment, of Apache Flink, or Confluent Platform on k8s (local colima or minikube) see [the deployment/k8s folder](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/README.md). 
+
+[Next deploy a Session Cluster](#flink-session-cluster) or an Application.
+
+## Deploy Confluent Platform for Flink
+
+* Install [Confluent plugin for kubectl](https://docs.confluent.io/operator/current/co-deploy-cfk.html#co-install-plugin)
+* Install certification manager (only one time per k8s cluster): See [Release version here.](https://github.com/cert-manager/cert-manager/)
+
+
 * Install Confluent plugin for kubectl
 * Deploy Confluent Platform Flink operator: `make deploy_cp_flink_operator`  (see Makefile in [deployment/k8s and its readme](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s)) with  makefile to simplify the deployment.
 * Deploy Confluent Platform operator to get Kafka brokers deployed: `make deploy_cp_operator`
@@ -58,9 +162,7 @@ The custom resource definition that describes the schema of a FlinkDeployment is
     ```sh
     kubectl create namespace confluent
     kubectl config set-context --current --namespace confluent
-    helm repo add confluentinc https://packages.confluent.io/helm
-    helm repo update
-    helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes
+
     ```
 
     * Or [Kafka OSS Strimzi Operator](https://strimzi.io/quickstarts/) in the `kafka` namespace:
@@ -75,15 +177,11 @@ The custom resource definition that describes the schema of a FlinkDeployment is
     with [Apicu.io](https://www.apicur.io/registry/docs/apicurio-registry-operator/1.2.0-dev-v2.6.x/assembly-operator-quickstart.html) for Operator for schema management.
 
 
-## Deploy Flink Kubernetes Operator
-
-For hands-on instructions and Makefile to deploy Flink, Confluent Platform on k8s (local colima or minikube) see [this readme](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/README.md) and the [Confluent product instructions](https://docs.confluent.io/platform/current/flink/get-started.html#step-1-install-cmf-long).
-
 ## Custom Resources
 
-Once the operator is running, we can submit jobs using  `FlinkDeployment` (for Flink Application) and `FlinkSessionJob` Custom Resources for Session (Confluent Managed for Flink supports application mode only and is using a new CRD for `FlinkApplication`).
+Once the operator is running, we can submit jobs using  `FlinkDeployment` (for Flink Application) and `FlinkSessionJob` Custom Resources for Session.(Confluent Managed for Flink supports application mode only and is using a new CRD for `FlinkApplication`).
 
-The [FlinkDeployment spec is here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/) and is used to define Flink application (will have a job section) or session cluster (only job and task managers configuration).
+The [Apache Flink FlinkDeployment spec is here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/) and is used to define Flink application (will have a job section) or session cluster (only job and task managers configuration).
 
 It is important to note that `FlinkDeployment` and `FlinkApplication` CRD have a podTemplate, so config map and secrets can be used to configure environment variables for the flink app. (Be sure to keep the name `flink-main-container`)
 
@@ -180,7 +278,7 @@ job:
 
 [See PVC and PV declarations](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/pvc.yaml)
 
-## Flink Session
+## Flink Session Cluster
 
 For Session cluster, there is no jobSpec. See [this deployment definition](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/basic-job-task-mgrs.yaml). Once a cluster is defined, it has a name and can be referenced to submit SessionJobs.
 
@@ -247,7 +345,7 @@ An **application deployment** must define the job (JobSpec) field with the `jarU
 ```yaml
 job:
     jarURI: local:///opt/flink/examples/streaming/StateMachineExample.jar
-    # your own deployment
+    # For your own deployment, use your jar
     jarURI: local:///opt/flink/usrlib/yourapp01.0.0.jar
     parallelism: 2
     upgradeMode: stateless
@@ -277,7 +375,7 @@ job:
 ```
 
 
-The application jar needs to be in a custom Flink docker image built using the [Dockerfile as in e-com-sale-demo](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale/flink-app/Dockerfile), or uploaded to MinIO.
+The application jar needs to be in a custom Flink docker image built using the [Dockerfile as in e-com-sale-demo](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale/flink-app/Dockerfile), or uploaded to a MinIO bucket. 
 
 The following Dockerfile is used for deploying a solution in **application mode**, which packages the Java Flink jars with the app, and any connector jars needed for the integration and starts the `main()` function.
 
@@ -287,8 +385,7 @@ RUN mkdir -p $FLINK_HOME/usrlib
 COPY /path/of/my-flink-job-*.jar $FLINK_HOME/usrlib/my-flink-job.jar
 ```
 
-
-* With CP for Flink:
+* With Confluent Platform for Flink:
 
     ```sh
       # First be sure the service is expose
@@ -310,41 +407,6 @@ COPY /path/of/my-flink-job-*.jar $FLINK_HOME/usrlib/my-flink-job.jar
 
 ### Using MinIO
 
-MinIO is an object storage solution that provides an Amazon Web Services S3-compatible API and supports all core S3 features, on k8s.
-
-* First be sure [the MinIO](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) is installed on k8s. See [minio-dev.yaml](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/MinIO/minio-dev.yaml)
-
-    ```sh
-    brew install minio/stable/mc
-    # Verify installation
-    mc --help
-    ``` 
-
-    [mc cli command summary](https://min.io/docs/minio/linux/reference/minio-mc.html)
-
-* Config minio under minio-dev namespace
-
-    ```sh
-    # under deploymenet/k8s/cpf
-    kubectl apply -f minio-dev.yaml
-    kubectl get pods -n minio-dev
-    ```
-
-* Access MinIO S3 API and Console
-
-    ```sh
-    kubectl port-forward pod/minio 9000 9090 -n minio-dev
-    ```
-
-* Log in to the Console with the credentials minioadmin | minioadmin
-* Setup a minio client with credential saved to  $HOME/.mc/config.json
-
-    ```sh
-    mc alias set dev-minio http://localhost:9000 minioadmin minioadmin
-    # make a bucket
-    mc mb dev-minio/flink
-    ```
-
 * Upload an application to minio bucket:
 
     ```sh
@@ -352,7 +414,7 @@ MinIO is an object storage solution that provides an Amazon Web Services S3-comp
     mc ls dev-minio/flink
     ```
 
-* Start the application:
+* Start the application using confluent cli:
 
     ```sh
     confluent flink application create --environment env1 --url http://localhost:8080 app-deployment.json
