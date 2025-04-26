@@ -1,7 +1,7 @@
 [project]
 name = "flink-studies"
 version = "0.1.0"
-description = "Add your description here"
+description = "Project to manage knowledge about Flink"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

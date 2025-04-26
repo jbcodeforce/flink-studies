@@ -89,7 +89,10 @@ flink_console:
 update_help_confluent_repo:
 	@helm repo add confluentinc https://packages.confluent.io/helm
 
-deploy_cp_flink_operator: 
+deploy_cp_flink_kubernetes: 
+	@helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes --set namespaced=false -n $(FLCK_NS)
+
+install_fko:
 	@helm install cp-flink-kubernetes-operator confluentinc/flink-kubernetes-operator -n $(FLCK_NS)
 
 deploy_cmf:

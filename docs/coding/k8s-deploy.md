@@ -59,8 +59,7 @@ Any Flink on Kubernetes deployment should include the following pre-requisites:
   helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes
   ```
 
-    
-
+* Install [Confluent CLI](https://docs.confluent.io/confluent-cli/current/install.html#install-confluent-cli) or do `confluent update`
 * Get [Confluent Platform releases information.](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
 
 
@@ -152,6 +151,10 @@ The [Apache flink kubernetes operator product documentation](https://nightlies.a
 
 * Install Confluent plugin for kubectl
 * Deploy Confluent Platform Flink operator: `make deploy_cp_flink_operator`  (see Makefile in [deployment/k8s and its readme](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s)) with  makefile to simplify the deployment.
+
+  ```sh
+  ```
+
 * Deploy Confluent Platform operator to get Kafka brokers deployed: `make deploy_cp_operator`
 * Deploy Confluent Kafka Broker using one Kraft controller, one broker, with REST api and schema registry: `make deploy_cp_cluster`
 * Then deploy Flink applications.
@@ -405,7 +408,7 @@ COPY /path/of/my-flink-job-*.jar $FLINK_HOME/usrlib/my-flink-job.jar
 
     And navigate to [http://localhost:8081](http://localhost:8081).
 
-### Using MinIO
+### Using MinIO for app deployment
 
 * Upload an application to minio bucket:
 

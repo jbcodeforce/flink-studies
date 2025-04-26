@@ -1,7 +1,7 @@
 site_name: Flink Studies
 repo_url: https://github.com/jbcodeforce/flink-studies.git
 site_url: https://jeromeboyer.net/flink-studies
-copyright: Copyright &copy; 2018 - 2024 Jerome Boyer
+copyright: Copyright &copy; 2018 - 2025 Jerome Boyer
 nav:
   - Home: 
     - Concepts: index.md

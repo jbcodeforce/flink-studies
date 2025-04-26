@@ -188,7 +188,7 @@ When a SQL statement is started, it reads the source tables from the beginning (
 
 ### Schema compatibility
 
-CC Flink works best when consuming topics with FULL_TRANSITIVE compatibility mode. The following table list the schema compatibility types with what can be done:
+CC Flink works best when consuming topics with FULL_TRANSITIVE compatibility mode. The following table lists the schema compatibility types with what can be done:
 
 | Compatibility type | Change allowed | Flink impact |
 | --- | --- | --- |
@@ -200,13 +200,13 @@ CC Flink works best when consuming topics with FULL_TRANSITIVE compatibility mod
 | FULL_TRANSITIVE | Add optional fields, delete optional fields  | Reprocessing and bootstrapping is always possible: Statements do not need to be updated prior to compatible schema changes. Compatibility rules & migration rules can be used for incompatible changes. |
 | NONE | All changes accepted | Very risky. Does not allow to replay from earliest |
 
-With FULL_TRANSITIVE, old data can be read with the new schema, and new data can also be read the between schemas X, X-1, and X-2, . Which means in a pipeline, downstream Flink statements can read newly created schema, and will be able to replay messages from a previous schemas. Therefore, you can upgrade the producers and consumers independently.
+With FULL_TRANSITIVE, old data can be read with the new schema, and new data can also be read between the schemas X, X-1, and X-2, . Which means in a pipeline, downstream Flink statements can read newly created schema, and will be able to replay messages from a previous schemas. Therefore, you can upgrade the producers and consumers independently.
 
-Optional means we can define fields with default values.
+Optional means, we can define fields with default values.
 
 Confluent Schema Registry supports Avro, Json or Protobuf, but Avro was designed to support schema evolution, so this is the preferred approach.
 
-Assuming the goal is to cover FULL_TRANSITIVE, it means adding column will have default value. And developers may only delete optional columns. During the migration, all current source tables coming as outcome of the Debezium process are not deletable. Columns can be added to the source with default value to support FULL_TRANSITIVE. 
+Assuming the goal is to cover FULL_TRANSITIVE, it means added column will have default value. Developers may only delete optional columns. During the migration, all current source tables coming as outcome of the Debezium process are not deletable. Columns can be added to the source with default value to support FULL_TRANSITIVE. 
 
 ???- danger "Key schema evolution"
     It is discouraged from any changes to the key schema in order to do not adversely affect partitioning for the new topic/ table.

@@ -59,11 +59,11 @@ See [product documentation for different examples](https://nightlies.apache.org/
 * For docker container execution, you need a docker engine, with docker client CLIs. 
 * There are multiple way to run docker container: 
 
-1. Docker desktop, RangerDesktop or any other docker engine
-1. Kubernetes using Colima or Minikube
-1. Docker compose to orchestrate multiple containers
+    1. Docker desktop, RangerDesktop or any other docker engine
+    1. Kubernetes using Colima or Minikube
+    1. Docker compose to orchestrate multiple containers
 
-For each of those environments, see the deployment folder and read the [dedicated k8s deployment chapter](./k8s-deploy.md).
+For each of those environments, see the [deployment folder](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/) and read the [dedicated k8s deployment chapter](./k8s-deploy.md).
 
 ### Docker Desktop and Compose
 
