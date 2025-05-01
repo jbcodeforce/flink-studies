@@ -38,7 +38,7 @@ The Apache Flink Open Source tar file can be downloaded. The `install-local.sh` 
     $FLINK_HOME/bin/sql-client.sh
     ```
 
-* [Optional] Start SQL Gateway to be able to have multiple client apps submitting SQL queries in concurrency.
+* [Optional] Start [SQL Gateway](https://nightlies.apache.org/flink/flink-docs-release-2.0/docs/dev/table/sql-gateway/overview/) to be able to have multiple client apps submitting SQL queries in concurrency.
 
     ```sh
     $FLINK_HOME/bin/sql-gateway.sh start -Dsql-gateway.endpoint.rest.address=localhost
@@ -46,13 +46,15 @@ The Apache Flink Open Source tar file can be downloaded. The `install-local.sh` 
     $FLINK_HOME/bin/sql-gateway.sh stop-all -Dsql-gateway.endpoint.rest.address=localhost
     ```
 
+    SQL Gateway supports deploying a script in Application Mode. To [use the SQL Gateway see those examples]()
+
 * Stop the Flink job and the Task manager cluster:
 
     ```sh
     $FLINK_HOME/bin/stop-cluster.sh
     ```
 
-See [product documentation for different examples](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/try-flink/datastream/).
+See [product documentation for different examples](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/try-flink/datastream/). To do some Python table API demonstrations [see this chapter](./table-api.md/#python).
 
 ## With docker images
 

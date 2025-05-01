@@ -176,4 +176,8 @@ Savepoints are user triggered snapshot at a specific point in time. It is used d
 * With stateful distributed processing, scaling stateful operators, enforces state repartitioning and assigning to more or fewer parallel tasks. Keys are organized in key-groups, and key groups are assigned to tasks. Operators with operator list state are scaled by redistributing the list entries. Operators with operator union list state are scaled by broadcasting the full list of state entries to each task.
 
 
+## Network Stack
 
+The Flink network stack helps connecting work units across TaskManagers using Netty. Flink uses a credit-based flow control for managing buffer availability and preventing backpressure.
+
+See the [Deep dive article in Flink network stack](https://flink.apache.org/2019/06/05/a-deep-dive-into-flinks-network-stack/)

@@ -79,12 +79,16 @@ See [the flink-sql/00-basic-sql folder](https://github.com/jbcodeforce/flink-stu
 
     Flink SQL planner performs type checking. Assessing type of inferred table is helpful specially around timestamp. See [Data type mapping documentation.](https://docs.confluent.io/cloud/current/flink/reference/serialization.html)
 
-???- info "Understand the execution plan for SQL query"
-    See the [explain keyword](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/explain/) for generated output explanations.
+???- info "Understand the physical execution plan for a SQL query"
+    See the [explain keyword](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/explain/) or [Confluent Flink documentation](https://docs.confluent.io/cloud/current/flink/reference/statements/explain.html) for the output explanations.
 
     ```sql
     explain select ...
     ```
+
+    Indentation indicates data flow, with each operator passing results to its parent. Review the state size, the changelog mode, the upsert key... Operators change changelog modes when different update patterns are needed, such as when moving from streaming reads to aggregations.
+    Pay special attention to data skew when designing your queries. If a particular key value appears much more frequently than others, it can lead to uneven processing where a single parallel instance becomes overwhelmed handling that key’s data. Consider strategies like adding additional dimensions to your keys or pre-aggregating hot keys to distribute the workload more evenly. Whenever possible, configure the primary key to be identical to the upsert key.
+
 
 ## DDL statements
 
@@ -94,18 +98,25 @@ A table registered with the CREATE TABLE statement can be used as a table source
  
 ### Table creation how to
 
-???- tip "Primary key considerations"
+???- tip "Primary key and partition by considerations"
     * Primary key can have one or more columns, all of them should be not null, and only being `NOT ENFORCED`
-    * The primary key declaration partitions the table implicitly by the key column(s)
-    * The primary key is becoming the kafka key implicitly and in Confluent Cloud, it will generate a key schema, except if using the option (`'key.format' = 'raw'`)
+    * The primary key declaration, partitions the table implicitly by the key column(s)
+    * Flink uses the primary key for state management and deduplication with upsert, if the sink connector supports it. While the partition key is what determines which Kafka partition a message will be written to. This is a Kafka-level concept.
+    * For upsert mode, the bucket key must be equal to primary key. While for append/retract mode, the bucket key can be a subset of the primary key.
+    * In Confluent Cloud, partition key will generate a key schema, except if using the option (`'key.format' = 'raw'`)
+    * If the destination topic doesn't define partitioning key, then CC Flink SQL will write the records in whatever partitioning that was used at the end of the query. if last operation in the query is `GROUP BY foo` or `JOIN ON A.foo = B.foo`, then output records would be partitioned on `foo` values, and they wouldn't be re-partitioned before writing them into Kafka. The `foo` partitioning is preserved. 
+    * If you have parallel queries like without any data shuffling, like `INSERT INTO A SELECT * FROM B`, then any skew from B would be repeated in A. Otherwise, if partitioning key is defined (like `DISTRIBUTED BY HASH(metric) `), any writes into that topic would be shuffled by that key.
+    * In case of key skew, add more fields in the distribution to partition not just in one key. That would allow Flink to read data in more parallel fashion, improving the problem with readings from Kafka's bottleneck of 18MBs/connection (partition)
+    * An interesting metric, 5 partitions feeds 1 CFU. 
+    * The performance bottleneck will be actually records serialization and deserialisation, avro is slower than protobuf.
 
     ```sql
     -- simplest table
-    CREATE TABLE human (race STRING, origin STRING);
+    CREATE TABLE humans (race STRING, origin STRING);
     -- with primary key 
     CREATE TABLE manufactures (m_id INT PRIMARY KEY NOT ENFORCED, site_name STRING);
-    -- with hash distribution to 4 partitions
-    CREATE TABLE humans (race INT, s STRING) DISTRIBUTED BY HASH (race) INTO 4 BUCKETS;
+    -- with hash distribution to 2 partitions that match the primary key
+    CREATE TABLE humans (hid INT PRIMARY KEY NOT ENFORCED, race STRING, gender INT) DISTRIBUTED BY (hid) INTO 2 BUCKETS;
     ```
 
 ???- info "Change log - append mode"
@@ -495,6 +506,8 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     UNION ALL
     SELECT * FROM T2;
     ```
+
+    [See product documentation on Union](https://docs.confluent.io/cloud/current/flink/reference/queries/set-logic.html#flink-sql-set-logic-union). Remember that UNION will apply distinct, and avoid duplicate, while UNION ALL will generate duplicates. 
 
 
 ???- info "OVER aggregations"

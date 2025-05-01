@@ -315,7 +315,7 @@ A TableEnvironment maintains a map of catalogs of tables which are created with 
     tableEnv.createTemporaryView("clickStreamsView", inputTable);
 ```
 
-![](./diagrams/sql-concepts.drawio.png)
+![](../architecture/diagrams/sql-concepts.drawio.png)
 
 
 Tables can be either temporary, tied to the lifecycle of a single Flink session, or permanent, making them visible across multiple Flink sessions and clusters.

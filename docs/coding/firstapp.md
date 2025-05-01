@@ -99,7 +99,7 @@ With the open source version, we have access to a lot of different connectors, f
 
 ## Submit job to Flink
 
-* Start a job manager and task manager with the docker compose under `deployment/docker` folder or `flink-1.19.1/bin/start_cluster.sh` for [local installation](getting-started.md#install-flink-locally).
+* Start a job manager and task manager with the docker compose under `deployment/docker` folder or `flink-1.19.1/bin/start_cluster.sh` for [local installation](getting-started.md/#install-apache-flink-locally).
 * To submit a job to a Session cluster, use the following command which uses the `flink` cli. This can be done usin the flink cli on the local install or inside the running `JobManager` container when using docker or k8s:
 
 ```shell
@@ -113,7 +113,7 @@ flink run -d -c jbcodeforce.p1.WordCountMain /home/my-flink/target/my-flink-
 1.0.0-runner.jar --input file:///home/my-flink/data/wc.txt --output file:///home/my-flink/data/out.csv
 ```
 
-See [the coding practice summary](./programming.md) for more datastream examples.
+See [the coding practice summary](./datastream.md) for more datastream examples.
 
 And the official [operators documentation](https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/operators/) to understand how to transform one or more DataStreams into a new DataStream. Programs can combine multiple transformations into sophisticated data flow topologies.
 

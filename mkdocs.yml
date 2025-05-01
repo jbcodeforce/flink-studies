@@ -1,4 +1,4 @@
-site_name: Flink Studies
+site_name: My Flink Studies
 repo_url: https://github.com/jbcodeforce/flink-studies.git
 site_url: https://jeromeboyer.net/flink-studies
 copyright: Copyright &copy; 2018 - 2025 Jerome Boyer
@@ -28,6 +28,8 @@ nav:
     - Confluent Cloud Flink: techno/ccloud-flink.md 
     - Confluent Cloud Platform Flink: techno/cp-flink.md 
     - Kafka Integration: architecture/kafka.md
+    - Confluent TableFlow: techno/cc-tableflow.md
+    - Kafka-studies: https://jbcodeforce.github.io/kafka-studies
   - EDA: https://jbcodeforce.github.io/eda-studies
 theme: 
   name: material 

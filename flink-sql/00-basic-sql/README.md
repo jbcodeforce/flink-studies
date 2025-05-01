@@ -49,6 +49,7 @@ CREATE TABLE employees (
 ) WITH ( 
     'connector' = 'filesystem',
     'path' = '/home/flink-sql/data/employees.csv',
+    -- can be '/Users/jerome/Code/flink-studies/flink-sql/data/employees.csv'
     'format' = 'csv'
 );
 ```

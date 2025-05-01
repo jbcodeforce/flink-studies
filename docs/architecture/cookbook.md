@@ -96,7 +96,7 @@ TO BE DONE
 
 ## Deduplication
 
-Deduplication is documented [here](../coding/flink-sql.md#table-creation) and [here](https://docs.confluent.io/cloud/current/flink/reference/queries/deduplication.html#flink-sql-deduplication) and at its core principal, it uses a CTE to add a row number, as a unique sequential number to each row. The columns used to de-deplicate are defined in the partitioning and ordering is used using a timestamp to keep the last record.
+Deduplication is documented [here](../coding/flink-sql.md/#table-creation-how-to) and [here](https://docs.confluent.io/cloud/current/flink/reference/queries/deduplication.html#flink-sql-deduplication) and at its core principal, it uses a CTE to add a row number, as a unique sequential number to each row. The columns used to de-duplicate are defined in the partitioning. Ordering is using a timestamp to keep the last record or first record. Flink support only ordering on time.
 
 ```sql
 SELECT [column_list]
@@ -108,7 +108,7 @@ FROM (
 ) WHERE rownum = 1
 ```
 
-When using Kafka Topic to persist Flink table, it is possible to use the `upsert` change log, and define the primary key(s) to remove duplicate using a CTAS statement like:
+When using Kafka Topic to persist Flink table, it is possible to use the `upsert` or `retract` change log mode, and define the primary key(s) to remove duplicate records as only the last records will be used:
 
 ```sql
 CREATE TABLE orders_deduped (
@@ -150,7 +150,7 @@ To validate there is no duplicate records in the output table, use a query with 
     BY  `order_id`, `user_id` HAVING COUNT(*) > 1;
 ```
 
-Duplicates may still occur on the Sink side of the pipeline, as it is linked to the type of connector used and its configuration, for example reading un-committed offset. 
+Duplicates may still occur on the Sink side of the pipeline, as it is linked to the type of connector used and its configuration, for example reading un-committed offset. Few connector support the retract semantic.
 
 ## Change Data Capture
 
@@ -184,7 +184,7 @@ confluent flink statement resume $1 --cloud $(CLOUD) --region $(REGION)
 
 Most other parts are immutables. 
 
-When a SQL statement is started, it reads the source tables from the beginning (or any specified offset) and the operators, defined in the statement, build their state. Source or sink operators use the latest schema version for key and value at the time of deployment. There is a snapshot of the different dependency configuration saved for the statement: the reference to the dependants tables, user-defined functions... 
+When a SQL statement is started, it reads the source tables from the beginning (or any specified offset) and the operators, defined in the statement, build their state. Source operators use the latest schema version for key and value at the time of deployment. There is a snapshot of the different dependency configuration saved for the statement: the reference to the dependants tables, user-defined functions... Any modifications to these objects are not propagated to running statement.
 
 ### Schema compatibility
 
@@ -193,26 +193,30 @@ CC Flink works best when consuming topics with FULL_TRANSITIVE compatibility mod
 | Compatibility type | Change allowed | Flink impact |
 | --- | --- | --- |
 | BACKWARD | Delete fields, add optional field | Does not allow to replay from earliest |
-| BACKWARD_TRANSITIVE | Delete fields, add optional fields | Require all Statements reading from impacted topic to be updated prior to the schema change. |
+| BACKWARD_TRANSITIVE | Delete fields, add optional fields with default value.| Require all Statements reading from impacted topic to be updated prior to the schema change. |
 | FORWARD | Add fields, delete optional fields | Does not allow to replay from earliest |
 | FORWARD_TRANSITIVE | Add fields, delete optional fields | Does not allow to replay from earliest |
 | FULL | Add optional fields, delete optional fields | Does not allow to replay from earliest |
 | FULL_TRANSITIVE | Add optional fields, delete optional fields  | Reprocessing and bootstrapping is always possible: Statements do not need to be updated prior to compatible schema changes. Compatibility rules & migration rules can be used for incompatible changes. |
 | NONE | All changes accepted | Very risky. Does not allow to replay from earliest |
 
-With FULL_TRANSITIVE, old data can be read with the new schema, and new data can also be read between the schemas X, X-1, and X-2, . Which means in a pipeline, downstream Flink statements can read newly created schema, and will be able to replay messages from a previous schemas. Therefore, you can upgrade the producers and consumers independently.
+With FULL_TRANSITIVE, old data can be read with the new schema, and new data can also be read between the schemas X, X-1, and X-2. Which means in a pipeline, downstream Flink statements can read newly created schema, and will be able to replay messages from a previous schemas. Therefore, you can upgrade the producers and consumers independently.
 
-Optional means, we can define fields with default values.
+Optional means, we can define fields with default values. Added fields are ignored by running statements.
 
 Confluent Schema Registry supports Avro, Json or Protobuf, but Avro was designed to support schema evolution, so this is the preferred approach.
 
-Assuming the goal is to cover FULL_TRANSITIVE, it means added column will have default value. Developers may only delete optional columns. During the migration, all current source tables coming as outcome of the Debezium process are not deletable. Columns can be added to the source with default value to support FULL_TRANSITIVE. 
+Assuming the goal is to cover FULL_TRANSITIVE, it means added column will have default value. Developers may only delete optional columns. During the migration, all current source tables coming as outcome of the Debezium process are not deletable. If a NOT NULL constraint is added to a column, older records with no value will violate the constraint. To handle such situation, there is a way to configure CDC connector (Debezium) to use the `envelop structure` which uses `key, before, after, _ts_ms, op` structure. This will result in a standard schema for Flink tables, which allows the source table to evolve by adding / dropping both NULL & NON NULL COLUMNS. 
+The Debezium Envelope pattern offers the most flexibility for upstream Schema Evolution without impacting downstream Flink Statements.
+
+* Adding Columns do not break the connectors or the RUNNING DML Statements
+* Dropping Column needs co-ordination between teams to ensure the columns that are part of Running DML statements are not Dropped.
 
 ???- danger "Key schema evolution"
     It is discouraged from any changes to the key schema in order to do not adversely affect partitioning for the new topic/ table.
 
 ???- info "Updating schema in schema registry"
-    Adding a field directly in the avro-schema with default value, will be visible in the next command like: `show create table <table_name>`, as tables in flink are virtuals, and the Confluent Cloud the schema definition comes from the Schema Registry.
+    Adding a field directly in the avro-schema with default value, will be visible in the next command like: `show create table <table_name>`, as tables in flink are virtuals, and the Confluent Cloud the schema definition comes from the Schema Registry. The RUNNING Flink DML is not aware of the new added column. Even STOP & RESUME of the Flink DML is not going to pick the new column neither. Only new statement will see the new schema consumung from the beginning or from specific offsets. For column drop, Debezium connector will drop the new column and register a schema version for the topic (if the alteration resulted in a schema that doesnt match with previous versions). Same as above runnning statements will go degraded mode.
     
 ### Statement evolution
 
