@@ -9,7 +9,10 @@
 
 Flink consists of a **Job Manager** and `n` **Task Managers** deployed on `k` hosts. 
 
- ![1](https://ci.apache.org/projects/flink/flink-docs-release-1.12/fig/distributed-runtime.svg)
+<figure markdown="span">
+![1](https://ci.apache.org/projects/flink/flink-docs-release-1.20/fig/distributed-runtime.svg)
+<figcaption>Main Flink Components</figcaption>
+</figure>
 
 The **JobManager** controls the execution of a single application. Developers submit their application (jar file or SQL statements) via CLI, or k8s manifest. Job Manager receives the Flink application for execution and builds a Task Execution Graph from the defined **JobGraph**. It manages job submission which parallelizes the job and distributes slices of [the Data Stream](https://ci.apache.org/projects/flink/flink-docs-stable/dev/datastream_api.html) flow, the developers have defined. Each parallel slice of the job is a task that is executed in a **task slot**.  
 
@@ -20,7 +23,10 @@ The **Resource Manager** manages Task Slots and leverages an underlying orchestr
 A **Task slot** is the unit of work executed on CPU.
 The **Task Managers** execute the actual stream processing logic. There are multiple task managers running in a cluster. The number of slots limits the number of tasks a TaskManager can execute. After it has been started, a TaskManager registers its slots to the ResourceManager:
 
+<figure markdown="span">
 ![2](./images/flink-components.png)
+<figcaption>Sequence flow from job submission</figcaption>
+</figure>
 
 The **Dispatcher** exposes API to submit applications for execution. It hosts the user interface too.
 
@@ -36,7 +42,10 @@ When Flink is not able to process a real-time event, it may have to buffer it, u
 
 Once Flink is started (for example with the docker image), Flink Dashboard [http://localhost:8081/#/overview](http://localhost:8081/#/overview) presents the execution reporting:
 
- ![6](./images/flink-dashboard.png)
+<figure markdown="span">
+![3](./images/flink-dashboard.png)
+<figcaption>Flink User Interface</figcaption>
+</figure>
 
 The execution is from one of the training examples, the number of task slot was set to 4, and one job is running.
 
@@ -98,7 +107,10 @@ Flink utilizes the concept of **Checkpoint Barriers** to delineate records. Thes
 
 Barrier can be seen as a mark, a tag, in the data stream and aims to close a snapshot. 
 
+<figure markdown="span">
  ![Checkpoints](./images/checkpoints.png){ width=600 }
+<figcaption>Checkpointing concepts</figcaption>
+</figure>
 
 Checkpoint barriers flow with the stream, allowing them to be distributed across the system. When a sink operator — located at the end of a streaming Directed Acyclic Graph (DAG) — receives `barrier n` from all its input streams, it acknowledges `snapshot n` to the checkpoint coordinator.
 
@@ -116,12 +128,17 @@ When addressing exactly once processing, it is crucial to consider the following
 * **Apply Processing Logic** which involves operations such as window aggregation or other transformations, which can also be executed with exactly-once semantics when properly configured.
 * **Generate Results to a Sink** introduces more complexity. While reading from the source and applying processing logic can be managed to ensure exactly-once semantics, generating a unique result to a sink depends on the target technology and its capabilities. Different sink technologies may have varying levels of support for exactly-once processing, requiring additional strategies such as idempotent writes or transactional sinks to achieve the desired consistency.
 
-
+<figure markdown="span">
 ![](./images/e2e-1.png){ width=800 }
+<figcaption>End-to-end exactly once</figcaption>
+</figure>
 
 After reading records from Kafka, processing them, and generating results, if a failure occurs, Flink will revert to the last committed read offset. This means it will reload the records from Kafka and reprocess them. As a result, this can lead to duplicate entries being generated in the sink:
 
+<figure markdown="span">
 ![](./images/e2e-2.png){ width=800 }
+<figcaption>End-to-end recovery</figcaption>
+</figure>
 
 Since duplicates may occur, it is crucial to assess how downstream applications handle idempotence. Many distributed key-value stores are designed to provide consistent results even after retries, which can help manage duplicate entries effectively.
 
@@ -140,19 +157,27 @@ new KafkaSinkBuilder<String>()
 
 With transaction ID, a sequence number is sent by the Kafka producer API to the broker, and so the partition leader will be able to remove duplicate retries.
 
+<figure markdown="span">
 ![](./images/e2e-3.png){ width=800 }
+<figcaption>End-to-end with Kafka transaction id</figcaption>
+</figure>
 
 When the checkpointing period is set, we need to also configure `transaction.max.timeout.ms` of the Kafka broker and `transaction.timeout.ms` for the producer (sink connector) to a higher timeout than the checkpointing interval plus the max expected Flink downtime. If not the Kafka broker will consider the connection has failed and will remove its state management.
 
 
 The evolution of microservice is to become more event-driven, which are stateful streaming applications that ingest event streams and process the events with application-specific business logic. This logic can be done in flow defined in Flink and executed in the clustered runtime.
 
+<figure markdown="span">
 ![](./images/evt-app.png)
+<figcaption>Event-driven application as a sequence of Flink apps</figcaption>
+</figure>
 
 State is always accessed locally, which helps Flink applications achieve high throughput and low-latency. Developers can choose to keep state on the JVM heap, or if it is too large, save it on-disk.
 
+<figure markdown="span">
  ![4](https://ci.apache.org/projects/flink/flink-docs-release-1.19/fig/local-state.png)
-
+<figcaption>Different State Storage</figcaption>
+</figure>
 
 ### Savepoints
 
@@ -170,7 +195,10 @@ Savepoints are user triggered snapshot at a specific point in time. It is used d
 * **Operator state** is scoped to an operator task: all records processed by the same parallel task have access to the same state.
 * **Keyed state** is maintained and accessed with respect to a key defined in the records of an operator’s input stream. Flink maintains one state instance per key value and Flink partitions all records with the same key to the operator task that maintains the state for this key. The key-value map is sharded across all parallel tasks:
 
+<figure markdown="span">
 ![](./images/key-state.png){ width=600 }
+<figcaption>Keyes states</figcaption>
+</figure>
 
 * Each task maintains its state locally to improve latency. For small state, the state backends will use JVM heap, but for larger state RocksDB is used. A **state backend** takes care of checkpointing the state of a task to a remote and persistent storage.
 * With stateful distributed processing, scaling stateful operators, enforces state repartitioning and assigning to more or fewer parallel tasks. Keys are organized in key-groups, and key groups are assigned to tasks. Operators with operator list state are scaled by redistributing the list entries. Operators with operator union list state are scaled by broadcasting the full list of state entries to each task.

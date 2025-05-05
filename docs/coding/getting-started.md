@@ -1,163 +1,232 @@
-# Flink Getting started
+# Flink Getting Started Guide
 
 ???- info "Updates"
     * Created 2018 
     * Updated 2/14/2025 - improve note, on k8s deployment and get simple demo reference, review done. 
-    * 03/30/25: coverged notes and update referenced links
+    * 03/30/25: converged the notes and update referenced links
 
-This chapter reviews the different environments for deploying Flink, and Flink jobs on a developer's workstation. Options include  downloading product tar file, using Docker Compose, or local Kubernetes Colima-k3s, or adopting an hybrid approach that combines a Confluent Cloud Kafka cluster with a local Flink instance. This last option is not supported for production but is helpful for development purpose. To get started with Confluent Cloud for Flink [see this summary chapter](../techno/ccloud-flink.md).
+This guide covers four different approaches to deploy and run Apache Flink:
 
-The section includes Open Source product, Confluent Platform for Flink or Confluent Cloud for Flink.
+1. Local Binary Installation
+2. Docker-based Deployment
+3. Kubernetes Deployment: Colima or minicube
+4. Confluent Cloud Managed Service
 
-## Pre-requisites
+## Prerequisites
 
-1. Clone this repository.
+Before getting started, ensure you have:
 
-## Install Apache Flink locally
+1. Java 11 or higher installed
+2. Docker Engine and Docker CLI (for Docker and Kubernetes deployments)
+3. kubectl and Helm (for Kubernetes deployment)
+4. Confluent Cloud account (for Confluent Cloud deployment)
+5. Git (to clone this repository)
 
-The Apache Flink Open Source tar file can be downloaded. The `install-local.sh` script in 'deployment/product-tar` folder does the download and untar operations.
+## 1. Local Binary Installation
 
-* Set env variable: `export FLINK_HOME=$(pwd)/flink-1.20.1`
+This approach is ideal for development and testing on a single machine.
 
-* Once done, start Flink using the `start-cluster.sh` script in `flink-1.20.1/bin`. See [Flink OSS product documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/try-flink/local_installation/).
+### Installation Steps
 
-    ```sh
-    $FLINK_HOME/bin/start-cluster.sh
-    ```
+1. Download and extract Flink binary
+   ```sh
+   # Using the provided script
+   ./deployment/product-tar/install-local.sh
+   
+   # Or manually
+   wget https://dlcdn.apache.org/flink/flink-1.20.1/flink-1.20.1-bin-scala_2.12.tgz
+   tar -xzf flink-1.20.1-bin-scala_2.12.tgz
+   ```
 
-* Access [Web UI](http://localhost:8081/#/overview) and submit one of the available examples using the flink client cli: `./bin/flink run examples/streaming/WordCount.jar`.
-* Once Apache Flink java datastream or table api programs are packaged as uber-jar, use the `flink` cli to submit the application.
+2. Set environment variables:
+   ```sh
+   export FLINK_HOME=$(pwd)/flink-1.20.1
+   export PATH=$PATH:$FLINK_HOME/bin
+   ```
 
-    ```sh
-    $FLINK_HOME/bin/flink run  examples/streaming/WordCount.jar
-    ```
+3. Start the Flink cluster:
+   ```sh
+   $FLINK_HOME/bin/start-cluster.sh
+   ```
 
-* As an option, start the SQL client:
+4. Access the Web UI at [http://localhost:8081](http://localhost:8081)
 
-    ```sh
-    $FLINK_HOME/bin/sql-client.sh
-    ```
-
-* [Optional] Start [SQL Gateway](https://nightlies.apache.org/flink/flink-docs-release-2.0/docs/dev/table/sql-gateway/overview/) to be able to have multiple client apps submitting SQL queries in concurrency.
-
-    ```sh
-    $FLINK_HOME/bin/sql-gateway.sh start -Dsql-gateway.endpoint.rest.address=localhost
-    # stop it
-    $FLINK_HOME/bin/sql-gateway.sh stop-all -Dsql-gateway.endpoint.rest.address=localhost
-    ```
-
-    SQL Gateway supports deploying a script in Application Mode. To [use the SQL Gateway see those examples]()
-
-* Stop the Flink job and the Task manager cluster:
-
+5. Stop th cluster:
     ```sh
     $FLINK_HOME/bin/stop-cluster.sh
     ```
+### Running Applications
 
-See [product documentation for different examples](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/try-flink/datastream/). To do some Python table API demonstrations [see this chapter](./table-api.md/#python).
+1. Submit a sample job:
+   ```sh
+   $FLINK_HOME/bin/flink run examples/streaming/WordCount.jar
+   ```
 
-## With docker images
+2. Start SQL Client:
+   ```sh
+   $FLINK_HOME/bin/sql-client.sh
+   ```
 
-* For docker container execution, you need a docker engine, with docker client CLIs. 
-* There are multiple way to run docker container: 
+3. [Optional] Start [SQL Gateway](https://nightlies.apache.org/flink/flink-docs-release-2.0/docs/dev/table/sql-gateway/overview/)  for concurrent SQL queries:
+   ```sh
+   $FLINK_HOME/bin/sql-gateway.sh start -Dsql-gateway.endpoint.rest.address=localhost
+   ```
 
-    1. Docker desktop, RangerDesktop or any other docker engine
-    1. Kubernetes using Colima or Minikube
-    1. Docker compose to orchestrate multiple containers
+See [product documentation for different examples](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/try-flink/datastream/). To do some 
+Python table API demonstrations [see this chapter](./table-api.md/#python).
 
-For each of those environments, see the [deployment folder](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/) and read the [dedicated k8s deployment chapter](./k8s-deploy.md).
+### Troubleshooting
 
-### Docker Desktop and Compose
+- If port 8081 is already in use, modify `conf/flink-conf.yaml`
+- Check logs in `$FLINK_HOME/log` directory
+- Ensure Java 11+ is installed and JAVA_HOME is set correctly
 
-During development, we can use docker-compose to start a simple `Flink session` cluster or a standalone job manager to execute one unique job, which has the application jar mounted inside the docker image. We can use this same environment to do SQL based Flink apps. 
+## 2. Docker-based Deployment
 
-As Task manager will execute the job, it is important that the container running the flink code has access to jars needed to connect to external sources like Kafka or other tools like FlinkFaker. Therefore, in `deployment/custom-flink-image`, there is a [Dockerfile](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/custom-flink-image/Dockerfile) to get the needed jars to build a custom Flink image that may be used for Taskmanager and SQL client. Always update the jar version with new [Flink version](https://hub.docker.com/_/flink).
+This approach provides containerized deployment using Docker Compose.
+
+### Prerequisites
+
+- Docker Engine
+- Docker Compose
+- Git (to clone this repository)
+
+### Quick Start
+
+1. Build custom Flink image (if needed):
+   ```sh
+   cd deployment/custom-flink-image
+   docker build -t jbcodeforce/myflink .
+   ```
+
+2. Start Flink session cluster:
+   ```sh
+   cd deployment/docker
+   docker compose up -d
+   ```
+
+### Docker Compose with Kafka
+
+To run Flink with Kafka:
+
+```sh
+cd deployment/docker
+docker compose -f kafka-docker-compose.yaml up -d
+```
+
+### Customization
+
+- Modify `deployment/custom-flink-image/Dockerfile` to add required connectors
+- Update `deployment/docker/flink-oss-docker-compose.yaml` for configuration changes
+
+During development, we can use docker-compose to start a simple `Flink session` cluster or a standalone job manager to execute one unique job, which has 
+the application jar mounted inside the docker image. We can use this same environment to do SQL based Flink apps. 
+
+As Task manager will execute the job, it is important that the container running the flink code has access to jars needed to connect to external sources 
+like Kafka or other tools like FlinkFaker. Therefore, in `deployment/custom-flink-image`, there is a [Dockerfile](https://github.com/jbcodeforce/
+flink-studies/blob/master/deployment/custom-flink-image/Dockerfile) to get the needed jars to build a custom Flink image that may be used for Taskmanager 
+and SQL client. Always update the jar version with new [Flink version](https://hub.docker.com/_/flink).
 
 ???- Warning "Docker hub and maven links"
     * [Docker Hub Flink link](https://hub.docker.com/_/flink)
     * [Maven Flink links](https://repo.maven.apache.org/maven2/org/apache/flink/)
+    
 
-* If specific integrations are needed, get the needed jars, update the dockerfile and then build the Custom Flink image, under `deployment/custom-flink-image` folder
+## 3. Kubernetes Deployment
 
-    ```sh
-    docker build -t jbcodeforce/myflink .
-    ```
+This approach provides scalable, production-ready deployment using Kubernetes.
 
-* Start Flink session cluster using the following command: 
+### Prerequisites
 
-    ```shell
-    # under this repository and deployment/docker folder
-    docker compose up -d
-    ```
+- Kubernetes cluster (local or cloud)
+- kubectl
+- Helm
+- [Optional Colima](https://github.com/abiosoft/colima) for local Kubernetes
 
-???- info "Docker compose for Flink OSS"
-    The [Flink OSS docker compose](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/docker/flink-oss-docker-compose.yaml) starts one job manager and one task manager server:
+### Deployment Steps
 
-    ```yaml
-    services:
-    jobmanager:
-        image: flink:latest
-        hostname: jobmanager
-        ports:
-        - "8081:8081"
-        command: jobmanager
-        user: "flink:flink"
-        environment:
-        FLINK_PROPERTIES: "jobmanager.rpc.address: jobmanager"
-        volumes:  
-            - .:/home
-    taskmanager:
-        image: flink:latest 
-        hostname: taskmanager
-        depends_on:
-        - jobmanager
-        command: taskmanager
-        user: "flink:flink"
-        scale: 1
-        volumes:
-            - .:/home
-        environment:
-        - |
-            FLINK_PROPERTIES=
-            jobmanager.rpc.address: jobmanager
-            taskmanager.numberOfTaskSlots: 4
-    ```
+1. Install Flink Operator:
+   ```sh
+   helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.7.0/
+   helm install flink-kubernetes-operator flink-operator-repo/flink-kubernetes-operator
+   ```
 
-    The docker compose mounts the local folder to `/home` in both the job manager and task manager containers so that, we can submit jobs from the job manager (accessing the compiled jar) and also access the input data files and connector jars in the task manager container.
+2. Deploy Flink Application:
+   ```sh
+   kubectl apply -f deployment/k8s/flink-application.yaml
+   ```
 
-[See this section to deploy an application with flink]()
+### Confluent Platform on Kubernetes
 
-### Docker compose with Kafka and Flink
+For Confluent Platform deployment:
 
-In the `deployment/docker` folder the docker compose starts one OSS kafka broker, one zookeeper, one OSS Flink job manager and one Flink Task manager.
+1. Install Confluent Operator:
+   ```sh
+   make deploy_cp_flink_operator
+   ```
 
-```sh
-docker compose -f kafka-docker-compose.yaml up -d
-```
+2. Deploy Kafka cluster:
+   ```sh
+   make deploy_cp_cluster
+   ```
 
-[See Confluent operator documentation.](https://docs.confluent.io/operator/current/co-prepare.html)
+3. Deploy Flink applications
 
-### Kubernetes Deployment
+See [Kubernetes deployment chapter](./k8s-deploy.md) for detailed instructions. And [Confluent operator documentation.](https://docs.confluent.io/operator/current/co-prepare.html)
 
-As an alternative to Docker Desktop, [Colima](https://github.com/abiosoft/colima) is an open source to run container on Linux or Mac.  See the [deployment/k8s folder.](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s). Below are the generic steps to follow:
+## 4. Confluent Cloud Deployment
 
-* Get helm, and kubectl
-* Add flink-operator-repo helm repo
+This approach provides a fully managed Flink service.
 
-For Confluent Platform for Flink add the following steps:
-* Install Confluent plugin for kubectl
-* Deploy Confluent Platform Flink operator, `make deploy_cp_flink_operator`  (see Makefile in [deployment/k8s and its readme](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s)) with  makefile to simplify the deployment.
-* Deploy Confluent Platform operator to get Kafka brokers deployed: `make deploy_cp_operator`
-* Deploy Confluent Kafka Broker using one Kraft controller, one broker, with REST api and schema registry: `make deploy_cp_cluster`
+### Prerequisites
 
+- Confluent Cloud account
+- Confluent CLI installed
+- Environment configured
 
-* Finally deploy Flink applications.
+### Getting Started
 
-[See Kubernetes deployment dedicated chapter](./k8s-deploy.md).
+1. Create a Flink compute pool:
+   ```sh
+   confluent flink compute-pool create my-pool --cloud aws --region us-west-2
+   ```
 
-## Confluent Cloud
+2. Start SQL client:
+   ```sh
+   confluent flink shell
+   ```
 
-As a managed service, Confluent Cloud offers Flink deployment, read [the getting started product documentation](https://docs.confluent.io/cloud/current/get-started/index.html) and [this summary](../techno/ccloud-flink.md).
+3. Submit SQL statements:
+   ```sql
+   CREATE TABLE my_table (
+     id INT,
+     name STRING
+   ) WITH (
+     'connector' = 'kafka',
+     'topic' = 'my-topic',
+     'properties.bootstrap.servers' = 'pkc-xxxxx.region.provider.confluent.cloud:9092',
+     'properties.security.protocol' = 'SASL_SSL',
+     'properties.sasl.mechanism' = 'PLAIN',
+     'properties.sasl.jaas.config' = 'org.apache.kafka.common.security.plain.PlainLoginModule required username="<API_KEY>" password="<API_SECRET>";',
+     'format' = 'json'
+   );
+   ```
 
-To use the Confluent Cloud Flink sql client [see this note.](https://docs.confluent.io/confluent-cli/current/command-reference/flink/confluent_flink_shell.html)
+See [Confluent Cloud Flink documentation](../techno/ccloud-flink.md) for more details.
+
+## Choosing the Right Deployment Approach
+
+| Approach | Use Case | Pros | Cons |
+|----------|----------|------|------|
+| Local Binary | Development, Testing | Simple setup, Fast iteration | Limited scalability, or manual configuration and maintenance on distributed computers.|
+| Docker | Development, Testing | Containerized, Reproducible | Manual orchestration |
+| Kubernetes | Production | Scalable, Production-ready | Complex setup |
+| Confluent Cloud | Production | Fully managed, No ops | Vendor Control Plane |
+
+## Additional Resources
+
+- [Apache Flink Documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/)
+- [Confluent Cloud Documentation](https://docs.confluent.io/cloud/current/get-started/index.html)
+- [Flink Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/)
+- [Docker Hub Flink Images](https://hub.docker.com/_/flink)
 

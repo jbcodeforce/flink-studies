@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-cars-table
+  namespace: pgdb
+spec:
+  template:
+    spec:
+      containers:
+      - name: create-cars-table
+        image:  ghcr.io/cloudnative-pg/postgresql:17.4
+        command: ["psql", "-U", "app", "-d", "app", "-f", "/tmp/create_cars_table.sql"]
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secret
+              key: password
+        volumeMounts:
+        - name: table-script
+          mountPath: /tmp
+      restartPolicy: Never
+      volumes:
+      - name: table-script
+        configMap:
+          name: create-cars-table-cm
+  backoffLimit: 1 # Set to 1 to run the job once
+  completionMode: "Indexed" 

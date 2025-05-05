@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgadmin
+  namespace: pgdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgadmin
+  template:
+    metadata:
+      labels:
+        app: pgadmin
+    spec:
+      containers:
+      - name: pgadmin
+        image: dpage/pgadmin4:latest # Or a specific version
+        ports:
+        - containerPort: 80
+        env:
+        - name: PGADMIN_DEFAULT_EMAIL
+          value: admin@example.com # Replace with your desired email
+        - name: PGADMIN_DEFAULT_PASSWORD
+          value: password123 # Replace with a STRONG, unique password
+        - name: PGADMIN_CONFIG_SERVER_MODE # Important for connecting to external DB
+          value: "True"
+        resources: # Optional resource limits and requests
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgadmin-service
+  namespace: pgdb
+spec:
+  selector:
+    app: pgadmin
+  ports:
+  - protocol: TCP
+    port: 80 # Port exposed by the service
+    targetPort: 80 # Port the container is listening on
+    nodePort: 30001
+  type: NodePort # Use LoadBalancer if you want external access in minikube
+  # type: ClusterIP # Use ClusterIP if you only want internal access within the cluster
