@@ -5,11 +5,15 @@
     * 12/24: move some content to hands-on readme, clean content
     * 01/25: sql processing section
 
-[Flink Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/) acts as a control plane to manage the complete deployment lifecycle of Apache Flink applications. This note summarizes how to use this operator, with present the different getting started yaml files. 
+[Apache Flink Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) acts as a control plane to manage the complete deployment lifecycle of Apache Flink applications. This note summarizes how to use this operator, with present the different getting started yaml files. 
 
 The [operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) takes care of submitting, savepointing, upgrading and generally managing Flink jobs using the built-in Flink Kubernetes integration. 
 
-![](./diagrams/fk-operator-hl.drawio.png)
+<figure markdown="span">
+![1](./diagrams/fk-operator-hl.drawio.png)
+<figcaption>Flink Operator to manage Flink Job and Task managers</figcaption>
+</figure>
+
 
 The operator fully automates the entire lifecycle of job manager, task managers, and applications. Failures of Job Manager pods are handled by the Deployment Controller which will take care of spawning a new Job Manager.
 
@@ -17,7 +21,10 @@ As other operator it can run **namespace-scoped**, to get multiple versions of t
 
 The following figure represents a simple deployment view of a Flink and a Kafka clusters on a kubernetes platform:
 
-![](./diagrams/k8s-deploy.drawio.png)
+<figure markdown="span">
+![2](./diagrams/k8s-deploy.drawio.png)
+<figcaption>K8S deployment</figcaption>
+</figure>
 
 The custom resource definition that describes the schema of a FlinkDeployment is a cluster wide resource. The Operator continuously tracks cluster events relating to the `FlinkDeployment` and `FlinkSessionJob` custom resources. [The operator control flow is described in this note.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/concepts/controller-flow/) 
 
@@ -32,8 +39,9 @@ The custom resource definition that describes the schema of a FlinkDeployment is
 
 Any Flink on Kubernetes deployment should include the following pre-requisites:
 
+* [kubectl](https://kubernetes.io/docs/tasks/tools/) 
+* [Optional Colima](https://github.com/abiosoft/colima) for local Kubernetes. Start colima with [deployment/k8s/start_colima.sh](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/start_colima.sh) or `make start_colima`.
 * Be sure to have helm cli installed: ([see installation instructions](https://helm.sh/docs/intro/install/))
-
   ```sh
   # for mac
   brew install helm
@@ -43,56 +51,60 @@ Any Flink on Kubernetes deployment should include the following pre-requisites:
   sudo apt-get install helm
   ```
 
-* Get [kubectl cli](https://kubernetes.io/docs/tasks/tools/)
 * Add the Apache Flink and Confluent Platform **Helm** repositories: 
+    ```sh
+    helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.11.0
+    # or Confluent
+    helm repo add confluentinc https://packages.confluent.io/helm
+    # Verify help repo entry exist
+    helm repo list
+    # Be sure to change the repo as the URL may not be valid anymore
+    helm repo remove  flink-operator-repo
+    # try to update repo content
+    helm repo update
+    helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes
+    ```
+    See [Apache Flink Operator documentation](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) 
 
+* Install [Confluent CLI](https://docs.confluent.io/confluent-cli/current/install.html#install-confluent-cli) or update existing CLI with: 
   ```sh
-  helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.11.0
-  # or Confluent
-  helm repo add confluentinc https://packages.confluent.io/helm
-  # Verify help repo entry exist
-  helm repo list
-  # Be sure to change the repo as the URL may not be valid anymore
-  helm repo remove  flink-operator-repo
-  # try to update repo content
-  helm repo update
-  helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes
+  confluent update
   ```
 
-* Install [Confluent CLI](https://docs.confluent.io/confluent-cli/current/install.html#install-confluent-cli) or do `confluent update`
 * Get [Confluent Platform releases information.](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
 
 
 ## Colima or Minikube playground
 
 * Start a kubernetes cluster, for colima do:
-
   ```sh
   colima start --kubernetes
   # or under deployment/k8s folder
   ./start_colima.sh
   ```
+* Verify current installation if any: 
+   ```sh
+   helm list -n flink
+   # using the Makefile
+   make verify_installation
+   ```
 
 * For [Minikube](https://minikube.sigs.k8s.io/), review some [best practices](https://jbcodeforce.github.io/techno/minikube/) on how to configure and use it. Start the mono node cluster with:
-
   ```sh
     minikube start --cpus='3' --memory='4096'
   ```
 
 * Create `flink` and `confluent` namespaces
-* Install Certification manager: 
-
+* Install Certification manager [See current releases](https://github.com/cert-manager/cert-manager/releases): 
   ```sh
-  kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.17.1/cert-manager.yaml
+  kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.17.2/cert-manager.yaml
   # verify
   kubeclt get pods -n cert-manager
   ```
 
 * [Install Apache Flink Operator for kubernetes](#deploy-apache-flink-kubernetes-operator)
 * Install Minio to expose object storage in the K8S, [see this section.](#using-minio)
-
 * For Confluent Platform for Flink [see details](#deploy-confluent-platform-for-flink)
-
 
 ## Using MinIO
 

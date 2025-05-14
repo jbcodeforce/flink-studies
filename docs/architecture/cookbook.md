@@ -10,7 +10,15 @@ All the examples can be run inside an IDE or in a terminal console, they are on 
 
 ## Understand the Flink UI
 
-TO BE DONE
+The Flink Web UI is described [in Confluent article](https://developer.confluent.io/courses/apache-flink/web-ui-exercise/), [Apache Flink doc for Web UI](), and link to the important [execution plan understanding with EXPLAIN](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/sql/explain/).
+
+Web UI offers the following important features:
+
+* Examining the history of checkpoints
+* monitoring for any potential backpressure
+* analyzing watermarks
+* task metrics
+* retrieving the job logs
 
 ## Classical deployment pattern
 

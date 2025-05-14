@@ -68,21 +68,24 @@ For effective "exactly once" processing, the source must be replayable, and the 
 
 ## Changelog mode
 
-when mapping table view to stream, a query can generate two different type of messages: 1/ containing insert, update or delete changes or 2/ only insert changes. Attention, Queries that make update changes usually have to maintain more state. See [Flink table to stream conversion](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/concepts/dynamic_tables/#table-to-stream-conversion) documentation.
+When mapping table view to stream, a query can generate two different type of messages: 1/ containing insert, update or delete changes or 2/ only insert changes. The changelog normalize function allows Flink to track the precise sequence of changes to data, which is essential for all stateful operations. In Kafka, records provide the current state of the records without information of what changed. In Flink, without this state tracking, any stateful operation would produce incorrect or inconsistent results when source records are updated or deleted, as operators would lack the context of how the data has changed. 
 
-There are [three different modes](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#changelog-mode) to persist table rows in a log (Kafka topic in Confluent Cloud): append, retract or upsert. 
+???+ warning "State size"
+    Queries that make update changes, usually have to maintain more state. See [Flink table to stream conversion](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/concepts/dynamic_tables/#table-to-stream-conversion) documentation.
 
-* **append** is the simplest mode where records are only added to the result stream, never updated or retracted. It means that every insertion can be treated as an independent immutable fact. Records can be distributed using round robin to the different partitions. Do not use primary key with append, as windowing or aggregation will produce undefined, and may be wrong results. Regular joins between two append only streams may not make any sense at the semantic level. While [temporal join](https://developer.confluent.io/courses/flink-sql/streaming-joins/) may be possible. Some query will create append output, like window aggregation, or any operations using the watermark.
-* **upsert** means that all rows with the same primary key are related and must be partitioned together. Events are only **U**psert or **D**elete for a primary key. Upsert needs a primary key. 
-* **retract** means a fact can be undone, The stream includes only add (+X) or retract (-X) messages. An update is done with a -X followed by a +X. The combination of +X and -X are related and must be partitioned together. Records are related by all the columns so the entire row is the key.
+There are [three different modes](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#changelog-mode) to persist table rows in a append logm like a Kafka topic: append, retract or upsert. 
+
+* **append** is the simplest mode where records are only added to the result stream, never updated or retracted. It means that every insertion can be treated as an independent immutable fact. Records can be distributed using round robin to the different partitions. Do not use primary key with append, as windowing or aggregation will produce undefined, and may be wrong, results.  [Temporal join](https://developer.confluent.io/courses/flink-sql/streaming-joins/) may be possible. Some query will create append output, like window aggregation, or any operations using the watermark.
+* **upsert** means that all rows with the same primary key are related and must be partitioned together. Events are only **U**psert or **D**elete for a primary key. Upsert mode needs a primary key. 
+* **retract** means a fact can be undone, The stream includes only add (+X) or retract (-X) messages. One update is represented by a -X followed by a +X messages. The combination of +X and -X are related and must be partitioned together. Records are related by all the columns so the entire row is the key.
 
 The `change.log` property is set up by using the `WITH ('changelog.mode' = 'upsert')` options when creating the table.
 
-Changelog in Flink SQL is used to record the data changes in order to achieve incremental data processing. Some operations in Flink such as group by, aggregation and deduplication can produce update events.
+Some operations, such as group by, aggregation and deduplication can produce update events. Use the `EXPLAIN` feature to analyze the physical execution plan of a query to see the changelog mode of each operator.
 
 Looking at the physical plan with `EXPLAIN create...` demonstrates the changelog mode and the state size used per operator.
 
-[See the concept of changelog and dynamic tables in Confluent's documentation](https://docs.confluent.io/cloud/current/flink/concepts/dynamic-tables.html) and see [this example](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/05-append-log) to study the behavior with a kafka topic as output.
+[See the concept of changelog and dynamic tables in Confluent's documentation](https://docs.confluent.io/cloud/current/flink/concepts/dynamic-tables.html) and see [this example](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/05-append-log) to study the behavior with a kafka topic as output, and a [SQL coding - changelog mode section](../coding/flink-sql.md#changelog-mode).
 
 ## SQL Programming Basics
 

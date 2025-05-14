@@ -31,12 +31,10 @@ kubeclt get pods -n cert-manager
 helm repo add kafbat-ui https://kafbat.github.io/helm-charts
 ```
 
-* Install Minio to persist jar or expose object storage in the K8S. [See Minio quickstart](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) and [this section.](https://jbcodeforce.github.io/flink-studies/coding/k8s-deploy/#using-minio)
+* Install Minio to persist jar or expose object storage in the K8S cluster. [See Minio quickstart](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) and [this section.](https://jbcodeforce.github.io/flink-studies/coding/k8s-deploy/#using-minio)
 
 
 ## Deploy Apache Flink
-
-
 
 ## Deploy Confluent Platform for Flink
 

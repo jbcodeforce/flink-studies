@@ -13,3 +13,4 @@ flink-training/
 **/.idea
 **/.venv
 deployment/product-tar/flink-*/
+deployment/product-tar/kafka_*/

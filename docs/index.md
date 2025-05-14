@@ -350,11 +350,13 @@ The predefined evictors:
 
 ## Source of knowledge
 
-* [x] [Product documentation](https://flink.apache.org/flink-architecture.html). 
-* [x] [Official training](https://ci.apache.org/projects/flink/flink-docs-release-1.20/learn-flink/).
+* [x] [Apache Flink Product documentation](https://flink.apache.org/flink-architecture.html). 
+* [x] [Official Apache Flink training](https://ci.apache.org/projects/flink/flink-docs-release-1.20/learn-flink/).
 * [x] [Confluent "Fundamentals of Apache Flink" training- David Andersion](https://developer.confluent.io/courses/apache-flink/intro/).
 * [x] [Anatomy of a Flink Cluster - product documentation.](https://nightlies.apache.org/flink/flink-docs-master/docs/concepts/flink-architecture/#anatomy-of-a-flink-cluster)
-* [x] [Jobs and Scheduling - product documentation.](https://nightlies.apache.org/flink/flink-docs-master/docs/internals/job_scheduling/)
+* [x] [Jobs and Scheduling - Flink product documentation.](https://nightlies.apache.org/flink/flink-docs-master/docs/internals/job_scheduling/)
+* [x] [Confluent Cloud Flink product documentation](https://docs.confluent.io/cloud/current/flink/overview.html)
+* [x] [Confluent Plaform for Flink product documentation](https://docs.confluent.io/platform/current/flink/overview.html)
 * Base docker image is: [https://hub.docker.com/_/flink](https://hub.docker.com/_/flink)
 * [Flink docker setup](https://ci.apache.org/projects/flink/flink-docs-master/ops/deployment/docker.html) and the docker-compose files in this repo.
 * [FAQ](https://wints.github.io/flink-web/faq.html)

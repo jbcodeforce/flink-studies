@@ -33,7 +33,7 @@ RUN wget -P /opt/flink/lib/ https://repo.maven.apache.org/maven2/org/apache/flin
     wget -P /opt/flink/lib/ https://github.com/knaufk/flink-faker/releases/download/v0.5.3/flink-faker-0.5.3.jar; \
     wget -P /opt/flink/lib/ https://repo.maven.apache.org/maven2/org/apache/kafka/kafka-clients/3.8.0/kafka-clients-3.8.0.jar
 
-
+RUN chown -R flink:flink /opt/flink/lib
 WORKDIR /opt/flink
 ENV SQL_CLIENT_HOME=/opt/flink/opt/flink
 COPY conf/config.yaml conf/config.yaml 

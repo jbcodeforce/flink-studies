@@ -96,7 +96,7 @@ Data Definition Language (DDL) are statements to define metadata in Flink SQL by
 
 A table registered with the CREATE TABLE statement can be used as a table source or a table sink.
  
-### Table creation how to
+### Table creation how-tos
 
 ???- tip "Primary key and partition by considerations"
     * Primary key can have one or more columns, all of them should be not null, and only being `NOT ENFORCED`
@@ -118,33 +118,6 @@ A table registered with the CREATE TABLE statement can be used as a table source
     -- with hash distribution to 2 partitions that match the primary key
     CREATE TABLE humans (hid INT PRIMARY KEY NOT ENFORCED, race STRING, gender INT) DISTRIBUTED BY (hid) INTO 2 BUCKETS;
     ```
-
-???- info "Change log - append mode"
-    With append mode, it is possible to create a table with a primary key, and inserting duplicate record with the same key, will be insert events. 
-
-    ```sql
-    create table if not exists orders (
-            order_id STRING primary key not enforced,
-            product_id STRING,
-            quantity INT
-        ) DISTRIBUTED into '1' BUCKETS 
-        with (
-            'changelog.mode' = 'append',
-            'value.fields-include' = 'all'
-        );
-    ```
-
-    The outcome includes records in topics that are insert records:
-
-    ![](./images/append-mode-table.png){ width=600 }
-
-    while running the following statement, in a session job, returns the last records per key: (ORD_1, BANANA, 13), (ORD_2, APPLE, 23).
-    
-    ```sql
-    SELECT * FROM `orders` LIMIT 10;
-    ```
-
-    Also be sure to get the key as part of the values, using the `'value.fields-include' = 'all'` option, if not it will not be possible to group by the key.
 
 ???- tip "Create a table with csv file as persistence - Flink OSS"
     We need to use the file system connector.
@@ -426,6 +399,66 @@ A table registered with the CREATE TABLE statement can be used as a table source
     See the [CROSS JOIN UNNEST](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/joins/#array-expansion) keywords.
 
     See also running demo in [flink-sql/03-nested-row](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/03-nested-row)
+
+
+### Changelog mode
+
+In traditional DB, changelog, or transaction log, records all modification operations in the database. Flink SQL also generates changelog data: changelogs that contain only INSERT-type events is an **append** streams, with UPDATE events it is an **update** stream.
+
+Some operations (stateful ones) in Flink such as group aggregation and deduplication can produce update events. With retract mode, an update event is split into delete and insert events.
+
+The **append mode** is the simplest mode where records are only added to the result stream, never updated or retracted. Like a write-once data. With append mode, it is possible to create a table with a primary key, and inserting duplicate records with the same key, will be insert events. 
+
+```sql
+create table if not exists orders (
+        order_id STRING primary key not enforced,
+        product_id STRING,
+        quantity INT
+    ) DISTRIBUTED into '1' BUCKETS 
+    with (
+        'changelog.mode' = 'append',
+        'value.fields-include' = 'all'
+    );
+```
+
+The outcome includes records in topics that are insert records:
+
+<figure markdown="span">
+![1](./images/append-mode-table.png){ width=800 }
+<figcaption>Changelog mode: insert events</figcaption>
+</figure>
+
+while running the following statement, in a session job, returns the last records per key: (ORD_1, BANANA, 13), (ORD_2, APPLE, 23).
+    
+```sql
+SELECT * FROM `orders` LIMIT 10;
+```
+
+For **retract mode**, Flink emits pairs of retraction and addition records. When updating a value, it first sends a retraction of the old record (negative record) followed by the addition of the new record (positive record). It means, a fact can be undone, and the combination of +X and -X are related and must be partitioned together. With retract mode a consumer outside of Flink need to interpret the header. 
+
+[See this code example](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/05-append-log) for the different changelog mode study.
+
+Also be sure to get the key as part of the values, using the `'value.fields-include' = 'all'` option, if not it will not be possible to group by the key.
+
+#### SinkUpsertMaterializer
+
+With upsert, and the creation of two update events, . When input operators, for two tables, with upsert mode, are followed by a join, and then a sink operator, it is possible that those events will arrive out-of-order within a sink operator. If the downstream operator does not take the out-of-ordermess into account in its implementation, it may lead to incorrect results. 
+
+Flink determines the ordering of update history received on the primary key (upsert keys in that case) through a global analysis in the planner. But it may be possible there is a mismatch between the upsert keys of the join output and the primary key of the sink table. This mapping is supported by the `SinkUpsertMaterializer` operator. This operator maintains a list of all RowData in its state so it can process any deletion coming from the source table. This can lead to a large state size thereof the state access I/O overhead and the reduced job throughput. Therefore, we should try to avoid using it if possible. The output value is always the tail element of the list for each primary key.
+
+When 1M records need to be processed among a small key set, like 1000 keys, then SinkUpsertMaterializer will need to hold a long list of on average 1_000 records per each key. 
+For that:
+
+* Make sure the partition keys used for deduplication, group aggregation, etc. are the same as the sink table's primary keys
+* SinkUpsertMaterlizer is not needed if retractions are created with the same key, as the primary key of the SinkUpsertMaterlizer
+* If we are feeding the same amount of records, but also retracting most of them, SinkUpsertMaterializer will be able to reduce it's state size considerably
+* Use TTL to reduce the size of the state using time
+* Higher number of distinct values per primary key directly impact SinkUpsertMaterializer's state size
+
+#### Deeper dive
+
+* [Confluent product document - changelog ](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#changelog-mode)
+* [Flink SQL Secrets: Mastering the Art of Changelog Event Out-of-Orderness](https://www.ververica.com/blog/flink-sql-secrets-mastering-the-art-of-changelog-event-out-of-orderness)
 
 ### Confluent Cloud Flink table creation
 

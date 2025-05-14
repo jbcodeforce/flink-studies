@@ -11,7 +11,7 @@ Kafka topic is the source of truth of the data.
 ### Value Propositions
 
 * It is a Cloud service, per region.
-* The data from the topic is moved to object storage in parquet format with Iceberg metadata. 
+* The data from the topic is moved to object storage in **parquet format** with **Iceberg metadata**. 
 * Need to bring your own object storage (s3 bucket)
 * Work with private network, using gateway private endpoints to S3. No traffic over public internet.
 * Data refreshness is down to 15mn, default 6 hours. For higher need, it can read from broker directly, at the minute level.
@@ -19,8 +19,9 @@ Kafka topic is the source of truth of the data.
 * Can copact multiple small files in bigger file.
 * It keeps track of committed osffset in iceberg.
 * Write data as encrypted at source level.
+* Charge for sink connector and egress is waived, pricing is based on per topic/hour and GB processed.
 
-### Current limitation
+### Current limitations
 
 * Consume only from append log topic, and non compacted topic.
 * DLQ not supported yet
@@ -37,3 +38,4 @@ Kafka topic is the source of truth of the data.
 ## Persisted Data in S3
 
 * Keep metadata of records in original topic like topic name, timestamp and offset
+

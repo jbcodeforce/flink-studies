@@ -211,13 +211,16 @@ Be sure to enable cloud notifications and at least monitor topic consumer lag me
 
 ## Understanding pricing
 
-The [CFU pricing is here.](https://docs.confluent.io/cloud/current/flink/concepts/flink-billing.html#cfu-billing) Price per hour computed by the minute. Some core principals:
+The [CFU pricing is here.](https://docs.confluent.io/cloud/current/flink/concepts/flink-billing.html#cfu-billing) Price per hour computed by the minute. 
+
+Some core principals:
 
 * Flink SQL runs each statement independently of any others.
 * Not overpay for processing capacity. Pay for what is used. Increment at the minute level.
 * Short live queries cost a real minimum, and can be done in a shared compute pool
 * Long running queries cost is aggregate per hour with minute increment. So a statement starting at 1 CFU for 10 minutes then 3 CFUs for 30 and back to 2 for 10 anf 1 for 10 will use 10 + 90 + 20 + 10 = 130 CFUs for the hour.
 * Statement throughput generally scales linearly in the number of CFUs available to a statement
+* The Max CFU parameter is a just for Budget control
 
 To estimate CFU consumption we need to:
 

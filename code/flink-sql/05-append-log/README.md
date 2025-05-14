@@ -1,10 +1,14 @@
 # Deeper understanding of the changelog mode impact
 
-This folder includes a set of sqls to demonstrate the impact of using different changelog mode to different operations like joins and aggregations.
+This folder includes a set of sqls to demonstrate the impact of using different changelog mode to different operations like joins and aggregations. As a source of information there are a set of product documentations, enablements and blogs that can be studied:
+
+* [Confluent product document - changelog ](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#changelog-mode)
+* [Flink SQL Secrets: Mastering the Art of Changelog Event Out-of-Orderness](https://www.ververica.com/blog/flink-sql-secrets-mastering-the-art-of-changelog-event-out-of-orderness)
+* [Summary of those articles in this repo](https://jbcodeforce.github.io/flink-studies/coding/flink-sql/#changelog-mode)
 
 Those examples are for Confluent Cloud and Flink SQL can be deployed using Confluent CLI.
 
-## setup
+## Confluent Cloud setup
 
 * Login to Confluent Cloud
 * Define the Kafka API Key to use
@@ -15,7 +19,7 @@ confluent api-key use <api_key_name>
 
 ## Append mode tests
 
-The append mode is the simplest mode where records are only added to the result stream, never updated or retracted. Like a write-once data. Every insertion can be treated as an independent immutable fact. The $rowtime column and system watermark are added implicitly. It is used for regular SELECT queries without aggregations per key.
+The append mode is the simplest mode where records are only added to the result stream, never updated or retracted. Like a write-once data. Every insertion can be treated as an independent immutable fact. The `$rowtime` column and system watermark are added implicitly. It is used for regular SELECT queries without aggregations per key.
 
 The `ddl.orders-append-mode.sql` creates such table. 
 
@@ -48,14 +52,14 @@ The Kafka topic has all the records in the order of insertion, so source topic h
 
 as BANANA is counting the duplicates, the right result should be `BANANA, 36`. 
 
-* AS another example to validate JOIN behavior, add a product table. The Products table may be considered as a reference table, quite static per nature: 
+* AS another example to validate changelog impact, we can use JOIN operator by adding a product table. The Products table may be considered as a reference table, quite static per nature: 
 
 ```sh
 make deploy_products
 make insert_products
 ```
 
-* A join between the two append mode tables, generates all the records, including the duplicates, as the left side has duplicates:
+* A join between the two append mode tables, generates all the records, including the duplicates, as the left side of the join has duplicates:
 
 ```sql
 select 
@@ -70,7 +74,7 @@ left join products as p ON o.product_id = p.product_id
 
 ![](../../docs/coding/images/join_append_tables.png)
 
-Same if we insert the results into an output topic: the topic has duplicates, which is expected.
+We can observe the same behavior as previous section: if we insert the results into an output Kafka topic: the topic has duplicates, which is expected.
 
 ```sql
 create table enriched_orders (
@@ -96,7 +100,7 @@ left join products as p ON o.product_id = p.product_id
 
 For retract mode, Flink emits pairs of retraction and addition records. When updating a value, it first sends a retraction of the old record (negative record) followed by the addition of the new record (positive record). It means, a fact can be undone, and the combination of +X and -X are related and must be partitioned together. Records are related by all the columns so the entire row is the key.
 
-Use the following commands to create the table, after cleaning the orders table:
+Use the following commands to create the tables, after cleaning the orders table:
 
 ```sh
 make drop_orders
@@ -107,7 +111,7 @@ make insert_orders
 The topic has duplicates records as expected.
 
 * `select * from orders;` returns no duplicate and gives good results: the record with order_id =7 has the quantity 11 instead of 10.
-* Adding to a dedup table with a CTAS like below, get no duplicate when using `select * from order_deduped`, even if in the topic duplicate records exist. The primary key is the `order_id` as in the source table `orders`.
+* Adding to a dedup table with a CTAS like below, gives us no duplicate when using `select * from order_deduped`, even if in the topic, duplicate records exist. The primary key is the `order_id` as in the source table `orders`.
 
 ```sql
 create table orders_deduped 
@@ -119,7 +123,7 @@ with (
 as select * from orders;
 ```
 
-* The aggregation: `select product_id, sum(quantity) as total from orders group by product_id;` returns the same wrong result
+* The aggregation: `select product_id, sum(quantity) as total from orders group by product_id;` returns the same wrong result:
 
     ```sql
     product_id, total
@@ -142,7 +146,7 @@ with (
   ...
 ```
 
-What is in interresting, are the records in the topics. For 9 records in the input orders topic, the output topic has 19 messages.
+For the records in the topics, there are 9 records in the input orders topic, and the output topic has 19 messages.
 
 ![](../../docs/coding/images/retract_enriched_orders.png)
 
@@ -163,7 +167,7 @@ Some records have this content with no header
 }
 ```
 
-Then in a higher offset a record with the same key and empty value but with a header representing a DELETE:
+Then in a higher offset a record with the same key and empty valuem and with a header representing a DELETE:
 
 ```json
 [
@@ -177,7 +181,7 @@ The next record with the same key has finally the join result and an empty heade
 
 When performing joins, Flink needs to handle scenarios where joined records become invalid due to updates or deletions in the source tables.
 
-Flink uses these operation flags to track different types of changes:
+Flink uses these operation flags in the header to track different types of changes:
 
 ```properties
 \u0001 = INSERT
@@ -264,7 +268,7 @@ as
 
 ```
 
-If the CTAS stop then the results will be wrong. It is better to use as ddl and then an dml with insert into.
+If the CTAS stop then the results will be wrong. It is better to use a ddl and then a dml with insert into.
 
 The content in the topic looks like:
 
@@ -279,7 +283,7 @@ While the result of `select * from order_deduped;` return only the last record o
 enriched_orders doesn't support consuming update and delete changes which is produced by node Join(joinType=[LeftOuterJoin], where=[(product_id = product_id0)], select=[order_id, user_id, product_id, quantity, product_id0, description, organic], leftInputSpec=[HasUniqueKey], rightInputSpec=[JoinKeyContainsUniqueKey])
 ```
 
-The topic is created and table are created but no records are published by the  CTAS.
+The topic is created and tables are created but no records are published by the  CTAS.
 
 So the `enriched_orders` needs to be upsert or retract. With this we got the same results as the previous two sections.
 
