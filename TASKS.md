@@ -4,21 +4,22 @@
 
 ### Basic Content
 
-- [ ] Create comprehensive getting started guide
+- [x] Create comprehensive getting started guide
 * [ ] Audit and update all existing docs for accuracy and clarity
-- [ ] Document basic Flink concepts
-- [ ] Create installation guides for different environments (local, Docker, Kubernetes, cloud)
-- [ ] Set up basic example projects
-* [ ] Add troubleshooting and FAQ section
+- [x] Document basic Flink concepts
 - [x] Create contribution guidelines
 
-### Code samples
+### Code getting started
 
 * [ ] Create a “first Flink app” tutorial with step-by-step instructions
+* [ ] Flink SQL basic app
+* [ ] Changelog mode demo and  [ ] explanations
+* [ ] Flink SQL Puzzles
 
 ## Priority 2: Core Content Development 
 
 ### Architecture Documentation
+
 - [ ] Document Flink architecture
 - [ ] Create state management guide
 - [ ] Document fault tolerance mechanisms
@@ -32,9 +33,6 @@
 - [ ] Create SQL API guide
 - [ ] Document Stateful Functions
 - [ ] Create CEP guide
-
-### Code Samples
-
 * [ ] Refactor and document all Java, SQL, and Python samples
 * [ ] Add code samples for Table API and Stateful Functions
 
@@ -58,11 +56,9 @@
 ### Deployment
 
 - [ ] Create Kubernetes deployment guide
+- [ ] Create makefile and readme to easily deploy CP Flink, CP Kafka
+- [ ] Create makefile and readme to easily deploy OSS Flink, OSS Kafka
 - [ ] Create monitoring setup guide
-
-### Infrastructure & Deployment
-
-* [ ] Write guides for deploying Flink on Kubernetes (minikube, colima, cloud)
 * [ ] Add Terraform scripts for cloud deployment
 * [ ] Document monitoring and alerting setup for Flink clusters
 

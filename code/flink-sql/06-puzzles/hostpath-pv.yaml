@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: flink-csv-pv
+spec:
+  capacity:
+    storage: 1Gi  # Define a reasonable storage capacity (doesn't strictly limit host usage)
+  accessModes:
+    - ReadWriteOnce  # Allows a single node to read and write
+  persistentVolumeReclaimPolicy: Retain # Data is preserved even if the PVC is deleted
+  storageClassName: manual 
+  hostPath:
+    path: ./data/ # The path to the host directory
+    type: DirectoryOrCreate # Creates the directory if it doesn't exist (ensure the Kubernetes node has permissions)

@@ -38,7 +38,7 @@ use_flink_ns:
 use_cp_ns:
 	@kubectl config set-context --current --namespace=$(CFNT_NS)
 
-install_operators: create_ns deploy_cert_manager deploy_cp_flink_operator deploy_cp_operator
+install_operators: deploy_cert_manager deploy_cp_flink_operator deploy_cp_operator
 
 deploy_cert_manager:
 	@kubectl get deployments cert-manager  -n cert-manager > /dev/null 2>&1;\
@@ -86,7 +86,7 @@ flink_console:
 	echo $$POD_NAME; kubectl port-forward $$POD_NAME 8082:8081 -n $(FLCK_NS);
 	
 # ---------------------- Confluent Platform Flink --------------------------------
-update_help_confluent_repo:
+update_helm_confluent_repo:
 	@helm repo add confluentinc https://packages.confluent.io/helm
 
 deploy_cp_flink_kubernetes: 

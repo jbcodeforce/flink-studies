@@ -4,6 +4,9 @@
     * Created 10/2024
     * 12/24: move some content to hands-on readme, clean content
     * 01/25: sql processing section
+    * 05/25: merge content, simplify, add some details on deployment - fully test k8s deployment on Colima
+
+## Apache Flink Kubernetes Operator
 
 [Apache Flink Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) acts as a control plane to manage the complete deployment lifecycle of Apache Flink applications. This note summarizes how to use this operator, with present the different getting started yaml files. 
 
@@ -14,10 +17,9 @@ The [operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs
 <figcaption>Flink Operator to manage Flink Job and Task managers</figcaption>
 </figure>
 
-
 The operator fully automates the entire lifecycle of job manager, task managers, and applications. Failures of Job Manager pods are handled by the Deployment Controller which will take care of spawning a new Job Manager.
 
-As other operator it can run **namespace-scoped**, to get multiple versions of the operator in the same Kubernetes cluster, or **cluster-scoped** for highly distributed  deployment. 
+As other operators, it can run **namespace-scoped**, to get multiple versions of the operator in the same Kubernetes cluster, or **cluster-scoped** for highly distributed  deployment. 
 
 The following figure represents a simple deployment view of a Flink and a Kafka clusters on a kubernetes platform:
 
@@ -28,14 +30,17 @@ The following figure represents a simple deployment view of a Flink and a Kafka 
 
 The custom resource definition that describes the schema of a FlinkDeployment is a cluster wide resource. The Operator continuously tracks cluster events relating to the `FlinkDeployment` and `FlinkSessionJob` custom resources. [The operator control flow is described in this note.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/concepts/controller-flow/) 
 
-**Important documentations:**
+### FlinkDeployment
+
+FlinkDeployment CR defines Flink Application and Session cluster deployments
+
+### Important documentations
 
 * [Confluent Platform for Flink has also an operator](https://docs.confluent.io/platform/current/flink/get-started-cpf.html) compatible with the open-source one.
 * [Getting started with Flink OSS Standalone Kubernetes Setup.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/)
 * [Apache Flink Native Kubernetes deployment.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/native_kubernetes/)
 
 ## Pre-requisites
-
 
 Any Flink on Kubernetes deployment should include the following pre-requisites:
 
@@ -54,9 +59,9 @@ Any Flink on Kubernetes deployment should include the following pre-requisites:
 * Add the Apache Flink and Confluent Platform **Helm** repositories: 
     ```sh
     helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.11.0
-    # or Confluent
+    # For Confluent
     helm repo add confluentinc https://packages.confluent.io/helm
-    # Verify help repo entry exist
+    # Verify help repo entries exist
     helm repo list
     # Be sure to change the repo as the URL may not be valid anymore
     helm repo remove  flink-operator-repo
@@ -70,6 +75,7 @@ Any Flink on Kubernetes deployment should include the following pre-requisites:
   ```sh
   confluent update
   ```
+* Install [Confluent plugin for kubectl](https://docs.confluent.io/operator/current/co-deploy-cfk.html#co-install-plugin). For previously installed plugin, delete the old plugin from the directory where you previously installed it. 
 
 * Get [Confluent Platform releases information.](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
 
@@ -94,7 +100,6 @@ Any Flink on Kubernetes deployment should include the following pre-requisites:
     minikube start --cpus='3' --memory='4096'
   ```
 
-* Create `flink` and `confluent` namespaces
 * Install Certification manager [See current releases](https://github.com/cert-manager/cert-manager/releases): 
   ```sh
   kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.17.2/cert-manager.yaml
@@ -110,11 +115,11 @@ Any Flink on Kubernetes deployment should include the following pre-requisites:
 
 MinIO is an object storage solution that provides an Amazon Web Services S3-compatible API and supports all core S3 features, on k8s.
 
-* First be sure [the MinIO](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) is installed on k8s. 
+* First be sure [the MinIO CLI](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) is installed on k8s. 
 
     ```sh
     brew install minio/stable/mc
-    # or for a new version
+    # or to upgrade to a new version
     brew upgrade minio/stable/mc
     # Verify installation
     mc --help
@@ -122,10 +127,10 @@ MinIO is an object storage solution that provides an Amazon Web Services S3-comp
 
     [mc cli command summary](https://min.io/docs/minio/linux/reference/minio-mc.html)
 
-* Config minio under `minio-dev` namespace
+* Config Minio under `minio-dev` namespace
 
     ```sh
-    # under deploymenet/k8s/cpf
+    # under deployment/k8s/cpf
     kubectl apply -f minio-dev.yaml
     kubectl get pods -n minio-dev
     ```
@@ -144,24 +149,42 @@ MinIO is an object storage solution that provides an Amazon Web Services S3-comp
     # make a bucket
     mc mb dev-minio/flink
     ```
+* Next steps is to upload jar files for the different applications to deploy, or data sets for SQL table. See later section.
 
 ## Deploy Apache Flink Kubernetes Operator
 
-The [Apache flink kubernetes operator product documentation](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-release-1.11/docs/try-flink-kubernetes-operator/quick-start/) lists the setup steps.
+The [Apache flink kubernetes operator product documentation](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/try-flink-kubernetes-operator/quick-start/) lists the setup steps.
 
 * Get the [list of Apache Flink releases and tags here](https://downloads.apache.org/flink/) 
+* To get access to k8s deployment manifests and a Makefile to simplify deployment, of Apache Flink, or Confluent Platform on k8s (local colima or minikube) see [the deployment/k8s/flink-oss folder](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/fink-oss/README.md). 
+  ```sh
+  make prepare
+  make verify_flink
+  make deploy_basic_flink_deployment  
+  ```
+* [Access Flink UI](http://localhost:8081)
+* Mount a host folder as a PV to access data or SQL scripts, using hostPath.
 
-* To get access to k8s deployment manifests and a Makefile to simplify deployment, of Apache Flink, or Confluent Platform on k8s (local colima or minikube) see [the deployment/k8s folder](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/README.md). 
+## Deploy [Confluent Platform](https://docs.confluent.io/operator/current/co-cfk-overview.html) for Flink
 
-[Next deploy a Session Cluster](#flink-session-cluster) or an Application.
-
-## Deploy Confluent Platform for Flink
+* Create a namespace for Confluent products deployment:
+  ```sh
+  kubectl create ns confluent
+  kubectl config set-context --current --namespace=confluent
+  ```
+  By default, CFK deploys Confluent Platform in the namespaced deployment, and it manages Confluent Platform component clusters and resources in the same Kubernetes namespace where CFK itself is deployed.
+* [Download the CFK bundle](https://docs.confluent.io/operator/current/co-deploy-cfk.html#deploy-co-using-the-download-bundle) (under the folder deployment/k8s/cfk-bundle) and use helm to install the CFK operator
+  ```sh
+  helm upgrade --install confluent-operator ./confluent-for-kubernetes --namespace confluent
+  ```
 
 * Install [Confluent plugin for kubectl](https://docs.confluent.io/operator/current/co-deploy-cfk.html#co-install-plugin)
+  ```sh
+  sudo tar -xvf kubectl-plugin/kubectl-confluent-darwin-arm64.tar.gz -C /usr/local/bin/
+  ```
 * Install certification manager (only one time per k8s cluster): See [Release version here.](https://github.com/cert-manager/cert-manager/)
 
 
-* Install Confluent plugin for kubectl
 * Deploy Confluent Platform Flink operator: `make deploy_cp_flink_operator`  (see Makefile in [deployment/k8s and its readme](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s)) with  makefile to simplify the deployment.
 
   ```sh
@@ -194,7 +217,7 @@ The [Apache flink kubernetes operator product documentation](https://nightlies.a
 
 ## Custom Resources
 
-Once the operator is running, we can submit jobs using  `FlinkDeployment` (for Flink Application) and `FlinkSessionJob` Custom Resources for Session.(Confluent Managed for Flink supports application mode only and is using a new CRD for `FlinkApplication`).
+Once the operator is running, we can submit jobs using  `FlinkDeployment` (for Flink Application) and `FlinkSessionJob` Custom Resources for Session. Confluent Managed for Flink supports application mode only and is using a new CRD for `FlinkApplication`.
 
 The [Apache Flink FlinkDeployment spec is here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/) and is used to define Flink application (will have a job section) or session cluster (only job and task managers configuration).
 
@@ -360,7 +383,7 @@ An **application deployment** must define the job (JobSpec) field with the `jarU
 ```yaml
 job:
     jarURI: local:///opt/flink/examples/streaming/StateMachineExample.jar
-    # For your own deployment, use your jar
+    # For your own deployment, use your own jar
     jarURI: local:///opt/flink/usrlib/yourapp01.0.0.jar
     parallelism: 2
     upgradeMode: stateless
@@ -458,7 +481,14 @@ COPY /path/of/my-flink-job-*.jar $FLINK_HOME/usrlib/my-flink-job.jar
 
 ### Flink SQL processing
 
-There are multiple choices to run Flink SQL, using the SQL client, or package the SQL scripts and get a [java SQL runner](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) executing the SQL statements from a file, so the application deployment is Java based even if SQL scripts are used for stream processing.
+There are multiple choices to run Flink SQL, using the SQL client, or package the SQL scripts and a [java SQL runner](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) executing the SQL statements from a file, so the application deployment is Java based even if SQL scripts are used for stream processing.
+
+#### Running SQL Puzzles in SQL Script
+
+* Once a task manager is started, exec to start sql_script.sh
+
+```
+```
 
 ## Practices
 

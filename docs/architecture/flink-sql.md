@@ -113,9 +113,9 @@ In a pure Kafka integration architecture, such as Confluent Cloud, the data life
 
 | Type | Operators | Comments|
 | --- | --- | --- |
-| **Stateless** | SELECT {projection, transformation} WHERE {filter}; UNION ... | Can be distributed |
-| **Materialized** | GROUP BY <aggregationss> or JOINS | Dangerously Stateful, keep an internal copy of the data related to the query |
-| **Temporal** | Time windowed operations, interval **joins**, time-versioned joins, MATCH_RECOGNIZE <pattern> | Stateful but constrained in size |
+| **Stateless** | SELECT {projection, transformation} WHERE {filter}; UNION ..., CROSS JOIN UNNEST or CROSS JOIN LATERAL | Can be distributed |
+| **Materialized** | GROUP BY <aggregations>, OVER, JOINS or MATCH_RECOGNIZE | Dangerously Stateful, keep an internal copy of the data related to the query |
+| **Temporal** | Time windowed operations, interval **joins**, time-versioned joins | Stateful but constrained in size |
 
 As elements are stored for computing materialized projections, it's crucial to assess the number of elements to retain. Millions to billions of small items are possible. However, if a query runs indefinitely, it may eventually overflow the data store. In such cases, the Flink task will ultimately fail.
 

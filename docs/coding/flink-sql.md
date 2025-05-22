@@ -22,8 +22,11 @@ Use one of the following approaches:
     The SQL Client aims to provide an easy way to write, debug, and submit table programs to a Flink cluster without a single line of code in any programming language. To interact with Flink using the SQL client, open a bash in the running container, or in the flink bin folder:
 
     ```sh
+    # Using running job manager running within docker
     docker exec -ti sql-client bash
-    # in the shell
+    # in kubernetes pod
+    kubectl exec -ti pod_name -n namespace -- bash
+    # in the shell /opt/flink/bin 
     ./sql-client.sh
     ```
 
@@ -396,7 +399,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
       CAST(StatesTable.states[7] AS DECIMAL(10, 4)) AS latitude,
     ```
 
-    See the [CROSS JOIN UNNEST](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/joins/#array-expansion) keywords.
+    See also the [CROSS JOIN UNNEST](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/joins/#array-expansion) keywords.
 
     See also running demo in [flink-sql/03-nested-row](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/03-nested-row)
 
@@ -436,29 +439,35 @@ SELECT * FROM `orders` LIMIT 10;
 
 For **retract mode**, Flink emits pairs of retraction and addition records. When updating a value, it first sends a retraction of the old record (negative record) followed by the addition of the new record (positive record). It means, a fact can be undone, and the combination of +X and -X are related and must be partitioned together. With retract mode a consumer outside of Flink need to interpret the header. 
 
-[See this code example](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/05-append-log) for the different changelog mode study.
+Any stateful aggregation, group by, joins, over, match_recognize ... enforces using a key and so upsert or retract changelog mode.
+
+
+[See this code examples](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/05-append-log) for the different changelog mode study.
 
 Also be sure to get the key as part of the values, using the `'value.fields-include' = 'all'` option, if not it will not be possible to group by the key.
 
 #### SinkUpsertMaterializer
 
-With upsert, and the creation of two update events, . When input operators, for two tables, with upsert mode, are followed by a join, and then a sink operator, it is possible that those events will arrive out-of-order within a sink operator. If the downstream operator does not take the out-of-ordermess into account in its implementation, it may lead to incorrect results. 
+When operating in upsert mode and processing two update events, a potential issue arises. If input operators for two tables in upsert mode are followed by a join and then a sink operator, update events might arrive at the sink out of order. If the downstream operator's implementation doesn't account for this out-of-order delivery, it can lead to incorrect results.
 
-Flink determines the ordering of update history received on the primary key (upsert keys in that case) through a global analysis in the planner. But it may be possible there is a mismatch between the upsert keys of the join output and the primary key of the sink table. This mapping is supported by the `SinkUpsertMaterializer` operator. This operator maintains a list of all RowData in its state so it can process any deletion coming from the source table. This can lead to a large state size thereof the state access I/O overhead and the reduced job throughput. Therefore, we should try to avoid using it if possible. The output value is always the tail element of the list for each primary key.
+Flink typically determines the ordering of update history based on the primary key (or upsert keys) through a global analysis in the Flink planner. However, a mismatch can occur between the upsert keys of the join output and the primary key of the sink table. The `SinkUpsertMaterializer` operator addresses this mapping discrepancy.
 
-When 1M records need to be processed among a small key set, like 1000 keys, then SinkUpsertMaterializer will need to hold a long list of on average 1_000 records per each key. 
-For that:
+This operator maintains a complete list of RowData in its state to correctly process any deletion events originating from the source table. However, this approach can lead to a significant state size, resulting in increased state access I/O overhead and reduced job throughput. Also the output value for each primary key is always the last (tail) element in the maintained list. It is generally advisable to avoid using `SinkUpsertMaterializer` whenever possible. 
 
-* Make sure the partition keys used for deduplication, group aggregation, etc. are the same as the sink table's primary keys
-* SinkUpsertMaterlizer is not needed if retractions are created with the same key, as the primary key of the SinkUpsertMaterlizer
-* If we are feeding the same amount of records, but also retracting most of them, SinkUpsertMaterializer will be able to reduce it's state size considerably
-* Use TTL to reduce the size of the state using time
-* Higher number of distinct values per primary key directly impact SinkUpsertMaterializer's state size
+Consider a scenario where 1 million records need to be processed across a small set of 1,000 keys. In this case, `SinkUpsertMaterializer` would need to store a potentially long list, averaging approximately 1,000 records per key. 
+
+To mitigate the usage of `SinkUpsertMaterializer`:
+
+* Ensure that the partition keys used for deduplication, group aggregation, etc., are identical to the sink table's primary keys.
+* `SinkUpsertMaterializer` is unnecessary if retractions are generated using the same key as the sink table's primary key. If a large number of records are processed but most are subsequently retracted, SinkUpsertMaterializer can significantly reduce its state size.
+* Utilize Time-To-Live (TTL) to limit the state size based on time.
+* A higher number of distinct values per primary key directly increases the state size of the SinkUpsertMaterializer.
 
 #### Deeper dive
 
 * [Confluent product document - changelog ](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#changelog-mode)
 * [Flink SQL Secrets: Mastering the Art of Changelog Event Out-of-Orderness](https://www.ververica.com/blog/flink-sql-secrets-mastering-the-art-of-changelog-event-out-of-orderness)
+* [Resolving: Primary key differs from derived upsert key](https://docs.confluent.io/cloud/current/flink/how-to-guides/resolve-common-query-problems.html#primary-key-differs-from-derived-upsert-key)
 
 ### Confluent Cloud Flink table creation
 
@@ -731,12 +740,14 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     json_query(`data`, '$' RETURNING ARRAY<STRING>) as anewcolumn
     ```
 
-    To create as many rows as there are elements in the nest array:
-    
+    To create as many rows as there are elements in the nested array:
     ```sql
     SELECT existing_column, anewcolumn from table_name
-    cross join unnest (json_query(`data`, '$' RETURNING ARRAY<STRING>)) as t (anewcolumn)
+    cross join unnest (json_query(`data`, '$' RETURNING ARRAY<STRING>)) as t(anewcolumn)
     ```
+
+    UNNEST returns a new row for each element in the array
+    [See multiset expansion doc](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/joins/#array-multiset-and-map-expansion)
 
 ???- question "How to use conditional functions?"
     [Flink has built-in conditional functions](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#conditional-functions) (See also [Confluent support](https://docs.confluent.io/cloud/current/flink/reference/functions/conditional-functions.html)) and specially the CASE WHEN:
