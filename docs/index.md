@@ -238,7 +238,7 @@ In any time window, the order of arrival may not be guarantee, and some events w
 
 The watermark serves as a heuristic for this purpose.
 
-### Watermarks
+## Watermarks
 
 Watermarks are special markers that indicate the progress of event time in the stream. This is the core mechanims to trigger computation at  event-time. They help manage late arrivals by allowing the system to understand when it can safely close a window, ensuring that all necessary events have been accounted for, before processing the aggregate.
 
@@ -279,7 +279,7 @@ The watermark of a task is the mininum of all per-connection watermarks. Task wi
 
 Additionally, it is possible to configure the system to accept late events by specifying an `allowed lateness` period. This defines how late an element can arrive before it is discarded. Flink maintains the state of the window until the allowed lateness time has expired, allowing for flexible handling of late-arriving data while ensuring that the processing remains efficient and accurate.
 
-#### Some watermark processing examples 
+### Some watermark processing examples 
 
 Parallel watermarking is an example of getting data from 4 partitions with 2 kafka consumers and 2 windows:
 
@@ -311,7 +311,7 @@ java -cp target/my-flink-1.0.0-SNAPSHOT.jar jbcodeforce.sale.SaleDataServer
 ...
 ```
 
-#### Monitoring watermark
+### Monitoring watermark
 
 The following metrics are used at the operator and task level:
 
@@ -321,7 +321,37 @@ The following metrics are used at the operator and task level:
 
 Watermarks can be seen in Apache flink Console. 
 
-### Trigger
+
+### Identify which watermark is calculated
+
+The approach is to add a virtual column to keep the Kafka partition number:
+
+```sql
+ALTER TABLE <table_name> ADD _part INT METADATA FROM 'partition' VIRTUAL;
+```
+
+then assess if there is a value on the "Operator Watermark" column with
+
+```sql
+SELECT
+  *,
+  _part AS `Row Partition`,
+  $rowtime AS `Row Timestamp`,
+  CURRENT_WATERMARK($rowtime) AS `Operator Watermark`
+FROM  <table_name>;
+```
+
+If not all partitions are included in the result, it may indicate a watermark issue with those partitions. We need to ensure that events are sent across all partitions. To test a statement, we can configure it to avoid being an unbounded query by consuming until the latest offset. This can be done by setting: `SET 'sql.tables.scan.bounded.mode' = 'latest-offset';`
+
+Flink statement consumes data up to the most recent available offset at the job submission moment. Upon reaching this time, Flink ensures that a final watermark is propagated, indicating that all results are complete and ready for reporting. The statement then transitions into a 'COMPLETED' state."
+
+The table alteration can be undone with:
+
+```sql
+ALTER TABLE <table_name> DROP _part;
+```
+
+## Trigger
 
 A [Trigger](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/stream/operators/windows.html#triggers) in Flink, determines when a window is ready to be processed. 
 

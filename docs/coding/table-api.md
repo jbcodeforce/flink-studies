@@ -268,7 +268,7 @@ TO WORK ON
 
 ## Lower level Java based programming model
 
-* Start Flink server using docker ([start with docker compose](../coding/getting-started.md#docker-compose-with-kafka-and-flink) or on [k8s](../coding/k8s-deploy.md)). 
+* Start Flink server using docker ([start with docker compose](../coding/getting-started.md/#docker-compose-with-kafka) or on [Kubernetes](../coding/k8s-deploy.md)). 
 * Start by creating a java application (quarkus create app for example or using maven) and a Main class. See code in [flink-sql-quarkus](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql/flink-sql-quarkus/) folder.
 * Add dependencies in the pom
 

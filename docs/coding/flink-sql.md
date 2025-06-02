@@ -553,7 +553,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 
 ???- info "OVER aggregations"
-    [OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) compute an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY, but produces one result for every input row. This is helpful when we need to act on each input row, but consider some time interval. As classical example is to get the number of orders in the last 10 seconds.
+    [OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) compute an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY does, but produces one result for every input row. This is helpful when we need to act on each input row, but consider some time interval. A classical example is to get the number of orders in the last 10 seconds:
 
     ```sql
     SELECT 
@@ -615,13 +615,13 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     ```
 
 ???- question "How to Aggregate a field into an ARRAY?"
-    Let start by simple array indexing (the index is between 1 to n_element). Below, the values array creates test data into a n memory table aliased a T:
+    Let start by a simple array indexing (the index is between 1 to n_element). Below, the values array creates test data into a n memory table aliased a T:
 
     ```sql
     SELECT array_field[4] FROM ((VALUES ARRAY[5,4,3,2,1])) AS T(array_field)
     ```
 
-    The following is creating a view with an [array of aggregates](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions), which in this case, is concatenating the urls over a 1 minute tumble window.
+    The following code, is creating a view with an [array of aggregates](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions), which in this case, is concatenating the urls over a 1 minute tumble window.
 
     ```sql
     CREATE VIEW visited_pages_per_minute AS 
@@ -734,7 +734,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     
     ```
 
-???- question "How to transform a json array column (named data) into an array then generate n rows?"
+???- question "How to transform a json array column (named data) into an array to then generate n rows?"
     Returning an array from a json string:
     ```sql
     json_query(`data`, '$' RETURNING ARRAY<STRING>) as anewcolumn
@@ -748,6 +748,17 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     UNNEST returns a new row for each element in the array
     [See multiset expansion doc](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/joins/#array-multiset-and-map-expansion)
+
+???- question "How to implement the equivalent of SQL explode?"
+    SQL EXPLODE creates a row for each element in the array or map, and ignore null or empty values in array.
+    ```sql
+    SELECT explode(col1) from values (array(10,20)), (null)
+    ```
+    SQL has also EXPLODE_OUTER, which returns all values in array including null or empty.
+    To translate this to Flink SQL we can use MAP_ENTRIES and MAP_FROM_ARRAYS. MAP_ENTRIES returns an array of all entries in the given map. While MAP_FROM_ARRAYS returns a map created from an arrays of keys and values.
+    ```sql
+    select map_entries(map_from_arrays())
+    ```
 
 ???- question "How to use conditional functions?"
     [Flink has built-in conditional functions](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#conditional-functions) (See also [Confluent support](https://docs.confluent.io/cloud/current/flink/reference/functions/conditional-functions.html)) and specially the CASE WHEN:

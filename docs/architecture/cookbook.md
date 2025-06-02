@@ -40,8 +40,9 @@ The artifacts for development are the DDL and DML statements and test data.
 
 Finally to support the deployment and quality control of those pipelines deployment, the following figures illustrates a classical deployment pattern:
 
+<figure>
 ![](./diagrams/env-architecture.drawio.png)
-
+</figure>
 **Figure : Environment mapping**
 
 1. Each environment has its own schema registry
@@ -75,36 +76,13 @@ SELECT ROW_NUMBER() OVER (ORDER BY $rowtime ASC) AS number, *   FROM <table_name
 * When Data are in topic but not seen by flink `select * from <table_name>` statement, it may be due to idle partitions and the way watermarks advance and are propagated. Flink automatically marks a Kafka partition as idle if no events come within `sql.tables.scan.idle-timeout` duration. When a partition is marked as idle, it does not contribute to the watermark calculation until a new event arrives. Try to set the idle timeout for table scans to ensure that Flink considers partitions idle after a certain period of inactivity. Try to create a table with a watermark definition to handle idle partitions and ensure that watermarks advance correctly.
 
 
-### Identify which watermark is calculated
-
-Add a virtual column to keep the Kafka partition number by doing:
-
-```sql
-ALTER TABLE <table_name> ADD _part INT METADATA FROM 'partition' VIRTUAL;
-```
-
-Assess there is a value on the "Operator Watermark" column with
-
-```sql
-SELECT
-  *,
-  _part AS `Row Partition`,
-  $rowtime AS `Row Timestamp`,
-  CURRENT_WATERMARK($rowtime) AS `Operator Watermark`
-FROM  <table_name>;
-```
-
-If not all partitions are included in the result, it may indicate a watermark issue with those partitions. We need to ensure that events are sent across all partitions. To test a statement, we can configure it to avoid being an unbounded query by consuming until the latest offset. This can be done by setting: `SET 'sql.tables.scan.bounded.mode' = 'latest-offset';`
-
-Flink statement consumes data up to the most recent available offset at the job submission moment. Upon reaching this time, Flink ensures that a final watermark is propagated, indicating that all results are complete and ready for reporting. The statement then transitions into a 'COMPLETED' state."
-
 ## Security
 
 TO BE DONE
 
 ## Deduplication
 
-Deduplication is documented [here](../coding/flink-sql.md/#table-creation-how-to) and [here](https://docs.confluent.io/cloud/current/flink/reference/queries/deduplication.html#flink-sql-deduplication) and at its core principal, it uses a CTE to add a row number, as a unique sequential number to each row. The columns used to de-duplicate are defined in the partitioning. Ordering is using a timestamp to keep the last record or first record. Flink support only ordering on time.
+Deduplication is documented [here](../coding/flink-sql.md/#table-creation-how-tos) and [here](https://docs.confluent.io/cloud/current/flink/reference/queries/deduplication.html#flink-sql-deduplication) and at its core principal, it uses a CTE to add a row number, as a unique sequential number to each row. The columns used to de-duplicate are defined in the partitioning. Ordering is using a timestamp to keep the last record or first record. Flink support only ordering on time.
 
 ```sql
 SELECT [column_list]
