@@ -18,12 +18,12 @@
 .md-typeset details.question {
   border-width: 1;
   border-left-width: 4px;
-  background-color: #eedef5cc;
-  border-color: #B36DE3;
+  background-color: #e6f0f4cc;
+  border-color: #b9dde9cc;
 }
 
 .md-typeset details.question > summary {
-    background-color: #e7ccf8dc;
+    background-color: #b9dde9cc;
 }
 
 .md-typeset pre>code {

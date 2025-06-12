@@ -311,9 +311,8 @@ A table registered with the CREATE TABLE statement can be used as a table source
     select
         order_id, 
         user_id,
-
         $rowtime as event_time
-    from  `src_table`
+    from  `src_table`;
     ```
 
 ???- question "Dealing with late event"
@@ -394,7 +393,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
     Avro, Protobuf or Json schemas are very often hierarchical per design. It is possible to use CTAS to name a column within a sub-schema:
 
     ```sql
-    -- example of defining attribute from the n element of an array from a nested json schema:
+    -- example of defining attribute from the idx element of an array from a nested json schema:
       CAST(StatesTable.states[6] AS DECIMAL(10, 4)) AS longitude,
       CAST(StatesTable.states[7] AS DECIMAL(10, 4)) AS latitude,
     ```
@@ -446,7 +445,15 @@ Any stateful aggregation, group by, joins, over, match_recognize ... enforces us
 
 Also be sure to get the key as part of the values, using the `'value.fields-include' = 'all'` option, if not it will not be possible to group by the key.
 
-#### SinkUpsertMaterializer
+
+#### Deeper dive
+
+* [Confluent product document - changelog ](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#changelog-mode)
+* [Flink SQL Secrets: Mastering the Art of Changelog Event Out-of-Orderness](https://www.ververica.com/blog/flink-sql-secrets-mastering-the-art-of-changelog-event-out-of-orderness)
+* [Resolving: Primary key differs from derived upsert key](https://docs.confluent.io/cloud/current/flink/how-to-guides/resolve-common-query-problems.html#primary-key-differs-from-derived-upsert-key)
+
+
+### SinkUpsertMaterializer
 
 When operating in upsert mode and processing two update events, a potential issue arises. If input operators for two tables in upsert mode are followed by a join and then a sink operator, update events might arrive at the sink out of order. If the downstream operator's implementation doesn't account for this out-of-order delivery, it can lead to incorrect results.
 
@@ -462,12 +469,6 @@ To mitigate the usage of `SinkUpsertMaterializer`:
 * `SinkUpsertMaterializer` is unnecessary if retractions are generated using the same key as the sink table's primary key. If a large number of records are processed but most are subsequently retracted, SinkUpsertMaterializer can significantly reduce its state size.
 * Utilize Time-To-Live (TTL) to limit the state size based on time.
 * A higher number of distinct values per primary key directly increases the state size of the SinkUpsertMaterializer.
-
-#### Deeper dive
-
-* [Confluent product document - changelog ](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#changelog-mode)
-* [Flink SQL Secrets: Mastering the Art of Changelog Event Out-of-Orderness](https://www.ververica.com/blog/flink-sql-secrets-mastering-the-art-of-changelog-event-out-of-orderness)
-* [Resolving: Primary key differs from derived upsert key](https://docs.confluent.io/cloud/current/flink/how-to-guides/resolve-common-query-problems.html#primary-key-differs-from-derived-upsert-key)
 
 ### Confluent Cloud Flink table creation
 
@@ -540,7 +541,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     Recall that this results produces a dynamic table.
 
-???- question "How to combine records from multiple tables?"
+???- question "How to combine records from multiple tables (UNION)?"
     When the two tables has the same number of columns of the same type, then we can combine them:
 
     ```sql
@@ -615,7 +616,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     ```
 
 ???- question "How to Aggregate a field into an ARRAY?"
-    Let start by a simple array indexing (the index is between 1 to n_element). Below, the values array creates test data into a n memory table aliased a T:
+    Let start by a simple array indexing (the index is between 1 to n_element). Below, the values array creates test data into a memory table aliased a `T` with a column `array_field`:
 
     ```sql
     SELECT array_field[4] FROM ((VALUES ARRAY[5,4,3,2,1])) AS T(array_field)
@@ -637,6 +638,66 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     SELECT v.window_time, v.user_id, u.url FROM visited_pages_per_minute AS v
     CROSS JOIN UNNEST(v.urls) AS u(url)
     ```
+
+???- question "How to expand a column being an array of fields into new row?"
+
+    The table order has n product ids in the product_ids column. The following will create one row per element in product_ids.
+
+    ```sql
+    select 
+        order_id,
+        customer_id,
+        product_id
+    from orders
+    cross join unnest(product_ids) as ids(product_id)
+    ```
+
+???- info "Navigate a hierarchical structure in a table"
+    The unique table has node and ancestors representation. An example will be to represent a hierarchy of nodes persisted in a unique table. Suppose the graph represents a Procedure at the highest level, then an Operation, then a Phase and a Phase Step at the level 4. In the Procedures table we can have rows like:
+    
+    ```csv
+    id, parent_ids, depth, information
+    'id_1', [], 0 , 'procedure 1'
+    'id_2', ['id_1'], 1 , 'operation 1'
+    'id_3', ['id_1','id_2'], 2 , 'phase 1'
+    'id_4', ['id_1','id_2','id_3'], 3 , 'phase_step 1'
+    'id_5', ['id_1','id_2','id_3'], 3 , 'phase_step 2'
+    ```
+
+    Suppose we want to extract the matching  procedure_id, operation_id, phase_id, phase_step_id like
+    ```csv
+    id, procedure_id, operation_id, phase_id, phase_step_id, information
+    'id_1', 'id_1', NULL, NULL, NULL, 'procedure 1'
+    'id_2', 'id_1', 'id_2', NULL, NULL, 'operation 1'
+    'id_3', 'id_1', 'id_2', 'id_3', NULL, 'phase 1'
+    'id_4', 'id_1', 'id_2', 'id_3', 'id_4', 'phase_step 1'
+    'id_5', 'id_1', 'id_2', 'id_3', 'id_5', 'phase_step 2'
+    ```
+    
+    if the depth is 3 all ids are populated, if 0 only the top level is.
+    
+    ```sql
+    with `procedures` as (
+        select 'id_1' as id, array[''] as parentIds, 0 as `depth` , 'procedure 1' as info
+        UNION ALL
+        select 'id_2' as id, array['id_1'] as parentIds, 1 as `depth` , 'operation 1' as info
+        UNION ALL
+        select 'id_3' as id, array['id_1','id_2'] as parentIds, 2 as `depth`, 'phase 1' as info
+        UNION ALL
+        select 'id_4' as id, array['id_1','id_2','id_3'] as parentIds, 3 as `depth`, 'phase_step 1' as info
+        UNION ALL
+        select 'id_5' as id, array['id_1','id_2','id_3'] as parentIds, 3 as `depth`, 'phase_step 2' as info
+        )
+    select 
+        id, 
+        parent_id, 
+        case when `depth` = 3 then id end as phase_step_id,
+        case when `depth` = 2 then id end as phase_id,
+        case when `depth` = 1 then id end as operation_id,
+        case when `depth` = 0 then id end as procedure_id,
+        info from `procedures` cross join unnest(parentIds) as ids(parent_id)
+    ```
+
 
 ???- question "How to transform a field representing epoch to a timestamp?"
     
@@ -726,13 +787,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     Use json_value() instead if the column content is a dict or json {}.
 
-???- question "How to expand a column being an array of fields into new row?"
 
-    The table order has n product ids in the product_ids column.
-
-    ```sql
-    
-    ```
 
 ???- question "How to transform a json array column (named data) into an array to then generate n rows?"
     Returning an array from a json string:

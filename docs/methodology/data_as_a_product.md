@@ -9,12 +9,9 @@ This chapter provides a practical overview of current data lake and lakehouse ch
 The classical data landscape is split between operational data, which powers real-time applications, and analytical data, which provides historical insights for decision-making and machine learning. This separation has created complex and fragile data architectures, marked by problematic ETL processes and intricate data pipelines. The challenge lies in effectively bridging these two distinct data planes to ensure seamless data flow and integration.
 
 <figure markdown="span">
-![](./diagrams/data_op_data_planes.drawio.png)
+![](./diagrams/data_op_data_planes.drawio.png){ width=700 }
 <figcaption>Two data planes: real-time applications, and analytical data</figcaption>
 </figure>
-
-
-
  
 The initial data platform architecture comprised a database on one side and a data warehouse on the other, with ETL jobs facilitating data movement between them. This setup can lead to bottlenecks, especially when different teams are working on various parts of an application but all relying on the same data source. It might also complicate scalability and flexibility.
 
@@ -23,7 +20,7 @@ To address scaling challenges and support unstructured data, the second generati
 The medallion architecture, a three-layered approach, is a common framework for organizing data lakes. This structure, as illustrated in the figure below, is driven by several key motivations:
 
 <figure markdown="span">
-![](./diagrams/medallion_arch.drawio.png)
+![](./diagrams/medallion_arch.drawio.png){ width=700 }
 <figcaption>Medaillion Architecture</figcaption>
 </figure>
 
@@ -307,7 +304,7 @@ This structure can be in `src/main/java` for Java project, or src for python/ Fa
 ### Joins considerations
 
 
-The SQL, LEFT JOIN, joins records that match and don’t match on the condition specified. For non matching record the left columns are populated with NULL. SQL supports LEFT ANTI JOIN, but not Flink. So one solution in Flink AQL is to use a null filter on the left join condition:
+The SQL, LEFT JOIN, joins records that match and don’t match on the condition specified. For non matching record the left columns are populated with NULL. SQL supports LEFT ANTI JOIN, but not Flink. So one solution in Flink SQL is to use a null filter on the left join condition:
 
 ```sql
 from table_left

@@ -78,7 +78,7 @@ A Stream is a sequence of events, bounded or unbounded:
 
 <figure markdown="span">
 ![3](./diagrams/streaming.drawio.png){ width=600 }
-<figcaption>FBounded and unbounded event sequence</figcaption>
+<figcaption>Bounded and unbounded event sequence</figcaption>
 </figure>
 
 
