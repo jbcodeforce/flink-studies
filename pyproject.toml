@@ -12,3 +12,8 @@ dependencies = [
     "mkdocstrings>=0.29.0",
     "pyflink>=1.0",
 ]
+
+[tool.uv.workspace]
+members = [
+    "e2e-demos/cdc-demo/src",
+]

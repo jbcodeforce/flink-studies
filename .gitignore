@@ -14,3 +14,4 @@ flink-training/
 **/.venv
 deployment/product-tar/flink-*/
 deployment/product-tar/kafka_*/
+e2e-demos/cdc-demo/datasets/

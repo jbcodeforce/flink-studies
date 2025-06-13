@@ -6,14 +6,15 @@ metadata:
 ---
 
 apiVersion: v1
-data:
-  username: YXBw
-  password: cGFzc3dvcmQ=
 kind: Secret
 metadata:
   name: app-secret
   namespace: pgdb
-type: kubernetes.io/basic-auth
+type: Opaque
+stringData:
+  username: app
+  password: apppwd
+
 ---
 
 apiVersion: postgresql.cnpg.io/v1

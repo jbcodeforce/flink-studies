@@ -1,7 +1,4 @@
-create table if not exists cars (
-    car_id VARCHAR(40) NOT NULL,
-    car_model VARCHAR(100),
-    status VARCHAR(10),
+create table cars (car_id VARCHAR(40) NOT NULL, car_model VARCHAR(100), status VARCHAR(10),
     capacity INT,
     color VARCHAR(10),
     cab_plate VARCHAR(20),

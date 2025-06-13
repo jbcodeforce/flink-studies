@@ -5,7 +5,7 @@ The vision for this repository is to create a comprehensive, up-to-date, and pra
 
 Better read in [BOOK format](https://jbcodeforce.github.io/flink-studies/).
 
-## Goals and Repositiory Organisation
+## Goals and Repository Organisation
 
 The vision for this repository is to create a comprehensive, up-to-date, and practical body of knowledge around Apache Flink and its ecosystem, including integration with related technologies (Kafka, Iceberg, CDC, Kubernetes, etc.), accessible as a GitHub Pages site.
 
@@ -44,9 +44,9 @@ The docs folder includes:
 
 ### Phase 1: Foundation & Structure
 
-* Organize documentation and code samples by topic and technology.
-* Ensure all existing content is up-to-date and well-formatted.
-* Set up automated publishing to GitHub Pages. -> done
+* [] Organize documentation and code samples by topic and technology.
+* [] Ensure all existing content is up-to-date and well-formatted.
+* [x] Set up automated publishing to GitHub Pages.
 
 ### Phase 2: Core Flink Concepts
 
