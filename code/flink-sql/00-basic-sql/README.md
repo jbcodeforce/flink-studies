@@ -7,8 +7,15 @@
 This folder includes some basic SQL examples to be used with local Flink OSS or Confluent Platform for Flink running locally. There are multiple ways to run Flink locally:
 
 1. install Apache Flink binary locally and start the cluster and SQL client. [See this note](https://jbcodeforce.github.io/flink-studies/coding/getting-started/#install-locally)
+    ```sh
+    # under deployment/product-tar
+    export FLINK_HOME=$(pwd)/flink-1.20.1
+    export PATH=$PATH:$FLINK_HOME/bin
+    $FLINK_HOME/bin/start-cluster.sh
+    $FLINK_HOME/bin/sql-client.sh --library $FLINK_HOME/sql-lib
+    ```
 1. Use docker images and docker-compose. See the docker compose in deployment-local folder of this project. The docker engine mounts a project folder in `/home`, so content of the data will be in `/home/flink-sql/data`. As it may not be possible to have Docker Desktop on your machine, consider minikube
-1. Kubernetes with  [Minikube or Colima](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/README.md)
+1. Kubernetes with  [Minikube or Colima](https://jbcodeforce.github.io/flink-studies/coding/k8s-deploy/)
 
 For each installation, start one Flink **Job manager** and one **Task manager** container. 
 
@@ -18,11 +25,13 @@ For each installation, start one Flink **Job manager** and one **Task manager** 
 
 This demonstration is based on the SQL getting started [Flink documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/gettingstarted/).
 
-The [data/employee.csv](https://github.com/jbcodeforce/flink-studies/blob/master/flink-sql/00-basic-sql/data/employes.csv) has 15 records.
+The [data/employee.csv](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-sql/00-basic-sql/data/employes.csv) has 15 records.
 
 * Connect to the SQL client container via:
 
 ```sh
+# with standalone install
+$FLINK_HOME/bin/sql-client.sh --library $FLINK_HOME/sql-lib
 # with docker
 docker exec -it sql-client bash
 # with k8s pod
@@ -37,7 +46,7 @@ show tables;
 
 ### Read from CVS mounted in current container
 
-* The following job is a batch processing and uses a DDL to create a table matching the column of a employee csv file. 
+* The following job is a batch processing and uses a DDL to create a table matching the column of a employee csv file. Start the sql_client in the running container.
 
 ```sql
 SET execution.runtime-mode=BATCH;
@@ -48,8 +57,7 @@ CREATE TABLE employees (
     dept_id INT
 ) WITH ( 
     'connector' = 'filesystem',
-    'path' = '/home/flink-sql/data/employees.csv',
-    -- can be '/Users/jerome/Code/flink-studies/flink-sql/data/employees.csv'
+    'path' = '/Users/jerome/Code/ReadOnlyRepos/flink-studies/code/flink-sql/00-basic-sql/data/employees.csv',
     'format' = 'csv'
 );
 ```
@@ -60,15 +68,15 @@ CREATE TABLE employees (
 SELECT * from employees WHERE dept_id = 101;
 ```
 
-* Or count the  number of employees per department, with this static query:
+* Or count the  number of employees per department, with this query:
 
 ```sql
-select dept_id, count(*) from employee_info group by dept_id;
+select dept_id, count(*) as employees_dept from employees group by dept_id;
 ```
 
 ### Streaming consumption, grouping records and aggregation by group
 
-When moving to data streaming, aggregations need to store aggregated results continuously during the execution of the query. Therefore the query needs to maintain the most up to date count for each department to output timely results as new rows are processed. This is a **Stateful** query.  Flink’s advanced fault-tolerance mechanism maintains internal state and consistency, so queries always return the correct result, even in the face of hardware failure.
+When moving to data streaming, aggregations need to store aggregated results continuously during the execution of the query. Therefore the query needs to maintain the most up to date count for each department to output results as new rows are processed. Flink’s advanced fault-tolerance mechanism maintains internal state and consistency, so queries always return the correct result, even in the face of hardware failure.
 
 To get the analytic results to external applications, we need to define sinks by adding a sink table like below:
 
@@ -78,7 +86,7 @@ CREATE TABLE department_counts (
     emp_count BIGINT NOT NULL
 ) WITH ( 
     'connector' = 'filesystem',
-    'path' = '/home/flink-sql/00-basic-sql/',
+    'path' = '/Users/jerome/Code/ReadOnlyRepos/flink-studies/code/flink-sql/00-basic-sql/data/dept_count',
     'format' = 'csv'
 );
 ```
@@ -117,10 +125,15 @@ CREATE TABLE employees (
     'connector' = 'kafka',
     'changelog.mode' = 'upsert',
     'scan.bounded.mode' = 'unbounded',
-   'scan.startup.mode' = 'earliest-offset',
-   'value.fields-include' = 'all'
+    'scan.startup.mode' = 'earliest-offset',
+    'value.fields-include' = 'all'
 );
 ```
+
+* Generate records to kafka
+* Add deduplication sql
+  ```sql
+  ```
 
 ## Example based on [Batch and Stream Processing with Flink SQL (Confluent Exercise)](https://developer.confluent.io/courses/apache-flink/stream-processing-exercise/)
 

@@ -1,46 +1,36 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: debezium-deployment
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: debezium
-  template:
-    metadata:
-      labels:
-        app: debezium
-    spec:
-      containers:
-      - name: debezium
-        image: quay.io/debezium/connect:2.5
-        ports:
-        - containerPort: 8083
-        env:
-        - name: BOOTSTRAP_SERVERS
-          value: kafka-kafka-brokers.default.svc.cluster.local:9092
-        - name: GROUP_ID
-          value: debezium-connectors
-        - name: CONFIG_STORAGE_TOPIC
-          value: debezium-config
-        - name: OFFSET_STORAGE_TOPIC
-          value: debezium-offsets
-        - name: STATUS_STORAGE_TOPIC
-          value: debezium-status
-        - name: CONNECT_REST_ADVERTISED_HOST_NAME
-          value: debezium-service
-
----
 apiVersion: v1
-kind: Service
+kind: Secret
 metadata:
-  name: debezium-service
-spec:
-  selector:
-    app: debezium
-  ports:
-  - protocol: TCP
-    port: 8083
-    targetPort: 8083
-  type: ClusterIP
+  name: debezium-secret
+  namespace: confluent
+type: Opaque
+stringData:
+  username: app
+  password: apppwd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: connect-role
+  namespace: confluent
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["debezium-secret"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: connect-role-binding
+  namespace: confluent
+subjects:
+  - kind: ServiceAccount
+    name: connect-service-account
+    namespace: confluent
+roleRef:
+  kind: Role
+  name: connect-role
+  namespace: confluent
+  apiGroup: rbac.authorization.k8s.io
+

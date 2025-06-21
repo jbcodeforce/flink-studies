@@ -20,7 +20,7 @@ spec:
   image:
     application: docker.io/confluentinc/cp-server:7.9.0
     init: confluentinc/confluent-init-container:2.11.0
-  replicas: 1  # need 3 for control center to start
+  replicas: 3  # need 3 for control center to start
   dependencies:
     kRaftController:
       clusterRef:

@@ -1,16 +1,15 @@
 {
-    "name": "car-connector",  
+    "name": "tx-loan-connector",  
     "config": {  
-      "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+      "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
       "tasks.max": "1",  
       "database.hostname": "postgres",  
-      "database.port": "3306",
-      "database.user": "debezium",
-      "database.password": "dbz",
-      "database.server.id": "184054",  
-      "topic.prefix": "dbserver1",  
-      "database.include.list": "cars",  
-      "schema.history.internal.kafka.bootstrap.servers": "kafka:9092",  
+      "database.port": "5436",
+      "database.user": "app",
+      "database.password": "apppwd",
+      "topic.prefix": "cdc",  
+      "database.include.list": "transactions,loan_applications",  
+      "schema.history.internal.kafka.bootstrap.servers": "kafka:9071",  
       "schema.history.internal.kafka.topic": "schema-changes.inventory"  
     }
   }

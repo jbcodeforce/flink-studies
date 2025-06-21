@@ -1,3 +1,10 @@
-# A set of end to end demonstrations
+# A set of end-to-end demonstrations
 
-## E commerce simple demo
+## Change Data Capture with Debezium to Kafka to Flink
+
+## SQL Gateway to submit SQL jobs
+
+## Ecommerce simple demo
+
+## Flink to Sink JDBC connector
+

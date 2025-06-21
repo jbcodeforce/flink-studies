@@ -4,10 +4,11 @@
 
 ## Goals
 
-Allow to represent a Kafka topic as a table in [Apache Iceberg](https://iceberg.apache.org/) or Delta Lake format. It is using Schema registry to get the schema definition of the table.  It addresses a unified storage view on top of object storage.
+Allow to represent a Kafka topic as a table in [Apache Iceberg](https://iceberg.apache.org/) or Delta Lake format. It becomes the mediation layer between operational data and analytical data zone. It is using Schema registry to get the schema definition of the table.  It addresses a unified storage view on top of object storage.
 
-Kafka topic is the source of truth of the data.
+Kafka topic is the source of truth of the data. Tableflow supports the open table format: a table and catalog for analytics. It is part of the [data as a product](../methodology/data_as_a_product.md) architecture.
 
+For Data engineers in data lakehouse environment, kafka topic is seen as table.
 ### Value Propositions
 
 * It is a Cloud service, per region.
@@ -16,7 +17,7 @@ Kafka topic is the source of truth of the data.
 * Work with private network, using gateway private endpoints to S3. No traffic over public internet.
 * Data refreshness is down to 15mn, default 6 hours. For higher need, it can read from broker directly, at the minute level.
 * Start from the earliest offset.
-* Can copact multiple small files in bigger file.
+* Can compact multiple small files in bigger file.
 * It keeps track of committed osffset in iceberg.
 * Write data as encrypted at source level.
 * Charge for sink connector and egress is waived, pricing is based on per topic/hour and GB processed.

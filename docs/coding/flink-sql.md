@@ -519,7 +519,7 @@ Data modification language, is used to define statements which modify the data a
 
 ### Common patterns
 
-This is important to recal that a select apply. to stream of record so the result will change at each new record. A query like below will show the last top 10 orders, and when a new record arrive this list changes. 
+This is important to recall that a select applies to a stream of record so the results will change at each new record. A query as below will show the last top 10 orders, and when a new record arrives this list is updated. 
 
 ```sql
 select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
@@ -723,6 +723,11 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     The table used as target to this processing, if new records are added to it, then needs to be append log, as if it is upsert then the now() time is not determenistic for each row to process.
 
+???- info "Transform a date string to a timestamp"
+    ```sql
+    to_timestamp(transaction_date, 'yyyy-MM-dd HH:mm:ss') as tx_date, -- bigint
+    ```
+    
 ???- question "How to mask a field?"
     Create a new table from the existing one, and then use REGEXP_REPLACE to mask an existing attribute
 
@@ -878,6 +883,8 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
         GROUP BY window_start, window_end, window_time
     END
     ```
+
+[The Flink built-in system functions.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/functions/systemfunctions/)
 
 ### Joins
 

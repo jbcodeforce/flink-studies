@@ -123,26 +123,37 @@ k apply -f src/postgresql/create_car_table_job.yaml -n pgdb
 
 * Use python code to create loan_applications and transactions database and tables.
 
-```
+```sh
+# under src
+uv run python  create_loan_applications.py
+uv run python  create_transactions.py
 ```
 
 ### Deploy Confluent CP
 
 * Deploy Confluent Kubernetes using the [product documentation](https://docs.confluent.io/operator/current/co-deploy-cfk.html)
 * Deploy a Kraft controller, one Kafka broker, and one Schema Registry
+  ```sh
+  k apply -f infrastructure/basic-kraft-cluster.yaml -n confluent
+  ```
 
-```sh
-k apply -f basic-kraft-cluster.yaml -n confluent
-```
+* Deploy Kafka Connect and Confluent Platform
+  ```
+  k apply -f infrastructure/platform_console.yaml -n confluent
+  ```
 
+* Validate the services
+  ```sh
+  k get  svc -n confluent
+  ```
+
+* Verify the topics and Kafka cluster
+  ```sh
+  kubectl get pods -n confluent  -w 
+  kubectl port-forward controlcenter-0 -n confluent 9021:9021
+  ```
 
 To deploy a Debezium connector, you need to deploy a Kafka Connect cluster with the required connector plug-in(s), before instantiating the actual connector itself.
-
-* Deploy Kafka Connect
-
-```sh
-k apply -f kconnect.yaml -n confluent
-```
 
 * Perform a port forward to access to the Connect REST API
 
