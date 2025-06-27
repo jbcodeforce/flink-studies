@@ -2,10 +2,10 @@
 
 The demonstration addresses:
 
-* Running Postgresql on Kubernetes to define loan application and transaction tables.
-* Use Confluent for kubernetes operator and a single node cluster to run Confluent Platform for Flink
-* Deploying CDC Debezium connector on Kafka Connect to watch the Postgresql table
-* Use `message.key.columns` to use a non-primary key field for the Kafka message key.
+* [x] Running Postgresql on Kubernetes to define loan application and transaction tables.
+* [x] Use Confluent for kubernetes operator and a single node cluster to run Confluent Platform for Flink
+* [ ] Deploying CDC Debezium connector on Kafka Connect to watch the Postgresql table
+* [ ] Use `message.key.columns` to use a non-primary key field for the Kafka message key.
 
 See [Debezium PostgreSQL Source Connector for Confluent Platform](https://docs.confluent.io/kafka-connectors/debezium-postgres-source/current/overview.html).
 
@@ -16,7 +16,7 @@ See [Debezium PostgreSQL Source Connector for Confluent Platform](https://docs.c
   ```sh
   kubectl get ns
   ```
-* [Install the postgreql cloud native snpg plugin for kubectl](https://cloudnative-pg.io/documentation/current/kubectl-plugin/)
+* [Install the Postgresql cloud native cnpg plugin for kubectl](https://cloudnative-pg.io/documentation/current/kubectl-plugin/)
 
 ## Setup
 
@@ -24,7 +24,8 @@ The steps are:
 
 1. Installing the CloudNativePG Operator on your Kubernetes cluster.
 1. Deploying a PostgreSQL Cluster using CloudNativePG, specifying multiple instances for replication.
-1. Connecting to the admin console to work on the database 
+1. Connecting to the admin console to work on the database
+1. Install Confluent Cloud Platform v8
 
 ### Postgresql
 
@@ -34,7 +35,7 @@ There is a kubernetes operator for postgresql: [CloudNativePG](https://cloudnati
 ```sh
 # in e2e-demos/cdc-demo/
 make deploy_postgresql_operator
-# The makefile target will do:
+# The makefile target will do the following commands:
 kubectl apply --server-side -f \
   https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.25/releases/cnpg-1.25.1.yaml
 ```
@@ -52,21 +53,20 @@ kubectl get deployment -n cnpg-system cnpg-controller-manager
 The default configuration of the CloudNativePG operator comes with a Deployment of a single replica, which is suitable for most demonstrations.
 
 * Create the PG Cluster and the PGadmin webapp
-
-```sh
-make deploy_postgresql
-# this make target is  same as 
-k apply -f infrastructure/pg-cluster.yaml
-# using cnpg plugin
-kubectl cnpg status pg-cluster -n pgdb
-# Deploy pgadmin4 with yaml
-make deploy_pgadmin
-# this make target is the same as
-kubectl apply -f infrastructure/pg-admin.yaml
-# or using cnpg plugin
-kubectl cnpg pgadmin4 --mode desktop pg-cluster
-# It automatically connects to the app database as the app user, making it ideal for quick demos
-```
+  ```sh
+  make deploy_postgresql
+  # this make target is the same as: 
+  k apply -f infrastructure/pg-cluster.yaml
+  # using cnpg plugin
+  kubectl cnpg status pg-cluster -n pgdb
+  # Deploy pgadmin4 with yaml
+  make deploy_pgadmin
+  # this make target is the same as:
+  kubectl apply -f infrastructure/pg-admin.yaml
+  # or using cnpg plugin
+  kubectl cnpg pgadmin4 --mode desktop pg-cluster
+  # It automatically connects to the app database as the app user, making it ideal for quick demos
+  ```
 
 * Verify postgresql version by looking at the image element in:
 
@@ -75,11 +75,12 @@ k describe cluster pg-cluster -n pgdb
 kubectl get cluster my-read-only-cluster -n pgdb
 ```
 
-* Verify the app user password
+* Verify the Postgresql database: `app` user's password
 
 ```sh
 kubectl get secret app-secret -n pgdb -o=jsonpath='{.data.password}' | base64 -d
 ```
+
 * Verify pg cluster services
 CloudNativePG automatically creates three Kubernetes Services for your cluster:
 
