@@ -1,0 +1,10 @@
+[project]
+name = "dedup-demo"
+version = "0.1.0"
+description = "Apache Flink deduplication demonstration with Kafka producer"
+readme = "readme.md"
+requires-python = ">=3.11"
+dependencies = [
+    "confluent-kafka>=2.3.0",
+    "pydantic>=2.5.0",
+] 

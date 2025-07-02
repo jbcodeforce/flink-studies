@@ -2,55 +2,57 @@
 
 This folder includes different deployment manifests for Apache Flink OSS or Confluent Platform for Flink. The approach is to encapsulate some of the kubectl commands using `make` targets. 
 
-See the [Flink operator - open source](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/) and the [Confluent platform for flink operator](https://docs.confluent.io/platform/current/flink/get-started.html) for details.
+See the [Flink operator - open source documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/) and the [Confluent platform for flink operator](https://docs.confluent.io/platform/current/flink/get-started.html) for details.
+
+## Planning deployment
+
+* Confluent Plaform deployment on k8s supports [two options](https://docs.confluent.io/operator/current/co-plan.html#co-plan): [CFK]() or [CFK Blueprints]()
+* Review sizing needs: Minimum of 3 kafka broker, even for development.
+* Plan a log retention management: Using ELK, or Grafana / Loki.
 
 ## Pre-requisites
 
 * [See the pre-requisites note for CLIs installation and other general dependencies](https://github.com/jbcodeforce/flink-studies/coding/k8-deploy/#pre-requisites)
 
-* Access to a Kubernetes cluster: `make start_colima`
+* Access to a Kubernetes cluster using Colima VM:
+    ```sh
+    make start_colima
+    ```
+* The next steps are automated with:
+    ```sh
+    make prepare
+    ```
 
-* Install [Confluent plugin for kubectl](https://docs.confluent.io/operator/current/co-deploy-cfk.html#co-install-plugin)
-
-* Install certification manager (only one time per k8s cluster): See [Release version here](https://github.com/cert-manager/cert-manager/) and the make commands:
-
-```sh
-make deploy_cert_manager
-# verify
-kubeclt get pods -n cert-manager
-```
+* Install certification manager (only one time per k8s cluster): See [Release version here](https://github.com/cert-manager/cert-manager/), change in the Makefile the version number and the make commands:
+    ```sh
+    make deploy_cert_manager
+    # verify
+    make verify_cert_manager
+    kubeclt get pods -n cert-manager
+    ```
 
 * Create `flink` and `confluent` namespaces: `make create_ns`
-* Install the Apache Flink Kubernetes operator.
-```sh
-#under cfk-bundle/helm
-helm upgrade --install confluent-operator ./confluent-for-kubernetes --namespace confluent
-```
-(See also the [Flink pre-requisites documentation.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/docs/try-flink-kubernetes-operator/quick-start/))
-
-* (Optional add Kafbat-ui helm repo):
-
-```sh
-helm repo add kafbat-ui https://kafbat.github.io/helm-charts
-```
-
 * Install Minio to persist jar or expose object storage in the K8S cluster. [See Minio quickstart](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) and [the minio section in k8s deployment chapter.](https://jbcodeforce.github.io/flink-studies/coding/k8s-deploy/#using-minio)
-
-
-## Deploy Apache Flink
-
-## Deploy Confluent Platform for Flink
-
-1. Deploy Confluent Platform Flink operator:
-
     ```sh
-    make deploy_cp_flink_operator
+    make deploy_minio
+    make verify_minio
+    ```
+
+
+## Deploy Confluent Platform and Confluent Platform for Flink
+
+[Confluent Plafform product documentation](https://docs.confluent.io/operator/current/co-cfk-overview.html).
+
+1. Deploy Confluent Platform:
+    ```sh
+    make install_cp
+    make verify_cp_cfk
     ```
 
 1. Deploy Confluent Manager for Apache Flink
-
     ```sh
-    make deploy_cmf
+    make install_cmf
+    make verify_cmf
     ```
 
 1. Define a Flink environment:
@@ -63,70 +65,26 @@ helm repo add kafbat-ui https://kafbat.github.io/helm-charts
     ```
 
 1. To change the kubectl context to use Flink namespace the command is:
-
     ```sh
     kubectl config set-context --current --namespace=flink
     ```
 
-1. Validate installation with simple application job
-
-    Deploy a stateless app and validate it runs with the Flink Dashboard
-
+1. Validate installation with simple application job, deploy a stateless app and validate it runs with the Flink Dashboard:
     ```sh
     make deploy_flink_demo_app
+    ```
 
-    confluent flink application web-ui-forward flink-basic-example --environment env1 --port 8090 --url http://localhost:8084
+1. Access Flink Console for the deployed application:
+    ```sh
+    make access_flink_console 
+    # which maps to:
+    confluent flink application web-ui-forward basic-example --environment env1 --port 8090 --url http://localhost:8084
     ```
 
 1. Undeploy this application
-
     ```sh
-    confluent flink application delete flink-basic-example --environment env1  --url http://localhost:8084
+    confluent flink application delete basic-example --environment env1  --url http://localhost:8084
     ```
-
-## Deploy Confluent Platform
-
-1. Deploy Confluent Platform operator to get Kafka brokers deployed
-
-    ```sh
-    make deploy_cp_operator
-    ```
-
-1. Or use one command to do all the previous steps: `make install_operators`
-
-1. Verify the k8s deployment for the operator
-
-    ```sh
-    k describe deployment flink-kubernetes-operator
-    ```
-
-1. Verify Confluent Platform for Kubernetes operator
-
-    ```sh
-    k describe deployment confluent-operator
-    ```
-
-1. Deploy Confluent Kafka Broker using one Kraft controller, one broker, with REST api and schema registry
-
-    ```sh
-    make deploy_cp_cluster
-    # Validate endpoints
-    make display_kafka_endpoints 
-    ```
-
-1. Use Kafbat UI
-
-    ```sh
-    make deploy_kafbat_ui
-    ```
-
-* To connect a local producer running on the host machine we need to add in /etc/hosts the alias to localhost as ` kafka-0.kafka.confluent.svc.cluster.local` as even if we do a port-forward from the kafka broker pod to 9092 then returned url is the dns name.
-
-* To change the kubectl context  to use Confluent namespace the command is:
-
-```sh
-kubectl config set-context --current --namespace=confluent
-```
 
 ## Monitoring with Prometheus and Grafana
 
@@ -147,12 +105,11 @@ helm upgrade --install my-prometheus prometheus-community/prometheus \
  --namespace default
 ```
 
-```
 The Prometheus PushGateway can be accessed via port 9091 on the following DNS name from within your cluster:
 my-prometheus-prometheus-pushgateway.default.svc.cluster.local
 
-
 Get the PushGateway URL by running these commands in the same shell:
+```sh
   export POD_NAME=$(kubectl get pods --namespace default -l "app=prometheus-pushgateway,component=pushgateway" -o jsonpath="{.items[0].metadata.name}")
   kubectl --namespace default port-forward $POD_NAME 9091
 ```
@@ -209,14 +166,4 @@ The `org.apache.flink.connector.file.src.reader.StreamFormat` class is part of t
 
 * [Deploy Confluent Platform with Kraft.](https://github.com/confluentinc/confluent-kubernetes-examples/tree/master/quickstart-deploy)
 
-
-
-## Setup the environment with minikube
-
-1. Start minikube
-
-    ```sh
-    minikube start --cpus 4 --memory 8g --driver docker
-    ```
-
-1. Start `minikube dashboard`
+## Deploy on AWS EKS

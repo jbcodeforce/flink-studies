@@ -25,6 +25,7 @@ nav:
   - Methodology:
     - Data as a product: methodology/data_as_a_product.md
     - Event Storming: https://jbcodeforce.github.io/eda-studies/methodology/event-storming/
+    - Migrate to real-time processing: https://jbcodeforce.github.io/shift_left_utils/
   - Related Technologies:
     - Confluent Cloud Flink: techno/ccloud-flink.md 
     - Confluent Cloud Platform Flink: techno/cp-flink.md 

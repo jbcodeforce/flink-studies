@@ -1,0 +1,258 @@
+# Alternative deployment using standard Kubernetes resources
+# Use this if you don't have the Flink Operator installed
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flink
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flink-config
+  namespace: flink
+data:
+  flink-conf.yaml: |
+    jobmanager.rpc.address: flink-jobmanager
+    taskmanager.numberOfTaskSlots: 2
+    blob.server.port: 6124
+    jobmanager.rpc.port: 6123
+    taskmanager.rpc.port: 6122
+    queryable-state.proxy.ports: 6125
+    jobmanager.memory.process.size: 1024m
+    taskmanager.memory.process.size: 1024m
+    state.backend: rocksdb
+    state.checkpoints.dir: file:///flink-data/checkpoints
+    state.savepoints.dir: file:///flink-data/savepoints
+    execution.checkpointing.interval: 30s
+    execution.checkpointing.mode: EXACTLY_ONCE
+    execution.checkpointing.timeout: 600s
+    restart-strategy: fixed-delay
+    restart-strategy.fixed-delay.attempts: 3
+    restart-strategy.fixed-delay.delay: 10s
+
+---
+# Service Account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: flink
+  namespace: flink
+
+---
+# PersistentVolumeClaim for checkpoints and savepoints
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: flink-data-pvc
+  namespace: flink
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: standard
+
+---
+# JobManager Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flink-jobmanager
+  namespace: flink
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flink
+      component: jobmanager
+  template:
+    metadata:
+      labels:
+        app: flink
+        component: jobmanager
+    spec:
+      serviceAccountName: flink
+      containers:
+        - name: jobmanager
+          image: flink-dedup-app:1.0.0
+          imagePullPolicy: IfNotPresent
+          args: ["jobmanager"]
+          ports:
+            - containerPort: 6123
+              name: rpc
+            - containerPort: 6124
+              name: blob-server
+            - containerPort: 8081
+              name: webui
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka:9092"
+            - name: INPUT_TOPIC
+              value: "products"
+            - name: OUTPUT_TOPIC
+              value: "src_products" 
+            - name: CONSUMER_GROUP
+              value: "flink-dedup-consumer"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "0.5"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+          volumeMounts:
+            - name: flink-config-volume
+              mountPath: /opt/flink/conf
+            - name: flink-data
+              mountPath: /flink-data
+      volumes:
+        - name: flink-config-volume
+          configMap:
+            name: flink-config
+        - name: flink-data
+          persistentVolumeClaim:
+            claimName: flink-data-pvc
+
+---
+# TaskManager Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flink-taskmanager
+  namespace: flink
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flink
+      component: taskmanager
+  template:
+    metadata:
+      labels:
+        app: flink
+        component: taskmanager
+    spec:
+      serviceAccountName: flink
+      containers:
+        - name: taskmanager
+          image: flink-dedup-app:1.0.0
+          imagePullPolicy: IfNotPresent
+          args: ["taskmanager"]
+          ports:
+            - containerPort: 6122
+              name: rpc
+            - containerPort: 6125
+              name: query-state
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka:9092"
+            - name: INPUT_TOPIC
+              value: "products"
+            - name: OUTPUT_TOPIC
+              value: "src_products"
+            - name: CONSUMER_GROUP
+              value: "flink-dedup-consumer"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "0.5"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+          volumeMounts:
+            - name: flink-config-volume
+              mountPath: /opt/flink/conf
+            - name: flink-data
+              mountPath: /flink-data
+      volumes:
+        - name: flink-config-volume
+          configMap:
+            name: flink-config
+        - name: flink-data
+          persistentVolumeClaim:
+            claimName: flink-data-pvc
+
+---
+# JobManager Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: flink-jobmanager
+  namespace: flink
+spec:
+  type: ClusterIP
+  ports:
+    - name: rpc
+      port: 6123
+    - name: blob-server
+      port: 6124
+    - name: webui
+      port: 8081
+  selector:
+    app: flink
+    component: jobmanager
+
+---
+# TaskManager Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: flink-taskmanager
+  namespace: flink
+spec:
+  type: ClusterIP
+  ports:
+    - name: rpc
+      port: 6122
+    - name: query-state
+      port: 6125
+  selector:
+    app: flink
+    component: taskmanager
+
+---
+# Job Submission Job (runs once to submit the job)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: flink-job-submitter
+  namespace: flink
+spec:
+  template:
+    spec:
+      serviceAccountName: flink
+      restartPolicy: OnFailure
+      containers:
+        - name: job-submitter
+          image: flink-dedup-app:1.0.0
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash"]
+          args:
+            - -c
+            - |
+              echo "Waiting for JobManager to be ready..."
+              while ! nc -z flink-jobmanager 6123; do
+                sleep 2
+              done
+              echo "JobManager is ready, submitting job..."
+              /opt/flink/bin/flink run \
+                --target remote \
+                --jobmanager flink-jobmanager:6123 \
+                /opt/flink/usrlib/product-dedup-job-1.0.0.jar \
+                --kafka.bootstrap.servers=kafka:9092 \
+                --input.topic=products \
+                --output.topic=src_products \
+                --consumer.group=flink-dedup-consumer
+              echo "Job submitted successfully!"
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka:9092"
+          volumeMounts:
+            - name: flink-config-volume
+              mountPath: /opt/flink/conf
+      volumes:
+        - name: flink-config-volume
+          configMap:
+            name: flink-config 

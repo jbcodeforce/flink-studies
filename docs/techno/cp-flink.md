@@ -17,21 +17,22 @@ The figure below presents the Confluent Flink components deployed on Kubernetes:
 <figcaption>Confluent Platform for Flink</figcaption>
 </figure>
 
-* CFK supports the management of custom CRD, based on the Flink for Kubernetes Operator
+* CFK supports the management of custom CRD, based on the Flink for Kubernetes Operator. (CFK 3.0.0 supports CP 8.0.0)
 * CMF (Confluent Manager for Apache Flink) adds security control, and a REST API server for the cli or a HTTP client
 * FKO is the open source Flink for Kubernetes Operator
 * Flink cluster are created from command and CRDs and run Flink applications within an environment
 
 Be sure to have [confluent cli.](https://docs.confluent.io/confluent-cli/current/install.html#install-confluent-cli)
 
-[See dedicated session for Kubernetes deployment](../coding/k8s-deploy.md#deploy-confluent-platform-for-flink)
-
+[See dedicated chapter for Kubernetes deployment](../coding/k8s-deploy.md#deploy-confluent-platform-for-flink).
 
 ## Important source of information for deployment
 
+* [Confluent Platform deployment using kubernetes operator](https://docs.confluent.io/operator/current/co-deploy-cp.html#co-deploy-cp)
 * [Deployment overview](https://docs.confluent.io/platform/current/flink/installation/overview.html) and [for Apache Flink.](https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/overview/) 
 * [CP Flink supports K8s HA only.](https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/ha/kubernetes_ha/)
 * [Flink fine-grained resource management documentation.](https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/finegrained_resource/)
+* [CP v8 announcement](https://www.confluent.io/blog/introducing-confluent-platform-8-0/): builds on Kafka 4.0, next-gen Confluent Control Center (integrating with the open telemetry protocol (OTLP),  Confluent Manager for Apache Flink® (CMF)), Kraft native (support significantly larger clusters with millions of partitions), Client-Side field level encryption. CP for Flink support SQL, Queues for Kafka is now in Early Access, 
 
 ## Metadata management service for RBAC
 

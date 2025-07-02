@@ -1,15 +1,8 @@
 FLCK_NS=flink
-CERT_MGR_VERSION=v1.17.1
+CERT_MGR_VERSION=v1.18.1
 FLINK_OPERATOR_VERSION=1.11.0
 
-prepare: create_ns install_operators
-
-start_colima:
-	@colima start --cpu 4 --memory 10 --kubernetes
-
-stop_colima:
-	@colima stop
-
+# ---------------------- Common functions ----------------------
 ensure_ns = \
 	@kubectl get ns $1 >/dev/null 2>&1; \
 	if [ $$? -ne 0 ]; then \
@@ -18,23 +11,25 @@ ensure_ns = \
 			echo "$1 exists";\
 	fi
 
-verify_installation:
-	@helm list
-	@echo "Certification managers  -> should get 3 pods"
-	@kubectl get pods -n cert-manager
-	@echo "Apache Flink Operator  -> should get 3 pods"
-	@kubectl get pods -n flink
-	@echo "MinIO  -> should get 3 pods"
-	@kubectl get pods -n minio-dev
+
+# ---------------------- Colima ----------------------
+start_colima:
+	@colima start --cpu 6 --memory 24 --kubernetes
+
+stop_colima:
+	@colima stop
+
+set_docker_context:
+	@docker context use colima
+
+# ------- Common elements to install -------------
+prepare: create_ns deploy_cert_manager verify_cert_manager deploy_minio verify_minio
 
 create_ns:
 	$(call ensure_ns, $(FLCK_NS))
 
 use_flink_ns:
 	@kubectl config set-context --current --namespace=$(FLCK_NS)
-
-
-install_operators: deploy_cert_manager deploy_minio deploy_apache_flink_operator
 
 deploy_cert_manager:
 	@kubectl get deployments cert-manager  -n cert-manager > /dev/null 2>&1;\
@@ -44,8 +39,9 @@ deploy_cert_manager:
 		echo "cert manager already deployed"; \
 	fi
 
+# ---------------------- Minio ----------------------
 deploy_minio:
-	@kubectl apply -f MinIO/minio-dev.yaml 
+	@kubectl apply -f../MinIO/minio-dev.yaml 
 
 minio_console:
 	@kubectl port-forward pod/minio 9000 9090 -n minio-dev

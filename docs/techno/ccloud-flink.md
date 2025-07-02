@@ -218,8 +218,8 @@ Some core principals:
 * Flink SQL runs each statement independently of any others.
 * Not overpay for processing capacity. Pay for what is used. Increment at the minute level.
 * Short live queries cost a real minimum, and can be done in a shared compute pool
-* Long running queries cost is aggregate per hour with minute increment. So a statement starting at 1 CFU for 10 minutes then 3 CFUs for 30 and back to 2 for 10 anf 1 for 10 will use 10 + 90 + 20 + 10 = 130 CFUs for the hour.
-* Statement throughput generally scales linearly in the number of CFUs available to a statement
+* Long running queries cost is aggregated per hour with minute increment. So a statement starting at 1 CFU for 10 minutes then 3 CFUs for 30 and back to 2 for 10 and 1 for 10 will use 10 + 90 + 20 + 10 = 130 CFUs for the hour.
+* Statement throughput generally scales linearly in the number of CFUs available to a statement.
 * The Max CFU parameter is a just for Budget control
 
 To estimate CFU consumption we need to:
@@ -229,8 +229,8 @@ To estimate CFU consumption we need to:
 1. Type of SQL, select only, or joins, grouping...
 
     * simple 1 to 1 select stateless transformation is determined by how much write volume the sink topic can handle.
-    * For Joins, aggregates, ... the way in which a statement must access and maintain the state is more influential than the raw quantity of state.
-1. The sum total of all CFU estimates across the workload will provide a rough approximation of total CFUs required
+    * For Joins, aggregates, ... the way in which a statement must access and maintains the state is more influential than the raw quantity of state.
+1. The total of all CFU estimates across the workload will provide a rough approximation of total CFUs required
 
 Several factors significantly affect statement throughput:
 
@@ -242,10 +242,10 @@ Several factors significantly affect statement throughput:
 
 * Assess the number of record per second
 * For stateless the attainable throughput of the statement per CFU will generally be determined by how much write volume the sink topic can handle.
-* Most important throughput factor is the State, access and management. 
+* Most important throughput factor is the State size, its access and management. 
 * Statement throughput generally **scales linearly** in the number of CFUs available to a statement.
-* UDF will impact throughtput
-* For each statement assess the number of records to process per seconds or minutes. Consider ingress message size and egress message size as SQL may generates less data. Also Windowing will generate less messages too. Joins will impact performance depending if they are static or with time window. 
+* UDF impacts throughtput.
+* For each statement, assess the number of records to process per seconds or minutes. Consider ingress message size and egress message size as SQL may generates less data. Also Windowing will generate less messages too. Joins will impact performance depending if they are static or with time window. 
 * Look at Kafka message sizes (bytes) as well as message throughput.
 
 As a base for discussion, 10k record/s per CPU is reachable for simple Flink stateless processing.
@@ -253,5 +253,5 @@ As a base for discussion, 10k record/s per CPU is reachable for simple Flink sta
 ## Deeper dive
 
 * [Confluent Flink workshop](https://github.com/confluentinc/commercial-workshops/tree/master/series-getting-started-with-cc/workshop-flink) to learn how to build stream processing applications using Apache Flink® on Confluent Cloud.
-* [Shoe-store workshop](https://github.com/griga23/shoe-store) with Terraform and SQL demonstration using DataGen.
+* [Shoe-store workshop](https://github.com/jbcodeforce/shoe-store) with Terraform and SQL demonstration using DataGen.
 * [SQL coding practice from this repo.](../coding/flink-sql.md)

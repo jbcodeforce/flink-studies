@@ -1,0 +1,125 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flink
+---
+apiVersion: flink.apache.org/v1beta1
+kind: FlinkApplication
+metadata:
+  name: product-dedup-job
+  namespace: flink
+spec:
+  image: flink-dedup-app:latest
+  flinkVersion: v1_19
+  
+  # Flink configuration
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "2"
+    blob.server.port: "6124"
+    jobmanager.rpc.port: "6123"
+    taskmanager.rpc.port: "6122"
+    queryable-state.proxy.ports: "6125"
+    jobmanager.memory.process.size: "1024m"
+    taskmanager.memory.process.size: "1024m"
+    state.backend: "rocksdb"
+    state.checkpoints.dir: "file:///flink-data/checkpoints"
+    state.savepoints.dir: "file:///flink-data/savepoints"
+    execution.checkpointing.interval: "30s"
+    execution.checkpointing.mode: "EXACTLY_ONCE"
+    execution.checkpointing.timeout: "600s"
+    restart-strategy: "fixed-delay"
+    restart-strategy.fixed-delay.attempts: "3"
+    restart-strategy.fixed-delay.delay: "10s"
+
+  # Service account
+  serviceAccount: flink
+
+  # Job Manager configuration
+  jobManager:
+    resource:
+      memory: "1024m"
+      cpu: 1
+    replicas: 1
+    
+  # Task Manager configuration  
+  taskManager:
+    resource:
+      memory: "1024m" 
+      cpu: 1
+    replicas: 1
+
+  # Job configuration
+  job:
+    jarFile: file:///opt/flink/usrlib/flink-product-dedup-job-1.0.0.jar
+    className: com.jbcodeforce.dedup.ProductDeduplicationJob
+    args:
+      - "--kafka.bootstrap.servers=kafka:9092"
+      - "--input.topic=products"
+      - "--output.topic=src_products"
+      - "--consumer.group=flink-dedup-consumer"
+    parallelism: 2
+    upgradeMode: stateless
+    state: running
+    restartNonce: 1
+
+  # Pod template
+  podTemplate:
+    spec:
+      containers:
+        - name: flink-main-container
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka:9092"
+            - name: INPUT_TOPIC
+              value: "products"
+            - name: OUTPUT_TOPIC
+              value: "src_products"
+            - name: CONSUMER_GROUP
+              value: "flink-dedup-consumer"
+          volumeMounts:
+            - name: flink-data
+              mountPath: /flink-data
+      volumes:
+        - name: flink-data
+          persistentVolumeClaim:
+            claimName: flink-data-pvc
+
+---
+# Service Account for Flink
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: flink
+  namespace: flink
+
+---
+# PersistentVolumeClaim for checkpoints and savepoints
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: flink-data-pvc
+  namespace: flink
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: standard # Adjust based on your cluster
+
+---
+# Service for Flink JobManager Web UI
+apiVersion: v1
+kind: Service
+metadata:
+  name: flink-jobmanager-ui
+  namespace: flink
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8081
+      targetPort: 8081
+      name: web-ui
+  selector:
+    app: product-dedup-job
+    component: jobmanager 

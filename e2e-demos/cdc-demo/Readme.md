@@ -154,6 +154,8 @@ uv run python  create_transactions.py
   kubectl port-forward controlcenter-0 -n confluent 9021:9021
   ```
 
+### Deploy Postgresql CDC Debezium connector
+
 To deploy a Debezium connector, you need to deploy a Kafka Connect cluster with the required connector plug-in(s), before instantiating the actual connector itself.
 
 * Perform a port forward to access to the Connect REST API
@@ -168,7 +170,13 @@ k port-forward connect-0 8083:8083 -n confluent
 curl -H "Accept:application/json" localhost:8083/connectors/
 ```
 
-* Deploy debezium
+* [Debezium Product documentation](https://debezium.io/documentation/reference/stable/connectors/postgresql.html#debezium-connector-for-postgresql). 
+* [Confluent Cloud Kafka Connector Postgresql CDC v2 Debezium](https://docs.confluent.io/cloud/current/connectors/cc-postgresql-cdc-source-v2-debezium/cc-postgresql-cdc-source-v2-debezium.html).
+* [Confluent Platform connector](https://docs.confluent.io/kafka-connectors/debezium-postgres-source/current/overview.html)
+
+To summarize here are the important steps to proceed:
+
+
 
 ```
 ```

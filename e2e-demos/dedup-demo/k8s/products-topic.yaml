@@ -1,0 +1,33 @@
+apiVersion: platform.confluent.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: products
+  namespace: confluent
+  labels:
+    app: dedup-demo
+    component: kafka-topic
+spec:
+  kafkaClusterRef: 
+    name: kafka
+  replicas: 1
+  partitionCount: 1
+  configs:
+    cleanup.policy: "delete"
+    retention.ms: "604800000"  # 7 days
+    segment.ms: "86400000"     # 24 hours
+    min.insync.replicas: "1"
+    compression.type: "snappy"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dedup-demo-config
+  namespace: confluent
+  labels:
+    app: dedup-demo
+    component: config
+data:
+  KAFKA_BOOTSTRAP_SERVERS: kafka.confluent.svc.cluster.local:9071
+  KAFKA_PRODUCT_TOPIC: products
+  KAFKA_SECURITY_PROTOCOL: PLAINTEXT
+  KAFKA_SASL_MECHANISM: PLAIN 
