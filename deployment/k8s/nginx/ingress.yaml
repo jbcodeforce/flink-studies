@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sample-nginx-ingress
+  namespace: nginx
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: myapp.local # You can use any hostname here. We'll map this in your hosts file.
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: sample-nginx-service
+            port:
+              number: 80

@@ -42,15 +42,11 @@ deploy_cert_manager:
 verify_cert_manager:
 	@kubectl get pods -n cert-manager
 
-use_flink_ns:
-	@kubectl config set-context --current --namespace=$(FLCK_NS)
-
-
 # ---------------------- Minio ----------------------
 deploy_minio:
 	@kubectl apply -f../MinIO/minio-dev.yaml 
 
-minio_console:
+port_forward_minio_console:
 	@kubectl port-forward pod/minio 9000 9090 -n minio-dev
 
 verify_minio:
@@ -58,7 +54,7 @@ verify_minio:
 
 	
 # ---------------------- Confluent Platform  --------------------------------
-install_cp: update_helm_confluent_repo deploy_cp_cfk verify_cp_cfk deploy_cp_cluster access_cp_console
+install_cp: update_helm_confluent_repo deploy_cp_cfk verify_cp_cfk deploy_cp_cluster port_forward_cp_console
 
 update_helm_confluent_repo:
 	@helm repo add confluentinc https://packages.confluent.io/helm
@@ -73,14 +69,9 @@ verify_cp_cfk:
 deploy_cp_cluster:
 	@kubectl apply -f ../cfk/basic-kraft-cluster.yaml -n $(CFNT_NS)
 
-access_cp_console:
-	@kubectl port-forward service/controlcenter 9021:9021 -n $(CFNT_NS)
-
 use_cp_ns:
 	@kubectl config set-context --current --namespace=$(CFNT_NS)
 
-port_forward_kafka_bootstrap:
-	@kubectl port-forward service/kafka 9092:9092 -n $(CFNT_NS)
 
 delete_cp_cluster:
 	@kubectl delete -f ../cfk/basic-kraft-cluster.yaml -n $(CFNT_NS)
@@ -92,20 +83,21 @@ uninstall_cp_cluster:
 # ---------------------- Confluent Platform for Flink ----------------------
 
 install_flink_kubernetes_operator:
-	@helm upgrade --install--version "~1.120.0" cp-flink-kubernetes-operator confluentinc/flink-kubernetes-operator -n $(FLCK_NS)
+	@helm upgrade --install cp-flink-kubernetes-operator --version "~1.120.0"  confluentinc/flink-kubernetes-operator --set watchNamespace="{flink, confluent}" -n $(FLCK_NS)
 
 deploy_cmf:
 	@helm upgrade --install cmf --version "~2.0.0"  confluentinc/confluent-manager-for-apache-flink --namespace $(FLCK_NS) --set cmf.sql.production=false
 
-install_cmf: deploy_apache_flink_operator deploy_cmf
+install_cmf: install_flink_kubernetes_operator deploy_cmf
+
+use_flink_ns:
+	@kubectl config set-context --current --namespace=$(FLCK_NS)
 
 verify_cmf:
 	@kubectl get pods -n $(FLCK_NS)
 
 port_forward_cmf:
-	@kubectl port-forward svc/cmf-service 8084:8080 -n $(FLCK_NS)
-
-
+	@kubectl port-forward svc/cmf-service 8084:80 -n $(FLCK_NS)
 
 create_flink_env:
 	@confluent flink environment create env1 --url http://localhost:8084 --kubernetes-namespace $(FLCK_NS)
@@ -116,6 +108,6 @@ deploy_flink_demo_app:
 undeploy_flink_demo_app:
 	@confluent flink application delete basic-example --environment env1 --url http://localhost:8084
 
-access_flink_console:
+port_forward_flink_console:
 	@confluent flink application web-ui-forward basic-example --environment env1 --port 8090 --url http://localhost:8084
 

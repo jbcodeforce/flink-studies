@@ -1,6 +1,6 @@
 # SQL Runner for Flink
 
-This code comes from Flink Examples, with a single pom based on Quarkus maven template. This example can be executed as a Flink application in local Docker compose, Minikuber with the Flink Kubernetes Operator.
+This code comes from Flink Examples, with a single pom based on Quarkus maven template. This example can be executed as a Flink application in local Docker compose, or a local kubernetes running Flink Kubernetes Operator.
 
 Created 10/2024 For Flink version 1.19 for Java 11.
 
@@ -10,7 +10,7 @@ Flink doesn't support submitting SQL scripts directly as jobs, this Java program
 
 To add extension, consider one of the [connectors](https://nightlies.apache.org/flink/flink-docs-master/docs/connectors/table/overview/) and add it as compile dependency to the project `pom.xml`. This will ensure that is packaged into the sql-runner fatjar and will be available on the cluster.
 
-To make an application, we need to make all the job artifacts available locally in all containers under `/opt/flink/usrlib`, then start a JobManager container in the Application cluster mode, and finally start the required number of TaskManager containers.
+To make an application, we need to make all the job artifacts available locally in all containers under `/opt/flink/usrlib`, then start a JobManager container in the Application cluster mode, and finally to start the required number of TaskManager containers.
 
 ## Steps
 

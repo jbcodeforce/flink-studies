@@ -1,0 +1,28 @@
+apiVersion: cmf.confluent.io/v1
+kind: FlinkApplication
+metadata:
+  name: sql-runner
+  namespace: flink
+spec:
+  image: flink-sql-runner:1.0.0
+  flinkVersion: v1_19
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "1"
+  serviceAccount: flink
+  jobManager:
+    resource:
+      memory: "1024m"
+      cpu: 1
+    replicas: 1
+  taskManager:
+    resource:
+      memory: "1024ßm"
+      cpu: 1
+    replicas: 1
+  job:
+    jarURI: local:///opt/flink/usrlib/sql-runner.jar
+    args: ["/opt/flink/usrlib/sql-scripts/flink-deduplication.sql"]
+    parallelism: 1
+    upgradeMode: stateless
+
+ 

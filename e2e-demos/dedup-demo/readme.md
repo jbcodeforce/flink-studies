@@ -1,19 +1,75 @@
 # Deduplication Demo
 
-This demo showcases how to handle duplicate events in a streaming data pipeline using Apache Flink. The demo includes a Python producer that intentionally generates duplicate product events to demonstrate Flink's deduplication capabilities.
+## Introduction
 
-## Overview
+This demo showcases how to handle duplicate events in a streaming data pipeline using Apache Flink. This deduplication demo now provides **two complete Flink implementations** with different deployment strategies:
 
-The demo consists of:
-- **Python Producer** (`product_producer.py`): Generates product events with intentional duplicates
-- **Kafka Topic**: Stores the streaming product events
-- **Flink SQL Deduplication** (`flink-deduplication.sql`): Interactive SQL-based deduplication
-- **Flink Table API Application** (`flink-table-api/`): Production-ready Java application for Kubernetes deployment
-- **Output**: `src_products` table/topic with deduplicated data
+1. [Flink SQL Implementation](#1-flink-sql-implementation)
+1. [Flink Table API Implementation](#2-flink-table-api-implementation)
+
+The demo includes a Python producer that intentionally generates duplicate product events to demonstrate Flink's deduplication capabilities.
+
+The deployment is done on Kubernetes.
+
+### 1. Flink SQL Implementation 
+**Location**: `flink-sql` directory 
+
+**Purpose**: 
+- Interactive SQL-based deduplication logic
+
+**Key Files**:
+- `flink-deduplication.sql`: Complete SQL deduplication script
+- `run-flink-dedup.sh`: Helper script for both local and Kubernetes execution
+
+
+### 2. Flink Table API Implementation
+**Location**: `flink-table-api/` directory
+
+**Purpose**:
+- Self-contained Java application using Flink Table API
+- Production deployment with proper resource management
+
+**Key Files**:
+- `src/main/java/.../ProductDeduplicationJob.java`: Main application
+- `pom.xml`: Maven build configuration with all dependencies
+- `Dockerfile`: Production-ready container image
+- `build-flink-app.sh`: Automated build and packaging script
+- `k8s/flink-application.yaml`: FlinkApplication CRD deployment
+- `k8s/flink-deployment.yaml`: Standard Kubernetes deployment
+- `README.md`: Comprehensive deployment and usage guide
+
+### Architecture Comparison
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    FLINK SQL APPROACH                   │
+│                                                         │
+│  Producer → Kafka → [Flink SQL CLI] → Kafka Output     │
+│    ↓         ↓           ↓                ↓             │
+│  Python    products   Interactive    src_products       │
+│   App       topic      Session         topic            │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│                 FLINK TABLE API APPROACH                │
+│                                                         │
+│  Producer → Kafka → [Flink K8s App] → Kafka Output     │
+│    ↓         ↓           ↓                ↓             │
+│  Python    products   Java Application  src_products    │
+│   App       topic    (JobManager +       topic          │
+│                       TaskManager)                      │
+└─────────────────────────────────────────────────────────┘
+```
+
+Both implementations use identical deduplication logic:
+- **Content-based deduplication** using product state fingerprinting
+- **ROW_NUMBER() window function** to keep latest events
+- **Exactly-once processing** semantics
+- **Kafka source and sink** with JSON serialization
 
 ## Product Event Schema
 
-The producer uses Pydantic models that align with the PostgreSQL schema. Events are structured as follows:
+The producer uses Pydantic models that align with the PostgreSQL `Products` table schema. 
 
 ### Product Model (matches SQL schema)
 ```sql
@@ -28,6 +84,8 @@ CREATE TABLE products (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 ```
+
+Events are structured as follows:
 
 ### ProductEvent JSON Structure
 ```json
@@ -52,13 +110,56 @@ CREATE TABLE products (
 
 **Note:** Decimal values are serialized as strings to maintain precision, and timestamps are in ISO format with timezone information.
 
-### Benefits of Using Pydantic Models
+## Deployments
 
-1. **Type Safety**: Ensures data integrity with compile-time type checking
-2. **Validation**: Automatic validation of field constraints (e.g., non-negative prices)
-3. **Schema Alignment**: Models directly match the PostgreSQL schema
-4. **Serialization**: Built-in JSON serialization with proper handling of Decimal and datetime types
-5. **Documentation**: Self-documenting code with field descriptions and constraints
+### Pre-requisites
+
+* See the [Confluent Platform deployment on kubernetes note](../../deployment/k8s/cp-flink/README.md) in this repository to start Kubernetes and potentially deploy Confluent Platform 8.0.x.
+
+* The Confluent Console is exposed via a nodePort service:
+   ```sh
+   chrome http://localhost:30200/
+   ```
+
+
+### Flink SQL Implementation Workflow
+
+* Build the docker image for the sql_runner with the SQL deduplication logic:
+   ```sh
+   cd flink-sql
+   ./build-image.sh
+   ```
+
+```bash
+# 1. Start producer
+kubectl apply -f k8s/producer-pod.yaml
+
+# 2. Run deduplication under flink-sql
+./run-flink-dedup.sh
+# Select option 1 (Kubernetes)
+
+# 3. Monitor in SQL CLI
+SELECT * FROM deduplication_stats;
+SELECT * FROM current_product_state;
+```
+
+
+### Table API Implementation Workflow
+```bash
+# 1. Build and package
+cd flink-table-api
+./build-flink-app.sh
+
+# 2. Load to Kubernetes
+minikube image load flink-dedup-app:1.0.0
+
+# 3. Deploy application
+kubectl apply -f k8s/flink-application.yaml
+
+# 4. Monitor via Web UI
+kubectl port-forward svc/flink-jobmanager 8081:8081 -n flink
+open http://localhost:8081
+```
 
 ## Running the Producer
 
@@ -98,6 +199,7 @@ The producer uses environment variables for configuration:
 ### Start the Producer
 
 ```bash
+# Locally when Kafka bootstrap within K8S deployment is exposed via port-forward
 uv run product_producer.py
 ```
 

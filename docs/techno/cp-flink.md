@@ -1,6 +1,6 @@
 # Confluent Platform for Flink
 
-[The official product documentation after 12/2024 release is here.](https://docs.confluent.io/platform/current/flink/get-started.html) 
+[The official product documentation after 07/2025 release is here.](https://docs.confluent.io/platform/current/flink/get-started.html) 
 
 The main features are:
 

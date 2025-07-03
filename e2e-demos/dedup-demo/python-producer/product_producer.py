@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 import os
 
 # Kafka configuration
-KAFKA_BROKERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+KAFKA_BROKERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:30000')
 KAFKA_CERT = os.getenv('KAFKA_CERT', '')
 KAFKA_USER = os.getenv('KAFKA_USER', '')
 KAFKA_PASSWORD = os.getenv('KAFKA_PASSWORD', '')

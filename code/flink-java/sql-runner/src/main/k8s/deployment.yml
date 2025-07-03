@@ -24,7 +24,7 @@ spec:
   podTemplate:
     spec:
       containers:
-        - name: flink-main-container
+        - name: flink-sql-container
           volumeMounts:
           - mountPath: /opt/flink/usrlib/sql-scripts/
             name: flink-volume

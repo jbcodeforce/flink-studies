@@ -17,9 +17,6 @@ if ! command -v uv &> /dev/null; then
     exit 1
 fi
 
-# Create virtual environment if needed and install dependencies
-echo "📦 Setting up virtual environment and dependencies with uv..."
-uv sync
 
 # Check if Kafka is running (optional check)
 echo "🔍 Checking Kafka connection..."
@@ -43,26 +40,12 @@ fi
 echo ""
 echo "✅ Setup complete!"
 echo ""
-echo "🚀 Local Development:"
-echo "To start the producer:"
-echo "   uv run product_producer.py"
-echo ""
 echo "To monitor the topic:"
 echo "   kafka-console-consumer --topic products --bootstrap-server localhost:9092 --from-beginning"
 echo ""
-echo "🌐 Kubernetes Deployment:"
-echo "To build and deploy:"
-echo "   ./build-image.sh"
-echo "   minikube image load dedup-demo-producer:latest  # for minikube"
-echo "   kubectl apply -f k8s/products-topic.yaml"
-echo "   kubectl apply -f k8s/producer-pod.yaml"
-echo ""
-echo "To monitor the producer:"
-echo "   kubectl logs -f dedup-demo-producer -n confluent"
-echo ""
 echo "Alternative - to connect to k8s Kafka cluster locally:"
-echo "   kubectl port-forward service/kafka 9071:9071 -n confluent"
-echo "   export KAFKA_BOOTSTRAP_SERVERS=localhost:9071"
+echo "   kubectl port-forward service/kafka 9092:9092 -n confluent"
+echo "   export KAFKA_BOOTSTRAP_SERVERS=localhost:9092"
 echo ""
 echo "Environment variables you can set:"
 echo "   export KAFKA_BOOTSTRAP_SERVERS=localhost:9092"

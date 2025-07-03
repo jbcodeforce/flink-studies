@@ -30,6 +30,15 @@ spec:
         name: kraftcontroller
     metricsClient:
       url: http://controlcenter.confluent.svc.cluster.local:9090
+  metricReporter:
+    enabled: true
+  listeners:
+      external:
+        externalAccess:
+          type: nodePort
+          nodePort:
+            host: myoperator2.confluent.svc.cluster.local
+            nodePortOffset: 30000
 ---
 apiVersion: platform.confluent.io/v1beta1
 kind: ControlCenter
@@ -58,6 +67,11 @@ spec:
         dataVolumeCapacity: 10Gi
     alertmanager:
       image: confluentinc/cp-enterprise-alertmanager:2.2.0
+  externalAccess:
+    type: nodePort
+    nodePort:
+      host: myoperator2.confluent.svc.cluster.local
+      nodePortOffset: 30200
 ---
 apiVersion: platform.confluent.io/v1beta1
 kind: SchemaRegistry
@@ -69,6 +83,11 @@ spec:
   image:
     application: confluentinc/cp-schema-registry:8.0.0
     init: confluentinc/confluent-init-container:3.0.0
+  externalAccess:
+    type: nodePort
+    nodePort:
+      host: myoperator2.confluent.svc.cluster.local
+      nodePortOffset: 30500
 ---
 apiVersion: platform.confluent.io/v1beta1
 kind: KafkaRestProxy
@@ -83,4 +102,9 @@ spec:
   dependencies:
     schemaRegistry:
       url: http://schemaregistry.confluent.svc.cluster.local:8081
-
+  externalAccess:
+    type: nodePort
+    nodePort:
+      host: myoperator2.confluent.svc.cluster.local
+      nodePortOffset: 30600
+---

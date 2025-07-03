@@ -5,13 +5,13 @@ This directory contains the Docker configuration for building a containerized ve
 ## File Structure
 
 ```
-dedup-demo/
+python-producer/
 ├── Dockerfile              # Multi-stage Docker build
 ├── .dockerignore           # Files to exclude from build context
 ├── build-image.sh          # Build and tag script
 ├── product_producer.py     # Main application code
 ├── pyproject.toml          # Python dependencies
-└── k8s/
+    k8s/
     ├── producer-pod.yaml   # Kubernetes pod using the image
     └── products-topic.yaml # Kafka topic configuration
 ```
@@ -191,34 +191,3 @@ docker run --rm \
    - Image runs as non-root user `appuser`
    - Ensure mounted volumes have correct permissions
 
-## Production Considerations
-
-### Registry Strategy
-
-```bash
-# Tag with version and latest
-docker tag dedup-demo-producer:latest your-registry.com/dedup-demo-producer:v1.0.0
-docker tag dedup-demo-producer:latest your-registry.com/dedup-demo-producer:latest
-
-# Push both tags
-docker push your-registry.com/dedup-demo-producer:v1.0.0
-docker push your-registry.com/dedup-demo-producer:latest
-```
-
-### Security Scanning
-
-```bash
-# Scan image for vulnerabilities
-docker scout cves dedup-demo-producer:latest
-
-# Or use other tools like Trivy
-trivy image dedup-demo-producer:latest
-```
-
-### Resource Limits
-
-The Kubernetes pod is configured with:
-- **Requests**: 64Mi memory, 50m CPU
-- **Limits**: 128Mi memory, 100m CPU
-
-Adjust these in `k8s/producer-pod.yaml` based on your requirements. 

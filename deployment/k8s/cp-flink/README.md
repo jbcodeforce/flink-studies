@@ -4,9 +4,18 @@ This folder includes different deployment manifests for Apache Flink OSS or Conf
 
 See the [Flink operator - open source documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/) and the [Confluent platform for flink operator](https://docs.confluent.io/platform/current/flink/get-started.html) for details.
 
+This deployment is using nodePort so the following mapping applies:
+
+| Component | nodePort | URL | 
+| --- | --- | --- |
+| 🌐 Console | 30200 | http://localhost:30200 |
+| 🌐 Kafka bootstrap | 30000 | |
+| 🌐 Schema Registry | 30500 | http://localhost:30500 |
+
+
 ## Planning deployment
 
-* Confluent Plaform deployment on k8s supports [two options](https://docs.confluent.io/operator/current/co-plan.html#co-plan): [CFK]() or [CFK Blueprints]()
+* Confluent Plaform deployment on k8s supports [two options](https://docs.confluent.io/operator/current/co-plan.html#co-plan): [CFK](https://docs.confluent.io/operator/current/co-deploy-cfk.html#co-deploy-operator) or [CFK Blueprints](https://docs.confluent.io/operator/current/blueprints/cob-overview.html#cob-overview)
 * Review sizing needs: Minimum of 3 kafka broker, even for development.
 * Plan a log retention management: Using ELK, or Grafana / Loki.
 
@@ -23,20 +32,20 @@ See the [Flink operator - open source documentation](https://nightlies.apache.or
     make prepare
     ```
 
-* Install certification manager (only one time per k8s cluster): See [Release version here](https://github.com/cert-manager/cert-manager/), change in the Makefile the version number and the make commands:
-    ```sh
-    make deploy_cert_manager
-    # verify
-    make verify_cert_manager
-    kubeclt get pods -n cert-manager
-    ```
+    * Install certification manager (only one time per k8s cluster): See [Release version here](https://github.com/cert-manager/cert-manager/), change in the Makefile the version number and the make commands:
+        ```sh
+        make deploy_cert_manager
+        # verify
+        make verify_cert_manager
+        kubeclt get pods -n cert-manager
+        ```
 
-* Create `flink` and `confluent` namespaces: `make create_ns`
-* Install Minio to persist jar or expose object storage in the K8S cluster. [See Minio quickstart](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) and [the minio section in k8s deployment chapter.](https://jbcodeforce.github.io/flink-studies/coding/k8s-deploy/#using-minio)
-    ```sh
-    make deploy_minio
-    make verify_minio
-    ```
+    * Create `flink` and `confluent` namespaces: `make create_ns`
+    * Install Minio to persist jar or expose object storage in the K8S cluster. [See Minio quickstart](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) and [the minio section in k8s deployment chapter.](https://jbcodeforce.github.io/flink-studies/coding/k8s-deploy/#using-minio)
+        ```sh
+        make deploy_minio
+        make verify_minio
+        ```
 
 
 ## Deploy Confluent Platform and Confluent Platform for Flink
