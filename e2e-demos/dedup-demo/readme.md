@@ -44,7 +44,7 @@ The deployment is done on Kubernetes.
 ┌─────────────────────────────────────────────────────────┐
 │                    FLINK SQL APPROACH                   │
 │                                                         │
-│  Producer → Kafka → [Flink SQL CLI] → Kafka Output     │
+│  Producer → Kafka → [Flink SQL CLI] → Kafka Output      │
 │    ↓         ↓           ↓                ↓             │
 │  Python    products   Interactive    src_products       │
 │   App       topic      Session         topic            │
@@ -53,7 +53,7 @@ The deployment is done on Kubernetes.
 ┌─────────────────────────────────────────────────────────┐
 │                 FLINK TABLE API APPROACH                │
 │                                                         │
-│  Producer → Kafka → [Flink K8s App] → Kafka Output     │
+│  Producer → Kafka → [Flink K8s App] → Kafka Output      │
 │    ↓         ↓           ↓                ↓             │
 │  Python    products   Java Application  src_products    │
 │   App       topic    (JobManager +       topic          │
