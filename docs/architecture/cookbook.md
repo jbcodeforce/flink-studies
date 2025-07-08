@@ -163,7 +163,8 @@ On the sink side, Flink has a [2 phase commit sink function](https://nightlies.a
 Use Flink WebUI to see the throughput and latency of each Flink application. Flink metrics are exposed to Prometheus and Grafana.
 
 * [Article: An Overview of End-to-End Exactly-Once Processing in Apache Flink (with Apache Kafka, too!)](https://flink.apache.org/2018/02/28/an-overview-of-end-to-end-exactly-once-processing-in-apache-flink-with-apache-kafka-too/).
-
+* [Confluent documentation](https://docs.confluent.io/cloud/current/flink/concepts/delivery-guarantees.html).
+* [Confluent Platform - Kafka consumer isolation level property.](https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#isolation-level)
 
 ## Query Evolution
 
