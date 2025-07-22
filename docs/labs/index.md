@@ -14,6 +14,8 @@ See the [e2e-demos](https://github.com/jbcodeforce/flink-studies/tree/master/e2e
 * [ ] Flink to JDBC Sink connector
 * [ ] Savepoint demonstration
 * [ ] SQL Gateway demonstration
+* [ ] Terraform deployment
+* [ ] GitOps with Openshift, ArgoCD and Tekton
 
 ## Public repositories
 

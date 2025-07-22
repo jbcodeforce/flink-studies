@@ -9,6 +9,7 @@ nav:
     - Flink Architecture: architecture/index.md
     - Fit for purpose: architecture/fitforpurpose.md
     - Labs-Demos: labs/index.md
+    - Agentic applications: architecture/agentic_flink.md
   - Recipes:
     - Flink SQL concepts: architecture/flink-sql.md
     - Flink SQL coding: coding/flink-sql.md
