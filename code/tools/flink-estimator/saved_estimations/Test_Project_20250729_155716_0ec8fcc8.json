@@ -1,0 +1,52 @@
+{
+  "metadata": {
+    "estimation_id": "0ec8fcc8",
+    "timestamp": "2025-07-29T15:57:16.901799",
+    "project_name": "Test Project",
+    "saved_at": "2025-07-29 15:57:16"
+  },
+  "input_parameters": {
+    "project_name": "Test Project",
+    "messages_per_second": 10000,
+    "avg_record_size_bytes": 1024,
+    "simple_statements": 5,
+    "medium_statements": 3,
+    "complex_statements": 2
+  },
+  "estimation_results": {
+    "input_summary": {
+      "messages_per_second": 10000,
+      "avg_record_size_bytes": 1024,
+      "total_throughput_mb_per_sec": 9.77,
+      "simple_statements": 5,
+      "medium_statements": 3,
+      "complex_statements": 2,
+      "total_statements": 10
+    },
+    "resource_estimates": {
+      "total_memory_mb": 7040,
+      "total_cpu_cores": 13,
+      "processing_load_score": 19.0
+    },
+    "cluster_recommendations": {
+      "jobmanager": {
+        "memory_mb": 1024,
+        "cpu_cores": 2
+      },
+      "taskmanagers": {
+        "count": 3,
+        "memory_mb_each": 3519,
+        "cpu_cores_each": 6,
+        "total_memory_mb": 10557,
+        "total_cpu_cores": 18
+      }
+    },
+    "scaling_recommendations": {
+      "min_parallelism": 6,
+      "recommended_parallelism": 13,
+      "max_parallelism": 26,
+      "checkpointing_interval_ms": 29000
+    }
+  },
+  "version": "1.0"
+}

@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: flink-estimator-service
+  labels:
+    app: flink-estimator
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: flink-estimator
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flink-estimator-nodeport
+  labels:
+    app: flink-estimator
+spec:
+  type: NodePort
+  ports:
+  - port: 8000
+    targetPort: 8000
+    nodePort: 30800
+    protocol: TCP
+    name: http
+  selector:
+    app: flink-estimator 

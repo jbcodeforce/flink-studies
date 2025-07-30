@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flink Resource Estimator</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Flink Resource Estimator</h1>
+            <p class="subtitle">Estimate your Apache Flink or Confluent Plaform for Flink cluster resource requirements</p>
+            <div class="header-nav">
+                <a href="/saved" class="nav-link">📂 View Saved Estimations</a>
+            </div>
+        </header>
+
+        <main>
+            <form action="/estimate" method="post" class="estimation-form">
+                <div class="form-section">
+                    <h2>Project Information</h2>
+                    <div class="form-group">
+                        <label for="project_name">Project Name:</label>
+                        <input 
+                            type="text" 
+                            id="project_name" 
+                            name="project_name" 
+                            required 
+                            placeholder="Enter your project name"
+                        >
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2>Workload Characteristics</h2>
+                    
+                    <div class="form-group">
+                        <label for="messages_per_second">Expected Messages per Second:</label>
+                        <input 
+                            type="number" 
+                            id="messages_per_second" 
+                            name="messages_per_second" 
+                            required 
+                            min="1"
+                            placeholder="e.g., 10000"
+                        >
+                        <div class="help-text">The expected throughput of messages your Flink job will process</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="avg_record_size_bytes">Average Record Size (bytes):</label>
+                        <input 
+                            type="number" 
+                            id="avg_record_size_bytes" 
+                            name="avg_record_size_bytes" 
+                            required 
+                            min="1"
+                            placeholder="e.g., 1024"
+                        >
+                        <div class="help-text">Average size of each message/record in bytes</div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2>Flink Statement Complexity</h2>
+                    <p class="section-description">
+                        Categorize your Flink SQL statements by complexity. This helps estimate processing overhead.
+                    </p>
+                    
+                    <div class="complexity-grid">
+                        <div class="complexity-item">
+                            <h3>Simple Statements</h3>
+                            <p>SELECT, basic WHERE clauses, simple projections</p>
+                            <input 
+                                type="number" 
+                                id="simple_statements" 
+                                name="simple_statements" 
+                                min="0" 
+                                value="0"
+                                placeholder="0"
+                            >
+                        </div>
+
+                        <div class="complexity-item">
+                            <h3>Medium Statements</h3>
+                            <p>JOINs, GROUP BY, basic window operations, aggregations</p>
+                            <input 
+                                type="number" 
+                                id="medium_statements" 
+                                name="medium_statements" 
+                                min="0" 
+                                value="0"
+                                placeholder="0"
+                            >
+                        </div>
+
+                        <div class="complexity-item">
+                            <h3>Complex Statements</h3>
+                            <p>Complex windows, CEP patterns, UDFs, nested subqueries</p>
+                            <input 
+                                type="number" 
+                                id="complex_statements" 
+                                name="complex_statements" 
+                                min="0" 
+                                value="0"
+                                placeholder="0"
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="estimate-btn">
+                        Calculate Resources
+                    </button>
+                </div>
+            </form>
+        </main>
+
+        <footer>
+            <div class="info-box">
+                <h3>ℹ️ About This Tool</h3>
+                <p>
+                    This estimator provides approximate resource requirements for Apache Flink clusters based on 
+                    your workload characteristics. Results should be used as a starting point and fine-tuned 
+                    based on actual performance testing.
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Add some basic form validation and UX improvements
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('.estimation-form');
+            const submitBtn = document.querySelector('.estimate-btn');
+            
+            form.addEventListener('submit', function(e) {
+                // Show loading state
+                submitBtn.textContent = 'Calculating...';
+                submitBtn.disabled = true;
+            });
+
+            // Calculate total throughput on input change
+            const messagesInput = document.getElementById('messages_per_second');
+            const sizeInput = document.getElementById('avg_record_size_bytes');
+            
+            function updateThroughput() {
+                const messages = parseInt(messagesInput.value) || 0;
+                const size = parseInt(sizeInput.value) || 0;
+                const throughputMB = (messages * size) / (1024 * 1024);
+                
+                if (messages > 0 && size > 0) {
+                    const throughputDisplay = document.getElementById('throughput-display');
+                    if (!throughputDisplay) {
+                        const display = document.createElement('div');
+                        display.id = 'throughput-display';
+                        display.className = 'throughput-info';
+                        display.innerHTML = `<strong>Estimated Throughput:</strong> ${throughputMB.toFixed(2)} MB/sec`;
+                        sizeInput.parentNode.appendChild(display);
+                    } else {
+                        throughputDisplay.innerHTML = `<strong>Estimated Throughput:</strong> ${throughputMB.toFixed(2)} MB/sec`;
+                    }
+                }
+            }
+            
+            messagesInput.addEventListener('input', updateThroughput);
+            sizeInput.addEventListener('input', updateThroughput);
+        });
+    </script>
+</body>
+</html> 

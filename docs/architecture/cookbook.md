@@ -26,9 +26,10 @@ For Confluent Cloud for Flink we want to map environments to physical environmen
 
 For the discussion each business application can have one to many pipelines. A Pipeline is a set of Flink jobs running SQL statements or Table API programs. A generic pattern of a pipeline involves at least, the following steps:
 
-![](./diagrams/generic_src_to_sink_flow.drawio.png)
-
-**Figure : Generic pipeline structure**
+<figure markdown="span">
+![1](./diagrams/generic_src_to_sink_flow.drawio.png)
+<figcaption>Figure 1: Generic pipeline structure</figcaption>
+</figure>
 
 1. A CDC source connector injects data in Kafka topic. Avro schemas are defined for the Key and the Value.
 1. A first set of statements are doing deduplication logic, or filtering to ensure only relevant messages are processed by the pipeline
@@ -40,10 +41,10 @@ The artifacts for development are the DDL and DML statements and test data.
 
 Finally to support the deployment and quality control of those pipelines deployment, the following figures illustrates a classical deployment pattern:
 
-<figure>
-![](./diagrams/env-architecture.drawio.png)
+<figure markdown="span">
+![2](./diagrams/env-architecture.drawio.png){ width=600 }
+<figcaption>Figure 2: Environment mapping</figcaption>
 </figure>
-**Figure : Environment mapping**
 
 1. Each environment has its own schema registry
 1. Once Kafka Cluster per env, with different ACL rules to control who can create topic, read and write.
@@ -54,6 +55,19 @@ This architecture helps to clearly separate schema management per environment, a
 
 ???+ info "Gitops"
     The core concept of [GitOps](https://opengitops.dev/) is to maintain a single Git repository that consistently holds declarative descriptions of the desired infrastructure in the production environment. An automated process ensures that the production environment aligns with the state described in the repository. The methodology and tools support changing infrastructure using feature branches, PR, PR review, 
+
+## Sizing
+
+Sizing a Flink cluster is a complex process influenced by many factors, including workload demands, application logic, data characteristics, expected state size, required throughput and latency, concurrency, and hardware. Because of these variables, every Flink deployment needs a unique sizing approach. The most effective method is to run a real job on real hardware and tune Flink to that specific workload.
+
+For architects seeking sizing guidance, it's helpful to consider workload complexity (aggregations, joins, windows, processing type), input throughput (MB/s or records/second), expected state size (GB), and expected latency.
+
+While Kafka sizing estimates are based on throughput and latency, this is a very crude method for Flink, as it overlooks many critical details. For new Flink deployments, a preliminary estimate can be provided, but it's important to stress its inexact nature. A simple Flink job can process approximately 10,000 records per second per CPU. However, a more substantial job, based on benchmarks, might process closer to 5,000 records per second per CPU. Sizing may use record size, throughput, and Flink statement complexity to estimate CPU load.
+
+???- into "Tool to do estimation"
+    Go under the `code/tools/flink-estimator` folder and start `uv run main.py`, to access a web app used for Flink cluster estimation. It can be started with `docker-compose start -d` or deployed to local kubernetes: `kubectl apply -k k8s`. Access via web browser [http://localhost:8002/](http://localhost:8002/)
+
+    ![](./images/flink-estimator.png)
 
 ## Troubleshooting
 
