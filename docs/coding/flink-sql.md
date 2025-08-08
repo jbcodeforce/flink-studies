@@ -756,6 +756,57 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     WHERE keep_row = TRUE;
     ```
 
+???- info "How to search for hot key"
+    ```sql
+    SELECT 
+        id, 
+        tenant_id, 
+        count(*) as record_count,
+    FROM table_name 
+    GROUP BY id, tenant_id
+    ```
+
+    A more advanced statistical query ( TO BE TESTED)
+    ```sql
+    WITH key_stats AS (
+        SELECT 
+            id,
+            tenant_id,
+            count(*) as record_count
+        FROM src_aqem_tag_tag 
+        GROUP BY id, tenant_id
+    ),
+    distribution_stats AS (
+        SELECT 
+            AVG(record_count) as mean_count,
+            STDDEV(record_count) as stddev_count,
+            PERCENTILE_APPROX(record_count, 0.75) as q3,
+            PERCENTILE_APPROX(record_count, 0.95) as p95,
+            PERCENTILE_APPROX(record_count, 0.99) as p99
+        FROM key_stats
+    )
+    SELECT 
+        ks.*,
+        ds.mean_count,
+        ds.stddev_count,
+        -- Z-score calculation for outlier detection
+        CASE 
+            WHEN ds.stddev_count > 0 
+            THEN (ks.record_count - ds.mean_count) / ds.stddev_count
+            ELSE 0
+        END as z_score,
+        -- Hot key classification
+        CASE 
+            WHEN ks.record_count > ds.p99 THEN 'EXTREME_HOT'
+            WHEN ks.record_count > ds.p95 THEN 'VERY_HOT'
+            WHEN ks.record_count > ds.q3 * 1.5 THEN 'HOT'
+            ELSE 'NORMAL'
+        END as hot_key_category
+    FROM key_stats ks
+    CROSS JOIN distribution_stats ds
+    WHERE ks.record_count > ds.mean_count 
+    ```
+
 ???- question "What are the different SQL execution modes?"
 
     Using previous table it is possible to count the elements in the table using:

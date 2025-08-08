@@ -157,6 +157,57 @@ Confluent Cloud for Flink [supports the Table API, in Java](https://docs.conflue
 
 The Table API is on top of the SQL engine, and so program runs on an external systems, but uses an specific Flink environment for Confluent Cloud to submit the DAG to the remote engine. The program declares the data flow, submit it to the remote job manager.  [Read this chapter](../coding/table-api.md) for more information.
 
+## DLQ support
+
+By integrating Custom Deserialization Error Handling Strategies, data engineers can ensure that only valid, correctly processed messages move downstream, maintaining data quality and integrity. This feature reduces the risk of system crashes and downtime caused by unhandled exceptions, ensuring continuous data processing and availability.
+
+All Flink tables have `error-handling.mode` as a table option, with the default being `fail`. 
+
+* If desired, you can run an ALTER TABLE to change this to `ignore` or `log`.
+    ```sql
+    ALTER TABLE src_users_table SET ('error-handling.mode' = 'log');
+    ```
+
+* or add this config to the created table:
+    ```
+    create table src_users_table (...) WITH (
+        ....
+        'error-handling.mode' = 'log'
+    )
+    ```
+
+???- warning "Potential error"
+    It is possible to get the following error when altering table failed registering schemas: unable to register schema on 'error_log-value': schema registry request failed error code: 42205: Subject error_log-value in context  is not in read-write mode.
+    In this case, you will run into this error as flink is trying to register a schema for the DLQ and Schema Regisry is being schema-linked as a result the default context is in Read only mode. You need to create your own DLQ table. 
+
+
+* Or create a special DLQ topic:
+    ```sql
+    CREATE TABLE `my_error_log` (
+        `error_timestamp` TIMESTAMP_LTZ(3) NOT NULL,
+        `error_code` INT NOT NULL,
+        `error_reason` STRING NOT NULL,
+        `error_message` STRING NOT NULL,
+        `error_details` MAP<STRING NOT NULL, STRING> NOT NULL,
+        `processor` STRING NOT NULL,
+        `statement_name` STRING,
+        `affected_type` STRING NOT NULL,
+        `affected_catalog` STRING,
+        `affected_database` STRING,
+        `affected_name` STRING,
+        `source_record` ROW<`topic` STRING, `partition` INT, `offset` BIGINT, `timestamp` TIMESTAMP_LTZ(3), `timestamp_type` STRING, `headers` MAP<STRING NOT NULL, VARBINARY>, `key` VARBINARY, `value` VARBINARY>
+    ) WITH (
+        'value.avro-registry.schema-context' = '.flink-stage',
+        'value.format' = 'avro-registry'
+        )
+    ```
+
+    Alter the source table to enable with a DLQ that was created above.
+
+    ```sql
+    ALTER TABLE src_users_table SET ('error-handling.mode' = 'log', 'error-handling.log.target' = 'my_error_log' );
+    ```
+
 
 ## Networking overview
 
@@ -238,7 +289,7 @@ Several factors significantly affect statement throughput:
 * CPU Load: The complexity of the operations performed by the statement is a major contributor to CPU load.
 * Minimum CFU Consumption: Every statement will consume at least 1 CFU, and for most workloads, CFU consumption is directly proportional to the number of statements execute
 
-### Scoping workload:
+### Scoping workload
 
 * Assess the number of record per second
 * For stateless the attainable throughput of the statement per CFU will generally be determined by how much write volume the sink topic can handle.

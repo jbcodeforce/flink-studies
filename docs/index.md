@@ -4,6 +4,7 @@
     * Created 2018 
     * Updates 10/2024: Reorganized content, separated SQL vs Java, added Confluent Cloud/Platform integration
     * Updates 01/25: Added Terraform deployment examples, expanded SQL samples
+    * Updates 07/25: Added e2e demos, Flink estimator webapp, Data mesh
 
 ## Quick Reference
 
