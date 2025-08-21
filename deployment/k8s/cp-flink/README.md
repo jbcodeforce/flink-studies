@@ -1,6 +1,6 @@
 # Flink on k8s with the operator (Open-source or Confluent Platform)
 
-This folder includes different deployment manifests for Apache Flink OSS or Confluent Platform for Flink. The approach is to encapsulate some of the kubectl commands using `make` targets. 
+This folder includes different deployment manifests for Confluent Platform for Flink. The approach is to encapsulate some of the kubectl commands using `make` targets. 
 
 See the [Flink operator - open source documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/) and the [Confluent platform for flink operator](https://docs.confluent.io/platform/current/flink/get-started.html) for details.
 
@@ -16,8 +16,8 @@ This deployment is using nodePort so the following mapping applies:
 ## Planning deployment
 
 * Confluent Plaform deployment on k8s supports [two options](https://docs.confluent.io/operator/current/co-plan.html#co-plan): [CFK](https://docs.confluent.io/operator/current/co-deploy-cfk.html#co-deploy-operator) or [CFK Blueprints](https://docs.confluent.io/operator/current/blueprints/cob-overview.html#cob-overview)
-* Review sizing needs: Minimum of 3 kafka broker, even for development.
-* Plan a log retention management: Using ELK, or Grafana / Loki.
+* Review sizing needs: Minimum of 3 kafka brokers, even for development.
+* Plan to use a log retention management like ELK, or Grafana / Loki.
 
 ## Pre-requisites
 
@@ -78,7 +78,7 @@ This deployment is using nodePort so the following mapping applies:
     kubectl config set-context --current --namespace=flink
     ```
 
-1. Validate installation with simple application job, deploy a stateless app and validate it runs with the Flink Dashboard:
+1. Validate installation with a simple Flink application, and validate with the Flink Dashboard:
     ```sh
     make deploy_flink_demo_app
     ```
@@ -94,6 +94,8 @@ This deployment is using nodePort so the following mapping applies:
     ```sh
     confluent flink application delete basic-example --environment env1  --url http://localhost:8084
     ```
+
+1. Work with SQL client
 
 ## Monitoring with Prometheus and Grafana
 

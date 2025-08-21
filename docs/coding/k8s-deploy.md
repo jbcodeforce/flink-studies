@@ -5,7 +5,8 @@
     * 12/24: move some content to hands-on readme, clean content
     * 01/25: sql processing section
     * 05/25: merge content, simplify, add some details on deployment - fully test k8s deployment on Colima
-    * 07/25: UPdate for Confluent Platform v8
+    * 07/25: Update for Confluent Platform v8
+    * 08/25: 
 
 ## Apache Flink Kubernetes Operator Concepts
 
@@ -33,7 +34,7 @@ The custom resource definition that describes the schema of a FlinkDeployment is
 
 ### FlinkDeployment
 
-FlinkDeployment CR defines Flink Application and Session cluster deployments
+FlinkDeployment CR defines Flink Application and Session cluster deployments.
 
 ### Important documentations
 
@@ -61,7 +62,7 @@ Any Flink on Kubernetes deployment should include the following pre-requisites:
 
 ### Confluent Platform for Flink
 
-[See the Makefile under deployment/k8s/cp-flink]()
+[See the Makefile under deployment/k8s/cp-flink](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cp-flink) which includes a set of targets to simplofy the deployment.
 
 * Add Confluent Platform **Helm** repositories
     ```sh
@@ -455,7 +456,26 @@ COPY /path/of/my-flink-job-*.jar $FLINK_HOME/usrlib/my-flink-job.jar
 
 ### Flink SQL processing
 
-There are multiple choices to run Flink SQL, using the SQL client, or package the SQL scripts and a [java SQL runner](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) executing the SQL statements from a file, so the application deployment is Java based even if SQL scripts are used for stream processing.
+There are multiple choices to run Flink SQL, using the SQL client, or package the SQL scripts and a [java SQL runner](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-java/sql-runner) executing the SQL statements from a file, so the application deployment is Java based even if SQL scripts are used for stream processing.
+
+Flink Session Cluster is the most suitable deployment mode for the SQL Client. This is a long-running Flink cluster (JobManager and TaskManagers) that you can submit multiple jobs to. The sql client is a long-running, interactive application that submits jobs to an existing cluster.
+
+You can run the SQL Client in a couple of ways:
+
+* As a separate Docker container: The Flink Docker images include the SQL Client. You can run a container and connect to the JobManager. You will need to mount a volume to persist SQL scripts and other data.
+  ```sh
+  kubectl exec -it <sql-client-pod-name> -- /opt/flink/bin/sql-client.sh
+  ```
+
+  When running the SQL Client as a pod within the same Kubernetes cluster, you can use the internal DNS name of the JobManager service to connect. The format is typically <service-name>.<namespace>.svc.cluster.local
+
+* Locally: Download the Flink distribution, extract it, and run the SQL Client from your local machine.
+  ```sh
+  # port forwarding
+  kubectl port-forward svc/<jobmanager-service-name> 8081:8081
+
+  ./bin/sql-client.sh -s <jobmanager-service-name>:8081
+  ```
 
 ## Demonstrations
 
