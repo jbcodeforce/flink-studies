@@ -1,0 +1,28 @@
+{
+    "OrderDetails": {
+      "EquipmentRentalDetails": [
+        {
+          "OrderId": 396404719,
+          "Status": "Return",
+          "Equipment": [
+            {
+              "ModelCode": "HO",
+              "Rate": "34.95"
+            }
+          ],
+          "TotalPaid": 37.4,
+          "Type": "InTown",
+          "Coverage": null,
+          "Itinerary": {
+            "PickupDate": "2020-09-21T18:14:08.000Z",
+            "DropoffDate": "2020-09-21T20:47:42.000Z",
+            "PickupLocation": "41260",
+            "DropoffLocation": "41260"
+          },
+          "OrderType": "Umove",
+          "AssociatedContractId": null
+        }
+      ]
+    },
+    "MovingHelpDetails": null
+  }

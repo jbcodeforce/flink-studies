@@ -1,0 +1,41 @@
+{
+    "OrderDetails": {
+      "EquipmentRentalDetails": [
+        {
+          "OrderId": 396404719,
+          "Status": "Return",
+          "Equipment": [
+            {
+              "ModelCode": "HO",
+              "Rate": "34.95"
+            }
+          ],
+          "TotalPaid": 37.4,
+          "Type": "InTown",
+          "Coverage": null,
+          "Itinerary": {
+            "PickupDate": "2020-09-21T18:14:08.000Z",
+            "DropoffDate": "2020-09-21T20:47:42.000Z",
+            "PickupLocation": "41260",
+            "DropoffLocation": "41260"
+          },
+          "OrderType": "Umove",
+          "AssociatedContractId": null
+        }
+      ]
+    },
+    "MovingHelpDetails": [
+      {
+        "job_id": 7822008,
+        "job_type": "LoadUnload",
+        "job_status": "Completed",
+        "rate_service_provider": "85.0000",
+        "total_paid": "170.0000",
+        "job_date_start": "2023-07-17",
+        "job_completed_date": "2023-07-17",
+        "job_entered_date": "2023-07-14",
+        "job_last_modified_date": "2023-07-14",
+        "service_provider_name": "Arizona Athletic Movers"
+      }
+    ]
+  }

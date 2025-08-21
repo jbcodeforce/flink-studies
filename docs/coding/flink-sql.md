@@ -22,6 +22,8 @@ Use one of the following approaches:
     The SQL Client aims to provide an easy way to write, debug, and submit table programs to a Flink cluster without a single line of code in any programming language. To interact with Flink using the SQL client, open a bash in the running container, or in the flink bin folder:
 
     ```sh
+    # be sure to mount the folder with sql scripts into the container
+
     # Using running job manager running within docker
     docker exec -ti sql-client bash
     # in kubernetes pod
@@ -31,7 +33,7 @@ Use one of the following approaches:
     ```
 
 
-???- example  "SQL client with Confluent cli"
+???- example  "SQL client with Confluent Cloud cli"
     [See quick start note](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-shell.html) which is summarized as:
 
     * Connect to Confluent Cloud with CLI, then get environment and compute pool identifiers
@@ -51,11 +53,11 @@ Use one of the following approaches:
     * Write SQL statements, results are visible in the active session.
 
 ???- info "Run SQL in Kubernetes application" 
-    Write SQL statements and test them with Java SQL runner. The Class is in [https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/sql-runner) folder. Then package the java app and sql script into a docker image then use a FlinkDeployment  descriptor; (see [this git doc](https://github.com/apache/flink-kubernetes-operator/tree/main/examples/flink-sql-runner-example)).
+    Write SQL statements and test them with Java SQL runner. The Class is in [flink-studies/code/flink-java/sql-runner](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-java/sql-runner) folder. Then package the java app and sql script into a docker image then use a FlinkDeployment  descriptor; (see [this git doc](https://github.com/apache/flink-kubernetes-operator/tree/main/examples/flink-sql-runner-example)).
 
 [See the Flink SQL CLI commands documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sqlclient/).
 
-See [the flink-sql/00-basic-sql folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/00-basic-sql) to get some getting started with Flink SQL examples.
+See [the flink-sql/00-basic-sql folder](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/00-basic-sql) to get some getting started with Flink SQL examples.
 
 ## Basic commands
 
@@ -1143,29 +1145,10 @@ Each topic is automatically mapped to a table with some metadata fields added, l
     confluent flink statement list --cloud aws --region us-west-2 --environment <your env-id> --compute-pool <your pool id>
     ```
 
-## Recommended Labs and demos
+### From batch to real-time
 
-* [Shoe Store lab](https://github.com/griga23/shoe-store) to run demonstrations on Confluent Cloud. 
-* [Confluent Flink how to](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#)
-* [Confluent scene](https://github.com/confluentinc/demo-scene)
-* [Confluent developer SQL training]()
-
-### Quick personal demo on Confluent Cloud
-
-Using the data generator and the `confluent flink shell`
-
-* Login to Confluent using cli
-* Be sure to use the environment with the compute pool: 
-
-```sh
-confluent environment list
-confluent environment use <env_id>
-confluent flink compute-pool list
-# get the region and cloud and the current max CFU
-confluent flink compute-pool use <pool_id>
-```
-
-* Start one of the Datagen in the Confluent Console. 
+???- info "How to support Type 2 slowly changing dimension (SCD) table?"
+    Type 2 SCDs are designed to maintain a complete history of all changes to dimension data. When a change occurs, a new row is inserted into the table, representing the updated record, while the original record remains untouched. Each record in the table is typically assigned a unique identifier (often a surrogate key) to distinguish between different versions of the same dimension member. 
 
 ## User Defined Function
 
@@ -1178,3 +1161,13 @@ For developer the steps are:
 1. Build a uber jar
 1. Register the UDF as a Flink artifact. On Confluent Cloud, artifacts are environment scoped.
 1. Configure SQL to use this function using: `CREATE FUNCTION fct_name as 'fully.qualified.classname' USING JAR 'confluent-artifact://....'
+
+
+## Troubleshooting SQL statement running slow
+
+### Metric to consider
+
+### Query Profiler / Flink UI
+
+### Explain statement
+
