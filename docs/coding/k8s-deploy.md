@@ -39,6 +39,7 @@ FlinkDeployment CR defines Flink Application and Session cluster deployments.
 ### Important documentations
 
 * [Confluent Platform for Flink has also an operator](https://docs.confluent.io/platform/current/flink/get-started-cpf.html) compatible with the open-source one.
+* [Confluent operator documentation](https://docs.confluent.io/operator/current/co-prepare.html)
 * [Getting started with Flink OSS Standalone Kubernetes Setup.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/)
 * [Apache Flink Native Kubernetes deployment.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/native_kubernetes/)
 
@@ -58,69 +59,40 @@ Any Flink on Kubernetes deployment should include the following pre-requisites:
   sudo apt-get install helm
   ```
 
-**Two Options to run Flink on Kubernetes**: 1/ Confluent Platform for Flink, or 2/ Apache Flink Open Source
+**Two Options to run Flink on Kubernetes**: 
 
-### Confluent Platform for Flink
+1. [Confluent Manager for Apache Flink](#confluent-manager-for-apache-flink)
+1. [Apache Flink Open Source](#deploy-apache-flink-kubernetes-operator)
 
-[See the Makefile under deployment/k8s/cp-flink](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cp-flink) which includes a set of targets to simplofy the deployment.
+Once the platform is up and running [see the different application deployment patterns](#flink-application-deployment)
 
-* Add Confluent Platform **Helm** repositories
-    ```sh
-    helm repo add confluentinc https://packages.confluent.io/helm
-    # Verify help repo entries exist
-    helm repo list
-    # try to update repo content
-    helm repo update
-    helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes
-    ```
+### Colima playground
 
-* Install [Confluent CLI](https://docs.confluent.io/confluent-cli/current/install.html#install-confluent-cli) or update existing CLI with: 
-  ```sh
-  confluent update
-  ```
+[Colima installation instructions.](https://github.com/abiosoft/colima?tab=readme-ov-file#installation)
 
-* Install [Confluent plugin for kubectl](https://docs.confluent.io/operator/current/co-deploy-cfk.html#co-install-plugin). For previously installed plugin, delete the old plugin from the directory where you previously installed it. 
-
-* Get [Confluent Platform releases information.](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
-* For Confluent Platform for Flink deployment [see details in this section.](#deploy-confluent-platform-for-flink)
-
-### Apache Flink OSS 
-
-* Add the Apache Flink **Helm** repositories: 
-    ```sh
-    helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.11.0
-    # Verify help repo entries exist
-    helm repo list
-    # Be sure to change the repo as the URL may not be valid anymore
-    helm repo remove  flink-operator-repo
-    # try to update repo content
-    helm repo update
-    ```
-   
-    See [Apache Flink Operator documentation](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) 
-
-
-## Colima playground
-
-* Start a kubernetes cluster, for colima do:
+* Start a kubernetes cluster, for colima do one of the following option:
   ```sh
   colima start --kubernetes
   # or under deployment/k8s folder
   ./start_colima.sh
+  # with make under deployment/k8s
+  make start_colima
   ```
 
-* Install Certification manager [See current releases](https://github.com/cert-manager/cert-manager/releases): 
+* Install Certification manager [See current releases](https://github.com/cert-manager/cert-manager/releases):
+  ```sh
+  make deploy_cert_manager
+  ```
+  Which is doing:
   ```sh
   kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.18.1/cert-manager.yaml
   # verify
   kubeclt get pods -n cert-manager
+  # or
+  make verify_cert_manager
   ```
 
-* [Install Apache Flink Operator for kubernetes](#deploy-apache-flink-kubernetes-operator)
-* Install Minio to expose object storage in the K8S, [see this section.](#using-minio)
-
-
-## Using MinIO
+### Using MinIO
 
 MinIO is an object storage solution that provides an Amazon Web Services S3-compatible API and supports all core S3 features, on k8s.
 
@@ -140,11 +112,16 @@ MinIO is an object storage solution that provides an Amazon Web Services S3-comp
     # under deployment/k8s/MinIO
     kubectl apply -f minio-dev.yaml
     kubectl get pods -n minio-dev
+    # same as doing
+    make deploy_minio
+    make verify_minio
     ```
 
 * Access MinIO S3 API and Console
     ```sh
     kubectl port-forward pod/minio 9000 9090 -n minio-dev
+    # or
+    make port_forward_minio_console
     ```
 
 * Log in to the Console with the credentials `minioadmin | minioadmin`
@@ -155,7 +132,83 @@ MinIO is an object storage solution that provides an Amazon Web Services S3-comp
     mc mb dev-minio/flink
     ```
 
-* Next steps is to upload jar files for the different applications to deploy, or data sets for SQL table. See later section.
+* Next steps is to upload jar files for the different applications to deploy, or data sets for SQL table. See [application section](#flink-application-deployment).
+
+## [Confluent Manager](https://docs.confluent.io/operator/current/co-deploy-cp.html#co-deploy-cp) for Apache Flink
+
+Updated 07.01.2025: For CFK version 3.0.0 and CP v8.0.0
+
+[See the Makefile under deployment/k8s/cp-flink](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cp-flink) which includes a set of targets to simplify the deployment. [See Confluent Manager for Apache Flink product documentation](https://docs.confluent.io/platform/current/flink/get-started/get-started-application.html#step-1-install-cmf-long) for deeper information. The following steps are a summary of what should be done.
+
+* Install [Confluent CLI](https://docs.confluent.io/confluent-cli/current/install.html#install-confluent-cli) or update existing CLI with: 
+  ```sh
+  confluent update
+  ```
+* Install [Confluent plugin for kubectl](https://docs.confluent.io/operator/current/co-deploy-cfk.html#co-install-plugin)
+  ```sh
+  sudo tar -xvf kubectl-plugin/kubectl-confluent-darwin-arm64.tar.gz -C /usr/local/bin/
+  ```
+
+### Install Confluent Platform for Kafka
+
+* Using make, run `make install_cp` which will do the following:
+  * Create a namespace for Confluent products deployment. By default, CMF deploys Confluent Platform in the namespaced deployment, and it manages Confluent Platform component clusters and resources in the same Kubernetes namespace where CFK itself is deployed. 
+  * Add Confluent Platform **Helm** repositories
+      ```sh
+      helm repo add confluentinc https://packages.confluent.io/helm
+      # Verify help repo entries exist
+      helm repo list
+      # try to update repo content
+      helm repo update
+      helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes
+      ```
+  *  Deploy Confluent Kafka Broker using one Kraft controller, three brokers, new Confluent Console, with REST api and schema registry.
+
+* See [Confluent Platform releases information.](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
+
+
+### Install Confluent Manager for Flink
+
+* Install the Flink Kubernetes Operator
+  ```sh
+  make install_flink_kubernetes_operator
+  # which does:
+  helm upgrade --install cp-flink-kubernetes-operator --version "~1.120.0"  confluentinc/flink-kubernetes-operator --set watchNamespace="{flink, confluent}"
+  ```
+
+* Install Confluent Manager for Apache Flink (The `cmf.sql.production=false` setting initializing the CMF database without encryption.)
+  ```sh
+  make deploy_cmf
+  # same as:
+  helm upgrade --install cmf --version "~2.0.0" confluentinc/confluent-manager-for-apache-flink --namespace flink --set cmf.sql.production=false
+  ```
+
+* Open port forwarding to CMF so the confluent cli can access the REST API, this is mandatory to deploy job
+  ```sh
+  make port_forward_cmf
+  ```
+
+See [deploy application section for SQL or Java app deployment](#flink-application-deployment)
+
+
+---
+
+TO UPDATE 
+
+## Apache Flink OSS 
+
+* Add the Apache Flink **Helm** repositories: 
+    ```sh
+    helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.11.0
+    # Verify help repo entries exist
+    helm repo list
+    # Be sure to change the repo as the URL may not be valid anymore
+    helm repo remove  flink-operator-repo
+    # try to update repo content
+    helm repo update
+    ```
+   
+    See [Apache Flink Operator documentation](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) 
 
 ## Deploy Apache Flink Kubernetes Operator
 
@@ -171,24 +224,6 @@ The [Apache flink kubernetes operator product documentation](https://nightlies.a
 * [Access Flink UI](http://localhost:8081)
 * Mount a host folder as a PV to access data or SQL scripts, using hostPath.
 
-## Deploy [Confluent Platform](https://docs.confluent.io/operator/current/co-deploy-cp.html#co-deploy-cp) for Flink
-
-Updated 07.01.2025: For CFK version 3.0.0 and CP v8.0.0
-
-[See README in deployment/k8s/cp-flink](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cp-flink), the operations can be summarized as
-
-
-* Create a namespace for Confluent products deployment. By default, CMF deploys Confluent Platform in the namespaced deployment, and it manages Confluent Platform component clusters and resources in the same Kubernetes namespace where CFK itself is deployed.
-* Install Helm repo for ConfluentInc
-* Install certificat manager, see [Release version here.](https://github.com/cert-manager/cert-manager/)
-* Deploy the CFK bundle using Helm
-* Install [Confluent plugin for kubectl](https://docs.confluent.io/operator/current/co-deploy-cfk.html#co-install-plugin)
-  ```sh
-  sudo tar -xvf kubectl-plugin/kubectl-confluent-darwin-arm64.tar.gz -C /usr/local/bin/
-  ```
-* Deploy Confluent Platform Flink operator
-* Deploy Confluent Kafka Broker using one Kraft controller, three brokers, new Confluent Console, with REST api and schema registry
-* Then deploy one basic Flink application
 
 ### Custom Resources
 
@@ -351,7 +386,76 @@ Once the job is deployed we can see the pod and then using the user interface th
 To help managing snapshots, there is another CR called [FlinkStateSnapshot](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/#flinkstatesnapshotspec)
 
 
-## Flink Application deployment 
+## Flink Application Deployment 
+
+There two types of Flink application: the java packaging or the SQL client with open session to the cluster.
+
+### Flink SQL processing
+
+There are multiple choices to run Flink SQL, using the SQL client, or package the SQL scripts in a docker container with the [java SQL runner](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-java/sql-runner) executing the SQL statements from a file. The application deployment is Java based even if SQL scripts are used for stream processing.
+
+Flink Session Cluster is the most suitable deployment mode for the SQL Client. This is a long-running Flink cluster (JobManager and TaskManagers) that you can submit multiple jobs to. The sql client is a long-running, interactive application that submits jobs to an existing cluster.
+
+#### Confluent Manager for Flink
+
+In **Confluent Manager for Flink** the method is to create an environment and compute pool and run the SQL statements in a pool.
+
+* Define an environment: Environment is used for isolation and share configuration between Flink applications. It can include settings of a common observability configuration, or checkpoint storage destination for all Flink clusters in an environment.
+
+  ```sh
+  export CONFLUENT_CMF_URL=http://localhost:8084
+  # be sure to be not connected to confluent cloud
+  confluent logout
+  # Look at current environment
+  confluent flink environment  list
+  # Create new env
+  confluent flink environment create test --kubernetes-namespace flink
+  # or
+  make create_flink_env
+  ```
+
+* Define a compute pool (verify current [docker image tag](https://hub.docker.com/r/confluentinc/cp-flink-sql/tags)) and see the [compute_pool.json](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cmf/compute_pool.json)
+  ```sh
+  make create_compute_pool
+  ```
+
+* Flink SQL uses the concept of Catalogs to connect to external storage systems. CMF features built-in KafkaCatalogs to connect to Kafka and Schema Registry.  A `KafkaCatalog` exposes Kafka topics as tables and derives their schema from Schema Registry. Define a Flink Catalog as json file: (see [cmf/kafka_catalog.json](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cmf/kafka_catalog.json)). The catalog is configured with connection properties for the Kafka and Schema Registry clients.
+  ```sh
+  make create_kafka_catalog
+  ```
+
+* Define secret to access Kafka Cluster [See this secret](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cmf/kafka_secret.json) and [the mapping](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cmf/env_secret_mapping.json)
+  ```sh
+  make create_kafka_secret
+  make create_env_secret_mapping
+  ```
+
+* Use the confluent cli to start a Flink  SQL shell
+  ```sh
+  confluent --environment env1 --compute-pool pool1 flink shell
+  ```
+
+#### Apache Flink 
+
+You can run the SQL Client in a couple of ways:
+
+* As a separate Docker container: The Flink Docker images include the SQL Client. You can run a container and connect to the JobManager. You will need to mount a volume to persist SQL scripts and other data.
+  ```sh
+  kubectl exec -it <sql-client-pod-name> -- /opt/flink/bin/sql-client.sh
+  ```
+
+  When running the SQL Client as a pod within the same Kubernetes cluster, you can use the internal DNS name of the JobManager service to connect. The format is typically <service-name>.<namespace>.svc.cluster.local
+
+* Locally: Download the Flink distribution, extract it, and run the SQL Client from your local machine.
+  ```sh
+  # port forwarding
+  kubectl port-forward svc/<jobmanager-service-name> 8081:8081
+
+  ./bin/sql-client.sh -s <jobmanager-service-name>:8081
+  ```
+
+
+### Application
 
 An **application deployment** must define the job (JobSpec) field with the `jarURI`, `parallelism`, `upgradeMode` one of (stateless/savepoint/last-state) and the desired `state` of the job (running/suspended). [See this sample app](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/basic-sample.yaml) or the [cmf_app_deployment.yaml](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale/k8s/cmf_app_deployment.yaml) in the e-com-sale demonstration.
 
@@ -453,31 +557,7 @@ COPY /path/of/my-flink-job-*.jar $FLINK_HOME/usrlib/my-flink-job.jar
     # the Kafka cluster
     # the operators
     ```
-
-### Flink SQL processing
-
-There are multiple choices to run Flink SQL, using the SQL client, or package the SQL scripts and a [java SQL runner](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-java/sql-runner) executing the SQL statements from a file, so the application deployment is Java based even if SQL scripts are used for stream processing.
-
-Flink Session Cluster is the most suitable deployment mode for the SQL Client. This is a long-running Flink cluster (JobManager and TaskManagers) that you can submit multiple jobs to. The sql client is a long-running, interactive application that submits jobs to an existing cluster.
-
-You can run the SQL Client in a couple of ways:
-
-* As a separate Docker container: The Flink Docker images include the SQL Client. You can run a container and connect to the JobManager. You will need to mount a volume to persist SQL scripts and other data.
-  ```sh
-  kubectl exec -it <sql-client-pod-name> -- /opt/flink/bin/sql-client.sh
-  ```
-
-  When running the SQL Client as a pod within the same Kubernetes cluster, you can use the internal DNS name of the JobManager service to connect. The format is typically <service-name>.<namespace>.svc.cluster.local
-
-* Locally: Download the Flink distribution, extract it, and run the SQL Client from your local machine.
-  ```sh
-  # port forwarding
-  kubectl port-forward svc/<jobmanager-service-name> 8081:8081
-
-  ./bin/sql-client.sh -s <jobmanager-service-name>:8081
-  ```
-
-## Demonstrations
+## Demonstrations in this repository
 
 * Deploy a Kafka python producer as pod to write to Confluent Platform topic, create a Flink app that deduplicate the records, 
 * A schema evolution study:

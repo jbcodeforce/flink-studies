@@ -1,3 +1,5 @@
+classloader:
+  resolve-order: parent-first
 jobmanager:
   rpc:
     address: jobmanager

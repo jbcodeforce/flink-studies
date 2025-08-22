@@ -17,7 +17,7 @@
 ################################################################################
 
 # FROM flink:scala_2.12-java17
-FROM confluentinc/cp-flink:1.19.1-cp2
+FROM confluentinc/cp-flink:1.20.2-cp1-java17-arm64
 
 RUN mkdir /opt/flink/usrlib; mkdir /opt/flink/usrlib/sql-scripts
 ADD flink-sql-runner.jar /opt/flink/usrlib/sql-runner.jar

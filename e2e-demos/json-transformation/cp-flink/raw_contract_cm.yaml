@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: raw-contract-value
+  namespace: confluent
+data:
+  schema: |
+    {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://example.com/order-schema.json",
+    "title": "Order Schema",
+    "description": "Schema for order data with equipment, itinerary, and payment information",
+    "type": "object",
+    "properties": {
+      "OrderId": {
+        "type": "integer",
+        "description": "Unique identifier for the order"
+      },
+      "Status": {
+        "type": "string",
+        "description": "Current status of the order",
+        "enum": ["Return", "Active", "Completed", "Cancelled", "Pending"]
+      },
+      "Equipment": {
+        "type": "array",
+        "description": "List of equipment associated with the order",
+        "items": {
+          "type": "object",
+          "properties": {
+            "ModelCode": {
+              "type": "string",
+              "description": "Model code of the equipment"
+            },
+            "Rate": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d{2}$",
+              "description": "Rate for the equipment (stored as string with decimal format)"
+            }
+          },
+          "required": ["ModelCode", "Rate"],
+          "additionalProperties": false
+        }
+      },
+      "TotalPaid": {
+        "type": "number",
+        "minimum": 0,
+        "description": "Total amount paid for the order"
+      },
+      "Type": {
+        "type": "string",
+        "description": "Type of order",
+        "enum": ["InTown", "OutOfTown", "OneWay"]
+      },
+      "Coverage": {
+        "oneOf": [
+          {
+            "type": "null"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "object"
+          }
+        ],
+        "description": "Coverage information (can be null or contain coverage details)"
+      },
+      "Itinerary": {
+        "type": "object",
+        "description": "Travel itinerary details",
+        "properties": {
+          "PickupDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Pickup date and time in ISO 8601 format"
+          },
+          "DropoffDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Dropoff date and time in ISO 8601 format"
+          },
+          "PickupLocation": {
+            "type": "string",
+            "description": "Pickup location identifier"
+          },
+          "DropoffLocation": {
+            "type": "string",
+            "description": "Dropoff location identifier"
+          }
+        },
+        "required": ["PickupDate", "DropoffDate", "PickupLocation", "DropoffLocation"],
+        "additionalProperties": false
+      },
+      "OrderType": {
+        "type": "string",
+        "description": "Category or type of the order",
+        "enum": ["Umove", "Rental", "Transport"]
+      },
+      "AssociatedContractId": {
+        "oneOf": [
+          {
+            "type": "null"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "description": "ID of associated contract (can be null if no contract is associated)"
+      }
+    },
+    "required": [
+      "OrderId",
+      "Status",
+      "Equipment",
+      "TotalPaid",
+      "Type",
+      "Itinerary",
+      "OrderType"
+    ],
+    "additionalProperties": false
+    }

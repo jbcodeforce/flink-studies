@@ -5,11 +5,11 @@
     * Updated 2/14/2025 - improve note, on k8s deployment and get simple demo reference, review done. 
     * 03/30/25: converged the notes and update referenced links
 
-This guide covers four different approaches to deploy and run Apache Flink:
+There are four different approaches to deploy and run Apache Flink / Confluent Flink:
 
 1. Local Binary Installation
 2. Docker-based Deployment
-3. Kubernetes Deployment: Colima or minicube
+3. Kubernetes Deployment: Colima, AKS, EKS, GKS or minicube
 4. Confluent Cloud Managed Service
 
 ## Prerequisites
@@ -23,7 +23,7 @@ Before getting started, ensure you have:
 5. Git (to clone this repository)
 6. [Confluent cli installed](https://docs.confluent.io/confluent-cli/current/install.html)
 
-## 1. Local Binary Installation
+## 1. Open Source Apache Flink Local Binary Installation
 
 This approach is ideal for development and testing on a single machine.
 
@@ -62,7 +62,7 @@ This approach is ideal for development and testing on a single machine.
 
 1. Access the Web UI at [http://localhost:8081](http://localhost:8081)
 
-1. Submit a job
+1. Submit a job (Java application)
    ```sh
    ./bin/flink run ./examples/streaming/TopSpeedWindowing.jar
    ./bin/flink list
@@ -76,16 +76,15 @@ This approach is ideal for development and testing on a single machine.
    curl https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/3.4.0-1.20/flink-sql-connector-kafka-3.4.0-1.20.jar --output flink-sql-connector-kafka-3.4.0-1.20.jar
    ```
 
-1. Stop th cluster:
+1. Stop the cluster:
     ```sh
     $FLINK_HOME/bin/stop-cluster.sh
     ```
+
+
 ### Running a simple SQL application
 
-1. Submit a sample job:
-   ```sh
-   $FLINK_HOME/bin/flink run examples/streaming/WordCount.jar
-   ```
+
 1. Start Kafka cluster and create topics
    ```sh
    $KAFKA_HOME/bin/kafka-server-start.sh $KAFKA_HOME/config/kraft/server.properties
@@ -159,7 +158,7 @@ This approach is ideal for development and testing on a single machine.
    ```
    
 See [product documentation for different examples](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/try-flink/datastream/). To do some 
-Python table API demonstrations [see this chapter](./table-api.md/#python).
+Python Table API demonstrations [see this chapter](./table-api.md/#python).
 
 ### Troubleshooting
 
@@ -178,7 +177,7 @@ This approach provides containerized deployment using Docker Compose.
 
 ### Quick Start
 
-1. Build custom Flink image (if needed):
+1. Build a custom Apache Flink image with your own connectors. Verify current [docker image tag](https://hub.docker.com/_/flink/tags) then use [the Dockerfile](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/custom-flink-image/Dockerfile):
    ```sh
    cd deployment/custom-flink-image
    docker build -t jbcodeforce/myflink .
@@ -206,7 +205,7 @@ To run Flink with Kafka:
 During development, we can use docker-compose to start a simple `Flink session` cluster or a standalone job manager to execute one unique job, which has 
 the application jar mounted inside the docker image. We can use this same environment to do SQL based Flink apps. 
 
-As Task manager will execute the job, it is important that the container running the flink code has access to jars needed to connect to external sources 
+As Task manager will execute the job, it is important that the container running the flink code has access to the jars needed to connect to external sources 
 like Kafka or other tools like FlinkFaker. Therefore, in `deployment/custom-flink-image`, there is a [Dockerfile](https://github.com/jbcodeforce/
 flink-studies/blob/master/deployment/custom-flink-image/Dockerfile) to get the needed jars to build a custom Flink image that may be used for Taskmanager 
 and SQL client. Always update the jar version with new [Flink version](https://hub.docker.com/_/flink).
@@ -220,6 +219,8 @@ and SQL client. Always update the jar version with new [Flink version](https://h
 
 This approach provides scalable, production-ready deployment using Kubernetes. See the K8S deployment [deeper dive chapter](./k8s-deploy.md) and the [lab readme](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s) for all command details.
 
+The following are summary of basic steps, but Makefiles are available in the deployment/k8s to simplify deployment.
+
 * Deploy a State Machine example application to validate the deployment.
    ```sh
    kubectl create -f https://raw.githubusercontent.com/apache/flink-kubernetes-operator/release-1.11/examples/basic.yaml -n flink
@@ -228,16 +229,20 @@ This approach provides scalable, production-ready deployment using Kubernetes. S
    ```sh
    kubectl port-forward svc/basic-example-rest 8081 -n flink
    ```
+* Using the SQL client
+
 * Undeploy
    ```sh
    kubectl delete -f https://raw.githubusercontent.com/apache/flink-kubernetes-operator/release-1.11/examples/basic.yaml -n flink
    ```
 
-### Confluent Platform on Kubernetes
+### Confluent Platform Manager for Flink on Kubernetes
+
+See [Kubernetes deployment chapter](./k8s-deploy.md) for detailed instructions. And [Confluent operator documentation](https://docs.confluent.io/operator/current/co-prepare.html), [submit Flink SQL Statement with Confluent Manager for Apache Flink](https://docs.confluent.io/platform/current/flink/get-started/get-started-statement.html)
 
 For Confluent Platform deployment:
 
-1. Install Confluent Flink Operator:
+1. Install Confluent Flink Operator (see [CMF product get started](https://docs.confluent.io/platform/current/flink/get-started/get-started-application.html#cpf-get-started)):
    ```sh
    make deploy_cp_flink_operator
    ```
@@ -246,10 +251,12 @@ For Confluent Platform deployment:
    ```sh
    make deploy_cp_cluster
    ```
+3. Deploy Confluent Manager for Flink (cmf)
 
 3. Deploy Flink applications
 
-See [Kubernetes deployment chapter](./k8s-deploy.md) for detailed instructions. And [Confluent operator documentation.](https://docs.confluent.io/operator/current/co-prepare.html)
+4. Work with SQL
+
 
 ## 4. Confluent Cloud Deployment
 
@@ -302,9 +309,6 @@ See the [Shift Left project](https://jbcodeforce.github.io/shift_left_utils/) to
 | Kubernetes | Production | Scalable, Production-ready | Complex setup |
 | Confluent Cloud | Production | Fully managed, No ops | Vendor Control Plane |
 
-## Application deployment
-
-For production it is recommended to deploy in application mode, so packaging SQL, python or java application in a jar. 
 
 ## Additional Resources
 

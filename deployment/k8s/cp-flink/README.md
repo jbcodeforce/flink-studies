@@ -48,7 +48,7 @@ This deployment is using nodePort so the following mapping applies:
         ```
 
 
-## Deploy Confluent Platform and Confluent Platform for Flink
+## Deploy Confluent Platform and Confluent Manager for Flink
 
 [Confluent Plafform product documentation](https://docs.confluent.io/operator/current/co-cfk-overview.html).
 
@@ -68,7 +68,9 @@ This deployment is using nodePort so the following mapping applies:
 
     ```sh
     # in one Terminal console
-    kubectl port-forward svc/cmf-service 8080:80 -n flink
+    make port_forward_cmf
+    # or
+    kubectl port-forward svc/cmf-service 8084:80 -n flink
     # in a second terminal
     make create_flink_env
     ```
@@ -95,7 +97,10 @@ This deployment is using nodePort so the following mapping applies:
     confluent flink application delete basic-example --environment env1  --url http://localhost:8084
     ```
 
-1. Work with SQL client
+1. Work with SQL client usinf confluent cli:
+    ```sh
+    confluent --environment env1 --compute-pool pool1 flink shell
+    ```
 
 ## Monitoring with Prometheus and Grafana
 
