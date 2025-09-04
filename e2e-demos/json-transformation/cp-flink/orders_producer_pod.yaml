@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: orders-producer
+  namespace: confluent
+  labels:
+    app: orders-producer
+    component: producer
+    record-type: order
+spec:
+  restartPolicy: Never
+  containers:
+  - name: producer
+    image: jbcodeforce/orders-producer:latest
+    imagePullPolicy: IfNotPresent
+    command: ["python", "kafka_json_producer.py"]
+    args:
+      - "--record-type"
+      - "order"
+      - "--topic" 
+      - "raw-orders"
+      - "--count"
+      - "10"
+    envFrom:
+    - configMapRef:
+        name: kafka-client-config
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+    livenessProbe:
+      exec:
+        command:
+        - python
+        - -c
+        - "import confluent_kafka, pydantic; print('Dependencies OK')"
+      initialDelaySeconds: 10
+      periodSeconds: 60 

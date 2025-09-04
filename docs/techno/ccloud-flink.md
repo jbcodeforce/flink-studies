@@ -301,6 +301,48 @@ Several factors significantly affect statement throughput:
 
 As a base for discussion, 10k record/s per CPU is reachable for simple Flink stateless processing.
 
+## Disaster Recovery
+
+* CC Flink is a regional, multi-AZ service.
+* In case of Job failure, failed jobs auto-restart using the last known state, last checkpoint.
+* Checkpoint is used for in-region fault tolerance. Checkpoints capture the state of a Flink job at regular intervals, including Kafka consumer offsets, operator states, and internal timers. In CC checkpoints are done every minute
+* In case of Cloud Provider failure, there is no protection, for a region lost. To address that, architects need to set up cross region DR
+* All Flink DR options first require a DR strategy for Kafka & Schema Registry (SR). It needs to have an exact replication of the data (including offsets) and schemas.
+* On CC, [cluster link](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/index.html) and [schema link](https://docs.confluent.io/cloud/current/sr/schema-linking.html) supports data and schema replication.
+
+As any flink solution, the following need to be deeply assessed:
+
+* Can Flink's state be recreated?  This is driven by the underlying Kafka Clusters RPO and their retention.
+* How long is tolerable to recreate that state? This is driven by the overall RTO. 
+* What is the semantic expected by consumer apps? This is driven by consuming apps tolerances. Semantics options are: exactly-once, at-least once (duplicate possible), at-most once (data loss and duplicate possible).
+* Is the Flink job processing deterministic? will a Flink job always output the same results?
+
+### Active / Active
+
+The approach is to have two identical Flink jobs or pipelines of jobs run in parallel continuously in both regions. They process the same data, with some replication delay in the secondary region.
+
+This is recommended for low RTO requirements, with Flink jobs with large states, or solutions requiring Exactly-Once semantics, or when it is critical that the 2 regions have exactly the same data results.
+
+To consider:
+
+* Setup replication only to the input topics. 
+* Mirror configuration like service accounts, RBACs, private networking...
+* Ensure Flink jobs have deterministic query results.
+* Jobs should support out-of-order arrival between input tables.
+
+### Active / Passive
+
+Flink jobs are started, in second region, only on failover.
+
+This approach is possible for stateless jobs, or when states can be created quickly: Flink Jobs Window Size and time to recompute job state < RTO. Solutions based on at-least once, or at-most-once. Even for stateless jobs, Exactly-Once semantics is not supported.
+
+To consider:
+
+* More complicated to orchestrate as the process needs to recreate tables and jobs during failover
+* Topic retention > Time window needed to recreate state (dictated by window size or TTL). Without enough retention, results will be wrong, or only subset of queries would work.
+* Any time window and aggregation needs to use event time and not processing time.
+* Setup replication only to the input topics. 
+
 ## Deeper dive
 
 * [Confluent Flink workshop](https://github.com/confluentinc/commercial-workshops/tree/master/series-getting-started-with-cc/workshop-flink) to learn how to build stream processing applications using Apache Flink® on Confluent Cloud.

@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Kafka Producer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🚀 Order or Jobs Producer Control Panel</h1>
+    <p class="page-subtitle">Create and manage Kafka record production jobs</p>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start;">
+    <!-- Producer Form -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">📝 New Request for Orders or Jobs</h2>
+        </div>
+        <div class="card-body">
+            <form id="producerForm">
+                <div class="form-group">
+                    <label class="form-label" for="messageType">Message Type</label>
+                    <select class="form-control" id="messageType" name="messageType" required>
+                        <option value="">Select message type...</option>
+                        <option value="order">📦 Order Records</option>
+                        <option value="job">💼 Job Records</option>
+                        <option value="custom">🛠️ Custom JSON</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="topic">Kafka Topic</label>
+                    <input class="form-control" type="text" id="topic" name="topic" placeholder="e.g., raw-orders, raw-jobs" required>
+                </div>
+                
+                <div class="form-group" id="countGroup">
+                    <label class="form-label" for="count">Number of Messages</label>
+                    <input class="form-control" type="number" id="count" name="count" min="1" max="1000" value="5" required>
+                </div>
+                
+                <div class="custom-json-section" id="customJsonSection">
+                    <div class="form-group">
+                        <label class="form-label" for="customJson">Custom JSON Data</label>
+                        <textarea class="form-control" id="customJson" name="customJson" style="height: 120px; font-family: Monaco, Consolas, monospace;" placeholder='{
+  "id": "example-123",
+  "type": "custom_event",
+  "timestamp": "2024-01-20T10:00:00Z",
+  "data": {
+    "key": "value"
+  }
+}'></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="messageKey">Message Key (optional)</label>
+                        <input class="form-control" type="text" id="messageKey" name="messageKey" placeholder="Optional message key">
+                    </div>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        <span id="submitIcon">🚀</span>
+                        <span id="submitText">Produce Records</span>
+                    </button>
+                    <a href="/job-history" class="btn btn-secondary">
+                        📊 History
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Status Section -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">📊 Job Status</h2>
+        </div>
+        <div class="card-body">
+            <div class="loading" id="loadingSection" style="display: none;">
+                <div class="spinner"></div>
+                <p>Processing your request...</p>
+            </div>
+            
+            <div id="successSection" style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; border: 1px solid #22c55e;">
+                <strong style="color: #22c55e;">✅ Success!</strong>
+                <p id="successMessage"></p>
+                <p><strong>Job ID:</strong> <span id="jobId"></span></p>
+            </div>
+            
+            <div id="errorSection" style="display: none; background: var(--bg-secondary); padding: 1rem; border-radius: 8px; border: 1px solid #dc2626;">
+                <strong style="color: #dc2626;">❌ Error!</strong>
+                <p id="errorMessage"></p>
+            </div>
+            
+            <div id="jobStatusSection" style="margin-top: 1rem;">
+                <p class="text-muted">Recent job status will appear here after submission.</p>
+                <div id="jobStatusContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div style="margin-top: 2rem;">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">🔗 Quick Links</h2>
+        </div>
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <a href="/docs" class="btn btn-secondary" target="_blank" style="text-decoration: none;">
+                    📚 Swagger UI
+                </a>
+                <a href="/redoc" class="btn btn-secondary" target="_blank" style="text-decoration: none;">
+                    📖 ReDoc
+                </a>
+                <a href="/health" class="btn btn-secondary" target="_blank" style="text-decoration: none;">
+                    🔍 Health Check
+                </a>
+                <a href="/jobs" class="btn btn-secondary" target="_blank" style="text-decoration: none;">
+                    🔧 Jobs API
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-json-section {
+        display: none;
+        margin-top: 1rem;
+    }
+    
+    .custom-json-section.show {
+        display: block;
+    }
+</style>
+
+    <script>
+        const form = document.getElementById('producerForm');
+        const messageTypeSelect = document.getElementById('messageType');
+        const customJsonSection = document.getElementById('customJsonSection');
+        const countGroup = document.getElementById('countGroup');
+        const loadingSection = document.getElementById('loadingSection');
+        const successSection = document.getElementById('successSection');
+        const errorSection = document.getElementById('errorSection');
+        const jobStatusContent = document.getElementById('jobStatusContent');
+        
+        // Toggle custom JSON section based on message type
+        messageTypeSelect.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                customJsonSection.classList.add('show');
+                countGroup.style.display = 'none';
+            } else {
+                customJsonSection.classList.remove('show');
+                countGroup.style.display = 'block';
+            }
+            
+            // Update topic suggestions
+            const topicInput = document.getElementById('topic');
+            if (this.value === 'order') {
+                topicInput.placeholder = 'e.g., raw-orders';
+                if (!topicInput.value) topicInput.value = 'raw-orders';
+            } else if (this.value === 'job') {
+                topicInput.placeholder = 'e.g., raw-jobs';
+                if (!topicInput.value) topicInput.value = 'raw-jobs';
+            } else if (this.value === 'custom') {
+                topicInput.placeholder = 'e.g., events, custom-topic';
+                topicInput.value = '';
+            }
+        });
+        
+        // Form submission
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Reset UI state
+            hideMessages();
+            showLoading();
+            
+            try {
+                const formData = new FormData(form);
+                const messageType = formData.get('messageType');
+                const topic = formData.get('topic');
+                
+                let response;
+                
+                if (messageType === 'custom') {
+                    // Handle custom JSON
+                    const customJsonText = formData.get('customJson');
+                    const messageKey = formData.get('messageKey');
+                    
+                    let customData;
+                    try {
+                        customData = JSON.parse(customJsonText);
+                    } catch (e) {
+                        throw new Error('Invalid JSON format in custom data');
+                    }
+                    
+                    const payload = {
+                        topic: topic,
+                        data: customData
+                    };
+                    
+                    if (messageKey) {
+                        payload.key = messageKey;
+                    }
+                    
+                    response = await fetch('/produce/custom', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                } else {
+                    // Handle predefined record types
+                    const count = parseInt(formData.get('count'));
+                    
+                    const payload = {
+                        type: messageType,
+                        topic: topic,
+                        count: count
+                    };
+                    
+                    response = await fetch('/produce', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                }
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                hideLoading();
+                showSuccess(result);
+                
+                // Start polling for job status
+                startJobStatusPolling(result.job_id);
+                
+            } catch (error) {
+                hideLoading();
+                showError(error.message);
+            }
+        });
+        
+        function showLoading() {
+            loadingSection.style.display = 'block';
+            document.getElementById('submitIcon').textContent = '⏳';
+            document.getElementById('submitText').textContent = 'Processing...';
+            form.querySelector('button[type="submit"]').disabled = true;
+        }
+        
+        function hideLoading() {
+            loadingSection.style.display = 'none';
+            document.getElementById('submitIcon').textContent = '🚀';
+            document.getElementById('submitText').textContent = 'Produce Records';
+            form.querySelector('button[type="submit"]').disabled = false;
+        }
+        
+        function showSuccess(result) {
+            document.getElementById('successMessage').textContent = result.message;
+            document.getElementById('jobId').textContent = result.job_id;
+            successSection.style.display = 'block';
+        }
+        
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            errorSection.style.display = 'block';
+        }
+        
+        function hideMessages() {
+            successSection.style.display = 'none';
+            errorSection.style.display = 'none';
+        }
+        
+        async function startJobStatusPolling(jobId) {
+            const maxPolls = 30; // 30 * 2 seconds = 1 minute max
+            let pollCount = 0;
+            
+            const poll = async () => {
+                try {
+                    const response = await fetch(`/jobs/${jobId}`);
+                    if (response.ok) {
+                        const job = await response.json();
+                        updateJobStatus(job);
+                        
+                        if (job.status === 'completed' || job.status === 'failed' || pollCount >= maxPolls) {
+                            return; // Stop polling
+                        }
+                        
+                        pollCount++;
+                        setTimeout(poll, 2000); // Poll every 2 seconds
+                    }
+                } catch (error) {
+                    console.error('Error polling job status:', error);
+                }
+            };
+            
+            poll();
+        }
+        
+        function updateJobStatus(job) {
+            const statusEmoji = {
+                'queued': '📝',
+                'running': '⏳',
+                'completed': '✅',
+                'failed': '❌'
+            };
+            
+            const statusClass = job.status === 'completed' ? 'status-success' : 
+                               job.status === 'running' ? 'status-warning' : 
+                               job.status === 'failed' ? 'status-error' : 'status-info';
+            
+            jobStatusContent.innerHTML = `
+                <div style="padding: 1rem; border-radius: 8px; background: var(--bg-secondary); margin-top: 1rem;">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="status-badge ${statusClass}">
+                            ${statusEmoji[job.status] || '❓'} ${job.status.toUpperCase()}
+                        </span>
+                    </div>
+                    <p><strong>Message:</strong> ${job.message}</p>
+                    ${job.records_produced > 0 ? `<p><strong>Records Produced:</strong> ${job.records_produced}</p>` : ''}
+                    <p><strong>Started:</strong> ${new Date(job.started_at * 1000).toLocaleString()}</p>
+                    ${job.completed_at ? `<p><strong>Completed:</strong> ${new Date(job.completed_at * 1000).toLocaleString()}</p>` : ''}
+                </div>
+            `;
+        }
+        
+        // Set default topic on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('topic').value = 'raw-orders';
+        });
+    </script>
+{% endblock %}

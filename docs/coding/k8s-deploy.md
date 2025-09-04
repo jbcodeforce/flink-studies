@@ -400,6 +400,8 @@ Flink Session Cluster is the most suitable deployment mode for the SQL Client. T
 
 In **Confluent Manager for Flink** the method is to create an environment and compute pool and run the SQL statements in a pool.
 
+* Be sure that the port-forward to the svc/cmf-service is active.
+
 * Define an environment: Environment is used for isolation and share configuration between Flink applications. It can include settings of a common observability configuration, or checkpoint storage destination for all Flink clusters in an environment.
 
   ```sh
@@ -432,7 +434,7 @@ In **Confluent Manager for Flink** the method is to create an environment and co
 
 * Use the confluent cli to start a Flink  SQL shell
   ```sh
-  confluent --environment env1 --compute-pool pool1 flink shell
+  confluent --environment env1 --compute-pool pool1 flink shell --url http://localhost:8084
   ```
 
 #### Apache Flink 

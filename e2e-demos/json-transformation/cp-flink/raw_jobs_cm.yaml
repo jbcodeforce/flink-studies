@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: raw-jobs-value
+  namespace: confluent
+data:
+  schema: |
+    {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://example.com/job-schema.json",
+    "title": "Job Schema",
+    "description": "Schema for job data",
+    "type": "object",
+    "properties": {
+      "job_id": {
+        "type": "integer",
+        "description": "Unique identifier for the job"
+      },
+      "job_type": {
+        "type": "string",
+        "description": "Current type of the job",
+        "enum": ["LoadUnload", "LoadOnly", "UnloadOnly"]
+      },
+     "job_status": {
+        "type": "string",
+        "description": "Current status of the job",
+        "enum": ["Completed", "New", "Cancelled"]
+      },
+      "rate_service_provider": {
+        "type": "string",
+        "description": "rate_service_provider for the job"
+      },
+      "total_paid": {
+        "type": "number",
+        "minimum": 0,
+        "description": "Total amount paid for the order"
+      },
+      "job_date_start": {
+        "type": "string",
+        "description": "Start date of the job"
+      },
+      "job_completed_date": {
+        "type": "string",
+        "description": "Job completion date"
+      },
+      "job_entered_date": {
+        "type": "string",
+        "description": "Job entered date"
+      },
+       "job_last_modified_date": {
+        "type": "string",
+        "description": "Job last modification date"
+      },
+      "service_provider_name": {
+        "type": "string",
+        "description": "Job last modification date"
+      },
+    },
+    "required": [
+      "job_id",
+      "job_type",
+      "job_status",
+      "service_provider_name"
+    ],
+    "additionalProperties": false
+    }

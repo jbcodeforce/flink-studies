@@ -1,0 +1,470 @@
+{% extends "base.html" %}
+
+{% block title %}Job History - Kafka Producer{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="page-title">📊 Job History</h1>
+        <p class="page-subtitle">Monitor and manage production job status</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button onclick="refreshJobs()" class="btn btn-primary">
+            🔄 Refresh
+        </button>
+        <button onclick="clearCompleted()" class="btn btn-secondary">
+            🗑️ Clear Completed
+        </button>
+    </div>
+</div>
+
+<!-- Filters Card -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h2 class="card-title">🔍 Filters</h2>
+    </div>
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+            <div class="form-group">
+                <label class="form-label" for="statusFilter">Status</label>
+                <select class="form-control" id="statusFilter" onchange="filterJobs()">
+                    <option value="">All</option>
+                    <option value="running">Running</option>
+                    <option value="completed">Completed</option>
+                    <option value="failed">Failed</option>
+                    <option value="queued">Queued</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="typeFilter">Type</label>
+                <select class="form-control" id="typeFilter" onchange="filterJobs()">
+                    <option value="">All Types</option>
+                    <option value="order">Orders</option>
+                    <option value="job">Jobs</option>
+                    <option value="custom">Custom</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="searchFilter">Search</label>
+                <input class="form-control" type="text" id="searchFilter" placeholder="Job ID or topic..." onkeyup="filterJobs()">
+            </div>
+            
+            <div class="d-flex align-items-center gap-2 text-muted">
+                <div id="refreshIndicator" style="display: none; width: 12px; height: 12px; border: 2px solid var(--border-color); border-top: 2px solid var(--primary-blue); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <span style="font-size: 0.9rem;">Auto-refresh every 5 seconds</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="card">
+        <div class="card-body text-center">
+            <h3 id="totalJobs" style="font-size: 2rem; color: var(--primary-blue); margin-bottom: 0.5rem;">-</h3>
+            <p class="text-muted">Total Jobs</p>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body text-center">
+            <h3 id="runningJobs" style="font-size: 2rem; color: #f59e0b; margin-bottom: 0.5rem;">-</h3>
+            <p class="text-muted">Running</p>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body text-center">
+            <h3 id="completedJobs" style="font-size: 2rem; color: #16a34a; margin-bottom: 0.5rem;">-</h3>
+            <p class="text-muted">Completed</p>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body text-center">
+            <h3 id="failedJobs" style="font-size: 2rem; color: #dc2626; margin-bottom: 0.5rem;">-</h3>
+            <p class="text-muted">Failed</p>
+        </div>
+    </div>
+</div>
+
+<!-- Loading State -->
+<div class="loading" id="loadingSection">
+    <div class="spinner"></div>
+    <p>Loading job history...</p>
+</div>
+
+<!-- Jobs Table -->
+<div class="card" id="jobsTableContainer" style="display: none;">
+    <div class="card-header">
+        <h2 class="card-title">📋 Job List</h2>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: var(--bg-secondary);">
+                        <th style="padding: 1rem; text-align: left; font-weight: 600; border-bottom: 1px solid var(--border-color);">Job ID</th>
+                        <th style="padding: 1rem; text-align: left; font-weight: 600; border-bottom: 1px solid var(--border-color);">Status</th>
+                        <th style="padding: 1rem; text-align: left; font-weight: 600; border-bottom: 1px solid var(--border-color);">Type</th>
+                        <th style="padding: 1rem; text-align: left; font-weight: 600; border-bottom: 1px solid var(--border-color);">Topic</th>
+                        <th style="padding: 1rem; text-align: left; font-weight: 600; border-bottom: 1px solid var(--border-color);">Records</th>
+                        <th style="padding: 1rem; text-align: left; font-weight: 600; border-bottom: 1px solid var(--border-color);">Started</th>
+                        <th style="padding: 1rem; text-align: left; font-weight: 600; border-bottom: 1px solid var(--border-color);">Duration</th>
+                        <th style="padding: 1rem; text-align: left; font-weight: 600; border-bottom: 1px solid var(--border-color);">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="jobsTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Empty State -->
+<div class="card text-center" id="emptyState" style="display: none;">
+    <div class="card-body" style="padding: 3rem;">
+        <h3 style="color: var(--text-secondary); margin-bottom: 1rem;">📝 No Jobs Found</h3>
+        <p class="text-muted">No jobs match your current filters. Try adjusting the filter criteria or <a href="/">create a new job</a>.</p>
+    </div>
+</div>
+
+<style>
+    .job-details {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+    }
+    
+    .tooltip {
+        position: relative;
+        cursor: help;
+    }
+    
+    .tooltip:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        z-index: 1000;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+    }
+    
+    .btn-small {
+        padding: 0.25rem 0.75rem;
+        font-size: 0.8rem;
+        border-radius: 4px;
+    }
+    
+    .btn-danger {
+        background: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+    }
+    
+    .btn-danger:hover {
+        background: #fecaca;
+    }
+    
+    [data-theme="dark"] .btn-danger {
+        background: rgba(220, 38, 38, 0.2);
+        color: #f87171;
+        border-color: rgba(220, 38, 38, 0.3);
+    }
+    
+    [data-theme="dark"] .btn-danger:hover {
+        background: rgba(220, 38, 38, 0.3);
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 4px;
+        background: var(--border-color);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+        border-radius: 2px;
+        transition: width 0.3s ease;
+    }
+    
+    tr:hover {
+        background: var(--bg-secondary) !important;
+    }
+    
+    td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: top;
+    }
+</style>
+
+    <script>
+        let allJobs = [];
+        let filteredJobs = [];
+        let autoRefreshInterval;
+        
+        // Status emoji mapping
+        const statusEmojis = {
+            'completed': '✅',
+            'running': '⏳',
+            'failed': '❌',
+            'queued': '📝'
+        };
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadJobs();
+            startAutoRefresh();
+        });
+        
+        async function loadJobs() {
+            showLoading();
+            
+            try {
+                const response = await fetch('/jobs');
+                if (response.ok) {
+                    allJobs = await response.json();
+                    filterJobs();
+                    updateStats();
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Error loading jobs:', error);
+                showError('Failed to load job history');
+                // Show empty state when there's an error
+                document.getElementById('jobsTableContainer').style.display = 'none';
+                document.getElementById('emptyState').style.display = 'block';
+            } finally {
+                // Always hide loading regardless of success or error
+                hideLoading();
+            }
+        }
+        
+        function filterJobs() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const typeFilter = document.getElementById('typeFilter').value;
+            const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+            
+            filteredJobs = allJobs.filter(job => {
+                const matchesStatus = !statusFilter || job.status === statusFilter;
+                const matchesType = !typeFilter || (job.request_details.type && job.request_details.type === typeFilter);
+                const matchesSearch = !searchFilter || 
+                    job.job_id.toLowerCase().includes(searchFilter) ||
+                    (job.request_details.topic && job.request_details.topic.toLowerCase().includes(searchFilter));
+                
+                return matchesStatus && matchesType && matchesSearch;
+            });
+            
+            displayJobs();
+        }
+        
+        function displayJobs() {
+            const tbody = document.getElementById('jobsTableBody');
+            const tableContainer = document.getElementById('jobsTableContainer');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (filteredJobs.length === 0) {
+                tableContainer.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            tableContainer.style.display = 'block';
+            emptyState.style.display = 'none';
+            
+            tbody.innerHTML = filteredJobs.map(job => {
+                const statusClass = job.status === 'completed' ? 'status-success' : 
+                                   job.status === 'running' ? 'status-warning' : 
+                                   job.status === 'failed' ? 'status-error' : 'status-info';
+                const statusEmoji = statusEmojis[job.status] || '❓';
+                const startTime = new Date(job.started_at * 1000);
+                const duration = job.completed_at ? 
+                    formatDuration((job.completed_at - job.started_at) * 1000) : 
+                    (job.status === 'running' ? formatDuration((Date.now() / 1000 - job.started_at) * 1000) : '-');
+                
+                const recordCount = job.records_produced || (job.request_details.count || 1);
+                const jobType = job.request_details.type || 'custom';
+                const topic = job.request_details.topic || '-';
+                
+                return `
+                    <tr>
+                        <td>
+                            <div class="tooltip" data-tooltip="${job.job_id}">
+                                <strong>${job.job_id.substring(0, 16)}...</strong>
+                            </div>
+                            <div class="job-details">${job.message}</div>
+                        </td>
+                        <td>
+                            <span class="status-badge ${statusClass}">
+                                ${statusEmoji} ${job.status.toUpperCase()}
+                            </span>
+                            ${job.status === 'running' ? '<div class="progress-bar"><div class="progress-fill" style="width: 60%;"></div></div>' : ''}
+                        </td>
+                        <td>
+                            ${jobType === 'order' ? '📦' : jobType === 'job' ? '💼' : '🛠️'} 
+                            ${jobType.charAt(0).toUpperCase() + jobType.slice(1)}
+                        </td>
+                        <td><code>${topic}</code></td>
+                        <td>${recordCount}</td>
+                        <td class="tooltip" data-tooltip="${startTime.toLocaleString()}">
+                            ${startTime.toLocaleTimeString()}
+                        </td>
+                        <td>${duration}</td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                ${job.status !== 'running' ? `
+                                    <button onclick="deleteJob('${job.job_id}')" class="btn btn-danger btn-small">
+                                        🗑️
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function updateStats() {
+            const stats = {
+                total: allJobs.length,
+                running: allJobs.filter(j => j.status === 'running').length,
+                completed: allJobs.filter(j => j.status === 'completed').length,
+                failed: allJobs.filter(j => j.status === 'failed').length
+            };
+            
+            document.getElementById('totalJobs').textContent = stats.total;
+            document.getElementById('runningJobs').textContent = stats.running;
+            document.getElementById('completedJobs').textContent = stats.completed;
+            document.getElementById('failedJobs').textContent = stats.failed;
+        }
+        
+        function formatDuration(ms) {
+            const seconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes % 60}m`;
+            } else if (minutes > 0) {
+                return `${minutes}m ${seconds % 60}s`;
+            } else {
+                return `${seconds}s`;
+            }
+        }
+        
+        function showLoading() {
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('jobsTableContainer').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'none';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingSection').style.display = 'none';
+        }
+        
+        function showError(message) {
+            // Don't hide loading here - let the finally block handle it
+            console.error(message);
+            // Could add visual error display here if needed
+        }
+        
+        async function refreshJobs() {
+            showRefreshIndicator();
+            try {
+                await loadJobs();
+            } catch (error) {
+                console.error('Error refreshing jobs:', error);
+            } finally {
+                hideRefreshIndicator();
+            }
+        }
+        
+        function showRefreshIndicator() {
+            document.getElementById('refreshIndicator').style.display = 'block';
+        }
+        
+        function hideRefreshIndicator() {
+            document.getElementById('refreshIndicator').style.display = 'none';
+        }
+        
+        function startAutoRefresh() {
+            autoRefreshInterval = setInterval(async () => {
+                showRefreshIndicator();
+                try {
+                    await loadJobs();
+                } catch (error) {
+                    console.error('Error in auto-refresh:', error);
+                } finally {
+                    hideRefreshIndicator();
+                }
+            }, 5000); // Refresh every 5 seconds
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+        }
+        
+        async function deleteJob(jobId) {
+            if (!confirm(`Are you sure you want to delete job ${jobId}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/jobs/${jobId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    // Remove from local array
+                    allJobs = allJobs.filter(job => job.job_id !== jobId);
+                    filterJobs();
+                    updateStats();
+                } else {
+                    alert('Failed to delete job');
+                }
+            } catch (error) {
+                console.error('Error deleting job:', error);
+                alert('Error deleting job');
+            }
+        }
+        
+        async function clearCompleted() {
+            if (!confirm('Are you sure you want to clear all completed jobs?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/jobs/cleanup', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    refreshJobs();
+                } else {
+                    alert('Failed to clear completed jobs');
+                }
+            } catch (error) {
+                console.error('Error clearing jobs:', error);
+                alert('Error clearing completed jobs');
+            }
+        }
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', stopAutoRefresh);
+    </script>
+{% endblock %}

@@ -1,0 +1,13 @@
+apiVersion: platform.confluent.io/v1beta1
+kind: Schema
+metadata:
+  name: raw-jobs-value
+  namespace: confluent
+spec:
+  schemaRegistryClusterRef:
+    name: schemaregistry
+    namespace: confluent
+  data:
+    configRef: raw-jobs-value
+    format: json 
+  compatibilityLevel: BACKWARD

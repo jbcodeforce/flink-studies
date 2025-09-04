@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: raw-contract-value
+  name: raw-orders-value
   namespace: confluent
 data:
   schema: |

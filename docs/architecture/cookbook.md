@@ -89,6 +89,11 @@ SELECT ROW_NUMBER() OVER (ORDER BY $rowtime ASC) AS number, *   FROM <table_name
 
 * When Data are in topic but not seen by flink `select * from <table_name>` statement, it may be due to idle partitions and the way watermarks advance and are propagated. Flink automatically marks a Kafka partition as idle if no events come within `sql.tables.scan.idle-timeout` duration. When a partition is marked as idle, it does not contribute to the watermark calculation until a new event arrives. Try to set the idle timeout for table scans to ensure that Flink considers partitions idle after a certain period of inactivity. Try to create a table with a watermark definition to handle idle partitions and ensure that watermarks advance correctly.
 
+## High Availability and Disaster Recovery
+
+In Flink high availability goal is to keep the application running and being able to process data. The focus is more on streaming applications then batch. JobManager is a single point of failure but can be configured with standby JobManagers. The coordination can be done with Zookeeper for self managed deployment or via Kubernetes operator.
+
+* For [Confluent Cloud for Flink see the DR section](http://localhost:8000/flink-studies/techno/ccloud-flink/#disaster-recovery).
 
 ## Security
 

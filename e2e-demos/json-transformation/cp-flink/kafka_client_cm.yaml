@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-client-config
+  namespace: confluent
+  labels:
+    app: kafka-client
+    component: config
+data:
+  KAFKA_BOOTSTRAP_SERVERS: kafka.confluent.svc.cluster.local:9071
+  KAFKA_SECURITY_PROTOCOL: PLAINTEXT
+  KAFKA_SASL_MECHANISM: PLAIN 

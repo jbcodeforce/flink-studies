@@ -4,37 +4,7 @@ This document explains how to map the provided JSON document structure to a Flin
 
 ## JSON Document Structure
 
-The source JSON has this nested structure:
-```json
-{
-    "OrderDetails": {
-      "EquipmentRentalDetails": [
-        {
-          "OrderId": 396404719,
-          "Status": "Return",
-          "Equipment": [
-            {
-              "ModelCode": "HO",
-              "Rate": "34.95"
-            }
-          ],
-          "TotalPaid": 37.4,
-          "Type": "InTown",
-          "Coverage": null,
-          "Itinerary": {
-            "PickupDate": "2020-09-21T18:14:08.000Z",
-            "DropoffDate": "2020-09-21T20:47:42.000Z",
-            "PickupLocation": "41260",
-            "DropoffLocation": "41260"
-          },
-          "OrderType": "Umove",
-          "AssociatedContractId": null
-        }
-      ]
-    },
-    "MovingHelpDetails": null
-}
-```
+
 
 ## Flink Table Schema
 
@@ -118,17 +88,6 @@ CROSS JOIN UNNEST(rental_detail.Equipment) AS e(equipment_item);
 - `flink_orderdetails_flattened.sql` - Flattened processing approach with INSERT statement
 - `OrderDetails.sql` - Original table definition
 - `order_details.json` - Source JSON document structure
-
-## Usage with Shift Left CLI
-
-```bash
-# Initialize table structure
-shift_left table init order_details /path/to/pipeline
-
-# Build and deploy pipeline
-shift_left table build-inventory /path/to/pipeline
-shift_left pipeline deploy /path/to/inventory.json --table-name order_details
-```
 
 ## Notes
 
