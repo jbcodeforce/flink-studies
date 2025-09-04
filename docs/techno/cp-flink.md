@@ -6,7 +6,7 @@ The main features are:
 
 * Fully compatible with open-source Flink. 
 * Deploy on Kubernetes using Helm
-* Define environment, which groups applications
+* Define environment, which does a logical grouping of Flink applications with the goal to provide access isolation, and configuration sharing.
 * Deploy application with user interface and task manager cluster
 * Exposes custom kubernetes operator for specific CRD
 
@@ -24,9 +24,16 @@ The figure below presents the Confluent Flink components deployed on Kubernetes:
 
 Be sure to have [confluent cli.](https://docs.confluent.io/confluent-cli/current/install.html#install-confluent-cli)
 
+## Specific concepts added on top of Flink
+
+* Environment: for access control isolation, configuration sharing
+* Compute pool represents resources to run Task manager and Job manager. Each Flink SQL statement is associated with exactly one Compute Pool. [See example of pool definition](https://docs.confluent.io/platform/current/flink/configure/compute-pools.html) and in [cmf folder](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cmf)
+* For SQL catalog to group database concept for Flink SQL table queries. It references a Schema Registry instance and one or more Kafka clusters.
+
 ## Set up
 
-[See my dedicated chapter for Confluent Plaform Kubernetes deployment](../coding/k8s-deploy.md#deploy-confluent-platform-for-flink).
+* [See my dedicated chapter for Confluent Plaform Kubernetes deployment](../coding/k8s-deploy.md#deploy-confluent-platform-for-flink).
+* [See the makefile to deploy CMF](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cp-flink/Makefile), and the [product documentation](https://docs.confluent.io/platform/current/flink/installation/overview.html) 
 
 ## Important source of information for deployment
 
@@ -53,6 +60,7 @@ The observed core performance rule is that Flink can process ~10,000 records per
 There are a set of characteristics to assess before doing sizing:
 
 ### Statement Complexity Impact
+
 Statement complexity reflects the usage of complex operators like:
 
 * Joins between multiple streams
@@ -96,6 +104,7 @@ Lower latency requirements significantly increase resource needs:
 *Stricter latency requires more frequent checkpoints for faster recovery, additional memory for buffering, and extra CPU for low-latency optimizations.*
 
 ### Estimation Heuristics
+
 The estimator increases task managers until there are sufficient resources for:
 
 * Expected throughput requirements
@@ -108,5 +117,7 @@ The estimator increases task managers until there are sufficient resources for:
     * Start with conservative estimates and adjust based on testing
     * Monitor your cluster performance and tune as needed
     * Consider your specific data patterns and business requirements
+
+[See this estimator project](https://github.com/jbcodeforce/flink-estimator) for a tool to help estimating cluster sizing.
 
 ## Monitoring and Troubleshouting

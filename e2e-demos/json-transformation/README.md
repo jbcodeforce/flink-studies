@@ -1,12 +1,14 @@
-# Simple Proof Of Concept for Confluent Platform Flink
+# Order and Jobs processing with Confluent Platform Flink
 
-This is a simple demo to use Confluent Platform with Flink to demonstrate a json schema mapping, a join and an aggregation.
+This is a simple demo using Confluent Platform with Flink and Kafka to demonstrate a json schema mapping, a join and an aggregation Flink SQL query.
 
 The input is an industrial vehicle rental event, with an example of order in data/order_detail.json. The second input is a job demand, which in the context of a Mover, a move demand.
 
 ## Use Case
 
-* Rental orders continuously arrive to the raw-contracts kafka topic, while job demands are sent to raw-jobs. 
+* Truck rental orders continuously arrive to the raw-contracts kafka topic, while job demands are sent to raw-jobs. 
+
+![](./producer/static/mover-truck.png)
 
 * The source records need to be transformed as JSON with nested structure:
 ```json
@@ -114,7 +116,7 @@ The cp-flink folder includes config_map and Kubernetes job manifests to start th
 
 ## CMF Setup
 
-Be sure to have Confluent Platform deployed on kubernetes ([See this readme](../../deployment/k8s/cp-flink/README.md)) and use the makefile in deployment/k8s/cp-flink to start Colima, and then verify flink and Kafka are running. 
+Be sure to have Confluent Platform deployed on kubernetes ([See this readme](../../deployment/k8s/cp-flink/README.md)) and use the makefile in `deployment/k8s/cp-flink` to start Colima, deploy Confluent Platform, with Managed Flink and then verify Flink and Kafka are running. 
 
 * Make sure the CMF REST API is accessible on localhost:
 ```sh
@@ -123,7 +125,7 @@ make verify_cmf
 make port_forward_cmf
 ```
 
-The cp-flink folder in this json-transformation project, includes a makefile to manage port-forwarding, create topics...
+The `cp-flink` folder in this `e2e-demos/json-transformation` project, includes a makefile to manage port-forwarding, create topics...
 
 * Define orders and jobs topic, json schema using config map and schema registry entry
     ```sh
@@ -139,15 +141,26 @@ The cp-flink folder in this json-transformation project, includes a makefile to 
 
 ### Flink Shell common commands
 
-```sh
-show catalogs;
-use catalog demo-cat;
-show databases;
-use cluster-1;
-show tables;
-```
+* Setting catalog and databases:
+  ```sh
+  show catalogs;
+  use catalog demo-cat;
+  show databases;
+  use cluster-1;
+  show tables;
+  ```
 
 * `show tables;` should return the raw-orders and raw-jobs tables.
+
+* Work on the job content:
+  ```sh
+  select * from `raw-jobs`;
+  ```
+
+* Work on the orders content:
+  ```sh
+  select * from `raw-orders`;
+  ```
 
 ### To do
 

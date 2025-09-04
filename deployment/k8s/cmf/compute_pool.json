@@ -17,7 +17,7 @@
         "taskManager": {
           "resource": {
             "cpu": 1.0,
-            "memory": "1024m"
+            "memory": "2048m"
           }
         },
         "jobManager": {

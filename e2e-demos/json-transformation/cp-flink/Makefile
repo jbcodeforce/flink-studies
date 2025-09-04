@@ -27,7 +27,7 @@ port_forward_cmf:
 	@osascript -e 'tell app "Terminal" to do script "kubectl port-forward svc/cmf-service 8084:80 -n $(FLCK_NS)"'
 
 start_flink_shell:
-	@osascript -e 'tell app "Terminal" to do script "confluent flink shell --environment env1 --compute-pool pool1 --url $(CMF_URL)"'
+	@osascript -e 'tell app "Terminal" to do script "confluent flink shell --environment env1 --compute-pool pool1 --url $(CMF_URL);"' -e 'tell application "Terminal" to set current settings of window 1 to settings set "Ocean"'
 
 # --- demo setup ---
 

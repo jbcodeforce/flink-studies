@@ -85,13 +85,13 @@ uninstall_cp_cluster:
 	@helm uninstall confluent-operator -n $(CFNT_NS)
 
 
-# ---------------------- Confluent Platform for Flink ----------------------
+# ---------------------- Confluent Manager for Flink ----------------------
 
 install_flink_kubernetes_operator:
 	@helm upgrade --install cp-flink-kubernetes-operator --version "~1.120.0"  confluentinc/flink-kubernetes-operator --set watchNamespace="{flink, confluent}" -n $(FLCK_NS)
 
 deploy_cmf:
-	@helm upgrade --install cmf --version "~2.0.0"  confluentinc/confluent-manager-for-apache-flink --namespace $(FLCK_NS) --set cmf.sql.production=false --set cmf.sql.examples-catalog.enabled=true 
+	@helm upgrade --install cmf --version "~2.0.2"  confluentinc/confluent-manager-for-apache-flink --namespace $(FLCK_NS) --set cmf.sql.production=false --set cmf.sql.examples-catalog.enabled=true 
 
 install_cmf: install_flink_kubernetes_operator deploy_cmf
 
