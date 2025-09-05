@@ -2,7 +2,8 @@
     "apiVersion": "cmf.confluent.io/v1",
     "kind": "ComputePool",
     "metadata": {
-      "name": "pool1"
+      "name": "pool1",
+      "namespace": "flink"
     },
     "spec": {
       "type": "DEDICATED",
@@ -16,7 +17,7 @@
         },
         "taskManager": {
           "resource": {
-            "cpu": 1.0,
+            "cpu": 1,
             "memory": "2048m"
           }
         },

@@ -7,7 +7,7 @@ data:
   schema: |
     {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://example.com/order-schema.json",
+    "$id": "https://example.com/raw-orders-schema.json",
     "title": "Order Schema",
     "description": "Schema for order data with equipment, itinerary, and payment information",
     "type": "object",
@@ -57,9 +57,6 @@ data:
             "type": "null"
           },
           {
-            "type": "string"
-          },
-          {
             "type": "object"
           }
         ],
@@ -100,9 +97,6 @@ data:
         "oneOf": [
           {
             "type": "null"
-          },
-          {
-            "type": "integer"
           },
           {
             "type": "string"

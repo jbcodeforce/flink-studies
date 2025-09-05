@@ -7,44 +7,90 @@ The input is an industrial vehicle rental event, with an example of order in dat
 ## Use Case
 
 * Truck rental orders continuously arrive to the raw-contracts kafka topic, while job demands are sent to raw-jobs. 
+    ![](./producer/static/mover-truck.png)
 
-![](./producer/static/mover-truck.png)
-
-* The source records need to be transformed as JSON with nested structure:
-```json
-{
-    "OrderDetails": {
-      "EquipmentRentalDetails": [
+* The raw-orders json payload looks like:
+    ```json
+    {
+      "OrderId": 123456,
+      "Status": "Return",
+      "Equipment": [
         {
-          "OrderId": 396404719,
-          "Status": "Return",
-          "Equipment": [
-            {
-              "ModelCode": "HO",
-              "Rate": "34.95"
-            }
-          ],
-          "TotalPaid": 37.4,
-          "Type": "InTown",
-          "Coverage": null,
-          "Itinerary": {
-            "PickupDate": "2020-09-21T18:14:08.000Z",
-            "DropoffDate": "2020-09-21T20:47:42.000Z",
-            "PickupLocation": "41260",
-            "DropoffLocation": "41260"
-          },
-          "OrderType": "Umove",
-          "AssociatedContractId": null
+          "ModelCode": "TK-01",
+          "Rate": "34.95"
         }
-      ]
-    },
-    "MovingHelpDetails": null
-}
-```
+      ],
+      "TotalPaid": 37.4,
+      "Type": "InTown",
+      "Coverage": null,
+      "Itinerary": {
+        "PickupDate": "2020-09-21T18:14:08.000Z",
+        "DropoffDate": "2020-09-21T20:47:42.000Z",
+        "PickupLocation": "41260",
+        "DropoffLocation": "41260"
+      },
+      "OrderType": "Move",
+      "AssociatedContractId": null
+    }
+    ```
+
+* The raw-job json is:
+  ```json
+  {
+    "job_id": 1234567,
+    "job_type": "LoadUnload",
+    "job_status": "Completed",
+    "rate_service_provider": "85.0000",
+    "total_paid": "170.0000",
+    "job_date_start": "2020-07-17",
+    "job_completed_date": "2020-07-17",
+    "job_entered_date": "2020-07-14",
+    "job_last_modified_date": "2020-07-14",
+    "service_provider_name": "ArizonaDream"
+  }
+  ```
+
+* The processing logic needs to address:
+
+  ![](./docs/dsp.drawio.png)
+
+* The first transformation addresses taking the raw source records and build a JSON with nested structure:
+  ```json
+  {
+      "OrderDetails": {
+        "EquipmentRentalDetails": [
+          {
+            "OrderId": 396404719,
+            "Status": "Return",
+            "Equipment": [
+              {
+                "ModelCode": "HO",
+                "Rate": "34.95"
+              }
+            ],
+            "TotalPaid": 37.4,
+            "Type": "InTown",
+            "Coverage": null,
+            "Itinerary": {
+              "PickupDate": "2020-09-21T18:14:08.000Z",
+              "DropoffDate": "2020-09-21T20:47:42.000Z",
+              "PickupLocation": "41260",
+              "DropoffLocation": "41260"
+            },
+            "OrderType": "Umove",
+            "AssociatedContractId": null
+          }
+        ]
+      },
+      "MovingHelpDetails": null
+  }
+  ```
 
 ## Code explanations
 
-The cp-flink folder includes the configuration to create schemas and topics for the raw input data: jobs and orders. The makefile helps to deploy those elements to the Confluent Platform.
+The cp-flink folder includes the configuration to create schemas and topics for the raw input data: jobs and orders. The OrderDetails topic and schema.
+
+The makefile helps to deploy those elements to the Confluent Platform.
 
 The Kafka order and job records producers code is under producer folder.
 
@@ -114,7 +160,41 @@ The cp-flink folder includes config_map and Kubernetes job manifests to start th
   make test_api_health
   ```
 
+### SQL part
+
+#### 1. Direct Nested Access
+```sql
+SELECT OrderDetails.EquipmentRentalDetails[1].OrderId 
+FROM OrderDetails;
+```
+
+#### 2. Array Unnesting (Recommended)
+```sql
+SELECT rental_detail.OrderId, equipment_item.ModelCode
+FROM OrderDetails
+CROSS JOIN UNNEST(OrderDetails.EquipmentRentalDetails) AS t(rental_detail)
+CROSS JOIN UNNEST(rental_detail.Equipment) AS e(equipment_item);
+```
+
+#### 3. Flattened Output
+```sql
+INSERT INTO OrderDetails_Flat
+SELECT 
+  rental_detail.OrderId,
+  rental_detail.Status,
+  equipment_item.ModelCode,
+  equipment_item.Rate,
+  rental_detail.TotalPaid,
+  rental_detail.Itinerary.PickupDate,
+  rental_detail.Itinerary.DropoffDate
+FROM OrderDetails
+CROSS JOIN UNNEST(OrderDetails.EquipmentRentalDetails) AS t(rental_detail)
+CROSS JOIN UNNEST(rental_detail.Equipment) AS e(equipment_item);
+```
+
 ## CMF Setup
+
+The code and/or instructions here available are NOT intended for production usage.
 
 Be sure to have Confluent Platform deployed on kubernetes ([See this readme](../../deployment/k8s/cp-flink/README.md)) and use the makefile in `deployment/k8s/cp-flink` to start Colima, deploy Confluent Platform, with Managed Flink and then verify Flink and Kafka are running. 
 
@@ -161,6 +241,12 @@ The `cp-flink` folder in this `e2e-demos/json-transformation` project, includes 
   ```sh
   select * from `raw-orders`;
   ```
+
+### Confluent documentation and limitations
+
+* [Interactive SQL Shell](https://docs.confluent.io/platform/current/flink/jobs/sql-statements/use-interactive-shell.html)
+* [Current limitations](https://docs.confluent.io/platform/current/flink/jobs/sql-statements/features-support.html#limitations)
+* 
 
 ### To do
 

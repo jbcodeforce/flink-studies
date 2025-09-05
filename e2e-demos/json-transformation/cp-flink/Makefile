@@ -31,27 +31,82 @@ start_flink_shell:
 
 # --- demo setup ---
 
-create_raw_orders_topic:
-	@kubectl apply -f raw_orders_topic.yaml -n $(CFNT_NS)
+create_raw_order: create_raw_orders_cm create_raw_orders_topic create_raw_orders_schema
 
-create_raw_jobs_topic:
-	@kubectl apply -f raw_jobs_topic.yaml -n $(CFNT_NS)
+delete_raw_order: delete_raw_orders_topic delete_raw_orders_schema delete_raw_orders_cm 
 
-create_topics: create_raw_orders_topic create_raw_jobs_topic
+create_raw_job: create_raw_jobs_cm create_raw_jobs_topic create_raw_jobs_schema
 
+delete_raw_job:  delete_raw_jobs_topic delete_raw_jobs_schema delete_raw_jobs_cm
+
+create_order_details: create_order_details_cm create_order_details_topic create_order_details_schema
+
+delete_order_details: delete_order_details_topic delete_order_details_schema delete_order_details_cm 
+
+create_app_kafka_elements: create_raw_order create_raw_job create_order_details
+
+delete_app_kafka_elements: delete_raw_order delete_raw_job delete_order_details
+
+# ----- orders -----
 create_raw_orders_cm:
 	@kubectl apply -f raw_orders_cm.yaml -n $(CFNT_NS)
+
+create_raw_orders_topic:
+	@kubectl apply -f raw_orders_topic.yaml -n $(CFNT_NS)
 
 create_raw_orders_schema:
 	@kubectl apply -f raw_orders_schema.yaml -n $(CFNT_NS)
 
+delete_raw_orders_cm:
+	@kubectl delete -f raw_orders_cm.yaml -n $(CFNT_NS)
+
+delete_raw_orders_topic:
+	@kubectl delete -f raw_orders_topic.yaml -n $(CFNT_NS)
+
+delete_raw_orders_schema:
+	@kubectl delete -f raw_orders_schema.yaml -n $(CFNT_NS)
+
+create_order_details_cm:
+	@kubectl apply -f order_details_cm.yaml -n $(CFNT_NS)
+
+delete_order_details_cm:
+	@kubectl delete -f order_details_cm.yaml -n $(CFNT_NS)
+
+create_order_details_schema:
+	@kubectl apply -f order_details_schema.yaml -n $(CFNT_NS)
+
+delete_order_details_schema:
+	@kubectl delete -f order_details_schema.yaml -n $(CFNT_NS)
+
+create_order_details_topic:
+	@kubectl apply -f order_details_topic.yaml -n $(CFNT_NS)
+
+delete_order_details_topic:
+	@kubectl delete -f order_details_topic.yaml -n $(CFNT_NS)
+
+# ----- jobs -----
 create_raw_jobs_cm:
 	@kubectl apply -f raw_jobs_cm.yaml -n $(CFNT_NS)
+
+delete_raw_jobs_cm:
+	@kubectl delete -f raw_jobs_cm.yaml -n $(CFNT_NS)
+
+delete_raw_jobs_topic:
+	@kubectl delete -f raw_jobs_topic.yaml -n $(CFNT_NS)
+
+delete_raw_jobs_schema:
+	@kubectl delete -f raw_jobs_schema.yaml -n $(CFNT_NS)
+
+create_raw_jobs_topic:
+	@kubectl apply -f raw_jobs_topic.yaml -n $(CFNT_NS)
+
+
+create_topics: create_raw_orders_topic create_raw_jobs_topic
 
 create_kafka_client_cm:
 	@kubectl apply -f kafka_client_cm.yaml -n $(CFNT_NS)
 
-create_cms: create_raw_jobs_cm create_raw_orders_cm create_kafka_client_cm
+create_cms: create_raw_jobs_cm create_raw_orders_cm create_kafka_client_cm create_order_details_cm
 
 create_raw_jobs_schema:
 	@kubectl apply -f raw_jobs_schema.yaml -n $(CFNT_NS)

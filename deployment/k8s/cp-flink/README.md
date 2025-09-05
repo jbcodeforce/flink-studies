@@ -1,6 +1,6 @@
 # Flink on k8s with the operator (Open-source or Confluent Platform)
 
-This folder includes different deployment manifests for Confluent Platform for Flink. The approach is to encapsulate some of the kubectl commands using `make` targets. 
+This folder includes different deployment manifests for Confluent Platform for Flink. The approach is to encapsulate some of the kubectl commands using `make` targets. The code and/or instructions here available are NOT intended for production usage.
 
 See the [Flink operator - open source documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/) and the [Confluent platform for flink operator](https://docs.confluent.io/platform/current/flink/get-started.html) for details.
 

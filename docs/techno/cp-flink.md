@@ -53,6 +53,9 @@ Be sure to have [confluent cli.](https://docs.confluent.io/confluent-cli/current
 * [How to secure a Flink job with RBAC](https://docs.confluent.io/platform/current/flink/flink-jobs/security.html#how-to-secure-a-af-job-with-cmf-long)
 * Best Practices for [K8s + RBAC](https://kubernetes.io/docs/concepts/security/rbac-good-practices/)
 
+## SQL specific
+
+
 ## Understanding Sizing
 
 The observed core performance rule is that Flink can process ~10,000 records per second per CPU core. This baseline may decrease with larger messages, bigger state, key skew, or high number of distinct keys.
@@ -120,4 +123,10 @@ The estimator increases task managers until there are sufficient resources for:
 
 [See this estimator project](https://github.com/jbcodeforce/flink-estimator) for a tool to help estimating cluster sizing.
 
-## Monitoring and Troubleshouting
+## Monitoring
+
+## Troubleshouting
+
+### Submitted query pending
+
+When submitting SQL query from the Flink SQL, it is possible it goes in pending: the job manager pod is created and running, but the task manager is pending. Assess what is going on with `kubectl describe pod <pod_id> -n flink`, which gives error message like insufficient cpu. Adding compute pool cpu is worse as the compute pool spec for task manager and job manager is for the default settings to create those pods.

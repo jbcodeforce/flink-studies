@@ -83,13 +83,28 @@ def generate_job_record() -> tuple[str, Job]:
         service_provider_name=f"Provider {random.randint(1, 1000)}"
     )
 
+def generate_truck_equipment() -> Equipment:
+    truck_type= ['TRUCK_SMALL_10FT', 'TRUCK_MEDIUM_16FT', 'TRUCK_LARGE_26FT', 'TRUCK_EXTRA_LARGE_36FT', 'TRUCK_EXTRA_EXTRA_LARGE_46FT', 'TRUCK_EXTRA_EXTRA_EXTRA_LARGE_56FT']
+    return Equipment(
+        ModelCode=random.choice(truck_type),
+        Rate=f"{random.randint(29,250)}.0000"
+    )
+
+def generate_moving_help_equipment() -> Equipment:
+    moving_help_type= ['MOVING_BLANKETS', 'MOVING_BOXES', 'MOVING_PAPER', 'MOVING_OTHER']
+    return Equipment(
+        ModelCode=random.choice(moving_help_type),
+        Rate=f"{random.randrange(9.95,19.95)}"
+    )
+
+
 def generate_order_record() -> Order:
     statuses = ['Return', 'Active', 'Completed', 'Cancelled', 'Pending']
     types = ['InTown', 'OutOfTown', 'OneWay']
     coverage = ['Full', 'Partial', 'None']
     payment = ['Cash', 'Credit Card', 'Debit Card']
     order_type = ['InTown', 'OutOfTown', 'OneWay']
-    equipments = [{'ModelCode': 'HO', 'Rate': '34.95'}]
+    equipments = [generate_truck_equipment(), generate_moving_help_equipment()]
     itinerary = {'PickupDate': '2020-09-21T18:14:08.000Z', 'DropoffDate': '2020-09-21T20:47:42.000Z', 'PickupLocation': '41260', 'DropoffLocation': '41260'}
     key = f"order_{random.randint(100, 10000)}"
     o= Order(

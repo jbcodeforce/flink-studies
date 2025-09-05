@@ -10,3 +10,4 @@ data:
   KAFKA_BOOTSTRAP_SERVERS: kafka.confluent.svc.cluster.local:9071
   KAFKA_SECURITY_PROTOCOL: PLAINTEXT
   KAFKA_SASL_MECHANISM: PLAIN 
+  SCHEMA_REGISTRY_URL: http://schema-registry.confluent.svc.cluster.local:8081

@@ -7,7 +7,7 @@ data:
   schema: |
     {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://example.com/job-schema.json",
+    "$id": "https://example.com/raw-jobs-schema.json",
     "title": "Job Schema",
     "description": "Schema for job data",
     "type": "object",
@@ -54,7 +54,7 @@ data:
       "service_provider_name": {
         "type": "string",
         "description": "Job last modification date"
-      },
+      }
     },
     "required": [
       "job_id",

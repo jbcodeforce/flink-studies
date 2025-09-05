@@ -447,6 +447,17 @@ Any stateful aggregation, group by, joins, over, match_recognize ... enforces us
 
 Also be sure to get the key as part of the values, using the `'value.fields-include' = 'all'` option, if not it will not be possible to group by the key.
 
+#### Applying to a Medallion Architecture
+
+The current approach can be used for Flink pipeline processing:
+
+| Table type | Goals | Parameters |
+| --- | --- | --- |
+| Raw table  non debezium format | Get the raw data from CDC or outbox pattern | cleanup.policy = 'delete', changelog.mode = 'append', value.format = 'avro-registry'...
+| Raw table debezium format | Same goals | cleanup.policy = 'delete', changelog.mode = 'retract' (retract is the default for Debezium connector),  value.format = 'avro-debezium-registry'|
+| Sources | Deduplicate and keep last record per key |   cleanup.policy = 'delete', changelog.mode = 'upsert' |
+| Intermediates | Enrichment, transformation |    cleanup.policy = 'delete',  changelog.mode = 'upsert' |
+| Sink tables: Facts, Dimensions, Views | Create star schema elements| cleanup.policy = 'compact', changelog.mode = 'retract' or 'upsert' |
 
 #### Deeper dive
 
@@ -615,6 +626,27 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     WHERE 
         (total_price_ten_secs <= 300 AND total_price_ten_secs_lag > 300) OR
         (total_orders_ten_secs <= 5 AND total_orders_ten_secs_lag > 5);
+    ```
+
+???- question "How to access element of an array of rows?"
+    The table is created as:
+    ```sql
+     CREATE TABLE my_table (
+        key_col INT,
+        nested_data ARRAY<ROW<id INT, name STRING>>
+    ) WITH (...)
+    ```
+
+    To create one record per row use CROSS JOIN UNNEST:
+    ```sql
+     SELECT
+        t.key_col,
+        unnested_row.id,
+        unnested_row.name
+    FROM
+        my_table AS t
+    CROSS JOIN
+        UNNEST(t.nested_data) AS unnested_row;
     ```
 
 ???- question "How to Aggregate a field into an ARRAY?"

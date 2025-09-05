@@ -1,0 +1,17 @@
+{
+  "OrderDetails": {
+    "OrderId": 12345,
+    "Status": "Active",
+    "Equipment": [
+      {
+        "ModelCode": "TRK001",
+        "Rate": "45.99"
+      },
+      {
+        "ModelCode": "TRL002",
+        "Rate": "25.50"
+      }
+    ],
+    "TotalPaid": 71.49
+  }
+}

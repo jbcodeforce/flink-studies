@@ -1,1 +1,1 @@
-colima start --cpu 6 --memory 24 --kubernetes
+colima start --cpu 8 --memory 24 --kubernetes

@@ -13,11 +13,14 @@ RUN apt-get update && apt-get install -y \
     libc6-dev \
     librdkafka-dev \
     pkg-config \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir confluent-kafka>=2.11.1 pydantic>=2.11.7 fastapi>=0.104.0 uvicorn>=0.24.0 jinja2>=3.1.0 python-multipart>=0.0.6
+# Install UV and Python dependencies
+COPY pyproject.toml ./
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    export PATH="/root/.cargo/bin:$HOME/.local/bin:$PATH" && \
+    uv pip install --system --no-cache -r pyproject.toml
 
 # Copy the application code
 COPY . /app
