@@ -198,9 +198,9 @@ With retract mode a consumer outside of Flink need to interpret the header.
 
 ## Upsert table
 
-Finally, this mode is similar to retract mode but more efficient for key-based operations. Instead of sending separate retraction and addition records, it sends a single upsert record that replaces the old value for a given key and a tombstone record with value = "".
+Finally, this mode is similar to retract mode but more efficient for key-based operations. Instead of sending separate retraction and addition records, it sends a single upsert record that replaces the old value for a given key and a tombstone record with value = "". Client applications of the kafka topic need to be able to process those tombstone records. 
 
-* Create an upsert table, the topics has still the 11 records with the duplicate, but `select * from orders` is giving good results (the record with order_id =7 has the quantity 11 instead of 10).
+* Create an upsert table, the topic has still the 11 records with the duplicate, but `select * from orders` is giving good results (the record with order_id =7 has the quantity 11 instead of 10).
 
 ```sh
 make drop_orders

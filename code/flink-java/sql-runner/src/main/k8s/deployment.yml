@@ -1,7 +1,7 @@
 apiVersion: flink.apache.org/v1beta1
 kind: FlinkDeployment
 metadata:
-  name: sql-demo
+  name: sql-runner
 spec:
   image: j9r/flink-sql-runner:latest
   flinkVersion: v1_19

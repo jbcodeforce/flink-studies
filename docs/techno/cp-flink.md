@@ -32,7 +32,7 @@ Be sure to have [confluent cli.](https://docs.confluent.io/confluent-cli/current
 
 ## Set up
 
-* [See my dedicated chapter for Confluent Plaform Kubernetes deployment](../coding/k8s-deploy.md#deploy-confluent-platform-for-flink).
+* [See my dedicated chapter for Confluent Plaform Kubernetes deployment](../coding/k8s-deploy.md/#confluent-manager-for-apache-flink).
 * [See the makefile to deploy CMF](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cp-flink/Makefile), and the [product documentation](https://docs.confluent.io/platform/current/flink/installation/overview.html) 
 
 ## Important source of information for deployment

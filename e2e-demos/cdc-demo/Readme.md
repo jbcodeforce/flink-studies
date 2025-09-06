@@ -3,11 +3,15 @@
 The demonstration addresses:
 
 * [x] Running Postgresql on Kubernetes to define loan application and transaction tables.
-* [x] Use Confluent for kubernetes operator and a single node cluster to run Confluent Platform for Flink
+* [x] Use Confluent for kubernetes operator and a single node kafka cluster to run Confluent Platform for Flink
 * [ ] Deploying CDC Debezium connector on Kafka Connect to watch the Postgresql table
 * [ ] Use `message.key.columns` to use a non-primary key field for the Kafka message key.
 
-See [Debezium PostgreSQL Source Connector for Confluent Platform](https://docs.confluent.io/kafka-connectors/debezium-postgres-source/current/overview.html).
+**Sources of information**:
+
+* [Debezium 3.2 CDC](https://debezium.io/documentation/reference/3.2/), [Debezium mySQL tutorial](https://debezium.io/documentation/reference/3.2/tutorial.html) with the [matching code](https://github.com/jbcodeforce/db-play/tree/master/code/debezium-tutorial) and [notes](https://jbcodeforce.github.io/db-play/debezium/) and [github debezium examples](https://github.com/debezium/debezium-examples)
+
+* See also [Debezium PostgreSQL Source Connector for Confluent Platform](https://docs.confluent.io/kafka-connectors/debezium-postgres-source/current/overview.html).
 
 ## Pre-requisites:
 
@@ -24,8 +28,9 @@ The steps are:
 
 1. Installing the CloudNativePG Operator on your Kubernetes cluster.
 1. Deploying a PostgreSQL Cluster using CloudNativePG, specifying multiple instances for replication.
-1. Connecting to the admin console to work on the database
+1. Connecting to the PostgreSQL admin console to work on the database
 1. Install Confluent Cloud Platform v8
+1. Install Debezium Connector
 
 ### Postgresql
 

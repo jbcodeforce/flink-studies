@@ -13,7 +13,8 @@ data:
     "type": "object",
     "properties": {
       "job_id": {
-        "type": "integer",
+        "type": "number",
+        "minimum": 1,
         "description": "Unique identifier for the job"
       },
       "job_type": {
