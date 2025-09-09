@@ -28,7 +28,7 @@ from relevant_records)
  -- deduplicate records with the same key, taking the last records
 select -- last projection to reduce columns
   customer_id,
-  MD5(CONCAT_WS(',', customer_id, name, email)) AS rec_pk_hash,
+  MD5(CONCAT_WS('||', customer_id)) AS rec_pk_hash,
   name,
   rec_create_user_name,
   rec_update_user_name,
@@ -39,11 +39,10 @@ select -- last projection to reduce columns
   rec_crud_text,
   hdr_changeSequence,
   hdr_timestamp,
-  delete_ind,
-  rec_row_hash
+  delete_ind
  from (
   select *,  ROW_NUMBER() OVER (
-          PARTITION BY customer_id, rec_crud_text, changeSequence
+          PARTITION BY customer_id, rec_crud_text, hdr_changeSequence
           ORDER
             BY ts DESC
         ) AS row_num from extracted_data

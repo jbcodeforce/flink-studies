@@ -1,26 +1,13 @@
 
 
-## Error Handling Patterns
 
-### 1. **Validation Errors** (Retryable: Usually No)
-```sql
--- Route records with data quality issues
-WHERE data.id IS NULL 
-   OR NOT REGEXP(email,'^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
-```
 
 ### 2. **Parsing Errors** (Retryable: Usually No)
 ```sql
 -- Route records with unparseable timestamps
-WHERE TRY_TO_TIMESTAMP_LTZ(headers.timestamp, 'yyyy-MM-dd HH:mm:ss.SSS') IS NULL
+WHERE TO_TIMESTAMP_LTZ(headers.timestamp, 'yyyy-MM-dd HH:mm:ss.SSS') IS NULL
 ```
 
-### 3. **Processing Errors** (Retryable: Maybe)
-```sql
--- Use try-catch patterns for complex transformations
--- Set can_retry = TRUE for transient errors
--- Set can_retry = FALSE for data corruption
-```
 
 ## Monitoring Queries
 

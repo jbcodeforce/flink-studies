@@ -11,7 +11,7 @@ The Qlix data structure is describe in this document: [https://help.qlik.com/en-
 In Confluent Cloud for Flink, create the qlik_cdc_output_table to mockup Qlik CDC output:
 
 * Open a workspace into your development environment
-* Execute the `create_raw_table.sql` which should result as (`show create table qlik_cdc_output_table`)
+* In `raw_topic_for_tests` folder, execute the `ddl.cdc_raw_table.sql` which should result to get a table, a kafka topic and two schemas in the schema registry as illustrated by (`show create table qlik_cdc_output_table`)
     ```sql
     CREATE TABLE qlik_cdc_output_table (
     `key` VARBINARY(2147483647),
@@ -24,7 +24,7 @@ In Confluent Cloud for Flink, create the qlik_cdc_output_table to mockup Qlik CD
     'changelog.mode' = 'append',
     ```
 
-* Insert first sample data, with one record being wrong: `insert_raw_test_data.sql`
+* Insert first sample data, with one record being wrong: `insert_raw_test_data.sql` from `raw_topic_for_tests`  folder
 
 | operation | beforeData | Data | Comment |
 | --- | --- | --- | --- |
@@ -35,19 +35,26 @@ In Confluent Cloud for Flink, create the qlik_cdc_output_table to mockup Qlik CD
 | DELETE | 'user_002', 'Jane Smith', 'jane@example.com', 28, '2024-01-01T12:30:00Z'| N/A | |
 
 
-Here is the reported table content:
+Here is the reported table content (with some duplicates to test dedup processing):
 
 ![](./basic_raw_data.png)
 
-## Pipeline end to end logic
+## Pipeline end-to-end logic
+
+The requirements to support:
+
+* Process raw_data coming from CDC ingestion layer
+* Check for NULLs for primary keys and Not-Null columns
+* Check for Duplicates
+* Join with reference table
 
 The final pipeline looks like:
 
 ![](./pipeline_design.drawio.png)
 
 1. The raw input topic is the outcome of the Qlik CDC with key, data, beforeData, and headers envelop
-1. The First Flink queries are filtering out, rejecting records in errors, process deduplication, and data extraction. This create the `src_` or source table. The goal is to fail fast, capture everything, and provide actionable information for debugging and recovery.
-1. The Second Flink queries are also applying some business logic to reject some src records, and apply other validation and joining with other sources or dimension. The goal is to create a dimension table to be consumed by other Flink statement to build a star model or going directly to a sink kafka connector that supports upsert semantic and write to a target format.
+1. The First Flink queries are filtering out, rejecting records in errors, process deduplication, and perform data extraction to flatten the data model. This statement creates the source table: `src_customers`  . The goal is to fail fast, capture everything, and provide actionable information for debugging and recovery.
+1. The Second Flink queries are also applying some business logic to reject some src records, and apply other validation and joining with other sources or dimensions. The goal is to create a dimension table to be consumed by other Flink statements to build a star model or going directly to a sink kafka connector that supports upsert semantic and write to a target format.
 1. The target format could be a parquet file with DeltaLake or Iceberg metadata.
 
 ## First Statement: Filter, transform, route first level of error, deduplicate
@@ -190,4 +197,4 @@ First the SQL logic to process raw data and create clean sources data, we need t
 
 ## Business validation
 
-This time we can filter NULL records, and malformed emails.
+This time we can filter records with some NULL value in important columns, and malformed emails.

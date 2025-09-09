@@ -44,7 +44,7 @@ show databases;
 show tables;
 ```
 
-### Read from CVS mounted in current container
+### Read from CSV mounted in current container
 
 * The following job is a batch processing and uses a DDL to create a table matching the column of a employee csv file. Start the sql_client in the running container.
 
