@@ -32,16 +32,16 @@ In Confluent Cloud for Flink, create the qlik_cdc_output_table to mockup Qlik CD
 | INSERT |  N/A  | 'user_002', 'Jane Smith', 'jane@example.com', 28, '2024-01-01T12:30:00Z' | data will be used|
 | UPDATE | 'user_001', 'John Doe', 'john@example.com', 30, '2024-01-01T10:00:00Z' |'user_001', 'John Doe', 'john.doe@company.com', 31, '2024-01-01T10:00:00Z' |  data will be used|
 | INSERT |  N/A | 'wrong_user', 'Bob the builder', 'bob_builder@example.com', 28, '2024-02-01T12:30:00Z'| For testing DLQ |
-| DELETE | 'user_002', 'Jane Smith', 'jane@example.com', 28, '2024-01-01T12:30:00Z'| N/A | |
+| DELETE | 'user_002', 'Jane Smith', 'jane@example.com', 28, '2024-01-01T12:30:00Z'| N/A | beforeData may be used|
 
 
 Here is the reported table content (with some duplicates to test dedup processing):
 
-![](./basic_raw_data.png)
+![](./docs/basic_raw_data.png)
 
 ## Pipeline end-to-end logic
 
-The requirements to support:
+The requirements to support are:
 
 * Process raw_data coming from CDC ingestion layer
 * Check for NULLs for primary keys and Not-Null columns
@@ -50,7 +50,7 @@ The requirements to support:
 
 The final pipeline looks like:
 
-![](./pipeline_design.drawio.png)
+![](./docs/pipeline_design.drawio.png)
 
 1. The raw input topic is the outcome of the Qlik CDC with key, data, beforeData, and headers envelop
 1. The First Flink queries are filtering out, rejecting records in errors, process deduplication, and perform data extraction to flatten the data model. This statement creates the source table: `src_customers`  . The goal is to fail fast, capture everything, and provide actionable information for debugging and recovery.
@@ -59,7 +59,7 @@ The final pipeline looks like:
 
 ## First Statement: Filter, transform, route first level of error, deduplicate
 
-In Flink when we need to have two outputs: the src_customer and the DLQ we can use a statement set:
+In Flink, when we need to have two outputs: the src_customers and the raw data DLQ,  we can use a statement set:
 
 ```sql
 execute statement set
@@ -70,15 +70,13 @@ insert into src_customers .... ;
 end;
 ```
 
-To make this working we need to create the DLQ and the `src_customers`:
+To make this working, we need to create the `src_customers` to receive the outcome of the first Flink statement:
 
 ```sql
 create table src_customers(
     customer_id string,
     rec_pk_hash string,
     name string,
-    rec_create_user_name string,
-    rec_update_user_name string,
     email string,
     age int,
     rec_created_ts timestamp_ltz,
@@ -86,14 +84,13 @@ create table src_customers(
     rec_crud_text string,
     hdr_changeSequence string,
     hdr_timestamp string,
-    tx_ts timestamp_ltz,
-    delete_ind int,
-    rec_row_hash string,
     primary key(customer_id) not enforced
 ) distributed by hash(customer_id) into 1 buckets with (
     'changelog.mode' = 'upsert'
 );
 ```
+
+
 
 ### Logic to route to error table/queue
 

@@ -1,7 +1,7 @@
 include ../../../common.mk
 
-# --- dim_customers
-TABLE_NAME=dim_customers
+# --- dim_groups
+TABLE_NAME=dim_groups
 SCRIPT_PRE_KEBAB=dev-usw2-cdc-dedup-transform
 SCRIPT_POST_KEBAB=$(subst _,-,$(TABLE_NAME))
 
@@ -13,7 +13,7 @@ DML_SCRIPT=./sql-scripts/dml.$(TABLE_NAME).sql
 DML_TESTS_SCRIPT=./tests/dml.$(TABLE_NAME).sql
 
 # --- Entry point
-create_dim_customers: create_flink_ddl  create_flink_dml
+create_dim_groups: create_flink_ddl  create_flink_dml
 
 
 # --- Topic used as source
@@ -62,4 +62,4 @@ delete_schemas:
 
 delete_flink_statements: delete_flink_ddl delete_flink_dml
 
-delete_data: delete_schemas delete_topic_dim_customers
+delete_data: delete_schemas

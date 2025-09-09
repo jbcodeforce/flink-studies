@@ -1,0 +1,26 @@
+{
+    "dim_groups": {
+        "table_name": "dim_groups",
+        "product_name": "customers",
+        "type": "unknown-type",
+        "dml_ref": "cdc-dedup-transform/customers/dim_groups/sql-scripts/dml.dim_groups.sql",
+        "ddl_ref": "cdc-dedup-transform/customers/dim_groups/sql-scripts/ddl.dim_groups.sql",
+        "table_folder_name": "cdc-dedup-transform/customers/dim_groups"
+    },
+    "fact_customers": {
+        "table_name": "fact_customers",
+        "product_name": "customers",
+        "type": "unknown-type",
+        "dml_ref": "cdc-dedup-transform/customers/fact_customers/sql-scripts/dml.fact_customers.sql",
+        "ddl_ref": "cdc-dedup-transform/customers/fact_customers/sql-scripts/ddl.fact_customers.sql",
+        "table_folder_name": "cdc-dedup-transform/customers/fact_customers"
+    },
+    "src_customers": {
+        "table_name": "src_customers",
+        "product_name": "customers",
+        "type": "unknown-type",
+        "dml_ref": "cdc-dedup-transform/customers/src_customers/sql-scripts/dml.src_customers.sql",
+        "ddl_ref": "cdc-dedup-transform/customers/src_customers/sql-scripts/ddl.src_customers.sql",
+        "table_folder_name": "cdc-dedup-transform/customers/src_customers"
+    }
+}

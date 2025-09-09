@@ -1,0 +1,19 @@
+{
+   "table_name": "src_customers",
+   "product_name": "None",
+   "type": "unknown-type",
+   "dml_ref": "cdc-dedup-transform/src_customers/sql-scripts/dml.src_customers.sql",
+   "ddl_ref": "cdc-dedup-transform/src_customers/sql-scripts/ddl.src_customers.sql",
+   "path": "cdc-dedup-transform/src_customers",
+   "complexity": {
+      "number_of_regular_joins": 0,
+      "number_of_left_joins": 0,
+      "number_of_right_joins": 0,
+      "number_of_inner_joins": 0,
+      "number_of_outer_joins": 0,
+      "complexity_type": "Simple",
+      "state_form": "Stateful"
+   },
+   "parents": [],
+   "children": []
+}

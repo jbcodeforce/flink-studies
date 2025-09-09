@@ -23,6 +23,7 @@ CREATE TABLE qlik_cdc_output_table (
         name STRING,
         email STRING,
         age INT,
+        group_id STRING,
         created_at STRING,
         updated_at STRING
     >,
