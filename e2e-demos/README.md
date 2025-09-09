@@ -8,3 +8,7 @@
 
 ## Flink to Sink JDBC connector
 
+## Proof of concept tfor QLik CDC processing with Confluent Cloud Flink
+
+[Pure SQL Code and readme](./cdc_dedup_transform/)
+

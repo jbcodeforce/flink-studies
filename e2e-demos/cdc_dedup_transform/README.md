@@ -117,7 +117,7 @@ create table src_customers(
     select * from qlik_cdc_output_table where (data is null and headers.operation <> 'DELETE') or (data is not null and data.id is null);
     ```
 
-This can be enhanced by adding new condition like headers null
+This can be enhanced by adding new condition like on the headers null
 
 ### Deduplication and filtering out wrong records, while transforming data
 
@@ -184,3 +184,10 @@ First the SQL logic to process raw data and create clean sources data, we need t
                 ) AS row_num from extracted_data
     ) where row_num = 1;
     ```
+
+* Create a src_customers (see file ddl.src_customers.sql)
+* Putting the selection together
+
+## Business validation
+
+This time we can filter NULL records, and malformed emails.

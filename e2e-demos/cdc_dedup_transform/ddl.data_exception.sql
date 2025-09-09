@@ -1,4 +1,4 @@
-create table src_customers(
+create table data_exception(
     customer_id string,
     rec_pk_hash string,
     name string,
@@ -11,9 +11,10 @@ create table src_customers(
     rec_crud_text string,
     hdr_changeSequence string,
     hdr_timestamp timestamp_ltz,
+    tx_ts timestamp_ltz,
     delete_ind int,
     rec_row_hash string,
     primary key(customer_id) not enforced
 ) distributed by hash(customer_id) into 1 buckets with (
-    'changelog.mode' = 'upsert'
+    'changelog.mode' = 'append'
 );

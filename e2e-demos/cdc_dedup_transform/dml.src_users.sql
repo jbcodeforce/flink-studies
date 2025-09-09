@@ -1,3 +1,5 @@
+insert into src_customers
+
 with relevant_records as (
 -- demonstrate data filtering with CTE
 select
@@ -5,36 +7,43 @@ select
   $rowtime as ts
   from qlik_cdc_output_table  where headers.operation <> 'REFRESH' and (not (data is null and beforeData is null))
 ),
+-- transformation of the data
 extracted_data as (
 select
   key,
   coalesce(if(headers.operation in ('DELETE'), beforeData.id, data.id), 'NULL') as customer_id,
   coalesce(if(headers.operation in ('DELETE'), beforeData.name, data.name), 'NULL') as name,
+  if(headers.operation = 'INSERT', data.name, '') as rec_create_user_name,
+  if(headers.operation = 'UPDATE', beforeData.name, '') as rec_update_user_name,
   coalesce(if(headers.operation in ('DELETE'), beforeData.email, data.email), 'NULL') as email,
   coalesce(if(headers.operation in ('DELETE'), beforeData.age, data.age), 99) as age,
   coalesce(if(headers.operation in ('DELETE'), beforeData.created_at, data.created_at), 'NULL') as rec_created_ts,
   coalesce(if(headers.operation in ('DELETE'), beforeData.updated_at, data.updated_at), 'NULL') as rec_updated_ts,
-  headers.operation as operation,
-  headers.changeSequence as changeSequence,
-  to_timestamp(headers.`timestamp`, 'yyyy-MM-dd HH:mm:ss') as tx_ts,
+   headers.operation as rec_crud_text,
+  headers.changeSequence as hdr_changeSequence,
+  to_timestamp(headers.`timestamp`, 'yyyy-MM-dd''T''HH:mm:ssXXX') as hdr_timestamp,
   IF(headers.operation in ('DELETE'), 1,0) as delete_ind,
   ts
 from relevant_records)
  -- deduplicate records with the same key, taking the last records
 select -- last projection to reduce columns
-  customer_id, 
-  name, 
-  email, 
-  age, 
-  to_timestamp(rec_created_ts, 'yyyy-MM-dd HH:mm:ss') as rec_created_ts,
-  to_timestamp(rec_updated_ts, 'yyyy-MM-dd HH:mm:ss') as rec_updated_ts,
-  operation, 
-  changeSequence, 
-  tx_ts, 
-  delete_ind
+  customer_id,
+  MD5(CONCAT_WS(',', customer_id, name, email)) AS rec_pk_hash,
+  name,
+  rec_create_user_name,
+  rec_update_user_name,
+  email,
+  age,
+  to_timestamp(rec_created_ts, 'yyyy-MM-dd''T''HH:mm:ssXXX') as rec_created_ts,
+  to_timestamp(rec_updated_ts, 'yyyy-MM-dd''T''HH:mm:ssXXX') as rec_updated_ts,
+  rec_crud_text,
+  hdr_changeSequence,
+  hdr_timestamp,
+  delete_ind,
+  rec_row_hash
  from (
   select *,  ROW_NUMBER() OVER (
-          PARTITION BY customerid_d, operation, changeSequence
+          PARTITION BY customer_id, rec_crud_text, changeSequence
           ORDER
             BY ts DESC
         ) AS row_num from extracted_data
