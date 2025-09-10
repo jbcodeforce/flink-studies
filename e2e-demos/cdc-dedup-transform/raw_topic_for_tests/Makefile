@@ -1,19 +1,15 @@
-include ../../common.mk
+include ../common.mk
 
-# --- src_customers
-TABLE_NAME=src_customers
-SCRIPT_PRE_KEBAB=dev-usw2-cdc-dedup-transform
+# --- 
+TABLE_NAME=qlik_cdc_output_table
+SCRIPT_PRE_KEBAB=dev
 SCRIPT_POST_KEBAB=$(subst _,-,$(TABLE_NAME))
 
 DDL_STATEMENT=$(SCRIPT_PRE_KEBAB)-ddl-$(SCRIPT_POST_KEBAB)
 DROP_DDL_STATEMENT=$(SCRIPT_PRE_KEBAB)-drop-$(SCRIPT_POST_KEBAB)
-DDL_SCRIPT=./sql-scripts/ddl.$(TABLE_NAME).sql
+DDL_SCRIPT=ddl.cdc_raw_table.sql
 DML_STATEMENT=$(SCRIPT_PRE_KEBAB)-dml-$(SCRIPT_POST_KEBAB)
-DML_SCRIPT=./sql-scripts/dml.$(TABLE_NAME).sql
-DML_TESTS_SCRIPT=./tests/dml.$(TABLE_NAME).sql
-
-# --- Entry point
-create_src_customers: create_flink_ddl  create_flink_dml
+DML_SCRIPT=insert_raw_test_data.sql
 
 
 # --- Topic used as source
@@ -21,15 +17,15 @@ list_record_data_from_topic:
 	$(call list_topic_content, $(TABLE_NAME))
 
 # --- DDL 
-create_flink_ddl: 
+create_raw_table: 
 	$(call create_flink_statement, $(DDL_STATEMENT), $(DDL_SCRIPT)) 
 	$(call delete_flink_statement, $(DDL_STATEMENT) )
 
 
-describe_flink_ddl:
+describe_raw_table:
 	$(call describe_flink_statement,  $(DDL_STATEMENT))
 
-delete_flink_ddl:
+delete_raw_table:
 	$(call delete_flink_statement, $(DDL_STATEMENT))
 
 drop_table: 
@@ -37,29 +33,17 @@ drop_table:
 	$(call delete_flink_statement, $(DROP_DDL_STATEMENT))
 
 # --- DML
-describe_flink_dml:
+describe_raw_data:
 	$(call describe_flink_statement,  $(DML_STATEMENT))
 
-create_flink_dml:
+insert_raw_data:
 	$(call create_flink_statement, $(DML_STATEMENT), $(DML_SCRIPT)) 
 
-create_flink_dev:
-	$(call create_flink_statement, $(DML_STATEMENT), $(DML_TESTS_SCRIPT)) 
-
-delete_flink_dml:
+delete_raw_data:
 	$(call delete_flink_statement, $(DML_STATEMENT))
 
-pause_flink_dml:
+pause_raw_data:
 	$(call pause_flink_statement $(DML_STATEMENT))
 
-resume_flink_dml:
+resume_raw_data:
 	$(call resume_flink_statement $(DML_STATEMENT))
-
-delete_schemas:
-	$(call delete_schema, $(TABLE_NAME)-value)
-	$(call delete_schema, $(TABLE_NAME)-key)
-
-
-delete_flink_statements: delete_flink_ddl delete_flink_dml
-
-delete_data: delete_schemas delete_topic_src_customers

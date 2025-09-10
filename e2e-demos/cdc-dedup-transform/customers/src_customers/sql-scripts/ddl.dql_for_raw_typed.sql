@@ -17,12 +17,14 @@ create table raw_error_table(
         name STRING,
         email STRING,
         age INT,
+        group_id STRING,
         created_at STRING,
         updated_at STRING>,
     beforeData row<id STRING,
         name STRING,
         email STRING,
         age INT,
+        group_id STRING,
         created_at STRING,
         updated_at STRING>
 

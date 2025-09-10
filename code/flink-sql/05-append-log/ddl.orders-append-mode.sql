@@ -6,5 +6,6 @@ create table if not exists orders (
 ) DISTRIBUTED into 1 BUCKETS 
 with (
     'changelog.mode' = 'append',
-    'value.fields-include' = 'all'
+    'value.fields-include' = 'all',
+    'kafka.cleanup-policy' = 'delete'
 );

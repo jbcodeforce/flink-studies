@@ -23,9 +23,9 @@ CREATE TABLE qlik_cdc_output_table (
         name STRING,
         email STRING,
         age INT,
-        group_id STRING,
         created_at STRING,
-        updated_at STRING
+        updated_at STRING,
+        group_id STRING
     >,
     -- BeforeData: The data before the change (applicable to UPDATE operations)
     beforeData ROW<
@@ -35,7 +35,8 @@ CREATE TABLE qlik_cdc_output_table (
         email STRING,
         age INT,
         created_at STRING,
-        updated_at STRING
+        updated_at STRING,
+        group_id STRING
     >
 ) DISTRIBUTED BY HASH(key) INTO 4 BUCKETS
 WITH (

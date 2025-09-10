@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS src_customers (
     rec_crud_text string,
     hdr_changeSequence string,
     hdr_timestamp timestamp_ltz,
+    group_id string,
     primary key(customer_id) not enforced
 ) distributed by hash(customer_id) into 1 buckets 
 WITH (

@@ -4,27 +4,36 @@ The qlik_cdc_output_table represents the output of Qlik CDC output as raw topic 
 
 When using CDC connector to Kafka, most of them are creating schema into the schema registry with an envelop to track the data before and after. 
 
-The Qlix data structure is describe in this document: [https://help.qlik.com/en-US/replicate/November2024/pdf/Replicate-Setup-and-User-Guide.pdf](https://help.qlik.com/en-US/replicate/November2024/pdf/Replicate-Setup-and-User-Guide.pdf)
+The Qlix CDC data structure is described in this document: [https://help.qlik.com/en-US/replicate/November2024/pdf/Replicate-Setup-and-User-Guide.pdf](https://help.qlik.com/en-US/replicate/November2024/pdf/Replicate-Setup-and-User-Guide.pdf), for this PoC we will use key, headers, data, beforeData envelop.
 
 ## Setup
 
-In Confluent Cloud for Flink, create the qlik_cdc_output_table to mockup Qlik CDC output:
+In Confluent Cloud for Flink, create the `qlik_cdc_output_table` to mockup Qlik CDC output:
 
-* Open a workspace into your development environment
-* In `raw_topic_for_tests` folder, execute the `ddl.cdc_raw_table.sql` which should result to get a table, a kafka topic and two schemas in the schema registry as illustrated by (`show create table qlik_cdc_output_table`)
+* Open a workspace into your development environment. You need to have at least DataDiscovery and FlinkDeveloper roles. It may be needed to have OrganizationAdmin.
+
+* In `raw_topic_for_tests` folder, execute the `ddl.cdc_raw_table.sql`, by copy paste inside the Wordspace (or use makefile see below). It should result to get a table, a kafka topic and two schemas in the schema registry as illustrated by (`show create table qlik_cdc_output_table`)
     ```sql
     CREATE TABLE qlik_cdc_output_table (
     `key` VARBINARY(2147483647),
-    `headers` ROW<`operation` VARCHAR(2147483647), `changeSequence` VARCHAR(2147483647), `timestamp` VARCHAR(2147483647), `streamPosition` VARCHAR(2147483647), `transactionId` VARCHAR(2147483647), `changeMask` VARCHAR(2147483647), `columnMask` VARCHAR(2147483647), `externalSchemaId` VARCHAR(2147483647), `transactionEventCounter` BIGINT, `transactionLastEvent` BOOLEAN>,
-    `data` ROW<`id` VARCHAR(2147483647), `name` VARCHAR(2147483647), `email` VARCHAR(2147483647), `age` INT, `created_at` VARCHAR(2147483647), `updated_at` VARCHAR(2147483647)>,
-    `beforeData` ROW<`id` VARCHAR(2147483647), `name` VARCHAR(2147483647), `email` VARCHAR(2147483647), `age` INT, `created_at` VARCHAR(2147483647), `updated_at` VARCHAR(2147483647)>
+        `headers` ROW<`operation` VARCHAR(2147483647), `changeSequence` VARCHAR(2147483647), `timestamp` VARCHAR(2147483647), `streamPosition` VARCHAR(2147483647), `transactionId` VARCHAR(2147483647), `changeMask` VARCHAR(2147483647), `columnMask` VARCHAR(2147483647), `externalSchemaId` VARCHAR(2147483647), `transactionEventCounter` BIGINT, `transactionLastEvent` BOOLEAN>,
+    `data` ROW<`id` VARCHAR(2147483647), `name` VARCHAR(2147483647), `email` VARCHAR(2147483647), `age` INT, `created_at` VARCHAR(2147483647), `updated_at` VARCHAR(2147483647), `group_id` VARCHAR(2147483647)>,
+    `beforeData` ROW<`id` VARCHAR(2147483647), `name` VARCHAR(2147483647), `email` VARCHAR(2147483647), `age` INT, `created_at` VARCHAR(2147483647), `updated_at` VARCHAR(2147483647), `group_id` VARCHAR(2147483647)>
     )
     DISTRIBUTED BY HASH(`key`) INTO 1 BUCKETS
     WITH (
     'changelog.mode' = 'append',
     ```
 
-* Insert first sample data, with one record being wrong: `insert_raw_test_data.sql` from `raw_topic_for_tests`  folder
+    It is important to note the table does not define any primary key, which is the normal behavior with CDC.
+
+    Using the Makefile under the `raw_topic_for_tests` folder:
+    ```sh
+    make create_raw_table
+    make insert_raw_data
+    ```
+
+* Insert first sample data in this raw table for testing: There will be duplicate and one record being wrong: `insert_raw_test_data.sql` from `raw_topic_for_tests`  folder
 
 | operation | beforeData | Data | Comment |
 | --- | --- | --- | --- |
@@ -41,7 +50,7 @@ Here is the reported table content (with some duplicates to test dedup processin
 
 ## Pipeline end-to-end logic
 
-The requirements to support are:
+The requirements to support and demonstrate are:
 
 * Process raw_data coming from CDC ingestion layer
 * Check for NULLs for primary keys and Not-Null columns
@@ -59,6 +68,137 @@ The final pipeline looks like:
 
 ## First Statement: Filter, transform, route first level of error, deduplicate
 
+We want to:
+
+* extract data from the good path (data, beforeData) depending of the source database operation (INSERT, UPDATE, DELETE)
+* de-duplicate records with the same key, same operation taking the last records
+* Filter out unnecessary records
+* Route to error table the records we can identify in error
+
+### Working on the transformation
+
+The approach is to use the Confluent Cloud Console, and Flink workspace environment to build the sql per steps:
+1. Validate the input data: `select * from qlik_cdc_output_table limit 100;`
+1. Write the SQL to extract information from the CDC record using the operation: The logic is to extract the `data` or `beforeData` to a new schema with some reformatted metadata depending of the operation type:
+
+| operation | Which field to use |
+| --- | --- |
+| insert | data |
+| update | data |
+| delete | beforeData |
+
+* The classical approach is to use condition on the headers.operation like:
+    ```sql
+    select
+    key,
+    coalesce(if(headers.operation in ('DELETE'), beforeData.id, data.id), 'NULL') as customer_id,
+    headers.operation as rec_crud_text,
+    headers.changeSequence as hdr_changeSequence,
+    to_timestamp(headers.`timestamp`, 'yyyy-MM-dd''T''HH:mm:ss.SSS') as hdr_timestamp
+    from qlik_cdc_output_table;
+    ```
+
+    This should return:
+
+    ![](./docs/src_cust_build_1.png)
+
+
+    We can now complete data extraction with other coalesce and if functions:
+    ```sql
+    coalesce(if(headers.operation in ('DELETE'), beforeData.name, data.name), 'NULL') as name,
+    coalesce(if(headers.operation in ('DELETE'), beforeData.email, data.email), 'NULL') as email,
+    coalesce(if(headers.operation in ('DELETE'), beforeData.age, data.age), 199) as age,
+    coalesce(if(headers.operation in ('DELETE'), beforeData.created_at, data.created_at), '2025-09-10T12:00:00.000') as rec_created_ts,
+    coalesce(if(headers.operation in ('DELETE'), beforeData.updated_at, data.updated_at), '2025-09-10T12:00:00.000') as rec_updated_ts,
+    ```
+
+* As the target is to get a src_customers table, a new ddl is needed, which can be executed in a workspace cell, or using make
+    ```sql
+    create table src_customers(
+        customer_id string,
+        rec_pk_hash string,
+        name string,
+        email string,
+        age int,
+        rec_created_ts timestamp_ltz,
+        rec_updated_ts timestamp_ltz,
+        rec_crud_text string,
+        hdr_changeSequence string,
+        hdr_timestamp string,
+        primary key(customer_id) not enforced
+    ) distributed by hash(customer_id) into 1 buckets with (
+        'changelog.mode' = 'upsert'
+    );
+    ```
+
+    Under the customers/src_customers folder run:
+    ```sh
+    make create_flink_ddl
+    ```
+
+
+### Example of filtering records
+
+As an example to filter out some records, we will use the operation type (take all records no in REFRESH). The approach is to add a CTE, named `relevant_records` to filter out those records, and to wrap the transformation logic into another CTE, named `extracted_data`
+
+```sql
+with relevant_records as (
+-- demonstrate data filtering with CTE: not wants the REFRESH operation
+select
+  *
+  from qlik_cdc_output_table  where headers.operation <> 'REFRESH' and (not (data is null and beforeData is null))
+),
+-- transformation of the data
+extracted_data as (
+select
+  key,
+  coalesce(if(headers.operation in ('DELETE'), beforeData.id, data.id), 'NULL') as customer_id,
+  coalesce(if(headers.operation in ('DELETE'), beforeData.name, data.name), 'NULL') as name,
+  coalesce(if(headers.operation in ('DELETE'), beforeData.email, data.email), 'NULL') as email,
+  coalesce(if(headers.operation in ('DELETE'), beforeData.age, data.age), 199) as age,
+  coalesce(if(headers.operation in ('DELETE'), beforeData.created_at, data.created_at), '2025-09-10T12:00:00.000') as rec_created_ts,
+  coalesce(if(headers.operation in ('DELETE'), beforeData.updated_at, data.updated_at), '2025-09-10T12:00:00.000') as rec_updated_ts,
+  headers.operation as rec_crud_text,
+  headers.changeSequence as hdr_changeSequence,
+  to_timestamp(headers.`timestamp`, 'yyyy-MM-dd''T''HH:mm:ss.SSS') as hdr_timestamp
+from relevant_records)
+select * from extracted_data;
+```
+
+The results look like:
+
+![](./docs/src_cust_build_2.png)
+
+
+### Deduplication
+
+The src_customers table changelog.mode is set to 'upsert' so this means that Flink will keep the last message per key, and generate two records to the downstream topic when a new record for a given key arrives. This is noted -U, +U, to stipulate to retract previous value and replace with new one. The figure below illustrates that the last record for user_006 is in the table.
+
+![](./docs/src_cust_build_3.png)
+
+Looking at the records in the topic, we can see there are multiple records, as flink created those records while they arrived
+
+![](./docs/record_in_topic_1.png)
+
+
+* Deduplicate records
+    ```sql
+    select *  from (
+        select *,  ROW_NUMBER() OVER (
+                PARTITION BY customer_id, operation, changeSequence
+                ORDER
+                    BY ts DESC
+                ) AS row_num from extracted_data
+    ) where row_num = 1;
+    ```
+
+* Create a src_customers (see file ddl.src_customers.sql)
+* Putting the selection together
+
+---
+
+### Grouping error and main processing to create src_customers
+
 In Flink, when we need to have two outputs: the src_customers and the raw data DLQ,  we can use a statement set:
 
 ```sql
@@ -70,25 +210,15 @@ insert into src_customers .... ;
 end;
 ```
 
-To make this working, we need to create the `src_customers` to receive the outcome of the first Flink statement:
 
-```sql
-create table src_customers(
-    customer_id string,
-    rec_pk_hash string,
-    name string,
-    email string,
-    age int,
-    rec_created_ts timestamp_ltz,
-    rec_updated_ts timestamp_ltz,
-    rec_crud_text string,
-    hdr_changeSequence string,
-    hdr_timestamp string,
-    primary key(customer_id) not enforced
-) distributed by hash(customer_id) into 1 buckets with (
-    'changelog.mode' = 'upsert'
-);
-```
+* verify if data.id or beforeData.id were not null, if not route to a dead letter queue table.
+
+    * create raw_error_table
+    * user statement set to generate output to two tables
+
+    ```sql
+    select * from qlik_cdc_output_table where (data is null and headers.operation <> 'DELETE') or (data is not null and data.id is null);
+    ```
 
 
 
@@ -123,74 +253,6 @@ create table src_customers(
 
 This can be enhanced by adding new condition like on the headers null
 
-### Deduplication and filtering out wrong records, while transforming data
-
-We want to:
-
-* filter out some records based on the operation type (take all records no in REFRESH)
-* extract data from the good path (data, beforeData) depending of the source database operation (INSERT, UPDATE, DELETE)
-* add new columns, like hash computation derived from the business data and used for the downstream processing
-* de-duplicate records with the same key, same operation taking the last records
-
-The logic is to extract the `data` or `beforeData` to a new schema with some reformatted metadata depending of the operation type:
-
-| operation | Which field to use |
-| --- | --- |
-| insert | data |
-| update | data |
-| delete | beforeData |
-
-* The classical approach is to use condition on the headers.operation like:
-    ```sql
-     coalesce(if(headers.operation in ('DELETE'), beforeData.id, data.id), 'NULL') as customer_id,
-    ```
-
-* To demonstrate filtering, we can add a CTE to filter out the REFRESH operation:
-    ```sql
-    with relevant_records as (select * from qlik_cdc_output_table where headers.operation <> 'REFRESH' )
-    select * from relevant_records;
-    ```
-
-
-First the SQL logic to process raw data and create clean sources data, we need to:
-* verify if data.id or beforeData.id were not null, if not route to a dead letter queue table.
-
-    * create raw_error_table
-    * user statement set to generate output to two tables
-
-    ```sql
-    select * from qlik_cdc_output_table where (data is null and headers.operation <> 'DELETE') or (data is not null and data.id is null);
-    ```
-
-* The transformation to extract new payload from data or beforeData:
-    ```sql
-    -- CTE
-    with extracted_data as (
-    select
-        key,
-        coalesce(if(headers.operation in ('DELETE'), beforeData.id, data.id), 'NULL') as customer_id,
-        coalesce(if(headers.operation in ('DELETE'), beforeData.name, data.name), 'NULL') as name,
-        coalesce(if(headers.operation in ('DELETE'), beforeData.email, data.email), 'NULL') as email,
-        coalesce(if(headers.operation in ('DELETE'), beforeData.age, data.age), 99) as age,
-        headers.operation as operation,
-        headers.changeSequence as changeSequence,
-        to_timestamp(headers.`timestamp`, 'yyyy-MM-dd HH:mm:ss') as tx_ts,
-    from qlik_cdc_output_table
-    ```
-
-* Deduplicate records
-    ```sql
-    select *  from (
-        select *,  ROW_NUMBER() OVER (
-                PARTITION BY customer_id, operation, changeSequence
-                ORDER
-                    BY ts DESC
-                ) AS row_num from extracted_data
-    ) where row_num = 1;
-    ```
-
-* Create a src_customers (see file ddl.src_customers.sql)
-* Putting the selection together
 
 ## Business validation
 
