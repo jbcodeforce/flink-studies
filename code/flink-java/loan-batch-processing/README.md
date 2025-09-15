@@ -11,7 +11,7 @@ The project has two complementary jobs:
 * Compute average loan amount and other statistics.
 * Write outcome on the console and then to an output csv file
 
-## DataStream Implementation
+## Implementation
 
 This Flink batch processing job:
 
@@ -26,6 +26,8 @@ This Flink batch processing job:
    - Prints all statistics to console with labeled output
    - Writes **all computed statistics** to `/tmp/loan_statistics_summary.csv`
    - Shows sample records for verification
+
+For the TableApiJob, it computes fraud analysis.
 
 ### Key Components
 
@@ -46,21 +48,64 @@ This Flink batch processing job:
    * Outputs detailed fraud analysis to console and CSV file
 - **`pom.xml`**: Maven configuration with Flink file connector and Table API dependencies
 
+### TableAPI and SQL
+
+The first fraud aggregation is simple:
+
+```sql
+ SELECT COUNT(*) as total_fraudulent_loans FROM loan_applications WHERE fraudFlag = 1
+```
+
+
+internaly, Flink will use a GroupAggregate which produces a stream of records that includes updates. Many Flink table sinks, particularly those designed for file systems (like CSV, Parquet, or ORC sinks), are inherently append-only. They are designed to simply add new records to the end of a file or partition and do not have the mechanism to modify or delete existing records. Sinks such as a JDBC sink or a connector to a message queue that can handle key-based updates.
+
+To use Duckdb as a sink and JDBC Sink connector, the following needs to be done:
+
+1. Add pom dependencies: `org.duckdb.duckdb_jdbc` and `org.apache.flink.flink-connector-jdbc`
+1. In the FraudCountTableApi.java:
+   ```
+   // DuckDB connection settings
+   String duckdbPath = "/tmp/fraud_analysis.db";
+   String jdbcUrl = "jdbc:duckdb:" + duckdbPath;
+   ```
+1. Once the code is packaged and executed the /tmp/ is created, use the duckdb cli to connect and query the database 
+1. Install duckdb cli: `brew install duckdb` . See the [CLI Command documentation](https://duckdb.org/docs/stable/clients/cli/overview).
+   ```sh
+   # Use the verification script (recommended)
+   ./verify_duckdb.sh
+   
+   # Or manually connect
+   duckdb /tmp/fraud_analysis.db
+   ```
+1. Run some queries like:
+   ```sql
+   SELECT * FROM fraud_analysis ORDER BY analysis_timestamp DESC;
+   -- get the latest fraud count
+   SELECT total_fraudulent_loans, analysis_timestamp 
+   FROM fraud_analysis 
+   WHERE analysis_type = 'fraud_count_analysis'
+   ORDER BY analysis_timestamp DESC LIMIT 1;
+   ```
+
 ## How to Run
 
 ### DataStream API Job (General Statistics)
-1. Ensure you have Maven and Java 8+ installed
+
+1. Ensure you have Maven and Java 11+ installed
 2. Build the project: `mvn clean package`
 3. Run with Flink: 
    ```bash
-   $FLINK_HOME/bin/flink run target/loan-application-0.1.jar
+   flink run target/loan-application-0.1.jar
    ```
    Or when using OSS Flink run directly in IDE: `DataStreamJob.main()`
 
 ### Table API Job (Fraud Analysis)
-Run the fraud analysis job:
-- In IDE: Run `TableApiJob.main()`
-- Or with Flink CLI: Update pom.xml mainClass to `j9r.flink.loanapp.TableApiJob` and build/run
+
+* Change the main class name in the tar plugin in pom.xml to `j9r.flink.loanapp.TableApiJob` and build with `mvn package`
+* Run the fraud analysis job:
+   ```bash
+   flink run target/loan-application-0.1.jar
+   ```
 
 ## Data Source
 
@@ -79,9 +124,11 @@ Contains 50,000+ loan applications with fields like loan amount, customer detail
 
 ### Table API Job Output (Fraud Analysis)
 - Console: Detailed fraud analysis results with SQL-based insights
-- `/tmp/fraud_analysis_results.csv`: Comprehensive fraud analysis including:
-  - Total number of fraudulent loan applications
-  - Fraud breakdown by loan type (Personal/Business/Home/Car/Education)
-  - Fraud classification by fraud type (when specified)
-  - Fraud rate percentage by loan status (Approved vs Declined)
-  - Comparative analysis: Average loan amounts and income for fraudulent vs legitimate applications
+- **DuckDB Database**: `/tmp/fraud_analysis.db` with structured fraud analysis data using **UPSERT mode**
+  - Table: `fraud_analysis` with columns and **composite primary key**:
+    - `analysis_date`: Date of analysis (PRIMARY KEY part)
+    - `analysis_type`: Type of analysis performed (PRIMARY KEY part, e.g., 'fraud_count_analysis')
+    - `analysis_timestamp`: When the analysis was last updated  
+    - `total_fraudulent_loans`: Number of fraudulent applications detected
+  - **Upsert Behavior**: Multiple runs on the same date will **update** the existing record rather than create duplicates
+- **Query Examples**: See `query_duckdb.sql` for sample queries to analyze results and track daily trends

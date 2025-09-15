@@ -40,7 +40,7 @@ import java.io.IOException;
  * Table API job for analyzing fraudulent loan applications
  * Uses Flink Table API for SQL-like fraud analysis queries
  */
-public class TableApiJob {
+public class TableApiJobComplete {
 
     public static void main(String[] args) throws Exception {
         // Set up the streaming execution environment using the Table API
@@ -123,8 +123,7 @@ public class TableApiJob {
             "SELECT loanType, COUNT(*) as fraudulent_count " +
             "FROM loan_applications " +
             "WHERE fraudFlag = 1 " +
-            "GROUP BY loanType " +
-            "ORDER BY fraudulent_count DESC"
+            "GROUP BY loanType "
         );
 
         // SQL Query 3: Fraud breakdown by fraud type (when specified)
@@ -132,8 +131,7 @@ public class TableApiJob {
             "SELECT fraudType, COUNT(*) as fraud_count " +
             "FROM loan_applications " +
             "WHERE fraudFlag = 1 AND fraudType IS NOT NULL AND fraudType <> '' " +
-            "GROUP BY fraudType " +
-            "ORDER BY fraud_count DESC"
+            "GROUP BY fraudType "
         );
 
         // SQL Query 4: Fraud rate by loan status
@@ -143,8 +141,7 @@ public class TableApiJob {
             "       SUM(fraudFlag) as fraudulent_applications, " +
             "       ROUND(CAST(SUM(fraudFlag) AS DOUBLE) / COUNT(*) * 100, 2) as fraud_rate_percent " +
             "FROM loan_applications " +
-            "GROUP BY loanStatus " +
-            "ORDER BY fraud_rate_percent DESC"
+            "GROUP BY loanStatus "
         );
 
         // SQL Query 5: Average loan amount for fraudulent vs non-fraudulent applications
@@ -155,13 +152,14 @@ public class TableApiJob {
             "  ROUND(AVG(loanAmountRequested), 2) as avg_loan_amount, " +
             "  ROUND(AVG(monthlyIncome), 2) as avg_monthly_income " +
             "FROM loan_applications " +
-            "GROUP BY fraudFlag " +
-            "ORDER BY fraudFlag DESC"
+            "GROUP BY fraudFlag "
         );
 
         // Convert Table results back to DataStream for output
         // For simple aggregation without GROUP BY - use toDataStream
-        DataStream<org.apache.flink.types.Row> fraudCountStream = tableEnv.toDataStream(fraudCountTable);
+        DataStream<org.apache.flink.types.Row> fraudCountStream = tableEnv.toChangelogStream(fraudCountTable)
+            .filter(row -> row.getKind().equals(org.apache.flink.types.RowKind.INSERT) || 
+                          row.getKind().equals(org.apache.flink.types.RowKind.UPDATE_AFTER));
         
         // For GROUP BY aggregations - use toChangelogStream to handle upserts properly
         DataStream<org.apache.flink.types.Row> fraudByTypeStream = tableEnv.toChangelogStream(fraudByTypeTable)

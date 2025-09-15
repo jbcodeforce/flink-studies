@@ -361,6 +361,37 @@ The following diagram illustrates the target unit testing environment:
 
 ## Measuring Latency 
 
+The goal is to measure the end-to-end data latency, which is the time from when data is created at its source to when it becomes available for end-user consumption. In any Apache Flink solution, especially those with chained Flink jobs, measuring this latency is a critical and planned activity within the deployment process.
+
+For example, consider a typical real-time data processing architecture. We'll use this architecture to illustrate how to measure and represent latency throughout the data flow:
+
+<figure markdown="span">
+![](./images/perf_test_basic.drawio.png)
+</figure>
+
+The following timestamps may be considered:
+
+1. UpdatedDate column in the transactional database may be used to know when a record was created / updated, this will serve to measure end-to-end latency. 
+1. Source CDC connector like Debezium, may add a timestamp in their message envelop that could be used, if injected in the messages to measure messaging latency.
+1. Within the Flink processing, event time, may be mapped to the Kafka Topic record time. Ths could be used to measure Flink pipeline latency.
+
+It is important to note that Flink latency results may seem inconsistent. This is normal, and due to the semantic of the Flink processing. To ensure exactly-once delivery, Flink uses transactions when writing messages into Kafka. It is part of a consume-process-produce pattern, and adds the offset of the messages it has consumed to the transaction. 
+
+Flink persists its state, including the offsets of the Kafka source, via checkpoints, which are done once per minute. The frequency may be configured. Queries submitted through Confluent Cloud Flink SQL Workbench or inspecting the content of a topic in the console generate output based on `read_uncommitted` isolation. The latency may seem reasonalbe during iterative development in the console, it may increase during more rigorous tests that use a read_committed consumer.
+
+Consumer reading committed messages will observe latency (consumer's property of `isolation.level= read-committed`). Recall that, when a consumer starts up, or when a partition is newly assigned to it, the consumer will check the `__consumer_offsets` topic to find the latest committed offset for its consumer group and partition. It will then begin reading messages from the next offset. Consumer will wait and not advance its position until the transaction is either committed or aborted. This ensures it never sees messages from aborted transactions and only sees a complete, consistent set of records. 
+
+When producer iniates a transaction, and writes messages to topic/partition, those messages are not yet visible to consumers configured to read committed data, when there is no error, the producer commits the transaction. 
+
+When consumer applications may tolerate at-least once semantics, they may simply configure all consumers with `read_uncommitted` isolation, at the risk that during failure recovery and scaling activities, the Flink statement will reingest messages from the last checkpoint, causing duplicates and time-travel for end consumers.
+
+???- Info "Flink transaction process"
+    Flink's core mechanism for fault tolerance is checkpointing. It periodically takes a consistent snapshot of the entire application state, including the offsets of the Kafka source and the state of all operators.
+    * Flink's Kafka sink connector uses a two-phase commit protocol.
+    * When a checkpoint is triggered, the Flink Kafka producer (the sink) writes any pending data to Kafka within a transaction. It then prepares to commit this transaction but waits for a signal from the Flink JobManager.
+    * Once the JobManager confirms that all operators have successfully snapshotted their state, it tells the Kafka producer to commit the transaction. This makes the new data visible to read_committed consumers.
+    * If any part of the checkpoint fails (e.g., a Flink task manager crashes), the transaction is aborted. The uncommitted messages become "ghost" records on the Kafka topic, invisible to read_committed consumers. When the Flink job restarts, it will restore its state from the last successful checkpoint and reprocess the data from that point, avoiding data loss or duplicate.
+
 ## Other sources
 
 The current content is sourced from the following cookbooks and lesson learnt while engaging with customers.

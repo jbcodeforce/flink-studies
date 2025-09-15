@@ -70,6 +70,8 @@ public class LoanApplication {
                 ", loanType='" + loanType + '\'' +
                 ", loanAmountRequested=" + loanAmountRequested +
                 ", loanStatus='" + loanStatus + '\'' +
+                ", fraudFlag='" + fraudFlag + '\'' +
+                ", fraudType='" + fraudType + '\'' +
                 '}';
     }
 
