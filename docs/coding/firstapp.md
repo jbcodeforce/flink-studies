@@ -29,10 +29,11 @@ Once developers build the application jar file, they use Flink CLI to send the j
 
 [See the product documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/configuration/overview/) which can be summarized as:
 
-1. Create project template from quickstart shell
+1. Be sure t have maven and JAVA_HOME setup
+1. Create a project template, named quickstart, using the Flink quickstart shell and specifying the Flink version (e.g. 1.20.2)
 
     ```sh
-    curl https://flink.apache.org/q/quickstart.sh | bash -s 1.20.0
+    curl https://flink.apache.org/q/quickstart.sh | bash -s 1.20.2
     ```
 
 1. Add the following [maven dependencies](https://mvnrepository.com/artifact/org.apache.flink) into the `pom.xml`:
@@ -44,12 +45,6 @@ Once developers build the application jar file, they use Flink CLI to send the j
         <artifactId>flink-java</artifactId>
         <version>${flink-version}</version>
     </dependency>
-    <dependency>
-        <groupId>org.apache.flink</groupId>
-        <artifactId>flink-streaming-java</artifactId>
-        <version>${flink-version}</version>
-        <scope>provided</scope>
-    </dependency>
     ```
 
 1. When using Kafka, add kafka connector dependencies in pom.xml
@@ -58,7 +53,7 @@ Once developers build the application jar file, they use Flink CLI to send the j
       <dependency>
           <groupId>org.apache.flink</groupId>
           <artifactId>flink-connector-kafka</artifactId>
-          <version>3.0.0-1.17</version>
+          <version>1.20.2</version>
       </dependency>
     ```
 
@@ -84,10 +79,17 @@ Once developers build the application jar file, they use Flink CLI to send the j
 
 1. Define event structure as POJO, as a separate Java Bean in the `event` folder.
 1. Implement the process logic and the event mapping, filtering logic... We will see more examples later.
-1. Package with `mvn package`
-1. Access to a Flink compute pool, locally using local installation, docker, Kubernetes or Confluent Cloud for Flink. Use the flink cli to submit the job for a local cluster, use FlinkDeployment(KFF) or FlinkApplication (CMF) 
+1. Package with `mvn package`. Create a UBER jar if using external system, for reading from a filesystem, Flink has the predefined connectors. The `maven-shade-plugin` maven plugin creates such UBER jar.
+1. Access to a Flink compute pool, locally using local installation, docker, Kubernetes or Confluent Cloud for Flink. Use the `flink cli` to submit the job for a local cluster, use FlinkDeployment(KFF) or FlinkApplication (CMF) 
+  ```sh
+  flink run -c j9r.flink.MyJob myapp.jar
+  ```
 
-With the open source version, we have access to a lot of different connectors, for example to load data from csv file. This is convenient to do local testing. With Confluent Cloud only Kafka topics can be used as source and sink.
+With the open source version, we have access to a lot of different connectors, for example to load data from csv file. This is convenient to do local testing. or batch processing.
+
+## An example of Batch processing
+
+The goals is to read a csv file and compute aggregates in Java DataStream, and then TableAPI. The code is in [code/table-api/loan-batch-processing]()
 
 ## Create a Quarkus java app
 

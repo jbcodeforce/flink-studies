@@ -30,12 +30,12 @@ Be sure to have [confluent cli.](https://docs.confluent.io/confluent-cli/current
 * Compute pool represents resources to run Task manager and Job manager. Each Flink SQL statement is associated with exactly one Compute Pool. [See example of pool definition](https://docs.confluent.io/platform/current/flink/configure/compute-pools.html) and in [cmf folder](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cmf)
 * For SQL catalog to group database concept for Flink SQL table queries. It references a Schema Registry instance and one or more Kafka clusters.
 
-## Set up
+## Product Set Up
 
 * [See my dedicated chapter for Confluent Plaform Kubernetes deployment](../coding/k8s-deploy.md/#confluent-manager-for-apache-flink).
 * [See the makefile to deploy CMF](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cp-flink/Makefile), and the [product documentation](https://docs.confluent.io/platform/current/flink/installation/overview.html) 
 
-## Important source of information for deployment
+## Important Source of Information for Deployment
 
 * [Confluent Platform deployment using kubernetes operator](https://docs.confluent.io/operator/current/co-deploy-cp.html#co-deploy-cp)
 * [Deployment overview](https://docs.confluent.io/platform/current/flink/installation/overview.html) and [for Apache Flink.](https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/overview/) 
@@ -43,7 +43,7 @@ Be sure to have [confluent cli.](https://docs.confluent.io/confluent-cli/current
 * [Flink fine-grained resource management documentation.](https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/finegrained_resource/)
 * [CP v8 announcement](https://www.confluent.io/blog/introducing-confluent-platform-8-0/): builds on Kafka 4.0, next-gen Confluent Control Center (integrating with the open telemetry protocol (OTLP),  Confluent Manager for Apache Flink® (CMF)), Kraft native (support significantly larger clusters with millions of partitions), Client-Side field level encryption. CP for Flink support SQL, Queues for Kafka is now in Early Access, 
 
-## Metadata management service for RBAC
+## Metadata Management Service for RBAC
 
 * [Metadata Service Overview](https://docs.confluent.io/platform/current/kafka/configure-mds/index.html#configure-mds-long-in-cp)
 * Single broker [Kafka+MDS Deployment](https://docs.confluent.io/platform/current/kafka/configure-mds/index.html#configure-a-primary-ak-cluster-to-host-the-mds-and-role-binding)
@@ -54,6 +54,27 @@ Be sure to have [confluent cli.](https://docs.confluent.io/confluent-cli/current
 * Best Practices for [K8s + RBAC](https://kubernetes.io/docs/concepts/security/rbac-good-practices/)
 
 ## SQL specific
+
+As of Sept 2025 [SQL support is still under-preview.](https://docs.confluent.io/platform/current/flink/jobs/sql-statements/overview.html)
+
+## Applications
+
+[Application documentation](https://docs.confluent.io/platform/current/flink/jobs/applications/overview.html) [or FlinkDeployment](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-release-1.12/docs/custom-resource/reference/), an exposed kubernetes CR.
+
+Flink SQL is supported only as part of a packaged JAR application based on the TableEnvironment interface.
+
+Important points:
+
+* After CMF is installed and running, it will continuously watch Flink applications.
+* Environment control k8s namespace in which the Flink application is deployed.
+* Suspended app, does not consume resource, and may be restored from its savepoint.
+* CLI, REST API or the Console can be used to deploy app.
+
+* [See the getting started with a Java project for Flink](../coding/firstapp.md/#create-a-java-project-with-maven), see also [the Confluent specific settings](https://docs.confluent.io/platform/current/flink/jobs/applications/packaging.html#set-up-the-project-configuration)
+
+Examples of apps:
+
+* [code/]()
 
 
 ## Understanding Sizing

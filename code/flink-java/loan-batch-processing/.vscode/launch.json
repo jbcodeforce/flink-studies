@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Run DataStreamJob",
+            "request": "launch",
+            "mainClass": "j9r.flink.loanapp.DataStreamJob",
+            "projectName": "loan-application",
+            "console": "integratedTerminal",
+            "args": []
+        },
+        {
+            "type": "java",
+            "name": "Run TableApiJob (Fraud Analysis)",
+            "request": "launch",
+            "mainClass": "j9r.flink.loanapp.TableApiJob",
+            "projectName": "loan-application",
+            "console": "integratedTerminal",
+            "args": []
+        }
+    ]
+}

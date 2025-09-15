@@ -6,7 +6,7 @@
 
 [Confluent Cloud for Apache Flink®](https://docs.confluent.io/cloud/current/flink/overview.html) is a cloud-native, managed service, for Flink, integrated with the Confluent Cloud Kafka managed service.
 
-![](./diagrams/ccloud-flink.drawio.png){ width=600 }
+![](./diagrams/ccloud-flink.drawio.png){ width=800 }
 
 Confluent Cloud Flink is built on the same open-source version as Apache Flink® with additional features:
 

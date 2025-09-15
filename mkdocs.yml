@@ -29,7 +29,7 @@ nav:
     - Migrate to real-time processing: https://jbcodeforce.github.io/shift_left_utils/
   - Related Technologies:
     - Confluent Cloud Flink: techno/ccloud-flink.md 
-    - Confluent Cloud Platform Flink: techno/cp-flink.md 
+    - Confluent Platform for Flink: techno/cp-flink.md 
     - Kafka Integration: architecture/kafka.md
     - Confluent TableFlow: techno/cc-tableflow.md
     - Apache Iceberg: https://jbcodeforce.github.io/techno/data/#data-related-technologies
