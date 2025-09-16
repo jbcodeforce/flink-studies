@@ -51,6 +51,35 @@ import java.sql.DriverManager;
  */
 public class FraudCountTableApiJob {
 
+    public static void debug_fraud_distribution(StreamTableEnvironment tableEnv, Table fraudDistributionTable) {
+        // Debug: Print fraud flag distribution
+        DataStream<org.apache.flink.types.Row> fraudDistributionStream = tableEnv.toChangelogStream(fraudDistributionTable)
+            .filter(row -> row.getKind().equals(org.apache.flink.types.RowKind.INSERT) || 
+                          row.getKind().equals(org.apache.flink.types.RowKind.UPDATE_AFTER));
+                          
+        fraudDistributionStream.map(new MapFunction<org.apache.flink.types.Row, String>() {
+            @Override
+            public String map(org.apache.flink.types.Row row) throws Exception {
+                return String.format("Fraud Flag Distribution: Flag=%s, Count=%s", 
+                    row.getField(0), row.getField(1));
+            }
+        }).print("FRAUD_DISTRIBUTION").setParallelism(1);
+    }
+
+    public static void debug_total_count(StreamTableEnvironment tableEnv, Table totalCountTable) {
+        // Debug: Print total record count
+        DataStream<org.apache.flink.types.Row> totalCountStream = tableEnv.toChangelogStream(totalCountTable)
+            .filter(row -> row.getKind().equals(org.apache.flink.types.RowKind.INSERT) || 
+                          row.getKind().equals(org.apache.flink.types.RowKind.UPDATE_AFTER));
+                          
+        totalCountStream.map(new MapFunction<org.apache.flink.types.Row, String>() {
+            @Override
+            public String map(org.apache.flink.types.Row row) throws Exception {
+                return "Total Records Loaded: " + row.getField(0);
+            }
+        }).print("TOTAL_COUNT").setParallelism(1);
+    }
+
     public static void main(String[] args) throws Exception {
         // Set up the streaming execution environment using the Table API
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -151,52 +180,15 @@ public class FraudCountTableApiJob {
         Table loanTable = tableEnv.fromDataStream(loanApplications, schema);
         tableEnv.createTemporaryView("loan_applications", loanTable);
 
-        // First, let's check if we have any data at all
-        Table totalCountTable = tableEnv.sqlQuery(
-            "SELECT COUNT(*) as total_records FROM loan_applications"
-        );
         
-        // Check fraud records (NOTE: Dataset has 0 fraud records, but let's proceed)
+        // Check fraud records
         Table fraudCountTable = tableEnv.sqlQuery(
             "SELECT COUNT(*) as total_fraudulent_loans " +
             "FROM loan_applications " +
             "WHERE fraudFlag = 1"
         );
         
-        // Also get total fraud flag distribution
-        Table fraudDistributionTable = tableEnv.sqlQuery(
-            "SELECT fraudFlag, COUNT(*) as record_count " +
-            "FROM loan_applications " + 
-            "GROUP BY fraudFlag"
-        );
-        
 
-        // Debug: Print total record count
-        DataStream<org.apache.flink.types.Row> totalCountStream = tableEnv.toChangelogStream(totalCountTable)
-            .filter(row -> row.getKind().equals(org.apache.flink.types.RowKind.INSERT) || 
-                          row.getKind().equals(org.apache.flink.types.RowKind.UPDATE_AFTER));
-                          
-        totalCountStream.map(new MapFunction<org.apache.flink.types.Row, String>() {
-            @Override
-            public String map(org.apache.flink.types.Row row) throws Exception {
-                return "Total Records Loaded: " + row.getField(0);
-            }
-        }).print("TOTAL_COUNT").setParallelism(1);
-        
-        // Debug: Print fraud flag distribution
-        DataStream<org.apache.flink.types.Row> fraudDistributionStream = tableEnv.toChangelogStream(fraudDistributionTable)
-            .filter(row -> row.getKind().equals(org.apache.flink.types.RowKind.INSERT) || 
-                          row.getKind().equals(org.apache.flink.types.RowKind.UPDATE_AFTER));
-                          
-        fraudDistributionStream.map(new MapFunction<org.apache.flink.types.Row, String>() {
-            @Override
-            public String map(org.apache.flink.types.Row row) throws Exception {
-                return String.format("Fraud Flag Distribution: Flag=%s, Count=%s", 
-                    row.getField(0), row.getField(1));
-            }
-        }).print("FRAUD_DISTRIBUTION").setParallelism(1);
-        
-        
         // First option is to convert Table results back to DataStream for output, taking into account the changelog mode.
         DataStream<org.apache.flink.types.Row> fraudCountStream = tableEnv.toChangelogStream(fraudCountTable)
             .filter(row -> row.getKind().equals(org.apache.flink.types.RowKind.INSERT) || 
@@ -233,17 +225,16 @@ public class FraudCountTableApiJob {
         );
 
         // Convert fraud count table to enriched table directly using Table API       
-        // Also create enriched table with real (0) count to show it works
-        Table enrichedRealTable = fraudCountTable.select(
+        Table enrichedTable = fraudCountTable.select(
             lit(java.time.LocalDate.now().toString()).cast(DataTypes.DATE()).as("analysis_date"),
-            lit("real_fraud_count").as("analysis_type"),
+            lit("fraud_count_analysis").as("analysis_type"),
             lit(new java.sql.Timestamp(System.currentTimeMillis())).as("analysis_timestamp"),
             $("total_fraudulent_loans")
         );
         
         // Debug: Print enriched table data before insertion
         System.out.println("=== ENRICHED TABLE DEBUG ===");
-        DataStream<org.apache.flink.types.Row> debugEnrichedStream = tableEnv.toChangelogStream(enrichedRealTable)
+        DataStream<org.apache.flink.types.Row> debugEnrichedStream = tableEnv.toChangelogStream(enrichedTable)
             .filter(row -> row.getKind().equals(org.apache.flink.types.RowKind.INSERT) || 
                           row.getKind().equals(org.apache.flink.types.RowKind.UPDATE_AFTER));
                           
@@ -255,15 +246,12 @@ public class FraudCountTableApiJob {
             }
         }).print("DEBUG_ENRICHED").setParallelism(1);
         
-        // Insert both simulated and real fraud counts into DuckDB
-        System.out.println("Attempting to insert simulated fraud count into DuckDB...");
-        enrichedRealTable.insertInto("fraud_analysis_sink");
-        
-        System.out.println("Attempting to insert real fraud count (0) into DuckDB...");
-        enrichedRealTable.insertInto("fraud_analysis_sink");
+        // Insert fraud count into DuckDB
+        System.out.println("Attempting to insert fraud count into DuckDB...");
+        enrichedTable.insertInto("fraud_analysis_sink");
 
         // Also keep console output for monitoring by converting back to DataStream using changelog
-        DataStream<org.apache.flink.types.Row> monitoringStream = tableEnv.toChangelogStream(enrichedRealTable)
+        DataStream<org.apache.flink.types.Row> monitoringStream = tableEnv.toChangelogStream(enrichedTable)
             .filter(row -> row.getKind().equals(org.apache.flink.types.RowKind.INSERT) || 
                           row.getKind().equals(org.apache.flink.types.RowKind.UPDATE_AFTER));
                           

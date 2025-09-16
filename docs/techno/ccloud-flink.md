@@ -155,7 +155,20 @@ Nothing special, except that once the job is started, we cannot modify it, we ne
 
 Confluent Cloud for Flink [supports the Table API, in Java](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-java-table-api.html) or [Python](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-python-table-api.html).
 
-The Table API is on top of the SQL engine, and so program runs on an external systems, but uses an specific Flink environment for Confluent Cloud to submit the DAG to the remote engine. The program declares the data flow, submit it to the remote job manager.  [Read this chapter](../coding/table-api.md) for more information.
+The Table API is on top of the SQL engine, and so program runs on an external systems, but uses an specific Flink environment for Confluent Cloud to submit the DAG to the remote engine. The program declares the data flow, submit it to the remote job manager.  
+
+When running TableAPI with Confluent Cloud for Flink, there are some specifics code to have:
+
+1. Set the environment variables for :
+    ```sh
+    ```
+1. Create a Table environment in the Java or Python code like:
+    ```java
+    ```
+
+1. Package and run
+
+[Read this chapter](../coding/table-api.md) for more information.
 
 ## DLQ support
 
@@ -245,7 +258,21 @@ Within an environment, there is one schema registry. We can have multiple Kafka 
 
 ## Monitoring and troubleshouting
 
-Once the Flink SQL statement runs, use the Console, (Environment > Flink > Flink page > Flink statements). Look at the statement status, consider failed, pending, degraded. Some issues are recoverables, some not:
+Once the Flink SQL statement runs, Data Engineers may use the Console, (Environment > Flink > Flink page > Flink statements) to assess the list of statements and their state of processing. 
+
+![](./images/statement_list.png)
+
+See the [monitoring product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html) for explanations of the different fields. The following fields are important to consider:
+
+| Field | Why to consider |
+| --- | --- |
+| **Status** | Verify the state of the Flink query |
+| **Statement CFU** | Server resource used by the statement |
+| **Messages Behind** | Is the query behind, is there some backpressure applied |
+| **Message out** | Rate of messages created by the query |
+| **State Size** in GB | Keep it low, alert at 300+ GB | 
+
+Look at the statement status, consider failed, pending, degraded. Some issues are recoverables, some not:
 
 | | Recoverable | Non-recoverable |
 | --- | --- | --- |
@@ -253,10 +280,27 @@ Once the Flink SQL statement runs, use the Console, (Environment > Flink > Flink
 | **System** | checkpointing failure, networking disruption |  |
 | **Actions** | If recovery takes a long time or fails repeatedly, and if this is a user execption, the message will be in the status.detail of the statement, else the user may reach to the support. | User needs to fix the query or data. |
 
-Be sure to enable cloud notifications and at least monitor topic consumer lag metric. As a general practices, monitoring for `current_cfus = cfu_limit` to avoid exhaustion of compute pools.  The `flink/pending.records` is the most important metrics to consider. It corresponds to consumer lag in Kafka and “Messages Behind” in the Confluent Cloud UI. Monitor for high and increasing consumer lag.
+Be sure to enable cloud notifications and at least monitor topic consumer lag metric. As a general practices, monitoring for `current_cfus = cfu_limit` to avoid exhaustion of compute pools.  
+
+The `flink/pending.records` is the most important metrics to consider. It corresponds to consumer lag in Kafka and “Messages Behind” in the Confluent Cloud UI. Monitor for high and increasing consumer lag.
+
+At the Statement level we can get the following metrics, over time:
+
+![](./images/statement_metrics.png)
+
+And with the `Query profiler`, which represents the same content as the Flink console UI, we can assess each operator of the query DAG, with CPU utilization, state size, ...
+
+![](./images/statement_query_profiler.png)
 
 
-* [Product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html)
+* Confluent Cloud for Apache Flink supports metrics integrations with services like Prometheus, Grafana and Datadog.
+
+![](./images/export_metrics.png)
+
+ 
+* DML statement failing, or being degraded, or pending can be notified to external system. [See the notification for CC documentation](https://docs.confluent.io/cloud/current/monitoring/configure-notifications.html#ccloud-notifications)
+
+* [Flink monitoring statement product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html)
 
 ## Role Base Access Control
 

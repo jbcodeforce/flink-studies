@@ -1,4 +1,4 @@
-# Some Table API using Confluent Cloud
+# Some Table API using Confluent Cloud for Flink
 
 Based on this repository: [flink-table-api-java-examples](https://github.com/confluentinc/flink-table-api-java-examples) and [this tutorial]()
 
@@ -11,13 +11,13 @@ Based on this repository: [flink-table-api-java-examples](https://github.com/con
     export CLOUD_REGION="us-east-1"
     export FLINK_API_KEY="key"
     export FLINK_API_SECRET="secret"
-    export ORG_ID="b0b21724-4586-4a07-b787-d0bb5aacbf87"
-    export ENV_ID="env-z3y2x1"
-    export COMPUTE_POOL_ID="lfcp-8m03rm"
+    export ORG_ID="b0b....7"
+    export ENV_ID="env-..."
+    export COMPUTE_POOL_ID="lfcp-..."
     ```
 
 * Compile with `mvn clean package`
-* Start one of the main from the built jar
+* Start one of the main function from the built jar:
 
     ```sh
     java -cp target/table-api-1.0.0.jar flink.examples.table.Main_00_JoinOrderCustomer

@@ -387,10 +387,13 @@ When consumer applications may tolerate at-least once semantics, they may simply
 
 ???- Info "Flink transaction process"
     Flink's core mechanism for fault tolerance is checkpointing. It periodically takes a consistent snapshot of the entire application state, including the offsets of the Kafka source and the state of all operators.
+
     * Flink's Kafka sink connector uses a two-phase commit protocol.
     * When a checkpoint is triggered, the Flink Kafka producer (the sink) writes any pending data to Kafka within a transaction. It then prepares to commit this transaction but waits for a signal from the Flink JobManager.
     * Once the JobManager confirms that all operators have successfully snapshotted their state, it tells the Kafka producer to commit the transaction. This makes the new data visible to read_committed consumers.
     * If any part of the checkpoint fails (e.g., a Flink task manager crashes), the transaction is aborted. The uncommitted messages become "ghost" records on the Kafka topic, invisible to read_committed consumers. When the Flink job restarts, it will restore its state from the last successful checkpoint and reprocess the data from that point, avoiding data loss or duplicate.
+
+The [shift_left utility has an integration tests harness feature to do end-to-end testing with timestamp](https://jbcodeforce.github.io/shift_left_utils/coding/test_harness/#integration-tests).
 
 ## Other sources
 
