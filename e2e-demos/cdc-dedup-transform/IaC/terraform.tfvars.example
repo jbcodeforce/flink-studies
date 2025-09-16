@@ -1,0 +1,15 @@
+# Copy this file to terraform.tfvars and customize the values
+
+# AWS Configuration
+aws_region = "us-west-2"
+
+# Project Configuration
+environment  = "dev"
+project_name = "flink-studies"
+
+# S3 Bucket Configuration
+# bucket_name = "my-custom-bucket-name"  # Leave empty for auto-generated name
+force_destroy      = true   # Set to true for dev/test environments
+versioning_enabled = false  # Set to true for production
+enable_encryption  = true
+enable_public_access_block = true

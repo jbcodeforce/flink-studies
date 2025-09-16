@@ -1,10 +1,38 @@
 # A simple PoC to emulate CDC processing
 
+
+The goal of this demonstration is to process Qlik CDC records, and implement the following pipeline:
+
+![](./docs/pipeline_design.drawio.png)
+
+1. The raw input topic is the outcome of the Qlik CDC with key, data, beforeData, and headers envelop
+1. The First Flink queries are filtering out, rejecting records in errors, process deduplication, and perform data extraction to flatten the data model. This statement creates the source table: `src_customers`  . The goal is to fail fast, capture everything, and provide actionable information for debugging and recovery.
+1. The Second Flink queries are also applying some business logic to reject some src records, and apply other validation and joining with other sources or dimensions. The goal is to create a dimension table to be consumed by other Flink statements to build a star model or going directly to a sink kafka connector that supports upsert semantic and write to a target format.
+1. The target format could be a parquet file with DeltaLake or Iceberg metadata.
+
+## Context
+
+In log-based CDC, when a new transaction comes into a database, it gets logged into a log file with no impact on the source system.  
+
 The qlik_cdc_output_table represents the output of Qlik CDC output as raw topic in kafka. The envelop and metadata are important.
 
-When using CDC connector to Kafka, most of them are creating schema into the schema registry with an envelop to track the data before and after. 
+When using CDC connectors to Kafka, most of them, are creating schema into the schema registry with an envelop to track the data before and after. 
 
 The Qlix CDC data structure is described in this document: [https://help.qlik.com/en-US/replicate/November2024/pdf/Replicate-Setup-and-User-Guide.pdf](https://help.qlik.com/en-US/replicate/November2024/pdf/Replicate-Setup-and-User-Guide.pdf), for this PoC we will use key, headers, data, beforeData envelop.
+
+The data and beforeData schemas follow the source table schema. In this example it will be:
+
+```sql
+id STRING,
+name STRING,
+email STRING,
+age INT,
+created_at STRING,
+updated_at STRING,
+group_id STRING
+```
+
+The headers.operation can take the following values: REFRESH, INSERT, UPDATE, DELETE
 
 ## Setup
 
@@ -27,7 +55,7 @@ In Confluent Cloud for Flink, create the `qlik_cdc_output_table` to mockup Qlik 
 
     It is important to note the table does not define any primary key, which is the normal behavior with CDC.
 
-    Using the Makefile under the `raw_topic_for_tests` folder:
+    it is also possible to use the Makefile under the `raw_topic_for_tests` folder to create the table and insert test records using Confluent Cloud cli:
     ```sh
     make create_raw_table
     make insert_raw_data
@@ -37,7 +65,7 @@ In Confluent Cloud for Flink, create the `qlik_cdc_output_table` to mockup Qlik 
 
 | operation | beforeData | Data | Comment |
 | --- | --- | --- | --- |
-| REFRESH | N/A | 'user_001', 'John Doe', 'john@example.com', 30, '2024-01-01T10:00:00Z' | Loaded from DB snapshot, used in this demonstration as an example to filter out data |
+| REFRESH | N/A | 'user_001', 'John Doe', 'john@example.com', 30, '2024-01-01T10:00:00Z' | Loaded from DB snapshot, it represents insert of a record during Full Load stage|
 | INSERT |  N/A  | 'user_002', 'Jane Smith', 'jane@example.com', 28, '2024-01-01T12:30:00Z' | data will be used|
 | UPDATE | 'user_001', 'John Doe', 'john@example.com', 30, '2024-01-01T10:00:00Z' |'user_001', 'John Doe', 'john.doe@company.com', 31, '2024-01-01T10:00:00Z' |  data will be used|
 | INSERT |  N/A | 'wrong_user', 'Bob the builder', 'bob_builder@example.com', 28, '2024-02-01T12:30:00Z'| For testing DLQ |
@@ -53,27 +81,20 @@ Here is the reported table content (with some duplicates to test dedup processin
 The requirements to support and demonstrate are:
 
 * Process raw_data coming from CDC ingestion layer
-* Check for NULLs for primary keys and Not-Null columns
-* Check for Duplicates
-* Join with reference table
-
-The final pipeline looks like:
-
-![](./docs/pipeline_design.drawio.png)
-
-1. The raw input topic is the outcome of the Qlik CDC with key, data, beforeData, and headers envelop
-1. The First Flink queries are filtering out, rejecting records in errors, process deduplication, and perform data extraction to flatten the data model. This statement creates the source table: `src_customers`  . The goal is to fail fast, capture everything, and provide actionable information for debugging and recovery.
-1. The Second Flink queries are also applying some business logic to reject some src records, and apply other validation and joining with other sources or dimensions. The goal is to create a dimension table to be consumed by other Flink statements to build a star model or going directly to a sink kafka connector that supports upsert semantic and write to a target format.
-1. The target format could be a parquet file with DeltaLake or Iceberg metadata.
+* Check for NULLs for primary keys and null in Not-Null columns
+* Remove Duplicate records
+* Join with a reference table
+* Propagate DELETE to sink
+* Integrate with S3 Sink Kafka connector to S3 bucket on AWS
 
 ## First Statement: Filter, transform, route first level of error, deduplicate
 
 We want to:
 
-* extract data from the good path (data, beforeData) depending of the source database operation (INSERT, UPDATE, DELETE)
+* extract data from the good path (data, beforeData) depending of the source database operation (INSERT, UPDATE, DELETE, REFRESH)
 * de-duplicate records with the same key, same operation taking the last records
 * Filter out unnecessary records
-* Route to error table the records we can identify in error
+* Route to error table any records we may have identified in error
 
 ### Working on the transformation
 
@@ -139,14 +160,14 @@ The approach is to use the Confluent Cloud Console, and Flink workspace environm
 
 ### Example of filtering records
 
-As an example to filter out some records, we will use the operation type (take all records no in REFRESH). The approach is to add a CTE, named `relevant_records` to filter out those records, and to wrap the transformation logic into another CTE, named `extracted_data`
+As an example to filter out some records that has some null value. The approach is to add a CTE, named `relevant_records` to filter out those records, and to wrap the transformation logic into another CTE, named `extracted_data`
 
 ```sql
 with relevant_records as (
--- demonstrate data filtering with CTE: not wants the REFRESH operation
+-- demonstrate data filtering with CTE: verify data and beforeData are at least present
 select
   *
-  from qlik_cdc_output_table  where headers.operation <> 'REFRESH' and (not (data is null and beforeData is null))
+  from qlik_cdc_output_table  where not (data is null and beforeData is null)
 ),
 -- transformation of the data
 extracted_data as (
@@ -172,7 +193,7 @@ The results look like:
 
 ### Deduplication
 
-The src_customers table changelog.mode is set to 'upsert' so this means that Flink will keep the last message per key, and generate two records to the downstream topic when a new record for a given key arrives. This is noted -U, +U, to stipulate to retract previous value and replace with new one. The figure below illustrates that the last record for user_006 is in the table.
+The src_customers table changelog.mode is set to 'upsert', this means that Flink will keep the last message per key, and generates two records to the downstream topic when a new record for a given key arrives. This is noted -U, +U, to stipulate to retract previous value and replace with new one. The figure below illustrates that the last record for user_006 is in the table.
 
 ![](./docs/src_cust_build_3.png)
 
@@ -257,3 +278,20 @@ This can be enhanced by adding new condition like on the headers null
 ## Business validation
 
 This time we can filter records with some NULL value in important columns, and malformed emails.
+
+
+## Sink to S3
+
+Most of S3 Sink connectors do not support upserts and deletes as a JDBC to a database sink connectors do. The connector reads messages from Kafka topics and writes them as objects (files) to an S3 bucket, new data is appended or new objects are created. It may partition data in S3 based on Kafka topic, partition.
+
+To achieve an "upsert" effect, you typically need a downstream process that consumes the data from S3, identifies records with the same key, and applies the latest version.
+
+Apache Iceberg may be used to define tables with primary keys and use SQL or other query languages to merge or update data based on the S3 files.
+
+Within Confluent Cloud the fully-managed Amazon S3 Sink connector periodically polls data from Kafka and in turn uploads it to S3. If you are not using a dedicated Confluent Cloud cluster, the flush size is 1000 records. Files start to be created in storage after more than 1000 records exist in each partition. The key and Kafka header can be saved as metadata.
+
+[Confluent Cloud S3 Sink connector documentation](https://docs.confluent.io/cloud/current/connectors/cc-s3-sink/cc-s3-sink.html), and the [Build an ETL Pipeline With Confluent Cloud, example](https://docs.confluent.io/cloud/current/get-started/tutorials/cloud-etl.html).
+
+### Supporting Delete
+
+Similar to upserts, direct deletion of specific records within an S3 object is not a native function of the S3 Sink Connector. If you need to represent deletes, you can send "tombstone" messages (e.g., a record with a null value for a key) to Kafka, a downstream process consuming from S3 would then need to interpret these tombstone records and remove corresponding data in a target system.
