@@ -4,7 +4,7 @@ This section lists the current demonstrations and labs in this git repository or
 
 ## Local demonstrations and end to end studies
 
-All the local demonstrations run on local Kubernetes.
+All the local demonstrations run on local Kubernetes, some on Confluent Cloud. Most of them are still work in progress.
 
 See the [e2e-demos](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos) folder for a set of available demos based on the Flink local deployment or using Confluent Cloud for Flink.
 
@@ -19,7 +19,24 @@ See the [e2e-demos](https://github.com/jbcodeforce/flink-studies/tree/master/e2e
 * [ ] Terraform deployment
 * [ ] GitOps with Openshift, ArgoCD and Tekton
 
-## Quick personal demo on Confluent Cloud
+
+## Public repositories with valuable demonstrations
+
+* [Shoes Store Labs](https://github.com/jbcodeforce/shoe-store)  to run demonstrations on Confluent Cloud. 
+* [Managing you Confluent Cloud Flink project at scale with a CLI](https://github.com/jbcodeforce/shift_left_utils)
+* [Confluent Flink how to](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#)
+* [Confluent demonstration scene](https://github.com/confluentinc/demo-scene): a lot of Kafka, Connect, and ksqlDB demos
+* [Confluent developer SQL training](https://developer.confluent.io/courses/flink-sql/overview/)
+
+* [Demonstrate Flink SQL testing on Confluent Cloud](https://jbcodeforce.github.io/shift_left_utils/coding/test_harness/#usage-and-recipe)
+* [Demonstrations for Shift left project migration and for data as a product management.](https://github.com/jbcodeforce/flink_project_demos)
+
+## Interesting Blogs
+
+* [Building Streaming Data Pipelines, Part 1: Data Exploration With Tableflow](https://www.confluent.io/blog/building-streaming-data-pipelines-part-1/)
+* [Building Streaming Data Pipelines, Part 2: Data Processing and Enrichment With SQ](https://www.confluent.io/blog/streaming-etl-flink-tableflow/)
+
+## Quick personal demo for Confluent Cloud for Flink
 
 Using the data generator and the `confluent flink shell`
 
@@ -37,14 +54,3 @@ confluent flink compute-pool use <pool_id>
 * Start one of the Datagen in the Confluent Console. 
 
 TBC
-
-## Public repositories
-
-* [Shoes Store Labs](https://github.com/jbcodeforce/shoe-store)  to run demonstrations on Confluent Cloud. 
-* [Managing you Confluent Cloud Flink project at scale with a CLI](https://github.com/jbcodeforce/shift_left_utils)
-* [Confluent Flink how to](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#)
-* [Confluent scene](https://github.com/confluentinc/demo-scene)
-* [Confluent developer SQL training](https://developer.confluent.io/courses/flink-sql/overview/)
-* [Demonstrate Flink SQL testing on Confluent Cloud](https://jbcodeforce.github.io/shift_left_utils/coding/test_harness/#usage-and-recipe)
-* [Demonstrations for Shift left project migration and for data as a product management.](https://github.com/jbcodeforce/flink_project_demos)
-

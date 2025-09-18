@@ -1,26 +1,51 @@
-# A simple PoC to emulate CDC processing
+# Real-time Qlik CDC Data Processing with Apache Flink
 
+## Overview
 
-The goal of this demonstration is to process Qlik CDC records, and implement the following pipeline:
+This demonstration showcases an approach to processing Change Data Capture (CDC) records from Qlik Replicate using Apache Flink. Change Data Capture is a critical pattern in modern data architectures that enables real-time data synchronization by capturing and streaming database changes as they occur
+
+We assume the reader to have basic knowledge of Confluent Cloud environment, Kafka, Schema Registry. For [Flink SQL introduction](https://developer.confluent.io/courses/apache-flink/intro/ ) and tutorial [follow these videos](https://developer.confluent.io/courses/flink-sql/overview/).
+
+## Business Problem
+
+Organizations often struggle with processing raw CDC streams that contain:
+- **Duplicate records** from network retries and CDC tool behavior
+- **Invalid or malformed data** that can break downstream pipelines 
+- **Complex nested structures** requiring transformation for analytics consumption
+- **Mixed operation types** (REFRESH, INSERT, UPDATE, DELETE) that may need different handling logic, one being to propagate soft delete
+
+## Solution Architecture
+
+This proof-of-concept demonstrates a robust pipeline that transforms raw Qlik CDC output into clean, analytics-ready data streams. The solution implements:
 
 ![](./docs/pipeline_design.drawio.png)
 
-1. The raw input topic is the outcome of the Qlik CDC with key, data, beforeData, and headers envelop
-1. The First Flink queries are filtering out, rejecting records in errors, process deduplication, and perform data extraction to flatten the data model. This statement creates the source table: `src_customers`  . The goal is to fail fast, capture everything, and provide actionable information for debugging and recovery.
-1. The Second Flink queries are also applying some business logic to reject some src records, and apply other validation and joining with other sources or dimensions. The goal is to create a dimension table to be consumed by other Flink statements to build a star model or going directly to a sink kafka connector that supports upsert semantic and write to a target format.
-1. The target format could be a parquet file with DeltaLake or Iceberg metadata.
+### Pipeline Stages
+
+1. **Raw CDC Ingestion**: Processing Qlik CDC output containing key, data, beforeData, and headers envelope structure
+2. **Data Quality & Deduplication**: First-stage Flink processing that filters invalid records, removes duplicates, and extracts data to create the `src_customers` table with proper error handling and observability
+3. **Business Logic & Validation**: Second-stage processing applying business rules, additional validation, and joining with reference data to create analytics-ready dimension tables
+4. **Sink Integration**: Output to various formats including Parquet with Apache Iceberg metadata for downstream analytics consumption. If you’re not familiar with Apache Iceberg, you can learn about it [here](https://iceberg.apache.org/spark-quickstart/). It’s an open table format that has wide support among many compute engines, including Trino, Snowflake, and Databricks.
+
+### Key Features
+
+- **Fail-fast error handling** with dedicated dead letter queues
+- **Exactly-once processing** with Flink's upsert semantics  
+- **Schema evolution support** using flexible error table design
+- **Production observability** with comprehensive logging and monitoring
+- **Scalable architecture** supporting high-throughput CDC streams
 
 ## Context
 
 In log-based CDC, when a new transaction comes into a database, it gets logged into a log file with no impact on the source system.  
 
-The qlik_cdc_output_table represents the output of Qlik CDC output as raw topic in kafka. The envelop and metadata are important.
+The `qlik_cdc_output_table` represents the output of Qlik CDC output as raw topic in kafka. The envelop and metadata are important.
 
-When using CDC connectors to Kafka, most of them, are creating schema into the schema registry with an envelop to track the data before and after. 
+Most CDC connectors to Kafka, are creating schema into the schema registry with an envelop to track the data before and after. 
 
 The Qlix CDC data structure is described in this document: [https://help.qlik.com/en-US/replicate/November2024/pdf/Replicate-Setup-and-User-Guide.pdf](https://help.qlik.com/en-US/replicate/November2024/pdf/Replicate-Setup-and-User-Guide.pdf), for this PoC we will use key, headers, data, beforeData envelop.
 
-The data and beforeData schemas follow the source table schema. In this example it will be:
+The `data` and `beforeData` schemas follow the source table schema. In this example it will be:
 
 ```sql
 id STRING,
@@ -32,15 +57,34 @@ updated_at STRING,
 group_id STRING
 ```
 
-The headers.operation can take the following values: REFRESH, INSERT, UPDATE, DELETE
+The `headers.operation` may take the following values: REFRESH, INSERT, UPDATE, DELETE
 
 ## Setup
 
-In Confluent Cloud for Flink, create the `qlik_cdc_output_table` to mockup Qlik CDC output:
+* We can use the Confluent Cloud for Flink console to write Flink SQL: Once logged to the [Confluent Cloud](https://confluent.cloud/environments), go to Environment > Flink
+    ![](./docs/cc-flink-home.png)
 
-* Open a workspace into your development environment. You need to have at least DataDiscovery and FlinkDeveloper roles. It may be needed to have OrganizationAdmin.
+* You need to have at least RBAC DataDiscovery and FlinkDeveloper roles, and OrganizationAdmin to create new compute pool.
 
-* In `raw_topic_for_tests` folder, execute the `ddl.cdc_raw_table.sql`, by copy paste inside the Wordspace (or use makefile see below). It should result to get a table, a kafka topic and two schemas in the schema registry as illustrated by (`show create table qlik_cdc_output_table`)
+* We may also use the SQL Client to write SQL scripts:
+    ```sh
+    confluent login 
+    confluent flink shell --compute-pool lfcp-XXXX --environment env-nXXXXX
+    # Once in the shell use your environment
+    use j9r-env;
+    # Then your database which is a the kafka cluster env
+    use `j9r-kafka`;
+    # See the tables / topics
+    show tables;
+    # you are ready to work on tables....
+    ```
+
+* "Flink SQL Workspace"    
+    * Open a `Flink SQL Workspace` from one of the compute pool you use for development. 
+    * Create the `qlik_cdc_output_table` to mockup Qlik CDC output:
+
+* In `raw_topic_for_tests` folder, execute the `ddl.cdc_raw_table.sql`, by copy/paste inside the Workspace (or use the Makefile in this folder see below). It should result in a kafka topic created in the Cluster and two schemas in the schema registry as illustrated by running `show create table qlik_cdc_output_table;`:
+
     ```sql
     CREATE TABLE qlik_cdc_output_table (
     `key` VARBINARY(2147483647),
@@ -53,15 +97,18 @@ In Confluent Cloud for Flink, create the `qlik_cdc_output_table` to mockup Qlik 
     'changelog.mode' = 'append',
     ```
 
-    It is important to note the table does not define any primary key, which is the normal behavior with CDC.
+    It is important to note the table does not define any primary key, which is the normal behavior with CDC. Below is an exampe of output using the Shell:
 
-    it is also possible to use the Makefile under the `raw_topic_for_tests` folder to create the table and insert test records using Confluent Cloud cli:
+    ![](./docs/show-create-table.png)
+
+
+* Using a makefile to encapsulate confluent cli to deploy Flink statement: it is also possible to use the Makefile under the `raw_topic_for_tests` folder to create the table and insert test records using Confluent Cloud cli:
     ```sh
     make create_raw_table
     make insert_raw_data
     ```
 
-* Insert first sample data in this raw table for testing: There will be duplicate and one record being wrong: `insert_raw_test_data.sql` from `raw_topic_for_tests`  folder
+* Insert a set of sample data in this raw table: There will be duplicates and one record being wrong: See the `insert_raw_test_data.sql` script from the `raw_topic_for_tests` folder
 
 | operation | beforeData | Data | Comment |
 | --- | --- | --- | --- |
@@ -98,17 +145,17 @@ We want to:
 
 ### Working on the transformation
 
-The approach is to use the Confluent Cloud Console, and Flink workspace environment to build the sql per steps:
 1. Validate the input data: `select * from qlik_cdc_output_table limit 100;`
-1. Write the SQL to extract information from the CDC record using the operation: The logic is to extract the `data` or `beforeData` to a new schema with some reformatted metadata depending of the operation type:
+1. Write the SQL to extract information from the CDC record using the `headers.operation`: The logic is to extract the `data` or `beforeData` to a new schema with some reformatted metadata depending of the operation type:
 
 | operation | Which field to use |
 | --- | --- |
+| refresh | data |
 | insert | data |
 | update | data |
 | delete | beforeData |
 
-* The classical approach is to use condition on the headers.operation like:
+* The classical approach is to use condition on the `headers.operation` like:
     ```sql
     select
     key,
@@ -133,7 +180,7 @@ The approach is to use the Confluent Cloud Console, and Flink workspace environm
     coalesce(if(headers.operation in ('DELETE'), beforeData.updated_at, data.updated_at), '2025-09-10T12:00:00.000') as rec_updated_ts,
     ```
 
-* As the target is to get a src_customers table, a new ddl is needed, which can be executed in a workspace cell, or using make
+* As the target is to get a `src_customers` table, a new ddl is needed, which can be executed in a workspace cell, or using the makefile
     ```sql
     create table src_customers(
         customer_id string,
@@ -156,7 +203,6 @@ The approach is to use the Confluent Cloud Console, and Flink workspace environm
     ```sh
     make create_flink_ddl
     ```
-
 
 ### Example of filtering records
 
@@ -193,7 +239,7 @@ The results look like:
 
 ### Deduplication
 
-The src_customers table changelog.mode is set to 'upsert', this means that Flink will keep the last message per key, and generates two records to the downstream topic when a new record for a given key arrives. This is noted -U, +U, to stipulate to retract previous value and replace with new one. The figure below illustrates that the last record for user_006 is in the table.
+The `src_customers` table has a `changelog.mode` set to 'upsert', this means that Flink will keep the last message per key, and generates two records to the downstream topic when a new record for a given key arrives. [See this study on changelog mode](../../code/flink-sql/05-changelog/) This is noted -U, +U, to stipulate to retract previous value and replace with new one. The figure below illustrates that the last record for user_006 is in the table.
 
 ![](./docs/src_cust_build_3.png)
 
