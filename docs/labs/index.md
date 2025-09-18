@@ -41,9 +41,10 @@ TBC
 ## Public repositories
 
 * [Shoes Store Labs](https://github.com/jbcodeforce/shoe-store)  to run demonstrations on Confluent Cloud. 
-* [Managing a Flink project with a CLI and best practices](https://github.com/jbcodeforce/shift_left_utils)
+* [Managing you Confluent Cloud Flink project at scale with a CLI](https://github.com/jbcodeforce/shift_left_utils)
 * [Confluent Flink how to](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#)
 * [Confluent scene](https://github.com/confluentinc/demo-scene)
 * [Confluent developer SQL training](https://developer.confluent.io/courses/flink-sql/overview/)
 * [Demonstrate Flink SQL testing on Confluent Cloud](https://jbcodeforce.github.io/shift_left_utils/coding/test_harness/#usage-and-recipe)
+* [Demonstrations for Shift left project migration and for data as a product management.](https://github.com/jbcodeforce/flink_project_demos)
 

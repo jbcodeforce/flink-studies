@@ -9,6 +9,16 @@
     --md-primary-fg-color--dark:  #90030C;
     --md-accent-fg-color: #030303;
   }
+
+.md-header__button.md-logo {
+    margin: 2;
+    padding: 0;
+}
+  
+.md-header__button.md-logo img, .md-header__button.md-logo svg {
+    height: 3.0rem;
+    width: 3.0rem;
+}
   
 .section ul li {
   margin-bottom: 10px;

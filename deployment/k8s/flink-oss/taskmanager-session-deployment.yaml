@@ -1,42 +1,38 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: flink-jobmanager
+  name: flink-taskmanager
   namespace: flink-oss
   labels:
     app: flink-oss
     namespace: flink-oss
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: flink-oss
-      component: jobmanager
+      component: taskmanager
   template:
     metadata:
       labels:
         app: flink-oss
-        component: jobmanager
+        component: taskmanager
     spec:
       containers:
-      - name: jobmanager
-        image: apache/flink:1.20.1-scala_2.12
-        args: ["jobmanager"]
+      - name: taskmanager
+        image: apache/flink:1.20.2-scala_2.12
+        args: ["taskmanager"]
         ports:
-        - containerPort: 6123
+        - containerPort: 6122
           name: rpc
-        - containerPort: 6124
-          name: blob-server
-        - containerPort: 8081
-          name: webui
         livenessProbe:
           tcpSocket:
-            port: 6123
+            port: 6122
           initialDelaySeconds: 30
           periodSeconds: 60
         volumeMounts:
         - name: flink-config-volume
-          mountPath: /opt/flink/conf
+          mountPath: /opt/flink/conf/
         securityContext:
           runAsUser: 9999  # refers to user _flink_ from official flink image, change if necessary
       volumes:

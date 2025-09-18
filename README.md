@@ -2,7 +2,6 @@
 
 The vision for this repository is to create a comprehensive, up-to-date, and practical body of knowledge around Apache Flink and its ecosystem, including integration with related technologies (Kafka, Iceberg, CDC, Kubernetes, etc.), accessible as a GitHub Pages site and a set of demonstrations or study code.
 
-
 Better read in [BOOK format](https://jbcodeforce.github.io/flink-studies/).
 
 ## Goals and Repository Organisation

@@ -80,6 +80,7 @@ See those tutorials for getting started.
 
 * [Quickstart with Console](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-cloud-console.html)
 * [Apache Flink® SQL](https://developer.confluent.io/courses/flink-sql/overview/)
+* [confluent github, Flink workshop](https://github.com/confluentinc/confluent-cloud-flink-workshop/tree/master/flink-getting-started)
 * [Java Table API Quick Start](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-java-table-api.html)
 
 There is also a new confluent cli plugin: `confluent-flink-quickstart` to create an environment, a Flink compute pool, enable a schema registry, create a Kafka cluster and starts a Flink shell. 
@@ -149,7 +150,7 @@ confluent flink shell --compute-pool $COMPUTE_POOL_ID --environment $ENV_ID
 
 ### Using the Flink editor in Confluent Cloud
 
-Nothing special, except that once the job is started, we cannot modify it, we need to stop before any future edition.
+Nothing special, except that once the job is started, we cannot modify it, we need to stop before any future edition. It is recommended to persist the Flink statement in a git repository and manage the deployment using Confluent CLI or [shift_left tool](https://jbcodeforce.github.io/shift_left_utils/blue_green_deploy/).
 
 ## Using the Flink Table API
 
@@ -159,11 +160,13 @@ The Table API is on top of the SQL engine, and so program runs on an external sy
 
 When running TableAPI with Confluent Cloud for Flink, there are some specifics code to have:
 
-1. Set the environment variables for :
+1. Set the environment variables to connect to Confluent Cloud:
     ```sh
     ```
+
 1. Create a Table environment in the Java or Python code like:
     ```java
+    ConfluentSettings.Builder settings = ConfluentSettings.newBuilderFromResource("/prod.properties")
     ```
 
 1. Package and run
@@ -242,15 +245,25 @@ Kafka clusters have the following properties:
 
 ## Autopilot
 
-[Autopilot](https://docs.confluent.io/cloud/current/flink/concepts/autopilot.html) automatically scales up and down compute pool resources needed by SQL statements. It uses the property of parallelism for operator to be able to scale up and down. `SELECT` always runs a parallelism of 1. Only `CREATE TABLE AS`, `INSERT INTO` and `EXECUTE STATEMENT SET` are considered by Autopilot for scaling. Global aggregate are not parallelized. 
+[Autopilot](https://docs.confluent.io/cloud/current/flink/concepts/autopilot.html) automatically scales up and down compute pool resources needed by SQL statements. It uses the property of parallelism for operator to be able to scale up and down. `SELECT` always runs a parallelism of 1. Only `CREATE TABLE AS`, `INSERT INTO` and `EXECUTE STATEMENT SET` are considered by Autopilot for scaling. Global aggregate are not parallelized. The main goal of the auto scaler is to maintain optimum  throughput and number of resources (or CFUs). 
 
-The SQL workspace reports the [scaling status](https://docs.confluent.io/cloud/current/flink/concepts/autopilot.html#scaling-status).  
+The SQL workspace reports the [scaling status](https://docs.confluent.io/cloud/current/flink/concepts/autopilot.html#scaling-status).  It is important that each job has a maximum parallelism, limited by the number of resource available. For source operators within a Flink DAG the limit is the number of partitions in the input topics. 
 
-Kafka sources scaling is limited by number of partition in the topic.
-
-If there is some data skewed and one operator is set with a parallel of 1 then there is no need to scale.
+If there is some data skew and one operator is set with a parallel of 1 then there is no need to scale.
 
 When the compute pool is exhausted, try to add more CFU or stop some running statements to free up resources.
+
+The autoscaler is using historical metrics to take the decision to scale up. 3 to 4 minutes of data are needed. A job should scale up within minutes if the backlog is constantly growing, and scale down if there are no input data and the backlog. The interesting metrics is the pending records. The algorithm needs to take into account the pending records amount, the current processing capacity, the time to scale up, but also the input data rate, the output data rate for each operator in the DAG. There is no way updfront to estimate the needed capacity. This is why it is important to assess the raw input table/kafka size and avoid restarting the first Flink statements that are filtering, deduplicating records to reduce the number of messages to process downstream of the data pipeline.
+
+Autopilot exposes the CFU usage in CFU minutes via the metrics API at the compute pool level.
+
+When multiple statements are in the same compute pool, new statement will not get resource until existing one scales down. Consider looking at Statement in Pending state and reallocated them to other compute pool. The total number of jobs is less than the CFU limit.
+
+???- question "When a statement is not scaling up what can be done?"
+        Consider looking at the CFU limit of the compute poolas it may has been reached. The Flink job may have reached it’s effective max parallelism, due to not enough Kafka topic partition from the input tables. Consider looking at the data skew, as a potential cause for scale-ups inefficiency. 
+        Internally to Confluent Cloud for Flink, checkpoints may take a long time. The autopilot may rescale only after the current checkpoint has completed or 2 checkpoints have failed in a row.
+
+[See discussion of adaptive scheduler from Flink FLIP-291.](https://cwiki.apache.org/confluence/display/FLINK/FLIP-291%3A+Externalized+Declarative+Resource+Management)
 
 ## Cross-region processing
 
@@ -301,6 +314,7 @@ And with the `Query profiler`, which represents the same content as the Flink co
 * DML statement failing, or being degraded, or pending can be notified to external system. [See the notification for CC documentation](https://docs.confluent.io/cloud/current/monitoring/configure-notifications.html#ccloud-notifications)
 
 * [Flink monitoring statement product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html)
+* [Docker compose, Prometheus setup and Grafana Dashboard for Confluent Cloud for Flink reporting.](https://github.com/confluentinc/confluent-cloud-flink-workshop/tree/master/flink-monitoring)
 
 ## Role Base Access Control
 

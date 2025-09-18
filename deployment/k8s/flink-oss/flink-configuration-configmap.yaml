@@ -3,7 +3,8 @@ kind: ConfigMap
 metadata:
   name: flink-config
   labels:
-    app: flink
+    app: flink-oss
+    namespace: flink-oss
 data:
   config.yaml: |+
     jobmanager.rpc.address: flink-jobmanager

@@ -1,4 +1,4 @@
-# Flink on k8s with the operator
+# Apache Flink on k8s with the Flink operator
 
 This folder includes different deployment manifests for Apache Flink OSS. The approach is to encapsulate some of the kubectl commands using `make` targets. 
 
@@ -9,8 +9,8 @@ See the [Flink operator - open source](https://nightlies.apache.org/flink/flink-
 * [See the pre-requisites note for CLIs installation and other general dependencies](https://github.com/jbcodeforce/flink-studies/coding/k8-deploy/#pre-requisites)
 
 * Access to a Kubernetes cluster: `make start_colima`
-
-* Install certification manager (only one time per k8s cluster): See [Release version here](https://github.com/cert-manager/cert-manager/) and the make commands:
+* Update the CERT_MGR_VERSION=v1.18.1 and FLINK_OPERATOR_VERSION=1.11.0 in the Makefile. See [Certification Release version here](https://github.com/cert-manager/cert-manager/) (1.18.2 as of 09/2025) and [K9s operator tags](https://github.com/apache/flink-kubernetes-operator/tags)
+* Install certification manager (only one time per k8s cluster):
 
 ```sh
 make deploy_cert_manager
@@ -18,16 +18,42 @@ make deploy_cert_manager
 kubeclt get pods -n cert-manager
 ```
 
-* Create `flink` namespace: `make create_ns`
-* Install the Apache Flink Kubernetes operator.
+* Create `flink-oss` namespace: `make create_ns`
+* To avoid operator conflict, when Confluent for Flink is not installed, install the Apache Flink Kubernetes operator.
     ```sh
+    make update_helm_flink_repo
     make prepare
     make verify_flink
-
     ```
+* In case Confluent Platform for flink is installed, we may want to use the different deployments to deploy Apache flink:
+
+  * Session deployment:
+    ```sh
+    kubectl apply -f  flink-configuration-configmap.yaml 
+    kubectl get cm
+    kubectl apply -f jobmanager-service.yaml 
+    kubectl apply -f jobmanager-rest-service.yaml 
+    kubectl apply -f jobmanager-session-deployment-non-ha.yaml
+    kubectl get pods
+    kubectl apply -f taskmanager-session-deployment.yaml
+    ```
+
+  * Previous steps are done with:
+    ```sh
+    make deploy_jobmanager
+    make deploy_taskmanager 
+    make flink_console
+    ```
+
+* Do port forwarding
+  ```sh
+  kubectl port-forward ${flink-jobmanager-pod} 8081:8081
+  # or
+  make flink_console
+  ```
 
 * [Access Flink UI](http://localhost:8081)
-    ```
+
 (See also the [Flink pre-requisites documentation.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/docs/try-flink-kubernetes-operator/quick-start/))
 
 * (Optional add Kafbat-ui helm repo):

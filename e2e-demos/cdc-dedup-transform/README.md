@@ -179,7 +179,7 @@ select
   coalesce(if(headers.operation in ('DELETE'), beforeData.age, data.age), 199) as age,
   coalesce(if(headers.operation in ('DELETE'), beforeData.created_at, data.created_at), '2025-09-10T12:00:00.000') as rec_created_ts,
   coalesce(if(headers.operation in ('DELETE'), beforeData.updated_at, data.updated_at), '2025-09-10T12:00:00.000') as rec_updated_ts,
-  headers.operation as rec_crud_text,
+  headers.operation as rec_crud_text,  -- keep the operation for soft delete processing downstream
   headers.changeSequence as hdr_changeSequence,
   to_timestamp(headers.`timestamp`, 'yyyy-MM-dd''T''HH:mm:ss.SSS') as hdr_timestamp
 from relevant_records)

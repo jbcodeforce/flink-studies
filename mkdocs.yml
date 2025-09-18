@@ -4,7 +4,8 @@ site_url: https://jeromeboyer.net/flink-studies
 copyright: Copyright &copy; 2018 - 2025 Jerome Boyer
 nav:
   - Home: 
-    - Concepts: index.md
+    - Introduction: index.md
+    - Concepts: concepts/index.md
     - Getting started: coding/getting-started.md
     - Flink Architecture: architecture/index.md
     - Fit for purpose: architecture/fitforpurpose.md
@@ -80,17 +81,18 @@ markdown_extensions:
   - pymdownx.arithmatex:
       generic: true
   - pymdownx.superfences
+  - pymdownx.smartsymbols
   - toc:
       permalink: true
       toc_depth: 3
-  - pymdownx.tabbed
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
       pygments_lang_class: true
   - pymdownx.details
   - pymdownx.inlinehilite
-  - pymdownx.superfences
   - pymdownx.critic
   - pymdownx.caret
   - pymdownx.keys

@@ -4,13 +4,14 @@
     * Created 2018 
     * Updated 2/14/2025 - improve note, on k8s deployment and get simple demo reference, review done. 
     * 03/30/25: converged the notes and update referenced links
+    * 09/25: Review - simplications.
 
 There are four different approaches to deploy and run Apache Flink / Confluent Flink:
 
-1. Local Binary Installation
-2. Docker-based Deployment
-3. Kubernetes Deployment: Colima, AKS, EKS, GKS or minicube
-4. Confluent Cloud Managed Service
+1. [Local Binary Installation](#1-open-source-apache-flink-local-binary-installation)
+2. [Docker-based local deployment](#2-docker-based-deployment)
+3. [Kubernetes Deployment](#3-kubernetes-deployment) Colima, AKS, EKS, GKS, King or minicube
+4. [Confluent Cloud Managed Service](#4-confluent-cloud-deployment)
 
 ## Prerequisites
 
@@ -20,8 +21,8 @@ Before getting started, ensure you have:
 2. Docker Engine and Docker CLI (for Docker and Kubernetes deployments)
 3. [kubectl](https://kubernetes.io/docs/tasks/tools/) and [Helm](https://jbcodeforce.github.io/coding/helm) (for Kubernetes deployment)
 4. [Confluent Cloud](https://login.confluent.io/) account (for Confluent Cloud deployment)
-5. Git (to clone this repository)
 6. [Confluent cli installed](https://docs.confluent.io/confluent-cli/current/install.html)
+1. Git clone this repository.
 
 ## 1. Open Source Apache Flink Local Binary Installation
 
@@ -110,7 +111,7 @@ This approach is ideal for development and testing on a single machine.
          'format' = 'raw'
       );
       ```
-      * Create an output table in a debizium format so we can see the before and after state:
+      * Create an output table in a debezium format so we can see the before and after data:
       ```sql
       CREATE TABLE msgCount (
          `count` BIGINT NOT NULL
@@ -170,11 +171,6 @@ Python Table API demonstrations [see this chapter](./table-api.md/#python).
 
 This approach provides containerized deployment using Docker Compose.
 
-### Prerequisites
-
-- Docker Engine
-- Docker Compose
-
 ### Quick Start
 
 1. Build a custom Apache Flink image with your own connectors. Verify current [docker image tag](https://hub.docker.com/_/flink/tags) then use [the Dockerfile](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/custom-flink-image/Dockerfile):
@@ -205,9 +201,7 @@ To run Flink with Kafka:
 During development, we can use docker-compose to start a simple `Flink session` cluster or a standalone job manager to execute one unique job, which has 
 the application jar mounted inside the docker image. We can use this same environment to do SQL based Flink apps. 
 
-As Task manager will execute the job, it is important that the container running the flink code has access to the jars needed to connect to external sources 
-like Kafka or other tools like FlinkFaker. Therefore, in `deployment/custom-flink-image`, there is a [Dockerfile](https://github.com/jbcodeforce/
-flink-studies/blob/master/deployment/custom-flink-image/Dockerfile) to get the needed jars to build a custom Flink image that may be used for Taskmanager 
+As Task manager will execute the job, it is important that the container running the flink code has access to the jars needed to connect to external sources like Kafka or other tools like FlinkFaker. Therefore, in `deployment/custom-flink-image`, there is a [Dockerfile](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/custom-flink-image/Dockerfile) to get the needed jars to build a custom Flink image that may be used for Taskmanager 
 and SQL client. Always update the jar version with new [Flink version](https://hub.docker.com/_/flink).
 
 ???- Warning "Docker hub and maven links"
@@ -217,28 +211,16 @@ and SQL client. Always update the jar version with new [Flink version](https://h
 
 ## 3. Kubernetes Deployment
 
-This approach provides scalable, production-ready deployment using Kubernetes. See the K8S deployment [deeper dive chapter](./k8s-deploy.md) and the [lab readme](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s) for all command details.
+This approach provides scalable, production-ready deployment using Kubernetes. 
 
-The following are summary of basic steps, but Makefiles are available in the deployment/k8s to simplify deployment.
+### Apache Flink
 
-* Deploy a State Machine example application to validate the deployment.
-   ```sh
-   kubectl create -f https://raw.githubusercontent.com/apache/flink-kubernetes-operator/release-1.11/examples/basic.yaml -n flink
-   ```
-* Verify Flink UI access
-   ```sh
-   kubectl port-forward svc/basic-example-rest 8081 -n flink
-   ```
-* Using the SQL client
+See the K8S deployment [deeper dive chapter](./k8s-deploy.md) and the [lab readme](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/flink-oss) for details.
 
-* Undeploy
-   ```sh
-   kubectl delete -f https://raw.githubusercontent.com/apache/flink-kubernetes-operator/release-1.11/examples/basic.yaml -n flink
-   ```
 
 ### Confluent Platform Manager for Flink on Kubernetes
 
-See [Kubernetes deployment chapter](./k8s-deploy.md) for detailed instructions. And [Confluent operator documentation](https://docs.confluent.io/operator/current/co-prepare.html), [submit Flink SQL Statement with Confluent Manager for Apache Flink](https://docs.confluent.io/platform/current/flink/get-started/get-started-statement.html)
+See [Kubernetes deployment chapter](./k8s-deploy.md) for detailed instructions, and the [deployment folder and readme](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cp-flink). See also the [Confluent operator documentation](https://docs.confluent.io/operator/current/co-prepare.html), [submit Flink SQL Statement with Confluent Manager for Apache Flink](https://docs.confluent.io/platform/current/flink/get-started/get-started-statement.html):
 
 For Confluent Platform deployment:
 
@@ -261,14 +243,6 @@ For Confluent Platform deployment:
 ## 4. Confluent Cloud Deployment
 
 This approach provides a fully managed Flink service.
-
-### Prerequisites
-
-- Confluent Cloud account
-- Confluent CLI installed
-- Environment configured
-
-### Getting Started
 
 1. Create a Flink compute pool:
    ```sh
@@ -316,4 +290,5 @@ See the [Shift Left project](https://jbcodeforce.github.io/shift_left_utils/) to
 - [Confluent Cloud Documentation](https://docs.confluent.io/cloud/current/get-started/index.html)
 - [Flink Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/)
 - [Docker Hub Flink Images](https://hub.docker.com/_/flink)
+- [Shift Left project](https://jbcodeforce.github.io/shift_left_utils/) to manage Flink project at scale.
 

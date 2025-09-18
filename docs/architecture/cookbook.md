@@ -302,7 +302,7 @@ TO CONTINUE
 
 #### Change stateful statement
 
-We have seen the [stateful processing](../index.md/#stateful-processing) leverages checkpoints and savepoints. With the open source Flink, developers need to enable checkpointing and manually triggering a savepoint when they need to restart from a specific point in time.
+We have seen the [stateful processing](../concepts/index.md/#state-management) leverages checkpoints and savepoints. With the open source Flink, developers need to enable checkpointing and manually triggering a savepoint when they need to restart from a specific point in time.
 
 Deploy the new statement to compute the stateful operation, and use a template like the following. Then stop the first statement.
 
