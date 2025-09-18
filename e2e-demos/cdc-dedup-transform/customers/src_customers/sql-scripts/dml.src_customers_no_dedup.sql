@@ -1,12 +1,5 @@
 insert into src_customers
-
-with relevant_records as (
--- demonstrate data filtering with CTE: not wants the REFRESH operation
-select
-  *
-  from qlik_cdc_output_table  where (not (data is null and beforeData is null))
-),
--- transformation of the data
+with -- transformation of the data
 extracted_data as (
 select
   key,
@@ -20,7 +13,7 @@ select
   headers.changeSequence as hdr_changeSequence,
   to_timestamp(headers.`timestamp`, 'yyyy-MM-dd''T''HH:mm:ss.SSS') as hdr_timestamp,
   coalesce(if(headers.operation in ('DELETE'), beforeData.group_id, data.group_id), 'NULL') as group_id
-from relevant_records)
+from qlik_cdc_output_table )
  -- deduplicate records with the same key, taking the last records
 select -- last projection to reduce columns
   customer_id,
@@ -34,10 +27,4 @@ select -- last projection to reduce columns
   hdr_changeSequence,
   hdr_timestamp,
   group_id
- from (
-  select *,  ROW_NUMBER() OVER (
-          PARTITION BY customer_id
-          ORDER
-            BY hdr_timestamp DESC
-        ) AS row_num from extracted_data
-  ) where row_num = 1;
+ from extracted_data;

@@ -143,6 +143,7 @@ We want to:
 * Filter out unnecessary records
 * Route to error table any records we may have identified in error
 
+
 ### Working on the transformation
 
 1. Validate the input data: `select * from qlik_cdc_output_table limit 100;`
@@ -204,6 +205,35 @@ We want to:
     make create_flink_ddl
     ```
 
+* Transform the query from running in interactive mode: writing the result on the user interfacce. to writing results to the new table: see the `dml.src_customers_no_dedup,sql`
+    ```sql
+    insert into src_customers
+    with extracted_data as (
+            select
+                ...
+    select -- last projection to reduce columns
+        customer_id,
+        MD5(CONCAT_WS('||', customer_id)) AS rec_pk_hash,
+        name,
+        email,
+        age,
+        to_timestamp(rec_created_ts, 'yyyy-MM-dd''T''HH:mm:ss.SSS') as rec_created_ts,
+        to_timestamp(rec_updated_ts, 'yyyy-MM-dd''T''HH:mm:ss.SSS') as rec_updated_ts,
+        rec_crud_text,
+        hdr_changeSequence,
+        hdr_timestamp,
+        group_id
+    from extracted_data;
+    ```
+
+    Deploy to Confluent Cloud:
+
+    ```sh
+    make create_cutomers_no_dedup
+    ```
+
+Now that the data are inside of a new topic we can see messages using Topic messages user interface or `select * from src_customers`.
+
 ### Example of filtering records
 
 As an example to filter out some records that has some null value. The approach is to add a CTE, named `relevant_records` to filter out those records, and to wrap the transformation logic into another CTE, named `extracted_data`
@@ -235,6 +265,7 @@ select * from extracted_data;
 The results look like:
 
 ![](./docs/src_cust_build_2.png)
+
 
 
 ### Deduplication
@@ -277,19 +308,10 @@ insert into src_customers .... ;
 end;
 ```
 
-
-* verify if data.id or beforeData.id were not null, if not route to a dead letter queue table.
-
-    * create raw_error_table
-    * user statement set to generate output to two tables
-
-    ```sql
-    select * from qlik_cdc_output_table where (data is null and headers.operation <> 'DELETE') or (data is not null and data.id is null);
-    ```
-
-
-
 ### Logic to route to error table/queue
+
+* To route to the DLQ, we can verify if data.id or beforeData.id were not null, if there are issues, route to a dead letter queue table.
+
 
 * Create a raw_error_table to be generic enough to get any type of data:
     ```sql
@@ -320,11 +342,11 @@ end;
 
 This can be enhanced by adding new condition like on the headers null
 
-
 ## Business validation
 
-This time we can filter records with some NULL value in important columns, and malformed emails.
+This time we can filter records with some NULL value in important columns, and address more business rule type of valiation, like malformed emails.
 
+This logic is implemented in the Fact customer table, see code in the customers/fact_customers folder.
 
 ## Sink to S3
 
@@ -335,6 +357,10 @@ To achieve an "upsert" effect, you typically need a downstream process that cons
 Apache Iceberg may be used to define tables with primary keys and use SQL or other query languages to merge or update data based on the S3 files.
 
 Within Confluent Cloud the fully-managed Amazon S3 Sink connector periodically polls data from Kafka and in turn uploads it to S3. If you are not using a dedicated Confluent Cloud cluster, the flush size is 1000 records. Files start to be created in storage after more than 1000 records exist in each partition. The key and Kafka header can be saved as metadata.
+
+Here is an example of topic mapped to S3 bucket
+
+![](./docs/s3_bucket.png)
 
 [Confluent Cloud S3 Sink connector documentation](https://docs.confluent.io/cloud/current/connectors/cc-s3-sink/cc-s3-sink.html), and the [Build an ETL Pipeline With Confluent Cloud, example](https://docs.confluent.io/cloud/current/get-started/tutorials/cloud-etl.html).
 

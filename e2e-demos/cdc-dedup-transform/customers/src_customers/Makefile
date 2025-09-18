@@ -55,11 +55,9 @@ pause_flink_dml:
 resume_flink_dml:
 	$(call resume_flink_statement $(DML_STATEMENT))
 
-delete_schemas:
-	$(call delete_schema, $(TABLE_NAME)-value)
-	$(call delete_schema, $(TABLE_NAME)-key)
-
-
 delete_flink_statements: delete_flink_ddl delete_flink_dml
 
-delete_data: delete_schemas delete_topic_src_customers
+
+create_cutomers_no_dedup:
+	$(call create_flink_statement, $(SCRIPT_PRE_KEBAB)-dml-custno-dedup, ./sql-scripts/dml.src_customers_no_dedup.sql) 
+
