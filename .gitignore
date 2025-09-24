@@ -15,3 +15,7 @@ flink-training/
 deployment/product-tar/flink-*/
 deployment/product-tar/kafka_*/
 e2e-demos/cdc-demo/datasets/
+**/output/
+**/knowledge/
+**/tmp/
+**/__pycache__/

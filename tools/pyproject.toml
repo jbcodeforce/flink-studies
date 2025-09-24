@@ -1,0 +1,60 @@
+[project]
+name = "tendance"
+version = "0.1.0"
+description = "A tool to extract and analyze Stack Exchange content with web UI dashboard"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.31.0",
+    "stackapi>=0.3.0",
+    "typer>=0.9.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "python-dateutil>=2.8.2",
+    "beautifulsoup4>=4.12.2",
+    "pandas>=2.1.0",
+    "python-dotenv>=1.0.0",
+    "jinja2>=3.1.2",
+    "rich>=13.7.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+web = [
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "plotly>=5.17.0",
+    "streamlit>=1.28.0",
+    "streamlit-plotly-events>=0.0.6",
+    "taipy>=3.1.0",
+]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.6.0",
+]
+
+[project.scripts]
+tendance = "tendance.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+select = ["E", "F", "W", "I", "N", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true

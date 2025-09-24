@@ -1,0 +1,141 @@
+# Tendance Configuration Example
+# 
+# This file shows all available configuration options for Tendance.
+# Copy this file and modify it to customize your Tendance installation.
+#
+# To use this config file:
+# 1. Copy to your desired location: cp config/tendance-example.yaml my-tendance-config.yaml
+# 2. Edit the values below as needed
+# 3. Set environment variable: export CONFIG_FILE=my-tendance-config.yaml
+# 4. Or use CLI flag: tendance analyze --config my-tendance-config.yaml
+
+# Application version and debug settings
+version: '0.1.0'
+debug: false
+
+# Stack Exchange API Configuration
+api:
+  # Get your API key at: https://stackapps.com/apps/oauth/register
+  # This increases your rate limit from 300 to 10,000 requests per day
+  # SECURITY: DO NOT store API keys in config files! Use environment variables instead.
+  api_key: null  # Use TENDANCE_API__API_KEY environment variable
+  
+  # Stack Exchange site (stackoverflow, serverfault, superuser, etc.)
+  site: 'stackoverflow'
+  
+  # Default number of items per API request (1-100)
+  default_page_size: 30
+  
+  # Maximum retry attempts for failed API requests
+  max_retries: 3
+  
+  # Request timeout in seconds
+  timeout_seconds: 30
+  
+  # Whether to respect API backoff headers
+  respect_backoff: true
+  
+  # User agent string for API requests
+  user_agent: 'Tendance/1.0'
+  
+  # Maximum pages to fetch in CLI mode (prevents accidental huge downloads)
+  max_pages_cli: 10
+  
+  # Retry backoff multiplier (how much to increase wait time between retries)
+  retry_backoff_factor: 1.5
+
+# Output Configuration
+output:
+  # Default directory for saving analysis results
+  default_directory: './output'
+  
+  # Default output formats (json, csv, markdown)
+  default_formats:
+    - json
+    - csv
+  
+  # Timestamp format for output filenames
+  timestamp_format: '%Y%m%d_%H%M%S'
+  
+  # Include metadata section in outputs
+  include_metadata: true
+
+# Web UI Configuration
+ui:
+  # Default port for web dashboard
+  default_port: 8501
+  
+  # Host to bind to (localhost for local only, 0.0.0.0 for network access)
+  host: 'localhost'
+  
+  # Automatically open browser when starting UI
+  auto_open: false
+  
+  # UI theme (light, dark)
+  theme: 'light'
+  
+  # Data refresh interval in seconds
+  refresh_interval: 300
+
+# Logging Configuration
+logging:
+  # Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  level: 'INFO'
+  
+  # Log format string
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  
+  # Optional log file path (null = console only)
+  file: null
+  
+  # Maximum log file size in bytes (10MB default)
+  max_size: 10485760
+  
+  # Number of backup log files to keep
+  backup_count: 5
+
+# Subject-Specific Configurations
+subjects:
+  
+  # Apache Flink configuration
+  apache-flink:
+    name: 'Apache Flink'
+    tags:
+      - apache-flink
+      - confluent-flink
+      - flink-sql
+      - flink-streaming
+      - flink-cep
+    min_score: 0
+    description: 'Apache Flink stream processing framework'
+  
+  # Apache Kafka configuration
+  kafka:
+    name: 'Apache Kafka'
+    tags:
+      - apache-kafka
+      - confluent-kafka
+      - kafka-streams
+      - kafka-connect
+    min_score: 0
+    description: 'Apache Kafka event streaming platform'
+  
+  # Apache Spark configuration
+  spark:
+    name: 'Apache Spark'
+    tags:
+      - apache-spark
+      - pyspark
+      - spark-sql
+    min_score: 0
+    description: 'Apache Spark unified analytics engine'
+  
+  # Example custom subject
+  my-custom-subject:
+    name: 'My Custom Technology'
+    tags:
+      - my-tag1
+      - my-tag2
+      - related-tag
+    min_score: 5  # Only questions with score 5 or higher
+    description: 'Custom subject for my specific technology stack'
