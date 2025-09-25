@@ -2,12 +2,17 @@
 
 This is a simple demo using Confluent Platform with Flink and Kafka to demonstrate a json schema mapping, a join and an aggregation Flink SQL query.
 
+The processing logic needs to address has the following basic architecture:
+
+  ![](./docs/dsp.drawio.png)
+
 The input is an industrial vehicle rental event, with an example of order in data/order_detail.json. The second input is a job demand, which in the context of a Mover, a move demand.
 
 ## Use Case
 
-* Truck rental orders continuously arrive to the raw-contracts kafka topic, while job demands are sent to raw-jobs. 
+* Truck rental orders continuously arrive to the `raw-contracts` kafka topic, while job demands are sent to `raw-jobs` topic. 
     ![](./producer/static/mover-truck.png)
+    *Image generated with Google Gemini*
 
 * The raw-orders json payload looks like:
     ```json
@@ -50,11 +55,9 @@ The input is an industrial vehicle rental event, with an example of order in dat
   }
   ```
 
-* The processing logic needs to address:
 
-  ![](./docs/dsp.drawio.png)
 
-* The first transformation addresses taking the raw source records and build a JSON with nested structure:
+* The first transformation addresses taking the raw source records and build a JSON with nested structure, the `OrderDetails`:
   ```json
   {
       "OrderDetails": {
@@ -86,22 +89,29 @@ The input is an industrial vehicle rental event, with an example of order in dat
   }
   ```
 
-## Code explanations
+* The second real time processing is doing a join with the job, raw_topic, to enrich the OrderDetails with the jobs information.
+* The equipment rental details can be used to compute aggregations and business analytics data elements.
 
-The cp-flink folder includes the configuration to create schemas and topics for the raw input data: jobs and orders. The OrderDetails topic and schema.
+## Code explanation
 
-The makefile helps to deploy those elements to the Confluent Platform.
+The `cp-flink` folder includes the configuration to create schemas and topics for the raw input data: `jobs` and `orders` and the OrderDetails topic and schema. When deploying to Kubernetes, the topic and schema are defined as config maps. The following diagram illustrates the relationships with those k8s elements:
 
-The Kafka order and job records producers code is under producer folder.
+![](./docs/k8s_cp_elements.drawio.png)
+
+The dark blue represents application specific elements, while the light blue elements represent reusable, cross applications, components.
+
+The makefile under the cp-flink folder, helps to deploy those elements to the Confluent Platform.
+
+The Kafka order and job records producer code is under [producer folder](./producer/).
 
 ### Producer Features
 
-- Support for jobs and orders records, and custom JSON
-- Type-safe record definitions with validation
+- Support for jobs and orders records creation, and custom JSON record
+- Type-safe record definitions with validation using Pydantic
 - Command-line interface for easy testing and automation
 - Built-in callback handling for message delivery confirmation
 - Include a FastAPI Application (api_server.py) which supports the following REST API:
-  * POST /produce: Produce predefined record types (job/ordeith configurable count
+  * POST /produce: Produce predefined record types (job/order), with configurable count
   * POST /produce/custom: Produce custom JSON payloads
   * Health Checks: Dependency verification and service status
 
@@ -111,14 +121,14 @@ The following figure illustrates the different deployment model:
 
 ![](./docs/kafka_producer_deployment.png)
 
-* CLI based usage examples:
+* CLI based usage examples, to send 5 records to a specific topic
   ```sh
   python kafka_json_producer.py --record-type order --topic raw-orders --count 5
   # 
   python kafka_json_producer.py --record-type job --topic raw-jobs --count 5
   ```
 
-* Webapp based usage: the command is just during development, as the final deployment should be via kubernetes with 
+* Webapp based usage: the following command is for development, as the final deployment should be via kubernetes.  
   ```sh
   uv run api_server.py
   ```
@@ -135,7 +145,7 @@ The following figure illustrates the different deployment model:
 | `KAFKA_SASL_MECHANISM` | `PLAIN` | SASL mechanism |
 | `KAFKA_CERT` | _(empty)_ | SSL certificate path |
 
-### Producers Deployment
+### Producers Kubernetes Deployment
 
 The cp-flink folder includes config_map and Kubernetes job manifests to start the producer to produce records for jobs and orders to the raw-orders and raw-jobs topics.
 
@@ -160,9 +170,11 @@ The cp-flink folder includes config_map and Kubernetes job manifests to start th
   make test_api_health
   ```
 
-### SQL part
+### The Flink SQL processing
 
 #### 1. Direct Nested Access
+
+The 
 ```sql
 SELECT OrderDetails.EquipmentRentalDetails[1].OrderId 
 FROM OrderDetails;
@@ -250,7 +262,7 @@ The `cp-flink` folder in this `e2e-demos/json-transformation` project, includes 
 
 ### To do
 
-* [x] Define schema using config map and assess if CM can be loading schema from file
+* [x] Define schema using config map, schema and topics manifests. 
 * [x] Write producer of raw-orders and raw-orders.
 * [x] Use k8s job deployment to deploy to k8s with config map to set some env-variable.
 * [ ] Define sql to change json schema for the orders

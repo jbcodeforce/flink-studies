@@ -14,16 +14,15 @@ create table raw_orders (
       >,
       OrderType STRING,
       AssociatedContractId STRING
-) WITH (
+)distributed by hash(OrderId) into 1 buckets WITH (
     'key.avro-registry.schema-context' = '.dev',
    'value.avro-registry.schema-context' = '.dev',
    'kafka.retention.time' = '0',
-    'changelog.mode' = 'upsert',
+    'changelog.mode' = 'append',
    'kafka.cleanup-policy'= 'compact',
    'scan.bounded.mode' = 'unbounded',
    'scan.startup.mode' = 'earliest-offset',
    'value.fields-include' = 'all',
-    'key.format' = 'avro-registry',
-    'value.format' = 'avro-registry',
+    'value.format' = 'json-registry',
     'value.fields-include' = 'all'
 )
