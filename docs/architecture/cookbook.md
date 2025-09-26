@@ -187,29 +187,36 @@ Use Flink WebUI to see the throughput and latency of each Flink application. Fli
 
 ## Query Evolution
 
-This section summarizes the Flink statement deployment and life cycle management. 
+In this section, I address streaming architecture only, integrated with Kafka, most likely CDC tables and sink connectors, a classical architecture, simplified in this figure:
 
-The classical pattern is to consume streams from Kafka Topics and then adds different stateful processing using Flink SQL, Table API or DataStreams jobs. The question is **when we need to stop such processing to change the logic and how to restart them?**. 
+<figure markdown=span style="width=900">
+![](./images/simple_arch.drawio.png)
+</figure>
 
-Any Flink DAG code is immutable, therefore a quick answer is: to do not modify Flink process flow! Which may not be a realistic in our IT world. So developers and SREs need to take a lot of care for this statement life cycle management. 
+Once a Flink query is deployed and run 'foreever', how to change it? to fix issue or adapt to schema changes. 
 
-The Flink SQL statements has limited parts that are mutables. See [Confluent Cloud product documentation for details](https://docs.confluent.io/cloud/current/flink/concepts/schema-statement-evolution.html).  The principal name and compute pool metadata are mutable when stopping and resuming the statement. Developers may stop and resume a statement using Console, CLI, API or even Terraform scripts.
+By principles any Flink DAG code is immutable, so statement needs to be stopped and a new version started! This is not as simple as this as there will be impact to any consumers of the created data, specially in Kafka topic or in non-idempotent consumers. 
+
+The Flink SQL statements has limited parts that are mutables. See the [Confluent Cloud product documentation for details](https://docs.confluent.io/cloud/current/flink/concepts/schema-statement-evolution.html).  In Confluent Cloud the principal name and compute pool metadata are mutable when stopping and resuming the statement. Developers may stop and resume a statement using Console, CLI, API or even Terraform scripts.
 
 Here are example using confluent cli:
 
 ```sh
+# $1 is the statement name
 confluent flink statement stop $1 --cloud $(CLOUD) --region $(REGION) 
 
 confluent flink statement resume $1 --cloud $(CLOUD) --region $(REGION) 
 ```
 
-Most other parts are immutables. 
+When a SQL statement is started, it reads the source tables from the beginning (or any specified offset) and the operators, defined in the statement, build their internal state. Source operators use the latest schema version for key and value at the time of deployment. There is a snapshot of the different dependency configuration saved for the statement: the reference to the dependants tables, user-defined functions... Any modifications to these objects are not propagated to running statement.
 
-When a SQL statement is started, it reads the source tables from the beginning (or any specified offset) and the operators, defined in the statement, build their state. Source operators use the latest schema version for key and value at the time of deployment. There is a snapshot of the different dependency configuration saved for the statement: the reference to the dependants tables, user-defined functions... Any modifications to these objects are not propagated to running statement.
+First let review the schema definition evolution best practices for Flink processing.
 
 ### Schema compatibility
 
-CC Flink works best when consuming topics with FULL_TRANSITIVE compatibility mode. The following table lists the schema compatibility types with what can be done:
+The CDC component may create schema automatically reflecting the source table. [See Debezium documentation about schema evolution](https://debezium.io/documentation/reference/stable/connectors/mysql.html)
+
+CC Flink works best when consuming topics with FULL_TRANSITIVE compatibility mode. The following table lists the schema compatibility types, with the Flink impacts:
 
 | Compatibility type | Change allowed | Flink impact |
 | --- | --- | --- |
@@ -237,7 +244,7 @@ The Debezium Envelope pattern offers the most flexibility for upstream Schema Ev
     It is discouraged from any changes to the key schema in order to do not adversely affect partitioning for the new topic/ table.
 
 ???- info "Updating schema in schema registry"
-    Adding a field directly in the avro-schema with default value, will be visible in the next command like: `show create table <table_name>`, as tables in flink are virtuals, and the Confluent Cloud the schema definition comes from the Schema Registry. The RUNNING Flink DML is not aware of the new added column. Even STOP & RESUME of the Flink DML is not going to pick the new column neither. Only new statement will see the new schema consumung from the beginning or from specific offsets. For column drop, Debezium connector will drop the new column and register a schema version for the topic (if the alteration resulted in a schema that doesnt match with previous versions). Same as above runnning statements will go degraded mode.
+    Adding a field directly in the avro-schema with default value, will be visible in the next command like: `show create table <table_name>`, as tables in flink are virtuals, and the Confluent Cloud schema definition comes from the Schema Registry. The RUNNING Flink DML is not aware of the new added column. Even STOP & RESUME of the Flink DML is not going to pick the new column neither. Only new statement will see the new schema consuming from the beginning or from specific offsets. For column drop, Debezium connector will drop the new column and register a schema version for the topic (if the alteration resulted in a schema that doesnt match with previous versions). Same as above runnning statements will go degraded mode.
     
 ### Statement evolution
 

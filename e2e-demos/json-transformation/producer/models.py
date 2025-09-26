@@ -27,7 +27,7 @@ class Itinerary(BaseModel):
         }
 
 class Order(BaseModel):
-    OrderId: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    OrderId: int = 0
     Status: str = Field(default="NEW", description="Record status")
     Equipment: Optional[List[Equipment]]
     TotalPaid: Optional[int] = Field(None, description="total paid")
@@ -44,7 +44,8 @@ class Order(BaseModel):
         }
 
 class Job(BaseModel):
-    job_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    job_id: int = 0
+    order_id: int = 0
     job_type: Optional[str]
     job_status: Optional[str]
     rate_service_provider: Optional[str]
@@ -69,9 +70,10 @@ def generate_job_record() -> tuple[str, Job]:
     """Generate Job record"""
     statuses = ['Completed', 'New', 'Cancelled', 'Running']
     types = ["LoadUnload", "LoadOnly", "UnloadOnly"]
-    key = f"job_{random.randint(100, 10000)}"
+    key = random.randint(100, 1000)
     return key, Job(
         job_id=key,
+        order_id=random.randint(1000, 10010),
         job_type=random.choice(types),
         job_status=random.choice(statuses),
         rate_service_provider=f"{random.randint(10,150)}.0000",
@@ -106,7 +108,7 @@ def generate_order_record() -> Order:
     order_type = ['InTown', 'OutOfTown', 'OneWay']
     equipments = [generate_truck_equipment(), generate_moving_help_equipment()]
     itinerary = {'PickupDate': '2020-09-21T18:14:08.000Z', 'DropoffDate': '2020-09-21T20:47:42.000Z', 'PickupLocation': '41260', 'DropoffLocation': '41260'}
-    key = f"order_{random.randint(100, 10000)}"
+    key = random.randint(1000, 10010)
     o= Order(
         OrderId=key,
         Status=random.choice(statuses),

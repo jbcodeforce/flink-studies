@@ -2,10 +2,11 @@
 
 The demonstration addresses:
 
-* [x] Running Postgresql on Kubernetes to define loan application and transaction tables.
+* [x] Running Postgresql on Kubernetes to define loan application and transaction tables in default schema. Populate 10 records in each table.
 * [x] Use Confluent for kubernetes operator and a single node kafka cluster to run Confluent Platform for Flink
-* [ ] Deploying CDC Debezium connector on Kafka Connect to watch the Postgresql table
+* [ ] Deploying CDC Debezium connector on Kafka Connect to watch the Postgresql tables
 * [ ] Use `message.key.columns` to use a non-primary key field for the Kafka message key.
+* [ ] 
 
 **Sources of information**:
 

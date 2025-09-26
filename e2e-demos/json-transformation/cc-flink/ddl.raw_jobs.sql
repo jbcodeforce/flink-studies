@@ -1,5 +1,6 @@
 create table raw_jobs (
     job_id BIGINT,
+    order_id BIGINT,
     job_type STRING,
     job_status STRING,
     rate_service_provider STRING,
@@ -10,11 +11,9 @@ create table raw_jobs (
     job_last_modified_date STRING,
     service_provider_name STRING
 ) distributed by hash(job_id) into 1 buckets WITH (
-    'key.avro-registry.schema-context' = '.dev',
    'value.avro-registry.schema-context' = '.dev',
    'kafka.retention.time' = '0',
     'changelog.mode' = 'append',
-   'kafka.cleanup-policy'= 'compact',
    'scan.bounded.mode' = 'unbounded',
    'scan.startup.mode' = 'earliest-offset',
    'value.fields-include' = 'all',

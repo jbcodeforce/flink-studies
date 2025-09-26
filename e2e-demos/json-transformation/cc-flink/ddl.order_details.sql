@@ -1,26 +1,23 @@
-CREATE TABLE OrderDetails (
-      OrderId BIGINT PRIMARY KEY not enforced,
-  OrderDetails ROW<
-    EquipmentRentalDetails ARRAY<ROW<
+create table order_details (
+   OrderId BIGINT NOT NULL PRIMARY KEY not enforced,
+   EquipmentRentalDetails ARRAY<ROW<
       OrderId BIGINT,
       Status STRING,
       Equipment ARRAY<ROW<
         ModelCode STRING,
         Rate STRING
       >>,
-      TotalPaid DOUBLE,
+      TotalPaid DECIMAL(10,2),
       Type STRING,
       Coverage STRING,
       Itinerary ROW<
-        PickupDate STRING,
-        DropoffDate STRING,
+        PickupDate TIMESTAMP(3),
+        DropoffDate TIMESTAMP(3),
         PickupLocation STRING,
         DropoffLocation STRING
       >,
       OrderType STRING,
-      AssociatedContractId BIGINT
-    >>
-  >,
+      AssociatedContractId BIGINT>>,
   MovingHelpDetails ARRAY<ROW<
     job_id BIGINT,
     job_type STRING,
@@ -33,15 +30,13 @@ CREATE TABLE OrderDetails (
     job_last_modified_date STRING,
     service_provider_name STRING
   >>
-) distributed by hash(OrderId) into 1 buckets WITH (
-    'key.avro-registry.schema-context' = '.dev',
+  ) distributed by hash(OrderId) into 1 buckets WITH ( 
    'value.avro-registry.schema-context' = '.dev',
    'kafka.retention.time' = '0',
-    'changelog.mode' = 'upsert',
-   'kafka.cleanup-policy'= 'compact',
+    'changelog.mode' = 'append',
    'scan.bounded.mode' = 'unbounded',
    'scan.startup.mode' = 'earliest-offset',
    'value.fields-include' = 'all',
-    'value.format' = 'avro-registry',
+    'value.format' = 'json-registry',
     'value.fields-include' = 'all'
 );

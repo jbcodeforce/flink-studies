@@ -33,3 +33,4 @@ FROM raw_orders
 WHERE Equipment IS NOT NULL 
   AND CARDINALITY(Equipment) > 0
   AND TotalPaid > 0;
+

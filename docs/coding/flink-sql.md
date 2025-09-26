@@ -91,7 +91,10 @@ See [the flink-sql/00-basic-sql folder](https://github.com/jbcodeforce/flink-stu
     explain select ...
     ```
 
-    Indentation indicates data flow, with each operator passing results to its parent. Review the state size, the changelog mode, the upsert key... Operators change changelog modes when different update patterns are needed, such as when moving from streaming reads to aggregations.
+    Indentation indicates data flow, with each operator passing results to its parent. 
+    
+    Review the state size, the changelog mode, the upsert key... Operators change changelog modes when different update patterns are needed, such as when moving from streaming reads to aggregations.
+    
     Pay special attention to data skew when designing your queries. If a particular key value appears much more frequently than others, it can lead to uneven processing where a single parallel instance becomes overwhelmed handling that key’s data. Consider strategies like adding additional dimensions to your keys or pre-aggregating hot keys to distribute the workload more evenly. Whenever possible, configure the primary key to be identical to the upsert key.
 
 
@@ -110,7 +113,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
     * For upsert mode, the bucket key must be equal to primary key. While for append/retract mode, the bucket key can be a subset of the primary key.
     * In Confluent Cloud, partition key will generate a key schema, except if using the option (`'key.format' = 'raw'`)
     * If the destination topic doesn't define partitioning key, then CC Flink SQL will write the records in whatever partitioning that was used at the end of the query. if last operation in the query is `GROUP BY foo` or `JOIN ON A.foo = B.foo`, then output records would be partitioned on `foo` values, and they wouldn't be re-partitioned before writing them into Kafka. The `foo` partitioning is preserved. 
-    * If you have parallel queries like without any data shuffling, like `INSERT INTO A SELECT * FROM B`, then any skew from B would be repeated in A. Otherwise, if partitioning key is defined (like `DISTRIBUTED BY HASH(metric) `), any writes into that topic would be shuffled by that key.
+    * If you have parallel queries like without any data shuffling, like `INSERT INTO Table_A SELECT * FROM Table_B`, then any skew from Table_B would be repeated in Table_A. Otherwise, if partitioning key is defined (like `DISTRIBUTED BY HASH(metric) `), any writes into that topic would be shuffled by that new key.
     * In case of key skew, add more fields in the distribution to partition not just in one key. That would allow Flink to read data in more parallel fashion, improving the problem with readings from Kafka's bottleneck of 18MBs/connection (partition)
     * An interesting metric, 5 partitions feeds 1 CFU. 
     * The performance bottleneck will be actually records serialization and deserialisation, avro is slower than protobuf.
@@ -137,6 +140,42 @@ A table registered with the CREATE TABLE statement can be used as a table source
         'connector' = 'filesystem',
         'path' = '/tmp/users'
     );
+    ```
+
+???- info "CREATE TABLE in Confluent Cloud for Flink"
+    The table creation creates topic and -key, -value schemas in the Schema Registry in the same environment as the compute pool in which the query is run. The `connector` is automatically set to `confluent`. 
+    The non null and nullable columns are translate as the following avro fields:
+    ```avro
+      "fields": [
+            {
+            "name": "customer_id",
+            "type": "string"
+            },
+            {
+            "default": null,
+            "name": "first_name",
+            "type": [
+                "null",
+                "string"
+            ]
+            }
+      ]
+    ```
+
+    DATE as:
+
+    ```avro
+    {
+      "default": null,
+      "name": "registration_date",
+      "type": [
+        "null",
+        {
+          "logicalType": "local-timestamp-millis",
+          "type": "long"
+        }
+      ]
+    }
     ```
 
 
@@ -184,13 +223,13 @@ A table registered with the CREATE TABLE statement can be used as a table source
 
  
 
-???- question "How to load data from a csv file using filesystem connector using SQL (Local execution only)"
+???- question "How to load data from a csv file using filesystem connector using SQL - Flink OSS"
     Enter the following statement in a SQL client session:
 
     ```sql
     SET execution.runtime-mode=BATCH;
     ```
-    Create a table from the content of the file
+    Create a table from the content of the file, mounted inside the container or accessible on local file system:
 
     ```sql
     CREATE TABLE employee_info (
@@ -218,14 +257,14 @@ A table registered with the CREATE TABLE statement can be used as a table source
     show create table orders;
     ```
 
-    [See complete example in the readme](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/00-basic-sql)
+    [See complete example in the readme](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/00-basic-sql)
 
 
-???- question "How to add a field in a table?"
+???- question "How to add a metadata field in a table?"
     [Use ALTER TABLE](https://docs.confluent.io/cloud/current/flink/reference/statements/alter-table.html)
     
     ```sql
-    alter table flight_schedules add(dt string);
+    alter table flight_schedules add(dt string metadata virtual);
     ```
 
 
@@ -487,7 +526,7 @@ To mitigate the usage of `SinkUpsertMaterializer`:
 
 [See the product documentation](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-statement-in-af-long) with some specificities, like source and sink tables are mapped to Kafka Topics. The `$rowtime` TIMESTAMP_LTZ(3) NOT NULL is provided as a system column.
 
-* For each topic there is an inferred table created. The catalog is the Confluent environment and the Kafka cluster is the databsase. We can use the ALTER TABLE statement to evolve schemas for those inferred tables.
+* For each topic there is an inferred table created. The catalog is the Confluent environment and the Kafka cluster is the database. We can use the ALTER TABLE statement to evolve schemas for those inferred tables.
 
 * A table by default is mapped to a topic with 6 partitions, and the changelog being append. Primary key leads to an implicit DISTRIBUTED BY(k), and value and key schemas are created in Schema Registry. It is possible to create table with primary key and append mode, while by default it is a upsert mode. 
 
@@ -790,7 +829,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     WHERE keep_row = TRUE;
     ```
 
-???- info "How to search for hot key"
+???- info "How to search for hot key?"
     ```sql
     SELECT 
         id, 

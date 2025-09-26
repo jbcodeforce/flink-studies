@@ -1,6 +1,6 @@
 # Order and Jobs processing with Confluent Platform Flink
 
-This is a simple demo using Confluent Platform with Flink and Kafka to demonstrate a json schema mapping, a join and an aggregation Flink SQL query.
+This is a simple demo using Confluent Platform with Flink, or Confluent Cloud for Flink and Kafka to demonstrate a json schema mapping, a join and an aggregation Flink SQL query. The example if for a fictitious mover company, in 2090.
 
 The processing logic needs to address has the following basic architecture:
 
@@ -8,10 +8,12 @@ The processing logic needs to address has the following basic architecture:
 
 The input is an industrial vehicle rental event, with an example of order in data/order_detail.json. The second input is a job demand, which in the context of a Mover, a move demand.
 
+The jobs are related to a move order, so the join key is the OrderId.
+
 ## Use Case
 
 * Truck rental orders continuously arrive to the `raw-contracts` kafka topic, while job demands are sent to `raw-jobs` topic. 
-    ![](./producer/static/mover-truck.png)
+    ![](./producer/static/mover-truck-2100.png)
     *Image generated with Google Gemini*
 
 * The raw-orders json payload looks like:
@@ -43,6 +45,7 @@ The input is an industrial vehicle rental event, with an example of order in dat
   ```json
   {
     "job_id": 1234567,
+    "order_id": 123456,  -- used to join to order
     "job_type": "LoadUnload",
     "job_status": "Completed",
     "rate_service_provider": "85.0000",
@@ -56,8 +59,7 @@ The input is an industrial vehicle rental event, with an example of order in dat
   ```
 
 
-
-* The first transformation addresses taking the raw source records and build a JSON with nested structure, the `OrderDetails`:
+* The first transformation addresses taking the raw source records and build a JSON with nested structure, the `OrderDetails` which includes two main objects: the EquipmentRentalDetails and the MovingHelpDetails
   ```json
   {
       "OrderDetails": {
@@ -83,13 +85,29 @@ The input is an industrial vehicle rental event, with an example of order in dat
             "OrderType": "Umove",
             "AssociatedContractId": null
           }
-        ]
+        ],
+        "MovingHelpDetails": null
       },
-      "MovingHelpDetails": null
-  }
   ```
 
 * The second real time processing is doing a join with the job, raw_topic, to enrich the OrderDetails with the jobs information.
+  ```json
+      "MovingHelpDetails": [
+        {
+            "job_id": 1234567,
+            "job_type": "LoadUnload",
+            "job_status": "Completed",
+            "rate_service_provider": "85.0000",
+            "total_paid": "170.0000",
+            "job_date_start": "2020-07-17",
+            "job_completed_date": "2020-07-17",
+            "job_entered_date": "2020-07-14",
+            "job_last_modified_date": "2020-07-14",
+            "service_provider_name": "ArizonaDream"
+          }
+      ]
+  ```
+
 * The equipment rental details can be used to compute aggregations and business analytics data elements.
 
 ## Code explanation
@@ -171,6 +189,156 @@ The cp-flink folder includes config_map and Kubernetes job manifests to start th
   ```
 
 ### The Flink SQL processing
+
+Defining JSON objects as sink, involves defining the value format, and the table structure. As we want json, the settings is:
+
+```sql
+    'value.format' = 'json-registry',
+```
+
+#### raw_job mapping
+
+To start the development of the SQL code, we use the simple raw_job as it is a flat input structure. The target one element that will be an array of json objects. This first version of table definition will be defined as:
+
+```sql
+create table dim_jobs (
+  MovingHelpDetails ARRAY<ROW<
+    job_id BIGINT,
+    job_type STRING,
+    job_status STRING,
+    rate_service_provider STRING,
+    total_paid DECIMAL(10,2),
+    job_date_start STRING,
+    job_completed_date STRING,
+    job_entered_date STRING,
+    job_last_modified_date STRING,
+    service_provider_name STRING
+  >>) WITH (
+    'value.avro-registry.schema-context' = '.dev',
+   'kafka.retention.time' = '0',
+    'changelog.mode' = 'append',
+   'kafka.cleanup-policy'= 'compact',
+   'scan.bounded.mode' = 'unbounded',
+   'scan.startup.mode' = 'earliest-offset',
+   'value.fields-include' = 'all',
+    'value.format' = 'json-registry',
+    'value.fields-include' = 'all'
+);
+```
+
+If we want to map raw_jobs to the dim_jobs
+
+```sql
+insert into dim_jobs (MovingHelpDetails)  
+  SELECT   
+    ARRAY[ 
+      ROW(
+        j.job_id, 
+        j.job_type,
+        j.job_status,
+        j.rate_service_provider,
+        j.total_paid,
+        j.job_date_start,
+       j.job_completed_date,
+       j.job_entered_date,
+      j.job_last_modified_date,
+      j.service_provider_name)
+    ] 
+  from raw_jobs j;
+```
+
+and the results are as expected:
+
+```json
+{
+  "MovingHelpDetails": [
+    {
+      "job_id": 1005,
+      "job_type": "cleaning",
+      "job_status": "cancelled",
+      "rate_service_provider": "hourly",
+      "total_paid": 0,
+      "job_date_start": "2024-01-18 14:00:00",
+      "job_completed_date": "",
+      "job_entered_date": "2024-01-14 09:20:00",
+      "job_last_modified_date": "2024-01-17 16:45:00",
+      "service_provider_name": "QuickMover"
+    }
+  ]
+}
+```
+
+#### raw_order mapping
+
+The OrderDetails is build in the ddl.order_details.sql
+
+
+
+```sql
+create table order_details (
+   OrderId BIGINT NOT NULL PRIMARY KEY not enforced,
+   EquipmentRentalDetails ARRAY<ROW<
+      OrderId BIGINT,
+      Status STRING,
+      Equipment ARRAY<ROW<
+        ModelCode STRING,
+        Rate STRING
+      >>,
+      TotalPaid DECIMAL(10,2),
+      Type STRING,
+      Coverage STRING,
+      Itinerary ROW<
+        PickupDate TIMESTAMP(3),
+        DropoffDate TIMESTAMP(3),
+        PickupLocation STRING,
+        DropoffLocation STRING
+      >,
+      OrderType STRING,
+      AssociatedContractId BIGINT>>,
+  MovingHelpDetails ARRAY<ROW<
+    job_id BIGINT,
+    job_type STRING,
+    job_status STRING,
+    rate_service_provider STRING,
+    total_paid DECIMAL(10,2),
+    job_date_start STRING,
+    job_completed_date STRING,
+    job_entered_date STRING,
+    job_last_modified_date STRING,
+    service_provider_name STRING
+  >>
+  ) distributed by hash(OrderId) into 1 buckets WITH ( 
+   'value.avro-registry.schema-context' = '.dev',
+   'kafka.retention.time' = '0',
+    'changelog.mode' = 'append',
+   'scan.bounded.mode' = 'unbounded',
+   'scan.startup.mode' = 'earliest-offset',
+   'value.fields-include' = 'all',
+    'value.format' = 'json-registry',
+    'value.fields-include' = 'all'
+);
+```
+
+```sql
+insert into dim_orders(OrderId, EquipmentRentalDetails)
+SELECT
+  OrderId,
+  ARRAY[
+    row(
+     OrderId,
+  Status,
+  TotalPaid,
+  `Type`,
+  Coverage,
+  OrderType,
+  CAST(AssociatedContractId as BIGINT)
+    )
+  ]
+from raw_orders
+```
+
+
+#### Combining
 
 #### 1. Direct Nested Access
 

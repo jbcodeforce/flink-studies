@@ -86,7 +86,7 @@ CREATE TABLE department_counts (
     emp_count BIGINT NOT NULL
 ) WITH ( 
     'connector' = 'filesystem',
-    'path' = '/Users/jerome/Code/ReadOnlyRepos/flink-studies/code/flink-sql/00-basic-sql/data/dept_count',
+    'path' = '/Users/jerome/Documents/Code/flink-studies/code/flink-sql/00-basic-sql/data/dept_count',
     'format' = 'csv'
 );
 ```
@@ -165,5 +165,10 @@ select count(*) AS `count` from bounded_pageviews;
 ```
 
 ## Some examples with CC
+
+The `cc-flink/ddl.customers.sql` create a simple customers table. Running this query inside the Confluent Cloud Console -> Flink -> Workspace, creates the `customers` topic, the -key and -value schemas.
+A non null string becomes
+
+* See also the [json transformation demo](../../../e2e-demos/json-transformation/README.md) as a basic ARRAY, ROW to JSON Object transformation, runnable in CC Flink or CP Flink.
 
 [Next will be Kafka integration running locally or on Confluent Cloud](../01-confluent-kafka-local-flink/README.md)
