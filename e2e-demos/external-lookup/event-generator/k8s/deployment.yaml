@@ -1,0 +1,297 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-generator-standard
+  namespace: el-demo
+  labels:
+    app: external-lookup-event-generator
+    component: generator
+    variant: standard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: external-lookup-event-generator
+      component: generator
+      variant: standard
+  template:
+    metadata:
+      labels:
+        app: external-lookup-event-generator
+        component: generator
+        variant: standard
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8090"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: event-generator
+        image: external-lookup-event-generator:latest
+        imagePullPolicy: IfNotPresent  # Use local image for development
+        ports:
+        - containerPort: 8090
+          name: metrics
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: event-generator-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: metrics
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: metrics
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 2
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: logs
+        emptyDir: {}
+      restartPolicy: Always
+      # Security context for non-root container
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534  # nobody user
+        runAsGroup: 65534
+        fsGroup: 65534
+
+---
+# High-rate deployment for performance testing
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-generator-high-rate
+  namespace: el-demo
+  labels:
+    app: external-lookup-event-generator
+    component: generator
+    variant: high-rate
+spec:
+  replicas: 0  # Scale manually when needed
+  selector:
+    matchLabels:
+      app: external-lookup-event-generator
+      component: generator
+      variant: high-rate
+  template:
+    metadata:
+      labels:
+        app: external-lookup-event-generator
+        component: generator
+        variant: high-rate
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8090"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: event-generator
+        image: external-lookup-event-generator:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8090
+          name: metrics
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: event-generator-config
+        - configMapRef:
+            name: event-generator-high-rate-config
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: metrics
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: metrics
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: logs
+        emptyDir: {}
+      restartPolicy: Always
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+
+---
+# Burst mode deployment for burst testing
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-generator-burst
+  namespace: el-demo
+  labels:
+    app: external-lookup-event-generator
+    component: generator
+    variant: burst
+spec:
+  replicas: 0  # Scale manually when needed
+  selector:
+    matchLabels:
+      app: external-lookup-event-generator
+      component: generator
+      variant: burst
+  template:
+    metadata:
+      labels:
+        app: external-lookup-event-generator
+        component: generator
+        variant: burst
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8090"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: event-generator
+        image: external-lookup-event-generator:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8090
+          name: metrics
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: event-generator-config
+        - configMapRef:
+            name: event-generator-burst-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: metrics
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: metrics
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: logs
+        emptyDir: {}
+      restartPolicy: Always
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+
+---
+# Error testing deployment for failure scenario testing
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-generator-error-test
+  namespace: el-demo
+  labels:
+    app: external-lookup-event-generator
+    component: generator
+    variant: error-test
+spec:
+  replicas: 0  # Scale manually when needed
+  selector:
+    matchLabels:
+      app: external-lookup-event-generator
+      component: generator
+      variant: error-test
+  template:
+    metadata:
+      labels:
+        app: external-lookup-event-generator
+        component: generator
+        variant: error-test
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8090"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: event-generator
+        image: external-lookup-event-generator:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8090
+          name: metrics
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: event-generator-config
+        - configMapRef:
+            name: event-generator-error-test-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: metrics
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: metrics
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: logs
+        emptyDir: {}
+      restartPolicy: Always
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+

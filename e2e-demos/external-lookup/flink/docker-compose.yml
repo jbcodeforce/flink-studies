@@ -1,0 +1,209 @@
+version: '3.8'
+
+services:
+  # Flink JobManager
+  flink-jobmanager:
+    image: apache/flink:1.20.0-scala_2.12-java11
+    container_name: flink-jobmanager
+    ports:
+      - "8081:8081"
+    command: jobmanager
+    environment:
+      - FLINK_PROPERTIES=jobmanager.rpc.address: flink-jobmanager
+    volumes:
+      - ./target/payment-claims-enrichment-1.0-SNAPSHOT.jar:/opt/flink/usrlib/payment-claims-enrichment.jar
+    networks:
+      - flink-network
+
+  # Flink TaskManager  
+  flink-taskmanager:
+    image: apache/flink:1.20.0-scala_2.12-java11
+    container_name: flink-taskmanager
+    depends_on:
+      - flink-jobmanager
+    command: taskmanager
+    environment:
+      - "FLINK_PROPERTIES=jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 2
+        parallelism.default: 1"
+    volumes:
+      - ./target/payment-claims-enrichment-1.0-SNAPSHOT.jar:/opt/flink/usrlib/payment-claims-enrichment.jar
+    networks:
+      - flink-network
+
+  # Payment Claims Enrichment Job
+  payment-enrichment-job:
+    image: apache/flink:1.20.0-scala_2.12-java11
+    container_name: payment-enrichment-job
+    depends_on:
+      - flink-jobmanager
+      - flink-taskmanager
+      - kafka
+      - duckdb
+    command: >
+      bash -c "
+        echo 'Waiting for Flink cluster to be ready...' &&
+        sleep 30 &&
+        echo 'Submitting Payment Claims Enrichment job...' &&
+        /opt/flink/bin/flink run 
+          --jobmanager flink-jobmanager:8081
+          --class com.example.PaymentClaimsEnrichment
+          /opt/flink/usrlib/payment-claims-enrichment.jar
+      "
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - DUCKDB_URL=jdbc:duckdb:http://duckdb:8080/database
+      - PAYMENT_EVENTS_TOPIC=payment-events
+      - ENRICHED_PAYMENTS_TOPIC=enriched-payments  
+      - FAILED_PAYMENTS_TOPIC=failed-payments
+    volumes:
+      - ./target/payment-claims-enrichment-1.0-SNAPSHOT.jar:/opt/flink/usrlib/payment-claims-enrichment.jar
+    networks:
+      - flink-network
+    restart: on-failure
+
+  # Apache Kafka
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_METRICS_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
+      KAFKA_CONFLUENT_METRICS_ENABLE: 'false'
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - flink-network
+
+  # Zookeeper for Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-log:/var/lib/zookeeper/log
+    networks:
+      - flink-network
+
+  # DuckDB with HTTP API (using the existing DuckDB service from the main demo)
+  duckdb:
+    image: duckdb-external-lookup:latest  # This should be built from ../database/
+    container_name: duckdb-external-lookup
+    ports:
+      - "8080:8080"
+    environment:
+      - DUCKDB_DATABASE_PATH=/data/claims.db
+      - API_HOST=0.0.0.0
+      - API_PORT=8080
+    volumes:
+      - duckdb-data:/data
+    networks:
+      - flink-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Kafka Topic Creator (initialize topics)
+  kafka-topics:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: kafka-topics
+    depends_on:
+      - kafka
+    command: |
+      bash -c "
+        echo 'Waiting for Kafka to be ready...' &&
+        sleep 30 &&
+        echo 'Creating topics...' &&
+        kafka-topics --bootstrap-server kafka:29092 --create --topic payment-events --partitions 3 --replication-factor 1 --if-not-exists &&
+        kafka-topics --bootstrap-server kafka:29092 --create --topic enriched-payments --partitions 3 --replication-factor 1 --if-not-exists &&
+        kafka-topics --bootstrap-server kafka:29092 --create --topic failed-payments --partitions 3 --replication-factor 1 --if-not-exists &&
+        echo 'Topics created successfully' &&
+        kafka-topics --bootstrap-server kafka:29092 --list
+      "
+    networks:
+      - flink-network
+    restart: on-failure
+
+  # Event Generator (from the existing event-generator service)  
+  event-generator:
+    image: event-generator:latest  # This should be built from ../event-generator/
+    container_name: event-generator
+    depends_on:
+      - kafka
+      - kafka-topics
+    environment:
+      - PAYMENT_GEN_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - PAYMENT_GEN_KAFKA_TOPIC=payment-events
+      - PAYMENT_GEN_EVENTS_PER_SECOND=5.0
+      - PAYMENT_GEN_VALID_CLAIM_RATE=0.85
+      - PAYMENT_GEN_RUN_DURATION_SECONDS=0  # Run indefinitely
+      - PAYMENT_GEN_LOG_LEVEL=INFO
+    networks:
+      - flink-network
+    restart: unless-stopped
+
+  # Kafka Console Consumers for monitoring outputs
+  enriched-consumer:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: enriched-consumer
+    depends_on:
+      - kafka
+    command: |
+      bash -c "
+        sleep 45 &&
+        echo 'Starting enriched payments consumer...' &&
+        kafka-console-consumer --bootstrap-server kafka:29092 --topic enriched-payments --from-beginning
+      "
+    networks:
+      - flink-network
+    restart: unless-stopped
+
+  failed-consumer:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: failed-consumer
+    depends_on:
+      - kafka
+    command: |
+      bash -c "
+        sleep 45 &&
+        echo 'Starting failed payments consumer...' &&
+        kafka-console-consumer --bootstrap-server kafka:29092 --topic failed-payments --from-beginning
+      "
+    networks:
+      - flink-network
+    restart: unless-stopped
+
+networks:
+  flink-network:
+    driver: bridge
+
+volumes:
+  kafka-data:
+    driver: local
+  zookeeper-data:
+    driver: local 
+  zookeeper-log:
+    driver: local
+  duckdb-data:
+    driver: local

@@ -11,8 +11,9 @@
 
 ### Code getting started
 
-* [ ] Create a “first Flink app” tutorial with step-by-step instructions
+* [ ] Create a “first Flink DataStream app” tutorial with step-by-step instructions
 * [ ] Flink SQL basic app
+* [ ] Flink Table API app
 * [ ] Changelog mode demo and  [ ] explanations
 * [ ] Flink SQL Puzzles
 

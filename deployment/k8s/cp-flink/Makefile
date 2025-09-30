@@ -76,7 +76,7 @@ use_cp_ns:
 	@kubectl config set-context --current --namespace=$(CFNT_NS)
 
 port_forward_cp_console:
-	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/controlcenter-bootstrap-np 9021:9021"'
+	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/controlcenter-ng 9021:9021"'
 
 delete_cp_cluster:
 	@kubectl delete -f ../cfk/basic-kraft-cluster.yaml -n $(CFNT_NS)

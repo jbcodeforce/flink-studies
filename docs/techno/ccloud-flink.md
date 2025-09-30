@@ -349,7 +349,8 @@ Several factors significantly affect statement throughput:
 
 ### Scoping workload
 
-* Assess the number of record per second
+* Assess the number of record per seconds
+* Be sure to clarrify that Confluent Cloud for Flink is used for streaming not batching. Operations like update, truncate, delete table are not supported.
 * For stateless the attainable throughput of the statement per CFU will generally be determined by how much write volume the sink topic can handle.
 * Most important throughput factor is the State size, its access and management. 
 * Statement throughput generally **scales linearly** in the number of CFUs available to a statement.
@@ -400,6 +401,13 @@ To consider:
 * Topic retention > Time window needed to recreate state (dictated by window size or TTL). Without enough retention, results will be wrong, or only subset of queries would work.
 * Any time window and aggregation needs to use event time and not processing time.
 * Setup replication only to the input topics. 
+
+## Some FAQs
+
+* Processing time support? It is better to use event time to ensure results are correct, deterministic and reproductible. Using processing time for windowing operations may lead to non-determnistic results. Processing time may be relevant for temporal joins.
+* Is Hive load/unload function supported? The Flink OSS has this load/unload Hive functions capability, but all those Hive functions are already available in CC Flink.
+* How to add Jar? ADD and REMOVE JAR are meant for testing purposes in OSS Flink. For UDFs, Jars can be uploaded via Confluent Console, CLI, REST API or Terraform.
+* How to manage Catalog and Database? In Confluent Cloud Catalog is a Confluent Environment so no direct management from Flink session. Database is a Kafka cluster so the same logic applies.
 
 ## Deeper dive
 

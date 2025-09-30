@@ -1,0 +1,115 @@
+# Flink JobManager Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: flink-jobmanager
+  namespace: flink
+  labels:
+    app: payment-claims-enrichment
+    component: jobmanager
+spec:
+  type: ClusterIP
+  ports:
+  - name: rpc
+    port: 6123
+    targetPort: 6123
+  - name: blob-server
+    port: 6124
+    targetPort: 6124
+  - name: webui
+    port: 8081
+    targetPort: 8081
+  - name: metrics
+    port: 9249
+    targetPort: 9249
+  selector:
+    app: payment-claims-enrichment
+    component: jobmanager
+
+---
+# Flink JobManager Service (LoadBalancer for external access)
+apiVersion: v1
+kind: Service
+metadata:
+  name: flink-jobmanager-external
+  namespace: flink
+  labels:
+    app: payment-claims-enrichment
+    component: jobmanager-external
+spec:
+  type: LoadBalancer
+  ports:
+  - name: webui
+    port: 8081
+    targetPort: 8081
+    protocol: TCP
+  selector:
+    app: payment-claims-enrichment
+    component: jobmanager
+
+---
+# Flink TaskManager Service (Headless for TaskManager discovery)
+apiVersion: v1
+kind: Service
+metadata:
+  name: flink-taskmanager
+  namespace: flink
+  labels:
+    app: payment-claims-enrichment
+    component: taskmanager
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - name: rpc
+    port: 6122
+    targetPort: 6122
+  - name: query-state
+    port: 6125
+    targetPort: 6125
+  - name: metrics
+    port: 9249
+    targetPort: 9249
+  selector:
+    app: payment-claims-enrichment
+    component: taskmanager
+
+---
+# Service Monitor for Prometheus (if using Prometheus Operator)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: flink-metrics
+  namespace: flink
+  labels:
+    app: payment-claims-enrichment
+    component: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: payment-claims-enrichment
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+    targetPort: 9249
+
+---
+# Application Metrics Service (for application-specific metrics)
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-claims-enrichment-metrics
+  namespace: flink
+  labels:
+    app: payment-claims-enrichment
+    component: app-metrics
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 8090
+    targetPort: 8090
+    protocol: TCP
+  selector:
+    app: payment-claims-enrichment

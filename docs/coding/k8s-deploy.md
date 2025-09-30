@@ -6,31 +6,45 @@
     * 01/25: sql processing section
     * 05/25: merge content, simplify, add some details on deployment - fully test k8s deployment on Colima
     * 07/25: Update for Confluent Platform v8
-    * 08/25: 
+    * 09/29: Update to diagrams and doc structure.
+
+
+One of the recommended approach to deploy Confluent Platform for Flink is to use Kubernetes platform. Apache Flink has also defined a Kubernetes Operator to manage custom resources for Flink clusters, deployments and Flink applications.
+
+Let start to review the Apache Flink Kubernested Operator concepts.
 
 ## Apache Flink Kubernetes Operator Concepts
 
-[Apache Flink Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) acts as a control plane to manage the complete deployment lifecycle of Apache Flink applications. This note summarizes how to use this operator, with present the different getting started yaml files. 
+[Apache Flink Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/)(FKO) acts as a control plane to manage the complete deployment lifecycle of Apache Flink applications. This note summarizes how to use this operator. 
 
 The [operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) takes care of submitting, savepointing, upgrading and generally managing Flink jobs using the built-in Flink Kubernetes integration. 
 
 <figure markdown="span">
 ![1](./diagrams/fk-operator-hl.drawio.png)
-<figcaption>Flink Operator to manage Flink Job and Task managers</figcaption>
+<figcaption>Apache Flink Kubernetes Operator to manage Flink Job and Task managers</figcaption>
 </figure>
 
-The operator fully automates the entire lifecycle of job manager, task managers, and applications. Failures of Job Manager pods are handled by the Deployment Controller which will take care of spawning a new Job Manager.
+The operator fully automates the entire lifecycle of the job manager, the task managers, and the applications. Failures of Job Manager pods are handled by the Deployment Controller which takes care of spawning a new Job Manager.
 
-As other operators, it can run **namespace-scoped**, to get multiple versions of the operator in the same Kubernetes cluster, or **cluster-scoped** for highly distributed  deployment. 
+As any Kubernetes operators, FKO can run **namespace-scoped**, to get multiple versions of the operator in the same Kubernetes cluster, or **cluster-scoped** for highly distributed  deployment. Operator  may map their custom resources to existing Kubernetes resources of deployments, replica sets, config maps, secrets, service accounts...
 
-The following figure represents a simple deployment view of a Flink and a Kafka clusters on a kubernetes platform:
+The following figure represents a simple deployment view of a Flink and a Kafka cluster running on a kubernetes platform:
 
 <figure markdown="span">
 ![2](./diagrams/k8s-deploy.drawio.png)
 <figcaption>K8S deployment</figcaption>
 </figure>
 
-The custom resource definition that describes the schema of a FlinkDeployment is a cluster wide resource. The Operator continuously tracks cluster events relating to the `FlinkDeployment` and `FlinkSessionJob` custom resources. [The operator control flow is described in this note.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/concepts/controller-flow/) 
+The Kafka cluster runs in its namespace, as the Flink Application. 
+
+The custom resource definition that describes the schema of a FlinkDeployment is a cluster wide resource. The Operator continuously tracks cluster events relating to the `FlinkDeployment` and `FlinkSessionJob` custom resources. [The operator control flow is described in this note.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/concepts/controller-flow/). The important points to remember are:
+
+* The operator control flow is: 1/ Observes the status of the currently deployed resource. 2/ Validates the new resource spec, 3/ Reconciles any required changes based on the new spec and the observed status.
+* The **Observer** module assesses the current stateus of any deployed Flink resources. 
+* Observer is responsible for application upgrade.
+* The job manager is validated via a call to its REST api and the status is recorded in the `jobManagerDeploymentStatus`
+* A Job cannot be in running state without a healthy jobmanager.
+
 
 ### FlinkDeployment
 
@@ -38,8 +52,8 @@ FlinkDeployment CR defines Flink Application and Session cluster deployments.
 
 ### Important documentations
 
-* [Confluent Platform for Flink has also an operator](https://docs.confluent.io/platform/current/flink/get-started-cpf.html) compatible with the open-source one.
-* [Confluent operator documentation](https://docs.confluent.io/operator/current/co-prepare.html)
+* [Confluent Platform for Flink has another operator](https://docs.confluent.io/platform/current/flink/get-started-cpf.html) integrated with FKO. [See my CP Flink summary](../techno/cp-flink.md).
+* [Confluent Flink operator documentation](https://docs.confluent.io/operator/current/co-prepare.html)
 * [Getting started with Flink OSS Standalone Kubernetes Setup.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/)
 * [Apache Flink Native Kubernetes deployment.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/native_kubernetes/)
 
@@ -48,7 +62,7 @@ FlinkDeployment CR defines Flink Application and Session cluster deployments.
 Any Flink on Kubernetes deployment should include the following pre-requisites:
 
 * [kubectl](https://kubernetes.io/docs/tasks/tools/) 
-* [Colima](https://github.com/abiosoft/colima) for local Kubernetes. Start colima with [deployment/k8s/start_colima.sh](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/start_colima.sh) or `make start_colima` under cp-flink folder.
+* A Kubernetes cluster. [Colima](https://github.com/abiosoft/colima) for local Kubernetes. See start colima with [deployment/k8s/start_colima.sh](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/start_colima.sh) or `make start_colima` under cp-flink folder.
 * Be sure to have helm cli installed: ([see installation instructions](https://helm.sh/docs/intro/install/))
   ```sh
   # for mac
@@ -61,10 +75,10 @@ Any Flink on Kubernetes deployment should include the following pre-requisites:
 
 **Two Options to run Flink on Kubernetes**: 
 
-1. [Confluent Manager for Apache Flink](#confluent-manager-for-apache-flink)
+1. [Confluent Manager for Apache Flink](#confluent-manager-for-apache-flink) 
 1. [Apache Flink Open Source](#deploy-apache-flink-kubernetes-operator)
 
-Once the platform is up and running [see the different application deployment patterns](#flink-application-deployment)
+Once the platform is up and running [see the different application deployment patterns](#flink-application-deployment).
 
 ### Colima playground
 
@@ -94,7 +108,7 @@ Once the platform is up and running [see the different application deployment pa
 
 ### Using MinIO
 
-MinIO is an object storage solution that provides an Amazon Web Services S3-compatible API and supports all core S3 features, on k8s.
+MinIO is an object storage solution that provides an Amazon Web Services S3-compatible API and supports all core S3 features, on k8s. It may be used when deploying application jar file to Flink.
 
 * First be sure [the MinIO CLI](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) is installed. 
     ```sh
@@ -162,7 +176,22 @@ Updated 07.01.2025: For CFK version 3.0.0 and CP v8.0.0
       helm repo update
       helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes
       ```
-  *  Deploy Confluent Kafka Broker using one Kraft controller, three brokers, new Confluent Console, with REST api and schema registry.
+  *  Deploy Confluent Kafka Broker using one Kraft controller, one to three brokers, the new Confluent Console, with REST api and Schema Registry.
+      ```sh
+            NAME                                  READY   STATUS      RESTARTS          AGE
+      confluent-operator-764dbdf6f9-6f7gx   1/1     Running     158 (5h41m ago)   89d
+      controlcenter-ng-0                    3/3     Running     13 (5h41m ago)    32d
+      kafka-0                               1/1     Running     4 (5h41m ago)     32d
+      kraftcontroller-0                     1/1     Running     4 (5h41m ago)     32d
+      schemaregistry-0                      1/1     Running     7 (5h41m ago)     32d
+      ```
+  * The console may be access via port-forwarding:
+      ```sh
+      kubectl -n confluent port-forward svc/controlcenter-ng 9021:9021 
+      chrome localhost:9021
+      ```
+
+      ![](./images/cp-console.png)
 
 * See [Confluent Platform releases information.](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
 
@@ -186,6 +215,8 @@ Updated 07.01.2025: For CFK version 3.0.0 and CP v8.0.0
 * Open port forwarding to CMF so the confluent cli can access the REST API, this is mandatory to deploy job
   ```sh
   make port_forward_cmf
+  # which is the same as:
+  kubectl port-forward svc/cmf-service 8084:80 -n flink
   ```
 
 See [deploy application section for SQL or Java app deployment](#flink-application-deployment)
@@ -392,21 +423,22 @@ There two types of Flink application: the java packaging or the SQL client with 
 
 ### Flink SQL processing
 
-There are multiple choices to run Flink SQL, using the SQL client, or package the SQL scripts in a docker container with the [java SQL runner](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-java/sql-runner) executing the SQL statements from a file. The application deployment is Java based even if SQL scripts are used for stream processing.
+There are multiple choices to run Flink SQL: using the SQL client, or package the SQL scripts in a docker container with the [java SQL runner](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-java/sql-runner) executing the SQL statements from a file, or finally use the Table API. The application deployment is Java based even if SQL scripts are used for stream processing.
 
-Flink Session Cluster is the most suitable deployment mode for the SQL Client. This is a long-running Flink cluster (JobManager and TaskManagers) that you can submit multiple jobs to. The sql client is a long-running, interactive application that submits jobs to an existing cluster.
+With Apache Flink OSS, Flink Session Cluster is the most suitable deployment mode for the SQL Client. This is a long-running Flink cluster (JobManager and TaskManagers) on which you can submit multiple jobs to. The sql client is a long-running, interactive application that submits jobs to an existing cluster.
+
+For Confluent For Flink and the recommended approach for OSS Apache Flink is to use a Flink Application, which per design, is one Job manager with multiple Task managers.
 
 #### Confluent Manager for Flink
 
-In **Confluent Manager for Flink** the method is to create an environment and compute pool and run the SQL statements in a pool.
+In **Confluent Manager for Flink** the method is to create an **Environment** and **Compute pool** to run the SQL statements in a pool. Those concepts and components are the same as the Confluent Cloud for Flink.
 
 * Be sure that the port-forward to the svc/cmf-service is active.
 
-* Define an environment: Environment is used for isolation and share configuration between Flink applications. It can include settings of a common observability configuration, or checkpoint storage destination for all Flink clusters in an environment.
-
+* Define an environment: Environment is used for isolation and share configuration between Flink applications. It can include settings of a common observability configuration, or checkpoint storage destination for all Flink clusters (applications) in an environment.
   ```sh
   export CONFLUENT_CMF_URL=http://localhost:8084
-  # be sure to be not connected to confluent cloud
+  # be sure to not be connected to confluent cloud, if not do:
   confluent logout
   # Look at current environment
   confluent flink environment  list
@@ -437,7 +469,7 @@ In **Confluent Manager for Flink** the method is to create an environment and co
   confluent --environment env1 --compute-pool pool1 flink shell --url http://localhost:8084
   ```
 
-#### Apache Flink 
+#### Apache Flink (OSS)
 
 You can run the SQL Client in a couple of ways:
 
@@ -518,7 +550,7 @@ COPY /path/of/my-flink-job-*.jar $FLINK_HOME/usrlib/my-flink-job.jar
 
     ```sh
     kubectl port-forward ${flink-jobmanager-pod} 8081:8081 
-    # Or using CP for Flink
+    # Or using confluent cli CP for Flink command:
     confluent flink application web-ui-forward $(APP_NAME) --environment $(ENV_NAME) --port 8081 --url http://localhost:8080
     ```
 
@@ -559,10 +591,6 @@ COPY /path/of/my-flink-job-*.jar $FLINK_HOME/usrlib/my-flink-job.jar
     # the Kafka cluster
     # the operators
     ```
-## Demonstrations in this repository
-
-* Deploy a Kafka python producer as pod to write to Confluent Platform topic, create a Flink app that deduplicate the records, 
-* A schema evolution study:
 
 ## Practices
 

@@ -19,3 +19,4 @@ e2e-demos/cdc-demo/datasets/
 **/knowledge/
 **/tmp/
 **/__pycache__/
+**/dist/

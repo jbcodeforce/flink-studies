@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: event-generator-metrics
+  namespace: el-demo
+  labels:
+    app: external-lookup-event-generator
+    component: metrics
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 8090
+    targetPort: metrics
+    protocol: TCP
+  selector:
+    app: external-lookup-event-generator
+    component: generator
+
+---
+# Optional: NodePort service for external metrics access during development/testing
+apiVersion: v1
+kind: Service
+metadata:
+  name: event-generator-metrics-nodeport
+  namespace: el-demo
+  labels:
+    app: external-lookup-event-generator
+    component: metrics
+    purpose: external-access
+spec:
+  type: NodePort
+  ports:
+  - name: metrics
+    port: 8090
+    targetPort: metrics
+    protocol: TCP
+    nodePort: 30090  # Access via http://localhost:30090/metrics
+  selector:
+    app: external-lookup-event-generator
+    component: generator
+

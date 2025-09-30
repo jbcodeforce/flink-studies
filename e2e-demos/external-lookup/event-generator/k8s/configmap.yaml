@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: event-generator-config
+  namespace: el-demo
+  labels:
+    app: external-lookup-event-generator
+    component: generator
+data:
+  # Kafka Configuration
+  PAYMENT_GEN_KAFKA_BOOTSTRAP_SERVERS: "kafka.confluent.svc.cluster.local:9071"
+  PAYMENT_GEN_KAFKA_TOPIC: "payment-events"
+  PAYMENT_GEN_KAFKA_CLIENT_ID: "payment-event-generator"
+  PAYMENT_GEN_KAFKA_ACKS: "all"
+  PAYMENT_GEN_KAFKA_RETRIES: "3"
+  
+  # Generation Configuration
+  PAYMENT_GEN_EVENTS_PER_SECOND: "10.0"
+  PAYMENT_GEN_RUN_DURATION_SECONDS: "0"  # Infinite
+  PAYMENT_GEN_VALID_CLAIM_RATE: "0.85"   # 85% valid claims
+  
+  # Mode Configuration
+  PAYMENT_GEN_BURST_MODE: "false"
+  PAYMENT_GEN_BURST_SIZE: "100"
+  PAYMENT_GEN_BURST_INTERVAL_SECONDS: "30.0"
+  
+  # Output Configuration
+  PAYMENT_GEN_DRY_RUN: "false"
+  PAYMENT_GEN_PRINT_EVENTS: "false"
+  PAYMENT_GEN_LOG_LEVEL: "INFO"
+  
+  # Monitoring Configuration
+  PAYMENT_GEN_ENABLE_METRICS: "true"
+  PAYMENT_GEN_METRICS_PORT: "8090"
+  
+  # Testing Configuration
+  TEST_KAFKA: "true"           # Test Kafka on startup
+  VALIDATE_DATABASE: "false"   # Don't validate DB on startup
+  DATABASE_URL: "http://duckdb-external-lookup:8080"
+
+---
+# ConfigMap for scenarios-based deployment (high-rate testing)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: event-generator-high-rate-config
+  namespace: el-demo
+  labels:
+    app: external-lookup-event-generator
+    component: generator
+    variant: high-rate
+data:
+  # Inherit from base config, override specific values
+  PAYMENT_GEN_EVENTS_PER_SECOND: "50.0"     # Higher rate
+  PAYMENT_GEN_VALID_CLAIM_RATE: "0.90"      # Higher success rate
+  PAYMENT_GEN_LOG_LEVEL: "WARNING"          # Less verbose
+  PAYMENT_GEN_KAFKA_BATCH_SIZE: "32768"     # Larger batches
+  PAYMENT_GEN_KAFKA_LINGER_MS: "50"         # Higher latency for throughput
+
+---
+# ConfigMap for burst mode deployment
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: event-generator-burst-config
+  namespace: el-demo
+  labels:
+    app: external-lookup-event-generator
+    component: generator
+    variant: burst
+data:
+  # Burst mode configuration
+  PAYMENT_GEN_BURST_MODE: "true"
+  PAYMENT_GEN_BURST_SIZE: "200"
+  PAYMENT_GEN_BURST_INTERVAL_SECONDS: "60.0"  # Every minute
+  PAYMENT_GEN_LOG_LEVEL: "INFO"
+
+---
+# ConfigMap for error testing deployment
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: event-generator-error-test-config
+  namespace: el-demo
+  labels:
+    app: external-lookup-event-generator
+    component: generator
+    variant: error-test
+data:
+  # Error testing configuration
+  PAYMENT_GEN_EVENTS_PER_SECOND: "5.0"       # Lower rate
+  PAYMENT_GEN_VALID_CLAIM_RATE: "0.30"       # Only 30% valid claims
+  PAYMENT_GEN_PRINT_EVENTS: "true"           # Debug output
+  PAYMENT_GEN_LOG_LEVEL: "DEBUG"             # Verbose logging

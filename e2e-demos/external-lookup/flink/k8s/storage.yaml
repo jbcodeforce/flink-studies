@@ -1,0 +1,118 @@
+# Persistent Volume Claims for Flink state and checkpoints
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: flink-checkpoints
+  namespace: flink
+  labels:
+    app: payment-claims-enrichment
+    component: storage
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: default
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: flink-savepoints
+  namespace: flink
+  labels:
+    app: payment-claims-enrichment
+    component: storage
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: default
+
+---
+# ConfigMap for init scripts
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flink-init-scripts
+  namespace: flink
+  labels:
+    app: payment-claims-enrichment
+    component: init-scripts
+data:
+  download-jar.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Downloading application JAR..."
+    
+    # Option 1: Download from Maven repository
+    if [ -n "$MAVEN_REPO_URL" ] && [ -n "$JAR_VERSION" ]; then
+        JAR_URL="${MAVEN_REPO_URL}/com/example/payment-claims-enrichment/${JAR_VERSION}/payment-claims-enrichment-${JAR_VERSION}.jar"
+        curl -L -o /opt/flink/usrlib/payment-claims-enrichment.jar "$JAR_URL"
+        echo "Downloaded JAR from Maven repository: $JAR_URL"
+    
+    # Option 2: Download from file server
+    elif [ -n "$JAR_DOWNLOAD_URL" ]; then
+        curl -L -o /opt/flink/usrlib/payment-claims-enrichment.jar "$JAR_DOWNLOAD_URL"
+        echo "Downloaded JAR from: $JAR_DOWNLOAD_URL"
+    
+    # Option 3: Copy from mounted volume
+    elif [ -f "/app-jar/payment-claims-enrichment.jar" ]; then
+        cp /app-jar/payment-claims-enrichment.jar /opt/flink/usrlib/payment-claims-enrichment.jar
+        echo "Copied JAR from mounted volume"
+    
+    # Option 4: Use pre-built image (JAR already in image)
+    else
+        echo "Using JAR from pre-built image"
+    fi
+    
+    # Verify JAR exists and is valid
+    if [ -f "/opt/flink/usrlib/payment-claims-enrichment.jar" ]; then
+        echo "JAR file size: $(du -h /opt/flink/usrlib/payment-claims-enrichment.jar)"
+        # Optionally verify JAR signature or checksum
+    else
+        echo "ERROR: Application JAR not found!"
+        exit 1
+    fi
+    
+  check-dependencies.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Checking external dependencies..."
+    
+    # Check Kafka connectivity
+    if [ -n "$KAFKA_BOOTSTRAP_SERVERS" ]; then
+        echo "Checking Kafka connectivity to: $KAFKA_BOOTSTRAP_SERVERS"
+        # Add actual connectivity check here
+    fi
+    
+    # Check DuckDB connectivity
+    if [ -n "$DUCKDB_URL" ]; then
+        echo "Checking DuckDB connectivity to: $DUCKDB_URL"
+        # Add actual connectivity check here
+    fi
+    
+    echo "Dependency checks completed"
+
+---
+# Secret for sensitive configuration (if needed)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: payment-claims-enrichment-secrets
+  namespace: flink
+  labels:
+    app: payment-claims-enrichment
+    component: secrets
+type: Opaque
+stringData:
+  # Add any sensitive configuration here
+  kafka.username: ""
+  kafka.password: ""
+  duckdb.username: ""
+  duckdb.password: ""
