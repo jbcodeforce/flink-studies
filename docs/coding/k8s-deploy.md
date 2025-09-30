@@ -35,7 +35,7 @@ The following figure represents a simple deployment view of a Flink and a Kafka 
 <figcaption>K8S deployment</figcaption>
 </figure>
 
-The Kafka cluster runs in its namespace, as the Flink Application. 
+The Kafka cluster runs in its namespace, as the Flink Application.  A **Flink Application** is any user's program that spawns one or multiple Flink jobs from its `main()` method.
 
 The custom resource definition that describes the schema of a FlinkDeployment is a cluster wide resource. The Operator continuously tracks cluster events relating to the `FlinkDeployment` and `FlinkSessionJob` custom resources. [The operator control flow is described in this note.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/concepts/controller-flow/). The important points to remember are:
 
@@ -46,9 +46,89 @@ The custom resource definition that describes the schema of a FlinkDeployment is
 * A Job cannot be in running state without a healthy jobmanager.
 
 
-### FlinkDeployment
+### Custom Resources
 
-FlinkDeployment CR defines Flink Application and Session cluster deployments.
+Once the operator is running, we can submit jobs using  `FlinkDeployment` (for Flink Application or for Job manager and task manager for session cluster) and `FlinkSessionJob` Custom Resources for Session.  FlinkSessionJob references an existing FlinkDeployment as multiple session jobs can run into the same Flink cluster. While application mode, has the job definition as part of the FlinkDeployment. 
+
+<figure markdown=span>
+![3](./diagrams/cko-cr.drawio.png)
+<caption>CKO main Custom Resources Definitions</capture>
+</figure>
+
+Confluent Managed for Flink supports application mode only and is using a new CRD for `FlinkApplication`.
+
+The [Apache Flink FlinkDeployment spec is here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/) and is used to define Flink application (will have a job section) or session cluster (only job and task managers configuration).
+
+It is important to note that `FlinkDeployment` and `FlinkApplication` CRD have a podTemplate, so ConfigMap(s) and Secret(s) can be used to configure environment variables for the flink app. (Be sure to keep the name as `flink-main-container`)
+
+```yaml
+spec:
+  podTemplate:
+    spec:
+      containers:
+        - name: flink-main-container
+          envFrom:
+            - configMapRef:
+                name: flink-app-cm
+```
+
+### Durable Storage
+
+Durable storage is used to store consistent snapshots of the Flink state. Review [the state management](../concepts/index.md#state-management) section in the concept chapter. 
+
+A RWX, shared PersistentVolumeClaim (PVC) for the Flink JobManagers and TaskManagers provides persistence for stateful checkpoint and savepoint of Flink jobs. 
+
+<figure markdown=span>
+![4](./diagrams/storage.drawio.png)
+</figure>
+
+A flow is a packaged as a jar, so developers need to define a docker image with the Flink API and any connector jars. Example of [Dockerfile](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale/flink-app/Dockerfile) and [FlinkApplication manifest](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale/k8s/cmf_app_deployment.yaml).
+
+Also one solution includes using MinIO to persist application jars.
+
+### HA configuration
+
+Within Kubernetes, we can enable Flink HA in the ConfigMap of the cluster configuration:
+
+```yaml
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "2"
+    state.backend: rockdb
+    state.savepoints.dir: file:///flink-data/savepoints
+    state.checkpoints.dir: file:///flink-data/checkpoints
+    high-availability.type: kubernetes
+    high-availability.storageDir: file:///flink-data/ha
+```
+
+JobManager metadata is persisted in the file system high-availability.storageDir . This `storageDir` stores all metadata needed to recover a JobManager failure.
+
+JobManager Pod that crashed are restarted automatically by the kubernetes scheduler, and as Flink persists metadata and the job artifacts, it is important to mount pv to the expected paths.
+
+```yaml
+podTemplate:
+  spec:
+    containers:
+      - name: flink-main-container
+        volumeMounts:
+        - mountPath: /flink-data
+          name: flink-volume
+    volumes:
+    - name: flink-volume
+      hostPath:
+        # directory location on host
+        path: /tmp/flink
+        # this field is optional
+        type: Directory
+```
+
+Recall that `podTemplate` is a base declaration common for job and task manager pods. Can be overridden by the jobManager and taskManager pod template sub-elements. The previous declaration will work for minikube with hostPath access, for Kubernetes cluster with separate storage class then the volume declaration is:
+
+```yaml
+volumes:
+  - name: flink-volume
+    persistenceVolumeClaim:
+      claimName: flink-pvc
+```
 
 ### Important documentations
 
@@ -165,33 +245,40 @@ Updated 07.01.2025: For CFK version 3.0.0 and CP v8.0.0
 
 ### Install Confluent Platform for Kafka
 
-* Using make, run `make install_cp` which will do the following:
-  * Create a namespace for Confluent products deployment. By default, CMF deploys Confluent Platform in the namespaced deployment, and it manages Confluent Platform component clusters and resources in the same Kubernetes namespace where CFK itself is deployed. 
-  * Add Confluent Platform **Helm** repositories
-      ```sh
-      helm repo add confluentinc https://packages.confluent.io/helm
-      # Verify help repo entries exist
-      helm repo list
-      # try to update repo content
-      helm repo update
-      helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes
-      ```
-  *  Deploy Confluent Kafka Broker using one Kraft controller, one to three brokers, the new Confluent Console, with REST api and Schema Registry.
-      ```sh
-            NAME                                  READY   STATUS      RESTARTS          AGE
-      confluent-operator-764dbdf6f9-6f7gx   1/1     Running     158 (5h41m ago)   89d
-      controlcenter-ng-0                    3/3     Running     13 (5h41m ago)    32d
-      kafka-0                               1/1     Running     4 (5h41m ago)     32d
-      kraftcontroller-0                     1/1     Running     4 (5h41m ago)     32d
-      schemaregistry-0                      1/1     Running     7 (5h41m ago)     32d
-      ```
-  * The console may be access via port-forwarding:
-      ```sh
-      kubectl -n confluent port-forward svc/controlcenter-ng 9021:9021 
-      chrome localhost:9021
-      ```
+[Confluent Platform product installation documentation](https://docs.confluent.io/operator/current/overview.html) at the highest level, the deployment leverages Kubernetes native API to configure, deploy, and manage Kafka cluster, Connect workers, Schema Registry, Confluent Control Center, Confluent REST Proxy and application resources such as topics.
 
-      ![](./images/cp-console.png)
+<figure markdown="span">
+![](./diagrams/cp-comps-k8s.drawio.png)
+<caption>Confluent Platform Components - k8s deployment</caption>
+</figure>
+
+* Under the [deployment/k8s/cfk](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cfk), using make, run `make install_cp` which will do the following:
+    * Create a namespace for Confluent products deployment. By default, CMF deploys Confluent Platform in the namespaced deployment, and it manages Confluent Platform component clusters and resources in the same Kubernetes namespace where CFK itself is deployed. 
+    * Add Confluent Platform **Helm** repositories
+        ```sh
+        helm repo add confluentinc https://packages.confluent.io/helm
+        # Verify help repo entries exist
+        helm repo list
+        # try to update repo content
+        helm repo update
+        helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes
+        ```
+    *  Deploy Confluent Kafka Broker using one Kraft controller, one to three brokers, the new Confluent Console, with REST api and Schema Registry.
+        ```sh
+              NAME                                  READY   STATUS      RESTARTS          AGE
+        confluent-operator-764dbdf6f9-6f7gx   1/1     Running     158 (5h41m ago)   89d
+        controlcenter-ng-0                    3/3     Running     13 (5h41m ago)    32d
+        kafka-0                               1/1     Running     4 (5h41m ago)     32d
+        kraftcontroller-0                     1/1     Running     4 (5h41m ago)     32d
+        schemaregistry-0                      1/1     Running     7 (5h41m ago)     32d
+        ```
+    * The console may be access via port-forwarding:
+        ```sh
+        kubectl -n confluent port-forward svc/controlcenter-ng 9021:9021 
+        chrome localhost:9021
+        ```
+
+        ![](./images/cp-console.png)
 
 * See [Confluent Platform releases information.](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
 
@@ -256,96 +343,6 @@ The [Apache flink kubernetes operator product documentation](https://nightlies.a
 * Mount a host folder as a PV to access data or SQL scripts, using hostPath.
 
 
-### Custom Resources
-
-Once the operator is running, we can submit jobs using  `FlinkDeployment` (for Flink Application) and `FlinkSessionJob` Custom Resources for Session. Confluent Managed for Flink supports application mode only and is using a new CRD for `FlinkApplication`.
-
-The [Apache Flink FlinkDeployment spec is here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/) and is used to define Flink application (will have a job section) or session cluster (only job and task managers configuration).
-
-It is important to note that `FlinkDeployment` and `FlinkApplication` CRD have a podTemplate, so config map and secrets can be used to configure environment variables for the flink app. (Be sure to keep the name `flink-main-container`)
-
-```yaml
-spec:
-  podTemplate:
-    spec:
-      containers:
-        - name: flink-main-container
-          envFrom:
-            - configMapRef:
-                name: flink-app-cm
-```
-
-A RWX, shared PersistentVolumeClaim (PVC) for the Flink JobManagers and TaskManagers provides persistence for stateful checkpoint and savepoint of Flink jobs. 
-
-A flow is a packaged as a jar, so developers need to define a docker image with the Flink API and any connector jars. Example of [Dockerfile](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale/flink-app/Dockerfile) and [FlinkApplication manifest](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale/k8s/cmf_app_deployment.yaml).
-
-Also one solution includes using MinIO to persist application jars.
-
-### HA configuration
-
-Within Kubernetes, we can enable Flink HA in the ConfigMap of the cluster configuration:
-
-```yaml
-  flinkConfiguration:
-    taskmanager.numberOfTaskSlots: "2"
-    state.backend: rockdb
-    state.savepoints.dir: file:///flink-data/savepoints
-    state.checkpoints.dir: file:///flink-data/checkpoints
-    high-availability.type: kubernetes
-    high-availability.storageDir: file:///flink-data/ha
-```
-
-JobManager metadata is persisted in the file system high-availability.storageDir . This `storageDir` stores all metadata needed to recover a JobManager failure.
-
-JobManager Pod that crashed are restarted automatically by the kubernetes scheduler, and as Flink persists metadata and the job artifacts, it is important to mount pv to the expected paths.
-
-```yaml
-podTemplate:
-  spec:
-    containers:
-      - name: flink-main-container
-        volumeMounts:
-        - mountPath: /flink-data
-          name: flink-volume
-    volumes:
-    - name: flink-volume
-      hostPath:
-        # directory location on host
-        path: /tmp/flink
-        # this field is optional
-        type: Directory
-```
-
-Recall that `podTemplate` is a base declaration common for job and task manager pods. Can be overridden by the jobManager and taskManager pod template sub-elements. The previous declaration will work for minikube with hostPath access, for Kubernetes cluster with separate storage class then the volume declaration is:
-
-```yaml
-volumes:
-  - name: flink-volume
-    persistenceVolumeClaim:
-      claimName: flink-pvc
-```
-
-For Flink job or application, it is important to enable checkpointing and savepointing:
-
-```yaml
-job:
-  jarURI: local:///opt/flink/examples/streaming/StateMachineExample.jar
-
-  parallelism: 2
-  upgradeMode: savepoint
-  #savepointTriggerNonce: 0
-  # initialSavepointPath: file:///
-```
-
-???- question "How to validate checkpointing?"
-    Checkpointing let Flink to periodically save the state of a job into local storage. 
-    Look at the pod name of the task manager and stop it with `kubectl delete pod/....`
-    Flink should automatically restart the job and recover from the latest checkpoint. Use the Flink UI or CLI to see the job status.
-
-???- question "How to validate savepointing?"
-    Savepoints are manually triggered snapshots of the job state, which can be used to upgrade a job or to perform manual recovery.
-    To trigger a savepoint we need to set a value into `savepointTriggerNonce` in the FlinkDeployment descriptor and then apply the changes. 
-    Get the location of the save point and then add to the yaml `initialSavepointPath` to redeploy the applicationL: it will reload its state from the savepoint. There is a custom resource definition ([FlinkStateSnapshotSpec](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/#flinkstatesnapshotspec)) to trigger savepoints. 
 
 ### Flink Config Update
 
@@ -448,6 +445,7 @@ In **Confluent Manager for Flink** the method is to create an **Environment** an
   make create_flink_env
   ```
 
+* The other way to define an environment is to use the FlinkEnvironment CR. An example can is defined [here](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/flink-env.yaml) and see [the product documentation for the CRD details.](https://docs.confluent.io/operator/current/co-manage-flink.html#create-a-af-environment)
 * Define a compute pool (verify current [docker image tag](https://hub.docker.com/r/confluentinc/cp-flink-sql/tags)) and see the [compute_pool.json](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cmf/compute_pool.json)
   ```sh
   make create_compute_pool
@@ -469,6 +467,7 @@ In **Confluent Manager for Flink** the method is to create an **Environment** an
   confluent --environment env1 --compute-pool pool1 flink shell --url http://localhost:8084
   ```
 
+
 #### Apache Flink (OSS)
 
 You can run the SQL Client in a couple of ways:
@@ -489,19 +488,62 @@ You can run the SQL Client in a couple of ways:
   ```
 
 
-### Application
+### Flink Application
 
 An **application deployment** must define the job (JobSpec) field with the `jarURI`, `parallelism`, `upgradeMode` one of (stateless/savepoint/last-state) and the desired `state` of the job (running/suspended). [See this sample app](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/basic-sample.yaml) or the [cmf_app_deployment.yaml](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale/k8s/cmf_app_deployment.yaml) in the e-com-sale demonstration.
 
+Here is an example of FlinkApplication, the CRD managed by the CMF operator:
+
+```yaml
+apiVersion: "cmf.confluent.io/v1
+kind: FlinkApplication"
+spec:
+  flinkVersion: v1_19
+  image: confluentinc/cp-flink:1.19.1-cp2  # or a custom image based on this one.
+  job:
+      jarURI: local:///opt/flink/examples/streaming/StateMachineExample.jar
+      # For your own deployment, use your own jar
+      jarURI: local:///opt/flink/usrlib/yourapp01.0.0.jar
+      parallelism: 2
+      upgradeMode: stateless
+      state: running
+  jobManager: 
+    resource: 
+      cpu: 1
+      memory: 1048m
+  taskManager: 
+    resource: 
+      cpu: 1
+      memory: 1048m
+```
+
+* [See manage Flink app using Confluent for Flink](https://docs.confluent.io/operator/current/co-manage-flink.html)
+
+#### Fault tolerance
+
+For Flink job or application that are stateful and for fault tolerance, it is important to enable checkpointing and savepointing:
+
 ```yaml
 job:
-    jarURI: local:///opt/flink/examples/streaming/StateMachineExample.jar
-    # For your own deployment, use your own jar
-    jarURI: local:///opt/flink/usrlib/yourapp01.0.0.jar
-    parallelism: 2
-    upgradeMode: stateless
-    state: running
+  jarURI: local:///opt/flink/examples/streaming/StateMachineExample.jar
+
+  parallelism: 2
+  upgradeMode: savepoint
+  #savepointTriggerNonce: 0
+  # initialSavepointPath: file:///
 ```
+
+The other upgradeMode is ``
+
+???- question "How to validate checkpointing?"
+    Checkpointing let Flink to periodically save the state of a job into local storage. 
+    Look at the pod name of the task manager and stop it with `kubectl delete pod/....`
+    Flink should automatically restart the job and recover from the latest checkpoint. Use the Flink UI or CLI to see the job status.
+
+???- question "How to validate savepointing?"
+    Savepoints are manually triggered snapshots of the job state, which can be used to upgrade a job or to perform manual recovery.
+    To trigger a savepoint we need to set a value into `savepointTriggerNonce` in the FlinkDeployment descriptor and then apply the changes. 
+    Get the location of the save point and then add to the yaml `initialSavepointPath` to redeploy the applicationL: it will reload its state from the savepoint. There is a custom resource definition ([FlinkStateSnapshotSpec](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/#flinkstatesnapshotspec)) to trigger savepoints. 
 
 `flinkConfiguration` is a hash map used to define the Flink configuration, such as the task slot, HA and checkpointing parameters.
 
@@ -531,7 +573,7 @@ The application jar needs to be in a custom Flink docker image built using the [
 The following Dockerfile is used for deploying a solution in **application mode**, which packages the Java Flink jars with the app, and any connector jars needed for the integration and starts the `main()` function.
 
 ```dockerfile
-FROM flink
+FROM confluentinc/cp-flink:1.19.1-cp2
 RUN mkdir -p $FLINK_HOME/usrlib
 COPY /path/of/my-flink-job-*.jar $FLINK_HOME/usrlib/my-flink-job.jar
 ```

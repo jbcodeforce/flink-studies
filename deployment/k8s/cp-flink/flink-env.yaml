@@ -1,0 +1,29 @@
+apiVersion: platform.confluent.io/v1beta1
+kind: FlinkEnvironment
+metadata:
+  name: env1
+  namespace: flink
+spec:
+  kubernetesNamespace:      el-demo
+  flinkApplicationDefaults: 
+    metadata:
+      labels:
+        env: env1
+    spec:
+      flinkConfiguration:
+        taskmanager.numberOfTaskSlots: '1'
+        rest.profiling.enabled": "true"
+        state.backend.type: rocksdb
+        state.checkpoints.dir: 'file:///opt/flink/volume/flink-cp'
+        state.savepoints.dir: 'file:///opt/flink/volume/flink-sp'
+        state.backend.incremental: 'true'
+        state.backend.rocksdb.use-bloom-filter: 'true'
+        state.checkpoints.num-retained: '3'
+        state.savepoints.num-retained: '3'
+        state.backend.rocksdb.block-cache-size: '1024m'
+        state.backend.rocksdb.block-size: '1024m'
+        state.backend.rocksdb.block-size-multiplier: '10'
+        state.backend.rocksdb.block-size-multiplier: '10'
+  cmfRestClassRef:
+    name: cmf-rest-class
+    namespace: flink
