@@ -1,26 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: duckdb-external-lookup
-  namespace: duckdb
+  name: claimdb-external-lookup
+  namespace: el-demo
   labels:
-    app: duckdb-external-lookup
+    app: external-lookup
     component: database
 spec:
-  replicas: 1  # DuckDB is single-node, no replication
+  replicas: 1  # claimdb is single-node, no replication
   selector:
     matchLabels:
-      app: duckdb-external-lookup
+      app: external-lookup
       component: database
   template:
     metadata:
       labels:
-        app: duckdb-external-lookup
+        app: external-lookup
         component: database
     spec:
       containers:
-      - name: duckdb-api
-        image: duckdb-external-lookup:latest
+      - name: claimdb-api
+        image: demo-claimdb:latest
         imagePullPolicy: IfNotPresent  # Use local image for development
         ports:
         - containerPort: 8080
@@ -28,7 +28,7 @@ spec:
           protocol: TCP
         envFrom:
         - configMapRef:
-            name: duckdb-config
+            name: claimdb-config
         resources:
           requests:
             memory: "256Mi"
@@ -53,14 +53,14 @@ spec:
           timeoutSeconds: 5
           failureThreshold: 2
         volumeMounts:
-        - name: duckdb-data
+        - name: claimdb-data
           mountPath: /data
         - name: init-logs
           mountPath: /app/logs
       volumes:
-      - name: duckdb-data
+      - name: claimdb-data
         persistentVolumeClaim:
-          claimName: duckdb-pvc
+          claimName: claimdb-pvc
       - name: init-logs
         emptyDir: {}
       restartPolicy: Always
@@ -72,14 +72,14 @@ spec:
         fsGroup: 65534
 
 ---
-# Persistent Volume Claim for DuckDB database file
+# Persistent Volume Claim for claimdb database file
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: duckdb-pvc
-  namespace: duckdb
+  name: claimdb-pvc
+  namespace: el-demo
   labels:
-    app: duckdb-external-lookup
+    app: external-lookup
     component: database
 spec:
   accessModes:

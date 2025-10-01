@@ -1,7 +1,7 @@
 # Payment Claims Enrichment - Kubernetes Makefile
 # Convenience targets for managing Kubernetes deployment
 
-NAMESPACE ?= flink
+NAMESPACE ?= el-demo
 DEPLOYMENT_MODE ?= standalone
 BUILD_IMAGE ?= false
 DOCKER_REGISTRY ?= 
@@ -53,17 +53,6 @@ deploy-with-port-forward: ## Deploy and setup port forwarding
 	@echo "$(BLUE)Deploying with port forwarding...$(NC)"
 	@./deploy.sh --mode $(DEPLOYMENT_MODE) --namespace $(NAMESPACE) --port-forward
 
-deploy-operator: ## Deploy using Flink Kubernetes Operator
-	@$(MAKE) deploy DEPLOYMENT_MODE=operator
-
-deploy-session: ## Deploy in session mode
-	@$(MAKE) deploy DEPLOYMENT_MODE=session
-
-deploy-dev: ## Deploy for development (with port forwarding)
-	@$(MAKE) deploy-with-port-forward NAMESPACE=flink-dev
-
-deploy-prod: ## Deploy for production (operator mode)
-	@$(MAKE) deploy DEPLOYMENT_MODE=operator NAMESPACE=flink-prod
 
 ##@ Building
 

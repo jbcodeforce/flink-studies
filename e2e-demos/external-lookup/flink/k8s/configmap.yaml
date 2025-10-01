@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: payment-claims-enrichment-config
-  namespace: flink
+  namespace: el-demo
   labels:
     app: payment-claims-enrichment
     component: config

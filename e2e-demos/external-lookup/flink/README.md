@@ -105,6 +105,8 @@ mvn clean package
 
 ### 2. Run Locally (Standalone)
 
+This is to test on a Flink local runtime.
+
 ```bash
 # Start Flink cluster
 $FLINK_HOME/bin/start-cluster.sh
@@ -115,17 +117,7 @@ $FLINK_HOME/bin/flink run \
   target/payment-claims-enrichment-1.0-SNAPSHOT.jar
 ```
 
-### 3. Run with Docker
-
-```bash
-# Build Docker image
-docker build -t payment-claims-enrichment:latest .
-
-# Run with docker-compose (see docker-compose.yml)
-docker-compose up
-```
-
-### 4. Deploy to Kubernetes
+### 3. Deploy to Kubernetes
 
 ```bash
 # Build and push image

@@ -45,7 +45,7 @@ COPY 01_create_schema.sql .
 COPY 02_insert_data.sql .
 
 # Copy HTTP API wrapper script
-COPY duckdb_api.py .
+COPY claimdb_api.py .
 
 # Create database initialization script
 RUN echo '#!/bin/bash\n\
@@ -75,8 +75,8 @@ else\n\
     exit 1\n\
 fi\n\
 echo "Database initialized successfully"\n\
-echo "Starting DuckDB HTTP API..."\n\
-python3 duckdb_api.py' > init_and_serve.sh && chmod +x init_and_serve.sh
+echo "Starting ClaimDB HTTP API..."\n\
+python3 claimdb_api.py' > init_and_serve.sh && chmod +x init_and_serve.sh
 
 
 # Expose port for HTTP API

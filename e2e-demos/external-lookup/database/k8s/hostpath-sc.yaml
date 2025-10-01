@@ -3,7 +3,8 @@ kind: StorageClass
 metadata:
   name: hostpath
   labels:
-    app: duckdb-external-lookup
+    app: external-lookup
+    component: storage
 provisioner: kubernetes.io/no-provisioner
 volumeBindingMode: Immediate
 allowVolumeExpansion: false

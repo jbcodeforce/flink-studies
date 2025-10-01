@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: el-demo
+  labels:
+    name: el-demo
+    app: payment-claims-enrichment
+    environment: dev
+  annotations:
+    description: "Namespace for external lookup demo components"

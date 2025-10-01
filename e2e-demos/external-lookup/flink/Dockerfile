@@ -17,7 +17,7 @@ COPY src ./src
 RUN mvn clean package -B -DskipTests
 
 # Runtime image - use target platform for runtime
-FROM flink:scala_2.12-java11
+FROM confluentinc/cp-flink:1.20.2-cp1-java17-arm64
 
 # Create application directory
 USER root

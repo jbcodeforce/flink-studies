@@ -39,7 +39,12 @@ The Kafka cluster runs in its own namespace (e.g. confluent), and the Confluent 
 
 A **Flink Application** is any user's program that spawns one or multiple Flink jobs from its `main()` method and is deploying a JobManager and n Task managers. They also run in their own namespace. 
 
-The **Flink Kubernetes Operator** is looking at different `Flink Deployment`, so can be isolated within its own namespace. 
+The **Flink Kubernetes Operator** is looking at different `Flink Deployment` defintions, so can be isolated within its own namespace. When deploying the FKO it is important to specify the namespace to watch for future deployment. The following command modify this list:
+```sh
+helm upgrade --install cp-flink-kubernetes-operator --version "~1.120.0"  confluentinc/flink-kubernetes-operator --set watchNamespace="{flink, confluent, el-demo}" -n flink
+```
+
+In this important to delete and let kubernetes restarts the FKO pod with the new config.
 
 The custom resource definition that describes the schema of a FlinkDeployment is a cluster wide resource. The Operator continuously tracks cluster events relating to the `FlinkDeployment` and `FlinkSessionJob` custom resources. [The operator control flow is described in this note.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/concepts/controller-flow/). The important points to remember are:
 
@@ -51,7 +56,7 @@ The custom resource definition that describes the schema of a FlinkDeployment is
 
 ### Confluent Manager for Flink and FKO
 
-Confluent Manager for Apache Flink® (CMF) manages a fleet of Flink Applications across multiple Environments
+Confluent Manager for Apache Flink® (CMF) manages a fleet of Flink Applications (cluster) across multiple Environments. It integrates with CP Console. It exposes a REST API and cli integration for managing Flink statements.
 
 CMF integrates with FKO to support Flink native custom resources:
 
@@ -63,6 +68,7 @@ CMF integrates with FKO to support Flink native custom resources:
 * Environments can be created with Manifests or using the Confluent CLI. The metadata is persisted in an embedded database. The concept is to group multiple Flink application together. This is an isolation layer for RBAC, and runs on its own namespace. It may define Flink Configuration cross applications, like common observability and checkpointing storage.
 * a REST API supports all the external integration to the operator.
 * CMF manages FlinkDeployment resources internally
+* Confluent For Kubernetes is the Confluent operator to manage Kafka resources, but it adds the FlinkEnvironment and an adapted FlinkApplication (tpo reference an environment)
 * [The flinkEnvironment and FlinkApplication CRDs are defined here](https://docs.confluent.io/operator/current/co-manage-flink.html#create-a-af-application).
 * As part of Flink SQL on Confluent, CMF defines new CR for Compute pool, and Flink Catalog.
 
@@ -122,7 +128,7 @@ Also one solution includes using MinIO to persist application jars.
 
 ### HA configuration
 
-Within Kubernetes, we can enable Flink HA in the ConfigMap of the cluster configuration:
+Within Kubernetes, we can enable Flink HA in the ConfigMap of the cluster configuration that will be shared with deployments:
 
 ```yaml
   flinkConfiguration:
@@ -132,11 +138,15 @@ Within Kubernetes, we can enable Flink HA in the ConfigMap of the cluster config
     state.checkpoints.dir: file:///flink-data/checkpoints
     high-availability.type: kubernetes
     high-availability.storageDir: file:///flink-data/ha
+    job.autoscaler.enabled: true
 ```
 
-JobManager metadata is persisted in the file system high-availability.storageDir . This `storageDir` stores all metadata needed to recover a JobManager failure.
+This configuration settings is supported via FKO. 
+[See product documentation](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/operations/configuration/), and the [autoscaler section](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/operations/configuration/#autoscaler-configuration) for deeper parameter explanations. The Flink autoscaler monitors the number of unprocessed records in the input (pending records), and will allocate more resources to absorb the lag. It adjusts parallelism at the flink operator level within the DAG. 
 
-JobManager Pod that crashed are restarted automatically by the kubernetes scheduler, and as Flink persists metadata and the job artifacts, it is important to mount pv to the expected paths.
+JobManager metadata is persisted in the file system specified by `high-availability.storageDir` . This `storageDir` stores all metadata needed to recover a JobManager failure.
+
+JobManager Pods, that crashed, are restarted automatically by the kubernetes scheduler, and as Flink persists metadata and the job artifacts, it is important to mount pv to the expected paths.
 
 ```yaml
 podTemplate:
@@ -155,7 +165,7 @@ podTemplate:
         type: Directory
 ```
 
-Recall that `podTemplate` is a base declaration common for job and task manager pods. Can be overridden by the jobManager and taskManager pod template sub-elements. The previous declaration will work for minikube with hostPath access, for Kubernetes cluster with separate storage class then the volume declaration is:
+Recall that `podTemplate` is a base declaration common for job and task manager pods. Can be overridden by the jobManager and taskManager pod template sub-elements (spec.taskManager.podTemplate). The previous declaration will work for local k8s with hostPath access, for Kubernetes cluster with separate storage class then the volume declaration is:
 
 ```yaml
 volumes:
@@ -164,6 +174,26 @@ volumes:
       claimName: flink-pvc
 ```
 
+podTemplate can include nodeAffinity to allocate taskManager to different node characteristics:
+
+```yaml
+  podTemplate:
+      spec:
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: cfk-cr
+                      operator: In
+                      values:
+                        - flink
+        tolerations:
+          - key: cfk-cr
+            operator: Equal
+            value: flink
+            effect: NoSchedule
+```
 ### Documentations
 
 * [Confluent Platform for Flink has another operator](https://docs.confluent.io/platform/current/flink/get-started-cpf.html) integrated with FKO. [See my CP Flink summary](../techno/cp-flink.md).
@@ -173,7 +203,7 @@ volumes:
 * [A Confluent Platform demonstration git repo: confluentinc/confluent-demo](https://github.com/confluentinc/confluent-demo)
 
 ## Deployment 
-### Pre-requisites
+### Prerequisites
 
 Any Flink on Kubernetes deployment should include the following pre-requisites:
 
@@ -264,7 +294,7 @@ MinIO is an object storage solution that provides an Amazon Web Services S3-comp
 
 * Next steps is to upload jar files for the different applications to deploy, or data sets for SQL table. See [application section](#flink-application-deployment).
 
-## [Confluent Manager](https://docs.confluent.io/operator/current/co-deploy-cp.html#co-deploy-cp) for Apache Flink
+### [Confluent Manager](https://docs.confluent.io/operator/current/co-deploy-cp.html#co-deploy-cp) for Apache Flink
 
 Updated 07.01.2025: For CFK version 3.0.0 and CP v8.0.0
 
@@ -279,7 +309,7 @@ Updated 07.01.2025: For CFK version 3.0.0 and CP v8.0.0
   sudo tar -xvf kubectl-plugin/kubectl-confluent-darwin-arm64.tar.gz -C /usr/local/bin/
   ```
 
-### Install Confluent Platform for Kafka
+#### Install Confluent Platform for Kafka
 
 [Confluent Platform product installation documentation](https://docs.confluent.io/operator/current/overview.html) at the highest level, the deployment leverages Kubernetes native API to configure, deploy, and manage Kafka cluster, Connect workers, Schema Registry, Confluent Control Center, Confluent REST Proxy and application resources such as topics.
 
@@ -319,7 +349,7 @@ Updated 07.01.2025: For CFK version 3.0.0 and CP v8.0.0
 * See [Confluent Platform releases information.](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
 
 
-### Install Confluent Manager for Flink
+#### Install Confluent Manager for Flink
 
 The Makefile is under [deployment/k8s/cp-flink](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cp-flink), and the deployment is done via:
 ```sh
@@ -356,7 +386,7 @@ See [deploy application section for SQL or Java app deployment](#flink-applicati
 
 TO UPDATE 
 
-## Apache Flink OSS 
+### Apache Flink OSS 
 
 * Add the Apache Flink **Helm** repositories: 
     ```sh
@@ -371,7 +401,7 @@ TO UPDATE
    
     See [Apache Flink Operator documentation](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) 
 
-## Deploy Apache Flink Kubernetes Operator
+### Deploy Apache Flink Kubernetes Operator
 
 The [Apache flink kubernetes operator product documentation](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/try-flink-kubernetes-operator/quick-start/) lists the setup steps.
 
@@ -387,7 +417,7 @@ The [Apache flink kubernetes operator product documentation](https://nightlies.a
 
 
 
-### Flink Config Update
+## Flink Config Update
 
 * If a write operation fails when the pod creates a folder or updates the Flink config, verify the following:
 

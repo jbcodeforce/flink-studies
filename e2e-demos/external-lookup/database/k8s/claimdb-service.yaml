@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: duckdb-external-lookup
-  namespace: duckdb
+  name: claimdb-svc
+  namespace: el-demo
   labels:
-    app: external-lookup-duckdb
+    app: external-lookup
     component: database
 spec:
   type: ClusterIP
@@ -14,7 +14,7 @@ spec:
     targetPort: http
     protocol: TCP
   selector:
-    app: external-lookup-duckdb
+    app: external-lookup
     component: database
 
 ---
@@ -22,10 +22,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: duckdb-external-lookup-nodeport
-  namespace: duckdb
+  name: claimdb-nodeport
+  namespace: el-demo
   labels:
-    app: external-lookup-duckdb
+    app: external-lookup
     component: database
     purpose: external-access
 spec:
@@ -37,5 +37,5 @@ spec:
     protocol: TCP
     nodePort: 30082  # Access via http://localhost:30080
   selector:
-    app: external-lookup-duckdb
+    app: external-lookup
     component: database

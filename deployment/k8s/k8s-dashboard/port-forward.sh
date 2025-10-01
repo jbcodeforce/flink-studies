@@ -1,0 +1,1 @@
+osascript -e 'tell app "Terminal" to do script "kubectl -n kubernetes-dashboard port-forward svc/kubernetes-dashboard-kong-proxy 8443:443"' -e 'tell application "Terminal" to set current settings of front window to settings set "Ocean"'

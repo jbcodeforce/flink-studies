@@ -6,9 +6,9 @@
 set -e
 
 # Configuration
-NAMESPACE="duckdb"
+NAMESPACE="el-demo"
 
-APP_NAME="duckdb-external-lookup"
+APP_NAME="external-lookup"
 echo "DuckDB External Lookup Deployment Status"
 echo "============================================="
 echo "Namespace: ${NAMESPACE}"
@@ -226,10 +226,10 @@ resources_total=6
 
 echo "Resource Status:"
 kubectl get storageclass hostpath &>/dev/null && echo "✅ StorageClass" && ((resources_ok++)) || echo "  ❌ StorageClass"
-kubectl get pv duckdb-pv &>/dev/null && echo "✅ PersistentVolume" && ((resources_ok++)) || echo "  ❌ PersistentVolume"
-kubectl get pvc duckdb-pvc -n ${NAMESPACE} &>/dev/null && echo "✅ PersistentVolumeClaim" && ((resources_ok++)) || echo "  ❌ PersistentVolumeClaim"
-kubectl get configmap duckdb-config -n ${NAMESPACE} &>/dev/null && echo "✅ ConfigMap" && ((resources_ok++)) || echo "  ❌ ConfigMap"
-kubectl get deployment duckdb-external-lookup -n ${NAMESPACE} &>/dev/null && echo "✅ Deployment" && ((resources_ok++)) || echo "  ❌ Deployment"
+kubectl get pv claimdb-pv &>/dev/null && echo "✅ PersistentVolume" && ((resources_ok++)) || echo "  ❌ PersistentVolume"
+kubectl get pvc claimdb-pvc -n ${NAMESPACE} &>/dev/null && echo "✅ PersistentVolumeClaim" && ((resources_ok++)) || echo "  ❌ PersistentVolumeClaim"
+kubectl get configmap claimdb-config -n ${NAMESPACE} &>/dev/null && echo "✅ ConfigMap" && ((resources_ok++)) || echo "  ❌ ConfigMap"
+kubectl get deployment claimdb-external-lookup -n ${NAMESPACE} &>/dev/null && echo "✅ Deployment" && ((resources_ok++)) || echo "  ❌ Deployment"
 kubectl get services -l app=${APP_NAME} -n ${NAMESPACE} &>/dev/null && echo "✅ Services" && ((resources_ok++)) || echo "  ❌ Services"
 
 echo ""

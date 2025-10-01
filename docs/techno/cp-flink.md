@@ -5,10 +5,11 @@
 The main features are:
 
 * Fully compatible with open-source Flink. 
-* Deploy on Kubernetes using Helm
+* Deploy on Kubernetes using Helm. It is only supported on kube. On Kubernetes, machine or Flink process failures will be recovered by Kubernetes, guaranteeing high uptime, and low latency.
 * Define environment, which does a logical grouping of Flink applications with the goal to provide access isolation, and configuration sharing.
 * Deploy application with user interface and task manager cluster
 * Exposes custom kubernetes operator for specific CRD
+* When integrated with Kafka, Kafka CP can run on bare metal while CP Flink on kube.
 
 The figure below presents the Confluent Flink components deployed on Kubernetes:
 
@@ -34,6 +35,14 @@ Be sure to have [confluent cli.](https://docs.confluent.io/confluent-cli/current
 
 * [See my dedicated chapter for Confluent Plaform Kubernetes deployment](../coding/k8s-deploy.md/#confluent-manager-for-apache-flink).
 * [See the makefile to deploy CMF](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cp-flink/Makefile), and the [product documentation](https://docs.confluent.io/platform/current/flink/installation/overview.html) 
+
+## Deployment architecture
+
+* A Flink cluster always needs to run in one K8s cluster in one region, as the Flink nodes are typically exchanging a lot of data, requiring low latency.
+* For failover between data centers, the approach if to share durable storage (HDFS, S3, Minio) accessible between data centers.
+* For efficiency, the checkpoints are saved in Rockdb. For large state, it is recommended to have host instance with high disk IO support like SSDs. 
+* Recall that Flink can interact with multiple Kafka Clusters at the same time.
+
 
 ## Important Source of Information for Deployment
 
@@ -75,6 +84,7 @@ Important points:
 Examples of apps:
 
 * [code/]()
+* [e2e-demos]()
 
 
 ## Understanding Sizing
@@ -142,7 +152,7 @@ The estimator increases task managers until there are sufficient resources for:
     * Monitor your cluster performance and tune as needed
     * Consider your specific data patterns and business requirements
 
-[See this estimator project](https://github.com/jbcodeforce/flink-estimator) for a tool to help estimating cluster sizing.
+[See this Flink estimator project](https://github.com/jbcodeforce/flink-estimator) for a tool to help estimating cluster sizing.
 
 ## Monitoring
 

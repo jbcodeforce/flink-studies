@@ -33,8 +33,6 @@ set_docker_context:
 prepare: create_ns 
 
 create_ns:
-	$(call ensure_ns, $(CFNT_NS))
-	$(call ensure_ns, $(FLCK_NS))
 	$(call ensure_ns, $(DEMO_NS))
 
 use_demo_ns:
@@ -48,7 +46,7 @@ use_cp_ns:
 
 # ---------------------- Confluent Platform ----------------------
 port_forward_cp_console:
-	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/controlcenter-ng 9021:9021"'
+	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/controlcenter-ng 9021:9021"' -e 'tell application "Terminal" to set current settings of front window to settings set "Pro"'
 
 
 port_forward_kafka_bootstrap:
@@ -77,7 +75,7 @@ port_forward_duckdb_api:
 	@POD_NAME=$$(kubectl get pods -n $(DUCKDB_NS) -l app=$(DUCKDB_APP_NAME) -o jsonpath='{.items[0].metadata.name}' 2>/dev/null); \
 	if [ -n "$$POD_NAME" ]; then \
 		echo "Port-forwarding to pod: $$POD_NAME"; \
-		osascript -e "tell app \"Terminal\" to do script \"kubectl -n $(DUCKDB_NS) port-forward pod/$$POD_NAME 8080:8080\""; \
+		osascript -e "tell app \"Terminal\" to do script \"kubectl -n $(DUCKDB_NS) port-forward pod/$$POD_NAME 8080:8080\"" -e 'tell application "Terminal" to set current settings of front window to settings set "Ocean"'; \
 	else \
 		echo "❌ No DuckDB pods found in namespace $(DUCKDB_NS)"; \
 		echo "Available pods:"; \
@@ -85,7 +83,7 @@ port_forward_duckdb_api:
 	fi
 
 port_forward_event_generator_metrics:
-	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(DEMO_NS) port-forward svc/event-generator-metrics 8090:8090"'
+	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(DEMO_NS) port-forward svc/event-generator-metrics 8090:8090"' -e 'tell application "Terminal" to set current settings of front window to settings set "Grass"'
 
 expose_services:
 	make port_forward_cp_console

@@ -53,11 +53,10 @@ update_helm_confluent_repo:
 install_cmf: prepare update_helm_confluent_repo install_flink_kubernetes_operator deploy_cmf
 
 install_flink_kubernetes_operator:
-	@helm upgrade --install cp-flink-kubernetes-operator --version "~1.120.0"  confluentinc/flink-kubernetes-operator --set watchNamespace="{flink, confluent}" -n $(FLCK_NS)
+	@helm upgrade --install cp-flink-kubernetes-operator --version "~1.120.0"  confluentinc/flink-kubernetes-operator --set watchNamespace="{flink, confluent, el-demo}" -n $(FLCK_NS)
 
 deploy_cmf:
 	@helm upgrade --install cmf --version "~2.0.2"  confluentinc/confluent-manager-for-apache-flink --namespace $(FLCK_NS) --set cmf.sql.production=false --set cmf.sql.examples-catalog.enabled=true 
-
 
 
 use_flink_ns:
@@ -67,7 +66,7 @@ verify_cmf:
 	@kubectl get pods -n $(FLCK_NS)
 
 port_forward_cmf:
-	@osascript -e 'tell app "Terminal" to do script "kubectl port-forward svc/cmf-service 8084:80 -n $(FLCK_NS)"'
+	@osascript -e 'tell app "Terminal" to do script "kubectl port-forward svc/cmf-service 8084:80 -n $(FLCK_NS)"' -e 'tell application "Terminal" to set current settings of front window to settings set "Grass"'
 
 create_flink_env:
 	@confluent flink environment create $(ENV_NAME) --url $(CMF_URL) --kubernetes-namespace $(FLCK_NS)

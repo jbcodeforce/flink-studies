@@ -20,3 +20,5 @@ e2e-demos/cdc-demo/datasets/
 **/tmp/
 **/__pycache__/
 **/dist/
+**/.cursor/
+**/.specify/

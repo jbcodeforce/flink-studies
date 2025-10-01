@@ -1,4 +1,4 @@
-# DuckDB External Database for Lookup Demo
+# Claim Database for Lookup Demo
 
 This directory contains the database components for the external lookup demonstration, implementing a DuckDB-based claims database accessible via HTTP API.
 
@@ -46,7 +46,7 @@ Since DuckDB is an embedded database without native network connectivity, this i
 ### 1. Build the Container
 ```bash
 cd database/
-./build-image.sh
+./build.sh
 ```
 
 ### 2. Test Locally

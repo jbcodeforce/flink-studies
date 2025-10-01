@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_NAME="payment-claims-enrichment"
-NAMESPACE="flink"
+NAMESPACE="el-demo"
 DEPLOYMENT_MODE="standalone"  # standalone, operator, session
 WAIT_TIMEOUT="300s"
 

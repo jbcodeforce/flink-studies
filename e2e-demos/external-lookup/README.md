@@ -1,10 +1,10 @@
 # An external lookup in OSS Flink or CP Flink
 
-The goal of this dmeonstration is to have an external database that includes insurance claim metadata to do a join with stream events representing payment event with claim id. The expected output in kafka topic will be an enriched event with claim_amount, member_id.
+The goal of this demonstration is to have an external database that includes insurance claim metadata to do a join with stream events representing payment event with claim id. The expected output in kafka topic will be an enriched event with claim_amount, member_id.
 
 The demonstration needs to be able to simulate lookup failure for invalid claim_id, DB unavailable.
 
-The Database can be a simple postgresql or duckdb database. 
+The Database can be a simple postgresql or duckdb database. The processing is done via Flink, and the stream of events are in Kafka topic.
 
 ## Design
 
@@ -60,9 +60,9 @@ CREATE TABLE claims (
 
 ### System Components
 
-1. [ ] **Data Generator**: Simulates payment events with valid/invalid claim_ids
+1. [x] **Data Generator**: Simulates payment events with valid/invalid claim_ids
 2. [x] **External Database**: DuckDB with claims metadata
-3. **Kafka Topics**: 
+3. [x] **Kafka Topics**: 
    - `payment-events`: Input stream
    - `enriched-payments`: Successfully enriched events
    - `failed-payments`: Events that couldn't be enriched
@@ -95,16 +95,14 @@ CREATE TABLE claims (
   - Timeout: Configure reasonable lookup timeout (e.g., 5 seconds)
   - Fallback: Mark as `DB_TIMEOUT` and route to failed topic
 
-### Implementation Options
+### Implementation 
 
-#### Option 1: OSS Flink with JDBC Async I/O
-- Use Flink's AsyncDataStream for non-blocking database lookups
-- Deployment: Docker Compose or Kubernetes
-
-#### Option 2: Confluent Platform Flink
-- Leverage managed Flink service capabilities
-- Built-in monitoring and scaling
+- Leverage Confluent Manager for Flink service capabilities
 - Integration with Confluent Schema Registry
+- The Database implementation is documented in [database/README.md](./database/README.md) with how to build and deploy the docker container. The image starts and populates test records.
+- The Event producer is done and documented in the [event-generator/README.md](./event-generator/README.md).
+- The First Flink application is doing the external lookup is done in flink folder, [see the readme](./event-generator/README.md)
+
 
 ### Testing Scenarios
 
@@ -132,17 +130,77 @@ CREATE TABLE claims (
 
 ## Demonstration script
 
+### Build & Deploy
+
+See each component readme for more information. Here is a summary
+
+#### Claim Database and service
+
+```sh
+cd database
+./build.sh
+cd k8s
+./deploy.sh
+# Verify the deployment
+./status.sh
+```
+
+#### Event Generator
+
+```sh
+cd event-generator
+./build.sh
+cd k8s
+./deploy.sh
+```
+
+#### Flink Application
+
+```sh
+
+```
+
 ### Setup
 
-* Start Kubernetes via colima VM (in deployment/k8s)
-* Start the duckdb database service: 
+* Start Kubernetes via colima VM (See command in `deployment/k8s` folder)
+
+* Start the duckdb database service (it will populate the test records): 
   ```sh
-  cd database
+  cd database/k8s
   ./deploy.sh
   ./status.sh
   ```
 
-* Start the different port-forwarding
-  ```
+* Start the different port-forwarding processes (Confleuent Manager for Flink REST API, database url, Confluent Platform Console):
+  ```sh
   make expose_services
   ```
+
+* Verify the content of the Kafka environment:
+  ```sh
+  chrome http://localhost:9021/home/clusters
+  ```
+
+  ![](./docs/topics-cp-console.png)
+
+* Verify the records in the database:
+  ```sh
+  chrome http://localhost:8080/docs
+  ```
+
+  ![](./docs/duckdb-claims.png)
+
+* Review messages in the payment-events topic from Confluent Console:
+
+  ![](./docs/payment-events.png)
+
+* Deploy Claim Enrichment Flink application:
+
+  ![]()
+
+
+### clean up
+
+```
+make clean-up
+```

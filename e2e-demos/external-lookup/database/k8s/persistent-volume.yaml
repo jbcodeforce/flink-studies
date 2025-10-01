@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: duckdb-pv
+  name: claimdb-pv
   labels:
-    app: duckdb-external-lookup
+    app: claimdb-external-lookup
     component: storage
 spec:
   capacity:
@@ -31,9 +31,9 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: duckdb-pv-kind
+  name: claimdb-pv-kind
   labels:
-    app: duckdb-external-lookup
+    app: external-lookup
     component: storage
     variant: kind
 spec:

@@ -6,7 +6,7 @@
 set -e
 
 # Configuration
-IMAGE_NAME="duckdb-external-lookup"
+IMAGE_NAME="demo-claimdb"
 IMAGE_TAG="latest"
 DOCKERFILE_PATH="."
 
