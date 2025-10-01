@@ -111,6 +111,11 @@ code.no-highlight {
     color: black;
 }
 
+.nav-links { display: flex; justify-content: space-between; }
+.nav-link { text-decoration: none; }
+.nav-prev { /* optional: left styles */ }
+.nav-next { /* optional: right styles */ }
+
 
 /* Definition List styles */
 

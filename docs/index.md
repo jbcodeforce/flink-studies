@@ -1,7 +1,8 @@
 # 🚧 The Complete Guide to Apache Flink and Confluent Flink
 
-Welcome to **"The Complete Guide to Apache Flink and Confluent Flink"** - your comprehensive, hands-on resource for mastering stream processing with Apache Flink and its enterprise distributions. I started this living book, in 2018 while working as IBM CTO for [Event-Driven Architecture](https://jbcodeforce.github.io/eda-studies/), and keep study notes and code sample, but then it morphed to good deeper on specific subjects to address practical implementations, taking me from my first Flink application to demonstrations, methodologies and best practices I can share with my customers. 2024 and 2025 I am focusing on Confluent Flink and Data mesh. None of this content is coming from private content, and linked to my employers.
+Welcome to **"A Guide to Apache Flink and Confluent Flink"** - a comprehensive, hands-on resource for mastering stream processing with Apache Flink and its enterprise distributions. I started this living book, in 2018 while working as IBM Distinguished Enginer / CTO for [Event-Driven Architecture](https://jbcodeforce.github.io/eda-studies/), and continue to enhance it while working at AWS and Confluent. It addresses practical implementations, methodologies and best practices I can share with my customers. In 2024 and 2025 I am focusing on Confluent Flink and Data mesh. All this content come from public content, articles, youtube, product documentations, git repositories.
 
+To make it fun, here is the book cover! Very imaginative for a book that will never go to press.
 
 <figure markdown="span">
   ![Book cover](./images/flink_book_cover.drawio.png)
@@ -31,9 +32,9 @@ This site is designed to share studies of the Flink ecosystem, covering everythi
 - **Table API**: Bridging SQL and programmatic approaches
 - **PyFlink**: Stream processing with Python
 
-### **Production Deployment**
+### **Deployment**
 - Kubernetes-native deployments with Flink Operator
-- Infrastructure as Code with Terraform
+- Infrastructure as Code
 - Monitoring, alerting, and performance optimization
 - High availability and disaster recovery patterns
 

@@ -5,7 +5,7 @@ copyright: Copyright &copy; 2018 - 2025 Jerome Boyer
 nav:
   - Home: 
     - Introduction: index.md
-    - Concepts: concepts/index.md
+    - Key Concepts: concepts/index.md
     - Getting started: coding/getting-started.md
     - Flink Architecture: architecture/index.md
     - Fit for purpose: architecture/fitforpurpose.md

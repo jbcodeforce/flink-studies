@@ -5,6 +5,7 @@ FLINK_OPERATOR_VERSION=1.11.0
 CMF_URL=http://localhost:8084
 ENV_NAME=env1
 
+# For Confluent Platform see Makefile in cfk folder
 
 # ---------------------- Common functions ----------------------
 ensure_ns = \
@@ -27,23 +28,10 @@ set_docker_context:
 	@docker context use colima
 
 # ------- Common elements to install -------------
-prepare: create_ns deploy_cert_manager verify_cert_manager deploy_minio verify_minio
+prepare: create_ns  deploy_minio verify_minio 
 
 create_ns:
-	$(call ensure_ns, $(CFNT_NS))
 	$(call ensure_ns, $(FLCK_NS))
-
-deploy_cert_manager:
-	@kubectl get deployments cert-manager  -n cert-manager > /dev/null 2>&1;\
-	if [ $$? -ne 0 ]; then \
-		kubectl create -f https://github.com/jetstack/cert-manager/releases/download/$(CERT_MGR_VERSION)/cert-manager.yaml; \
-	else \
-		echo "cert manager already deployed"; \
-		kubectl get pods -n cert-manager; \
-	fi
-
-verify_cert_manager:
-	@kubectl get pods -n cert-manager
 
 # ---------------------- Minio ----------------------
 deploy_minio:
@@ -57,35 +45,12 @@ verify_minio:
 
 	
 # ---------------------- Confluent Platform  --------------------------------
-install_cp: update_helm_confluent_repo deploy_cert_manager create_ns deploy_cp_cfk verify_cp_cfk deploy_cp_cluster port_forward_cp_console
-
 update_helm_confluent_repo:
 	@helm repo add confluentinc https://packages.confluent.io/helm
 	@helm repo update
 
-deploy_cp_cfk: 
-	@helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes --set namespaced=false -n $(CFNT_NS)
-
-verify_cp_cfk:
-	@kubectl get pods -n $(CFNT_NS)
-
-deploy_cp_cluster:
-	@kubectl apply -f ../cfk/basic-kraft-cluster.yaml -n $(CFNT_NS)
-
-use_cp_ns:
-	@kubectl config set-context --current --namespace=$(CFNT_NS)
-
-port_forward_cp_console:
-	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/controlcenter-ng 9021:9021"'
-
-delete_cp_cluster:
-	@kubectl delete -f ../cfk/basic-kraft-cluster.yaml -n $(CFNT_NS)
-
-uninstall_cp_cluster:
-	@helm uninstall confluent-operator -n $(CFNT_NS)
-
-
 # ---------------------- Confluent Manager for Flink ----------------------
+install_cmf: prepare update_helm_confluent_repo install_flink_kubernetes_operator deploy_cmf
 
 install_flink_kubernetes_operator:
 	@helm upgrade --install cp-flink-kubernetes-operator --version "~1.120.0"  confluentinc/flink-kubernetes-operator --set watchNamespace="{flink, confluent}" -n $(FLCK_NS)
@@ -93,7 +58,7 @@ install_flink_kubernetes_operator:
 deploy_cmf:
 	@helm upgrade --install cmf --version "~2.0.2"  confluentinc/confluent-manager-for-apache-flink --namespace $(FLCK_NS) --set cmf.sql.production=false --set cmf.sql.examples-catalog.enabled=true 
 
-install_cmf: install_flink_kubernetes_operator deploy_cmf
+
 
 use_flink_ns:
 	@kubectl config set-context --current --namespace=$(FLCK_NS)

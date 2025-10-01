@@ -28,14 +28,18 @@ The operator fully automates the entire lifecycle of the job manager, the task m
 
 As any Kubernetes operators, FKO can run **namespace-scoped**, to get multiple versions of the operator in the same Kubernetes cluster, or **cluster-scoped** for highly distributed  deployment. Operator  may map their custom resources to existing Kubernetes resources of deployments, replica sets, config maps, secrets, service accounts...
 
-The following figure represents a simple deployment view of a Flink and a Kafka cluster running on a kubernetes platform:
+The following figure represents a simple deployment view of a Flink Cluster, in parallel of a Kafka cluster running on a kubernetes platform (not all the Confluent Platform components are represented):
 
 <figure markdown="span">
 ![2](./diagrams/k8s-deploy.drawio.png)
 <figcaption>K8S deployment</figcaption>
 </figure>
 
-The Kafka cluster runs in its namespace, as the Flink Application.  A **Flink Application** is any user's program that spawns one or multiple Flink jobs from its `main()` method.
+The Kafka cluster runs in its own namespace (e.g. confluent), and the Confluent for Kubernetes operator manages the customer resources life cycle.  
+
+A **Flink Application** is any user's program that spawns one or multiple Flink jobs from its `main()` method and is deploying a JobManager and n Task managers. They also run in their own namespace. 
+
+The **Flink Kubernetes Operator** is looking at different `Flink Deployment`, so can be isolated within its own namespace. 
 
 The custom resource definition that describes the schema of a FlinkDeployment is a cluster wide resource. The Operator continuously tracks cluster events relating to the `FlinkDeployment` and `FlinkSessionJob` custom resources. [The operator control flow is described in this note.](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/concepts/controller-flow/). The important points to remember are:
 
@@ -45,17 +49,47 @@ The custom resource definition that describes the schema of a FlinkDeployment is
 * The job manager is validated via a call to its REST api and the status is recorded in the `jobManagerDeploymentStatus`
 * A Job cannot be in running state without a healthy jobmanager.
 
+### Confluent Manager for Flink and FKO
+
+Confluent Manager for Apache Flink® (CMF) manages a fleet of Flink Applications across multiple Environments
+
+CMF integrates with FKO to support Flink native custom resources:
+
+<figure markdown="span">
+![2](./diagrams/cmf-cko.drawio.png)
+<figcaption>CMF and CKO</figcaption>
+</figure>
+
+* Environments can be created with Manifests or using the Confluent CLI. The metadata is persisted in an embedded database. The concept is to group multiple Flink application together. This is an isolation layer for RBAC, and runs on its own namespace. It may define Flink Configuration cross applications, like common observability and checkpointing storage.
+* a REST API supports all the external integration to the operator.
+* CMF manages FlinkDeployment resources internally
+* [The flinkEnvironment and FlinkApplication CRDs are defined here](https://docs.confluent.io/operator/current/co-manage-flink.html#create-a-af-application).
+* As part of Flink SQL on Confluent, CMF defines new CR for Compute pool, and Flink Catalog.
 
 ### Custom Resources
 
-Once the operator is running, we can submit jobs using  `FlinkDeployment` (for Flink Application or for Job manager and task manager for session cluster) and `FlinkSessionJob` Custom Resources for Session.  FlinkSessionJob references an existing FlinkDeployment as multiple session jobs can run into the same Flink cluster. While application mode, has the job definition as part of the FlinkDeployment. 
+Once the Flink operator is running, we can submit jobs using  `FlinkDeployment` (for Flink Application or for Job manager and task manager for session cluster) and `FlinkSessionJob` Custom Resources for Session. The following figure represents those concepts: 
 
 <figure markdown=span>
 ![3](./diagrams/cko-cr.drawio.png)
 <caption>CKO main Custom Resources Definitions</capture>
 </figure>
 
-Confluent Managed for Flink supports application mode only and is using a new CRD for `FlinkApplication`.
+On the left, a `FlinkSessionJob` references an existing FlinkDeployment as multiple session jobs can run into the same Flink cluster. The `job` declaration specifies the code to run with its specific configuration. While on the right, the application mode, has the job definition as part of the FlinkDeployment, as the JobManager and TaskManager mininum resource requirements.
+
+### Confluent Specifics CRs
+
+Confluent Managed for Flink manages supports application mode only and is using new CRDs to define `Environment` and `FlinkApplication`. [The CRDs are defined here](https://docs.confluent.io/operator/current/co-manage-flink.html#create-a-af-application).
+
+<figure markdown=span>
+![3](./diagrams/cmf-cr.drawio.png)
+<caption>Confluent Manager for Flink - Custom Resources Definitions</capture>
+</figure>
+
+* An [FlinkEnvironment](https://docs.confluent.io/operator/current/co-manage-flink.html#create-a-af-environment) defines configurations cross applications. See [one example](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cp-flink/flink-env.yaml)
+  ```yaml
+  ```
+
 
 The [Apache Flink FlinkDeployment spec is here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/) and is used to define Flink application (will have a job section) or session cluster (only job and task managers configuration).
 
@@ -130,14 +164,16 @@ volumes:
       claimName: flink-pvc
 ```
 
-### Important documentations
+### Documentations
 
 * [Confluent Platform for Flink has another operator](https://docs.confluent.io/platform/current/flink/get-started-cpf.html) integrated with FKO. [See my CP Flink summary](../techno/cp-flink.md).
 * [Confluent Flink operator documentation](https://docs.confluent.io/operator/current/co-prepare.html)
 * [Getting started with Flink OSS Standalone Kubernetes Setup.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/)
 * [Apache Flink Native Kubernetes deployment.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/native_kubernetes/)
+* [A Confluent Platform demonstration git repo: confluentinc/confluent-demo](https://github.com/confluentinc/confluent-demo)
 
-## Pre-requisites
+## Deployment 
+### Pre-requisites
 
 Any Flink on Kubernetes deployment should include the following pre-requisites:
 
@@ -252,8 +288,8 @@ Updated 07.01.2025: For CFK version 3.0.0 and CP v8.0.0
 <caption>Confluent Platform Components - k8s deployment</caption>
 </figure>
 
-* Under the [deployment/k8s/cfk](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cfk), using make, run `make install_cp` which will do the following:
-    * Create a namespace for Confluent products deployment. By default, CMF deploys Confluent Platform in the namespaced deployment, and it manages Confluent Platform component clusters and resources in the same Kubernetes namespace where CFK itself is deployed. 
+* Under the [deployment/k8s/cfk](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cfk), using make, run `make install_cp` which will do the following operations:
+    * Create a namespace for Confluent products deployment. By default, it deploys Confluent Platform in the namespaced deployment, and it manages Confluent Platform components in this namespace . 
     * Add Confluent Platform **Helm** repositories
         ```sh
         helm repo add confluentinc https://packages.confluent.io/helm
@@ -272,7 +308,7 @@ Updated 07.01.2025: For CFK version 3.0.0 and CP v8.0.0
         kraftcontroller-0                     1/1     Running     4 (5h41m ago)     32d
         schemaregistry-0                      1/1     Running     7 (5h41m ago)     32d
         ```
-    * The console may be access via port-forwarding:
+    * The console may be accessed via port-forwarding:
         ```sh
         kubectl -n confluent port-forward svc/controlcenter-ng 9021:9021 
         chrome localhost:9021
@@ -285,6 +321,13 @@ Updated 07.01.2025: For CFK version 3.0.0 and CP v8.0.0
 
 ### Install Confluent Manager for Flink
 
+The Makefile is under [deployment/k8s/cp-flink](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cp-flink), and the deployment is done via:
+```sh
+make install_cmf
+```
+
+Which is executing the following operations:
+* Create Flink namespace, install minio, and update the helm repository
 * Install the Flink Kubernetes Operator
   ```sh
   make install_flink_kubernetes_operator

@@ -23,7 +23,6 @@ spec:
         state.backend.rocksdb.block-cache-size: '1024m'
         state.backend.rocksdb.block-size: '1024m'
         state.backend.rocksdb.block-size-multiplier: '10'
-        state.backend.rocksdb.block-size-multiplier: '10'
   cmfRestClassRef:
     name: cmf-rest-class
     namespace: flink
