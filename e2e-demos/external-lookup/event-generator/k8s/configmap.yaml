@@ -4,7 +4,7 @@ metadata:
   name: event-generator-config
   namespace: el-demo
   labels:
-    app: external-lookup-event-generator
+    app: external-lookup
     component: generator
 data:
   # Kafka Configuration
@@ -36,7 +36,7 @@ data:
   # Testing Configuration
   TEST_KAFKA: "true"           # Test Kafka on startup
   VALIDATE_DATABASE: "false"   # Don't validate DB on startup
-  DATABASE_URL: "http://duckdb-external-lookup:8080"
+  DATABASE_URL: "http://claimdb:8080"
 
 ---
 # ConfigMap for scenarios-based deployment (high-rate testing)
@@ -46,7 +46,7 @@ metadata:
   name: event-generator-high-rate-config
   namespace: el-demo
   labels:
-    app: external-lookup-event-generator
+    app: external-lookup
     component: generator
     variant: high-rate
 data:
@@ -65,7 +65,7 @@ metadata:
   name: event-generator-burst-config
   namespace: el-demo
   labels:
-    app: external-lookup-event-generator
+    app: external-lookup
     component: generator
     variant: burst
 data:
@@ -83,7 +83,7 @@ metadata:
   name: event-generator-error-test-config
   namespace: el-demo
   labels:
-    app: external-lookup-event-generator
+    app: external-lookup
     component: generator
     variant: error-test
 data:

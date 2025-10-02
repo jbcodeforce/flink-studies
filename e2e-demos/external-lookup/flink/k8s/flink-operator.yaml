@@ -2,7 +2,7 @@
 # This requires the Flink Kubernetes Operator to be installed first
 # Install with: kubectl apply -f https://github.com/apache/flink-kubernetes-operator/releases/latest/download/flink-kubernetes-operator.yaml
 
-apiVersion: flink.apache.org/v1beta1
+apiVersion: confluent.io/v1beta1
 kind: FlinkDeployment
 metadata:
   name: payment-claims-enrichment

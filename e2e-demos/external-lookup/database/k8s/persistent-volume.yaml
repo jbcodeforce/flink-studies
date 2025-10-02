@@ -26,34 +26,5 @@ spec:
           - linux
           - darwin  # macOS for Colima
 
----
-# Alternative PV for kind clusters (uses /tmp/hostpath-provisioner)
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: claimdb-pv-kind
-  labels:
-    app: external-lookup
-    component: storage
-    variant: kind
-spec:
-  capacity:
-    storage: 2Gi
-  volumeMode: Filesystem
-  accessModes:
-  - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: hostpath
-  hostPath:
-    path: /Users/jerome/Documents/Code/flink-studies/e2e-demos/external-lookup/database/data
-    type: Directory
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: kubernetes.io/os
-          operator: In
-          values:
-          - linux
 
 

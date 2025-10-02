@@ -1,7 +1,7 @@
 # Makefile for claimdb External Lookup Database
 
 # Configuration
-IMAGE_NAME = demo-claimdb
+IMAGE_NAME = demo-event-generator
 IMAGE_TAG = latest
 REGISTRY ?= 
 NAMESPACE = el-demo
@@ -21,7 +21,7 @@ use_demo_ns:
 	@kubectl config set-context --current --namespace=$(NAMESPACE)
 
 build: ## Build the claimdb database Docker image
-	@echo "🏗️  Building claimdb External Lookup Database Image..."
+	@echo "🏗️  Building Kafka Event Generator Image..."
 	@echo "Image: $(IMAGE_NAME):$(IMAGE_TAG)"
 	@echo "Context: $(BUILD_CONTEXT)"
 	@docker build \
@@ -47,45 +47,37 @@ push: tag ## Push image to registry (requires REGISTRY to be set)
 	@echo "✅ Pushed $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)"
 
 test: ## Test the built image locally
-	@echo "🧪 Testing claimdb image locally..."
+	@echo "🧪 Testing event-generator image locally..."
 	@echo "Starting container on port 8080..."
-	@docker run --rm -d --name test-claimdb -p 8080:8080 $(IMAGE_NAME):$(IMAGE_TAG)
+	@docker run --rm -d --name test-event-generator -p 8080:8080 $(IMAGE_NAME):$(IMAGE_TAG)
 	@echo "Waiting for container to start..."
 	@sleep 10
 	@echo "Testing health endpoint..."
-	@curl -f http://localhost:8080/health || (docker stop test-claimdb && exit 1)
+	@curl -f http://localhost:8080/health || (docker stop test-event-generator && exit 1)
 	@echo "Testing claims endpoint..."
-	@curl -f http://localhost:8080/claims/CLM-001 || (docker stop test-claimdb && exit 1)
-	@docker stop test-claimdb
+	@curl -f http://localhost:8080/claims/CLM-001 || (docker stop test-event-generator && exit 1)
+	@docker stop test-event-generator
 	@echo "✅ All tests passed!"
 
 run: ## Run the image locally on port 8080
-	@echo "🚀 Running claimdb container locally..."
-	@docker run --rm -p 8080:8080 --name claimdb $(IMAGE_NAME):$(IMAGE_TAG)
+	@echo "🚀 Running event-generator container locally..."
+	@docker run --rm -p 8080:8080 --name event-generator $(IMAGE_NAME):$(IMAGE_TAG)
 
-run-detached: ## Run the image locally in detached mode
-	@echo "🚀 Running claimdb container in background..."
-	@docker run -d -p 8080:8080 --name claimdb $(IMAGE_NAME):$(IMAGE_TAG)
-	@echo "✅ Container started. Access at http://localhost:8080"
-	@echo "View logs: make logs"
-	@echo "Stop container: make stop"
 
 stop: ## Stop the running container
-	@docker stop claimdb || true
-	@docker rm claimdb || true
+	@docker stop event-generator || true
+	@docker rm event-generator || true
 	@echo "✅ Container stopped"
 
 logs: ## Show logs from the running container
-	@docker logs -f claimdb
+	@docker logs -f event-generator
 
 # Kubernetes deployment targets
 deploy: ## Deploy to Kubernetes
 	@echo "🚀 Deploying to Kubernetes namespace: $(NAMESPACE)"
-	@kubectl apply -f k8s/persistent-volume.yaml
-	@kubectl apply -f k8s/hostpath-sc.yaml
-	@kubectl apply -f k8s/claimdb-configmap.yaml
-	@kubectl apply -f k8s/claimdb-deployment.yaml
-	@kubectl apply -f k8s/claimdb-service.yaml
+	@kubectl apply -f k8s/configmap.yaml
+	@kubectl apply -f k8s/deployment.yaml
+	@kubectl apply -f k8s/service.yaml
 	@echo "✅ Deployed to Kubernetes"
 
 undeploy: ## Remove from Kubernetes

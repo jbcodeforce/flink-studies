@@ -4,20 +4,20 @@ metadata:
   name: event-generator-standard
   namespace: el-demo
   labels:
-    app: external-lookup-event-generator
+    app: external-lookup
     component: generator
     variant: standard
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: external-lookup-event-generator
+      app: external-lookup
       component: generator
       variant: standard
   template:
     metadata:
       labels:
-        app: external-lookup-event-generator
+        app: external-lookup
         component: generator
         variant: standard
       annotations:
@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
       - name: event-generator
-        image: external-lookup-event-generator:latest
+        image: demo-event-generator:latest
         imagePullPolicy: IfNotPresent  # Use local image for development
         ports:
         - containerPort: 8090
@@ -81,20 +81,20 @@ metadata:
   name: event-generator-high-rate
   namespace: el-demo
   labels:
-    app: external-lookup-event-generator
+    app: external-lookup
     component: generator
     variant: high-rate
 spec:
   replicas: 0  # Scale manually when needed
   selector:
     matchLabels:
-      app: external-lookup-event-generator
+      app: external-lookup
       component: generator
       variant: high-rate
   template:
     metadata:
       labels:
-        app: external-lookup-event-generator
+        app: external-lookup
         component: generator
         variant: high-rate
       annotations:
@@ -104,7 +104,7 @@ spec:
     spec:
       containers:
       - name: event-generator
-        image: external-lookup-event-generator:latest
+        image: demo-event-generator:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8090
@@ -155,20 +155,20 @@ metadata:
   name: event-generator-burst
   namespace: el-demo
   labels:
-    app: external-lookup-event-generator
+    app: external-lookup
     component: generator
     variant: burst
 spec:
   replicas: 0  # Scale manually when needed
   selector:
     matchLabels:
-      app: external-lookup-event-generator
+      app: external-lookup
       component: generator
       variant: burst
   template:
     metadata:
       labels:
-        app: external-lookup-event-generator
+        app: external-lookup
         component: generator
         variant: burst
       annotations:
@@ -178,7 +178,7 @@ spec:
     spec:
       containers:
       - name: event-generator
-        image: external-lookup-event-generator:latest
+        image: demo-event-generator:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8090
@@ -229,20 +229,20 @@ metadata:
   name: event-generator-error-test
   namespace: el-demo
   labels:
-    app: external-lookup-event-generator
+    app: external-lookup
     component: generator
     variant: error-test
 spec:
   replicas: 0  # Scale manually when needed
   selector:
     matchLabels:
-      app: external-lookup-event-generator
+      app: external-lookup
       component: generator
-      variant: error-test
+      variant: error-test 
   template:
     metadata:
       labels:
-        app: external-lookup-event-generator
+        app: external-lookup
         component: generator
         variant: error-test
       annotations:
@@ -252,7 +252,7 @@ spec:
     spec:
       containers:
       - name: event-generator
-        image: external-lookup-event-generator:latest
+        image: demo-event-generator:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8090

@@ -19,6 +19,10 @@ This demonstration implements a streaming enrichment pattern where:
 - Enriched events are written to an output Kafka topic
 - Error handling manages lookup failures and database unavailability
 
+#### Physical deployment
+
+TODO add a diagram of k8s deployment
+
 ### Data Models
 
 #### Input: Payment Event Schema
@@ -132,33 +136,60 @@ CREATE TABLE claims (
 
 ### Build & Deploy
 
-See each component readme for more information. Here is a summary
+See each component readme for more information. Here is a summary of an end-to-end demonstration:
+
+#### Setup
+
+* Basic demo settings
+```sh
+# under the external-lookup folder
+make prepare
+```
+
 
 #### Claim Database and service
 
-```sh
-cd database
-./build.sh
-cd k8s
-./deploy.sh
-# Verify the deployment
-./status.sh
-```
+* Modify the PV declaration to refect the path where you want the claim database to be persisted. The volume is mounted to the pod via PVC but hosted on local server.
+
+  ```yaml
+  spec:
+    capacity:
+      storage: 2Gi
+    volumeMode: Filesystem
+    accessModes:
+    - ReadWriteOnce
+    persistentVolumeReclaimPolicy: Retain
+    storageClassName: hostpath
+    hostPath:
+      path: TO CHANGE and need to be an absolute path /tmp/database/data
+      type: Directory
+  ```
+
+* build and deploy
+  ```sh
+  cd database
+  make build
+  make deploy
+  # Verify the deployment
+  make status
+  ```
 
 #### Event Generator
 
-```sh
-cd event-generator
-./build.sh
-cd k8s
-./deploy.sh
-```
+* Event Generator is a Python app to product transaction event to Kafka, deployable on kubernetes and supporting 3 deployment models.
+  ```sh
+  cd event-generator
+  make build
+  make deploy
+  ```
 
 #### Flink Application
 
-```sh
-
-```
+* The first flink 
+  ```sh
+  cd flink
+  make build-image
+  ```
 
 ### Setup
 
@@ -194,6 +225,13 @@ cd k8s
 
   ![](./docs/payment-events.png)
 
+  or using the python consumer:
+  ```sh
+  make install_consumer_deps
+  make deploy_kafka_consumer_k8s
+  make consume_payment_events_cluster
+  ```
+
 * Deploy Claim Enrichment Flink application:
 
   ![]()
@@ -201,6 +239,13 @@ cd k8s
 
 ### clean up
 
-```
-make clean-up
-```
+* Stop the event generation at any time
+  ```sh
+  cd event-generator
+  make undeploy
+  ```
+
+* At the external-lookup folder
+  ```sh
+  make clean-up
+  ```

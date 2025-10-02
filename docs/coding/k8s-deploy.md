@@ -21,7 +21,7 @@ The [operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs
 
 <figure markdown="span">
 ![1](./diagrams/fk-operator-hl.drawio.png)
-<figcaption>Apache Flink Kubernetes Operator to manage Flink Job and Task managers</figcaption>
+<figcaption>Figure 1: Apache Flink Kubernetes Operator to manage Flink Job and Task managers</figcaption>
 </figure>
 
 The operator fully automates the entire lifecycle of the job manager, the task managers, and the applications. Failures of Job Manager pods are handled by the Deployment Controller which takes care of spawning a new Job Manager.
@@ -32,10 +32,27 @@ The following figure represents a simple deployment view of a Flink Cluster, in 
 
 <figure markdown="span">
 ![2](./diagrams/k8s-deploy.drawio.png)
-<figcaption>K8S deployment</figcaption>
+<figcaption>Figure 2: K8S deployment</figcaption>
 </figure>
 
-The Kafka cluster runs in its own namespace (e.g. confluent), and the Confluent for Kubernetes operator manages the customer resources life cycle.  
+The Kafka cluster runs in its own namespace (e.g. confluent), and the Confluent for Kubernetes operator manages the custom resources (CRs) life cycle.  
+
+### Confluent for Kubernetes Operator
+
+CFK is the control plane for deploying and managing Confluent in your Kubernetes private cloud environment. It defines custom resource definition to support Kafka based resources like topics, brokers, schema registry...
+
+![](../techno/diagrams/cp-flink-deployment.drawio.png)
+
+* Helpful commands to work on CRDs
+
+```sh
+kubectl get crds | grep confluent
+kubectl describe crd kafkatopics.platform.confluent.io  
+```
+
+See some CP for kubernetes deployment [examples from github](https://github.com/confluentinc/confluent-kubernetes-examples).
+
+### Flink specific
 
 A **Flink Application** is any user's program that spawns one or multiple Flink jobs from its `main()` method and is deploying a JobManager and n Task managers. They also run in their own namespace. 
 
@@ -74,11 +91,11 @@ CMF integrates with FKO to support Flink native custom resources:
 
 ### Custom Resources
 
-Once the Flink operator is running, we can submit jobs using  `FlinkDeployment` (for Flink Application or for Job manager and task manager for session cluster) and `FlinkSessionJob` Custom Resources for Session. The following figure represents those concepts: 
+Once the Flink for Kubernetes Operator is running, we can submit jobs using  `FlinkDeployment` (for Flink Application or for Job manager and task manager for session cluster) and `FlinkSessionJob` Custom Resources for Session. The following figure represents those concepts: 
 
 <figure markdown=span>
-![3](./diagrams/cko-cr.drawio.png)
-<caption>CKO main Custom Resources Definitions</capture>
+![3](./diagrams/fko-cr.drawio.png)
+<caption>FKO main Custom Resources Definitions</capture>
 </figure>
 
 On the left, a `FlinkSessionJob` references an existing FlinkDeployment as multiple session jobs can run into the same Flink cluster. The `job` declaration specifies the code to run with its specific configuration. While on the right, the application mode, has the job definition as part of the FlinkDeployment, as the JobManager and TaskManager mininum resource requirements.

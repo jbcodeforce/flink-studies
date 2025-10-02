@@ -4,7 +4,7 @@
   <groupId>com.example</groupId>
   <artifactId>payment-claims-enrichment</artifactId>
   <name>Payment Claims Enrichment</name>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0.0</version>
   <description>Flink Table API application for enriching payment events with claims data</description>
   <build>
     <plugins>
@@ -28,7 +28,7 @@
             <configuration>
               <artifactSet>
                 <excludes>
-                  <exclude>org.apache.flink:flink-shaded-force-shading</exclude>
+                  <exclude>io.confluent.flink:flink-shaded-force-shading</exclude>
                   <exclude>com.google.code.findbugs:jsr305</exclude>
                   <exclude>org.slf4j:*</exclude>
                   <exclude>org.apache.logging.log4j:*</exclude>
@@ -60,6 +60,16 @@
       </plugin>
     </plugins>
   </build>
+  <repositories>
+    <repository>
+      <releases />
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>cp-flink-releases</id>
+      <url>https://packages.confluent.io/maven</url>
+    </repository>
+  </repositories>
   <dependencies>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -106,30 +116,30 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.apache.flink</groupId>
+      <groupId>io.confluent.flink</groupId>
       <artifactId>flink-test-utils</artifactId>
-      <version>1.20.0</version>
+      <version>1.20.2-cp1</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
           <artifactId>flink-test-utils-junit</artifactId>
-          <groupId>org.apache.flink</groupId>
+          <groupId>io.confluent.flink</groupId>
         </exclusion>
         <exclusion>
           <artifactId>flink-runtime</artifactId>
-          <groupId>org.apache.flink</groupId>
+          <groupId>io.confluent.flink</groupId>
         </exclusion>
         <exclusion>
           <artifactId>flink-core</artifactId>
-          <groupId>org.apache.flink</groupId>
+          <groupId>io.confluent.flink</groupId>
         </exclusion>
         <exclusion>
           <artifactId>flink-rpc-akka-loader</artifactId>
-          <groupId>org.apache.flink</groupId>
+          <groupId>io.confluent.flink</groupId>
         </exclusion>
         <exclusion>
           <artifactId>flink-clients</artifactId>
-          <groupId>org.apache.flink</groupId>
+          <groupId>io.confluent.flink</groupId>
         </exclusion>
         <exclusion>
           <artifactId>junit-jupiter</artifactId>
@@ -141,19 +151,19 @@
         </exclusion>
         <exclusion>
           <artifactId>flink-streaming-java</artifactId>
-          <groupId>org.apache.flink</groupId>
+          <groupId>io.confluent.flink</groupId>
         </exclusion>
         <exclusion>
           <artifactId>flink-statebackend-rocksdb</artifactId>
-          <groupId>org.apache.flink</groupId>
+          <groupId>io.confluent.flink</groupId>
         </exclusion>
         <exclusion>
           <artifactId>flink-statebackend-changelog</artifactId>
-          <groupId>org.apache.flink</groupId>
+          <groupId>io.confluent.flink</groupId>
         </exclusion>
         <exclusion>
           <artifactId>flink-dstl-dfs</artifactId>
-          <groupId>org.apache.flink</groupId>
+          <groupId>io.confluent.flink</groupId>
         </exclusion>
         <exclusion>
           <artifactId>curator-test</artifactId>
@@ -164,13 +174,13 @@
   </dependencies>
   <properties>
     <scala.binary.version>2.12</scala.binary.version>
-    <maven.compiler.source>11</maven.compiler.source>
-    <flink.version>1.20.0</flink.version>
-    <kafka.version>3.6.1</kafka.version>
     <maven.compiler.target>11</maven.compiler.target>
     <slf4j.version>1.7.36</slf4j.version>
+    <maven.compiler.source>11</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <junit.version>5.10.2</junit.version>
+    <flink.version>1.20.2-cp1</flink.version>
     <duckdb.version>1.1.3</duckdb.version>
+    <kafka.version>3.6.1</kafka.version>
   </properties>
 </project>

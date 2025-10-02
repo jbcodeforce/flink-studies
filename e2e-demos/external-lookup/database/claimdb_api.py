@@ -345,7 +345,7 @@ if __name__ == "__main__":
     logger.info(f"Error simulation: {SIMULATE_ERRORS}")
     
     uvicorn.run(
-        "duckdb_api:app",
+        "claimdb_api:app",
         host=host,
         port=port,
         log_level="info",

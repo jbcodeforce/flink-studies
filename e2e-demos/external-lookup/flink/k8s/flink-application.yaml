@@ -1,0 +1,25 @@
+apiVersion: cmf.confluent.io/v1
+kind: FlinkApplication
+metadata:
+  name: external-lookup
+  namespace: el-demo
+spec:
+  image: payment-claims-enrichment:latest
+  flinkVersion: v1_19
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "1"
+  serviceAccount: flink
+  jobManager:
+    resource:
+      memory: 1024m
+      cpu: 1
+  taskManager:
+    resource:
+      memory: 1024m
+      cpu: 1
+  job:
+    jarURI: local:///opt/flink/usrlib/payment-claims-enrichment-1.0.0.jar
+    entryClass: com.example.PaymentClaimsEnrichment
+    state: running
+    parallelism: 1
+    upgradeMode: stateless

@@ -4,7 +4,7 @@ metadata:
   name: env1
   namespace: flink
 spec:
-  kubernetesNamespace:      el-demo
+  kubernetesNamespace: el-demo
   flinkApplicationDefaults: 
     metadata:
       labels:

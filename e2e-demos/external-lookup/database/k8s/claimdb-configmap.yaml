@@ -4,7 +4,7 @@ metadata:
   name: claimdb-config
   namespace: el-demo
   labels:
-    app: claimdb-external-lookup
+    app: external-lookup
     component: database
 data:
   # claimdb API configuration

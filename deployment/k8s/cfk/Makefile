@@ -1,6 +1,7 @@
 CFNT_NS=confluent
 CERT_MGR_VERSION=v1.18.1
-
+DEMO_NS=el-demo
+FLCK_NS=flink
 
 
 # ---------------------- Common functions ----------------------
@@ -52,7 +53,7 @@ update_helm_confluent_repo:
 	@helm repo update
 
 deploy_cp_cfk: 
-	@helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes --set namespaced=false -n $(CFNT_NS)
+	@helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes --set namespaced=false --set kRaftEnabled=true  --set namespaceList="{$(CFNT_NS),$(FLCK_NS),$(DEMO_NS)}" --set enableCMFDay2Ops=true -n $(CFNT_NS)
 
 verify_cp_cfk:
 	@kubectl get pods -n $(CFNT_NS)

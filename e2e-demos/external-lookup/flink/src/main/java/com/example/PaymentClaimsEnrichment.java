@@ -21,11 +21,11 @@ public class PaymentClaimsEnrichment {
     private static final Logger LOG = LoggerFactory.getLogger(PaymentClaimsEnrichment.class);
     
     // Configuration constants
-    private static final String KAFKA_BOOTSTRAP_SERVERS = getEnvOrDefault("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092");
+    private static final String KAFKA_BOOTSTRAP_SERVERS = getEnvOrDefault("KAFKA_BOOTSTRAP_SERVERS", "kafka.confluent.svc.cluster.local:9071");
     private static final String PAYMENT_EVENTS_TOPIC = getEnvOrDefault("PAYMENT_EVENTS_TOPIC", "payment-events");
     private static final String ENRICHED_PAYMENTS_TOPIC = getEnvOrDefault("ENRICHED_PAYMENTS_TOPIC", "enriched-payments");
     private static final String FAILED_PAYMENTS_TOPIC = getEnvOrDefault("FAILED_PAYMENTS_TOPIC", "failed-payments");
-    private static final String DUCKDB_URL = getEnvOrDefault("DUCKDB_URL", "jdbc:duckdb:http://localhost:8080/database");
+    private static final String CLAIMDB_URL = getEnvOrDefault("CLAIMDB_URL", "jdbc:duckdb:http://claimdb:8080/database");
     
     public static void main(String[] args) throws Exception {
         LOG.info("Starting Payment Claims Enrichment Job");
@@ -134,7 +134,7 @@ public class PaymentClaimsEnrichment {
             "    'lookup.cache.ttl' = '1min',\n" +
             "    'lookup.async' = 'true',\n" +
             "    'lookup.max-retries' = '3'\n" +
-            ")", DUCKDB_URL);
+            ")", CLAIMDB_URL);
             
         LOG.info("Creating claims_lookup table with DDL: {}", ddl);
         tableEnv.executeSql(ddl);
