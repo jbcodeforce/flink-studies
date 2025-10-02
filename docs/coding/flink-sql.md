@@ -786,6 +786,10 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     TO_TIMESTAMP('2024-11-20 12:34:568Z'),
     ```
 
+    ```sql
+    to_timestamp(transaction_date, 'yyyy-MM-dd HH:mm:ss') as tx_date, -- bigint
+    ```
+
     See all the [date and time functions](https://docs.confluent.io/cloud/current/flink/reference/functions/datetime-functions.html).
 
 ???- question "How to compare a date field with current system time?"
@@ -796,11 +800,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     The table used as target to this processing, if new records are added to it, then needs to be append log, as if it is upsert then the now() time is not determenistic for each row to process.
 
-???- info "Transform a date string to a timestamp"
-    ```sql
-    to_timestamp(transaction_date, 'yyyy-MM-dd HH:mm:ss') as tx_date, -- bigint
-    ```
-    
+
 ???- question "How to mask a field?"
     Create a new table from the existing one, and then use REGEXP_REPLACE to mask an existing attribute
 
