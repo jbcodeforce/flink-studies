@@ -9,7 +9,7 @@
     * 09/29: Update to diagrams and doc structure.
 
 
-One of the recommended approach to deploy Confluent Platform for Flink is to use Kubernetes platform. Apache Flink has also defined a Kubernetes Operator to manage custom resources for Flink clusters, deployments and Flink applications.
+Apache Flink has defined a Kubernetes Operator (FKO) to deploy and manage custom resources for Flink deployments. Confluent Platform managed for Flink is also deployed on kubernetes with its own operator but leveraging the FKO
 
 Let start to review the Apache Flink Kubernested Operator concepts.
 
@@ -28,20 +28,29 @@ The operator fully automates the entire lifecycle of the job manager, the task m
 
 As any Kubernetes operators, FKO can run **namespace-scoped**, to get multiple versions of the operator in the same Kubernetes cluster, or **cluster-scoped** for highly distributed  deployment. Operator  may map their custom resources to existing Kubernetes resources of deployments, replica sets, config maps, secrets, service accounts...
 
-The following figure represents a simple deployment view of a Flink Cluster, in parallel of a Kafka cluster running on a kubernetes platform (not all the Confluent Platform components are represented):
+The following figure represents a simple deployment view of a Flink Cluster, in parallel of a Kafka cluster running on a kubernetes platform:
 
 <figure markdown="span">
 ![2](./diagrams/k8s-deploy.drawio.png)
-<figcaption>Figure 2: K8S deployment</figcaption>
+<figcaption>Figure 2: Flink and Kafka OSS - K8S deployment</figcaption>
 </figure>
 
 The Kafka cluster runs in its own namespace (e.g. confluent), and the Confluent for Kubernetes operator manages the custom resources (CRs) life cycle.  
 
 ### Confluent for Kubernetes Operator
 
-CFK is the control plane for deploying and managing Confluent in your Kubernetes private cloud environment. It defines custom resource definition to support Kafka based resources like topics, brokers, schema registry...
+The kubernetes Confluent Platform and Confluent Manager for Flink deployment, may look like in the following figure:
 
-![](../techno/diagrams/cp-flink-deployment.drawio.png)
+<figure markdown="span">
+![3](./diagrams/cp-cmf-k8s-deploy.drawio.png)
+<figcaption>Figure 3: K8S deployment</figcaption>
+</figure>
+
+CFK Operator is the control plane for deploying and managing Confluent in your Kubernetes private cloud environment. It defines custom resource definitions to support Kafka based resources like topics, brokers, schema registry... Confluent Manager for Flink is a kubernetes operator, component to manage Flink Applications, environments, compute pools, catalogs, we will detail later below.
+
+<figure markdown="span">
+![4](../techno/diagrams/cp-flink-deployment.drawio.png)
+</figure>
 
 * Helpful commands to work on CRDs
 
