@@ -101,5 +101,11 @@ clean: ## Remove built images and containers
 	@echo "✅ Cleanup complete"
 
 
+load-test: ## Scale up event generator for load testing
+	@echo "$(BLUE)Starting load test...$(NC)"
+	@kubectl scale deployment event-generator --replicas=3 -n el-demo || \
+		echo "$(YELLOW)Event generator not found in el-demo namespace$(NC)"
+
+
 all: clean build test ## Clean, build, and test everything
 	@echo "✅ Full build pipeline complete!"

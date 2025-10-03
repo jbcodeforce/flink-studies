@@ -5,9 +5,9 @@
 
 ## Concepts
 
-The [TableAPI](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/overview/) serves as the lower-level API for executing Flink SQL, allowing for stream processing implementations in Java and Python. The Table API encapsulates a stream or physical table, enabling developers to implement streaming processing by programming against these tables.
+The [TableAPI](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/overview/) serves as the lower-level API for executing Flink SQL, allowing for stream processing implementations in Java and Python. The Table API encapsulates a stream or a physical table, enabling developers to implement streaming processing by programming against these tables.
 
-In Confluent Platform for Flink deployment, only Flink Application mode is supported. A **Flink Application** is any user's program that spawns one or multiple Flink jobs from its `main()` method. The execution of these jobs can happen in a local JVM (LocalEnvironment) or on a remote setup of clusters with multiple machines ([kubernetes](./k8s-deploy.md)).
+In Confluent Manager for Flink deployment, only Flink Application mode is supported. A **Flink Application** is any user's program that spawns one or multiple Flink jobs from its `main()` method. The execution of these jobs can happen in a local JVM (LocalEnvironment) or on a remote setup of clusters with multiple machines ([kubernetes](./k8s-deploy.md)).
 
 In the context of **Confluent Cloud**, the Table API program acts as a client-side library for interacting with the Flink engine hosted in the cloud. It enables the submission of  `Statements` and retrieval of `StatementResults`. The provided Confluent plugin integrates specific components for configuring the TableEnvironment, eliminating the need for a local Flink cluster. By including the `confluent-flink-table-api-java-plugin` dependency, Flink's internal components—such as CatalogStore, Catalog, Planner, Executor, and configuration, are managed by the plugin and fully integrated with Confluent Cloud.
 
@@ -17,13 +17,13 @@ While, for Confluent Platform or Open Source Flink, we need Kafka SQL connector 
 
 The development approach includes at least the following steps:
 
-1. Create a maven project and add the flink table api, and Kafka client dependencies (see an example of [pom.xml](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale/flink-app/pom.xml) as it is important to do not repackage existing product jars, so use `provided` dependencies. For ^^Confluent Cloud for Flink deployment^^ see the [pom.xml in flink-java/table-api](https://github.com/jbcodeforce/flink-studies/tree/master/flink-java/table-api/pom.xml) folder.
+1. Create a maven project and add the flink table api, and Kafka client dependencies (see an example of [pom.xml](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale/flink-app/pom.xml)) as it is important to do not repackage existing product jars, so use `provided` dependencies. For ^^Confluent Cloud for Flink deployment^^ see the [pom.xml in flink-java/table-api](https://github.com/jbcodeforce/flink-studies/tree/master/code/table-api/pom.xml) folder.
 1. Implement and unit test the flow. See best practices for [code structure](#code-structure).
 1. Depending of the target Flink runtime, there will be different steps: 
 
     For **Confluent Platform for Flink**:
 
-    1. Define a FlinkApplication Confluent for Flink CR
+    1. Define a FlinkApplication CR
     1. Package the jar, and build a docker image using Confluent Platform for Flink base image with a copy of the app jar. (See example of [Dockerfile](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale/flink-app/Dockerfile))
     1. Deploy to Kubernetes using the Flink kubernetes operator
     1. Monitor with the web ui.
@@ -55,7 +55,7 @@ The development approach includes at least the following steps:
         .build()
         ```
 
-    1. Set environment variables to specify API key and secrets, Confluent Cloud environment, compute poll... 
+    1. Set environment variables to specify API key and secrets, Confluent Cloud environment, compute pool... 
 
         ```sh title="Confluent Cloud related  environment variables "
         export CLOUD_PROVIDER="aws"
@@ -104,7 +104,7 @@ When using remote Confluent Cloud for Flink, it is possible to directly execute 
 java -jar target/flink-app-ecom-0.1.0.jar 
 ```
 
-See [code sample: Main_00_JoinOrderCustomer.java](https://github.com/jbcodeforce/flink-studies/blob/master/flink-java/table-api/src/main/java/flink/examples/table/Main_00_JoinOrderCustomer.java)
+See [code sample: Main_00_JoinOrderCustomer.java](https://github.com/jbcodeforce/flink-studies/blob/master/code/table-api/java-table-api/src/main/java/flink/examples/table/Main_00_JoinOrderCustomer.java)
 
 Get the catalog and databases, and use the environment to get the list of tables. In Confluent Cloud, there is a predefined catalog with some table samples: `examples.marketplace`.
 

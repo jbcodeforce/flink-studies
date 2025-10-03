@@ -123,7 +123,49 @@ In a join any previously processed records can be used potentially to process th
 
 ## Challenges
 
-* We cannot express everything in SQL but we can mix Flink Stream and Table APIs
+* We cannot express everything in SQL but we can mix Flink DataStream and Table APIs
+
+## Flink SQL High Level FAQ
+
+### Why the watermark is set 7 days in the past?
+
+Creating a table with the $rowtime as watermark like:
+
+```sql
+user_id	STRING	NULL,
+-- more columns	 	 
+$rowtime	TIMESTAMP_LTZ(3) *ROWTIME*	NOT NULL	METADATA VIRTUAL, WATERMARK AS `SOURCE_WATERMARK`()	SYSTEM
+```
+and then checking the watermark value with something like:
+
+```sql
+SELECT *, CURRENT_WATERMARK($rowtime) AS current_watermark, $rowtime FROM `table_name`;
+```
+the current_watermark is 7 days behind. 
+
+Altering the table to use $rowtime as watermark addresses the issues. But the default strategy is to emit the first watermark 7 days in the past, it not enough records (1000 records in **each partition**) are emitted. 
+
+[Time and Watermarks video](https://docs.confluent.io/cloud/current/flink/concepts/timely-stream-processing.html)
+
+### How we are going to setup full load of a table?
+
+For Flink SQL stream processing, we assume raw-topics are created from a change data capture systems and continuously write records to the topics. When history is important the raw-topic content become the implementation of the event-sourcing patttern and we need to be able to reprocess from the earliest offset. So when defining the table view associated to this topic, using Flink Kafka connector, the CREATE TABLE has, in the WITH section, a parameter to set the kafka reading strategy: 
+    ```sql
+    CREATE TABLE raw_user (
+          `user_id` BIGINT,
+          `name` STRING
+    )
+    WITH (
+          'scan.startup.mode' = 'earliest-offset',
+    )
+    ```
+
+In Confluent Cloud the connector set this property to the earliest by default. Altering the table can change to the latest-offset.
+
+
+### How we are going to merge the reference data and CDC data?
+
+This is a standard left or right joins on the fields needed to identify records on both table. The reference data in the context of Kafka is a topic with retention set to infinite, and will all the records in one partition, sorted or not. In Flink a primary key may be defined in the reference table.
 
 ## Deeper dive
 

@@ -2,6 +2,7 @@
 # Convenience targets for managing Kubernetes deployment
 
 NAMESPACE ?= el-demo
+CFNT_NS ?= confluent
 DEPLOYMENT_MODE ?= standalone
 BUILD_IMAGE ?= false
 DOCKER_REGISTRY ?= 
@@ -11,7 +12,7 @@ ENV_NAME ?= dev-env
 # Application Configuration
 APP_NAME ?= external-lookup
 DOCKER_IMAGE ?= payment-claims-enrichment
-
+COMPUTE_POOL_ID ?= demos-pool
 # Colors
 BLUE := \033[0;34m
 GREEN := \033[0;32m
@@ -169,16 +170,7 @@ logs: ## Show application logs
 	@echo "$(BLUE)Showing logs for namespace: $(NAMESPACE)$(NC)"
 	@kubectl logs -l app=$(APP_NAME) -n $(NAMESPACE) -f
 
-logs-jobmanager: ## Show JobManager logs
-	@kubectl logs deployment/flink-jobmanager -n $(NAMESPACE) -f
 
-logs-taskmanager: ## Show TaskManager logs
-	@kubectl logs deployment/flink-taskmanager -n $(NAMESPACE) -f
-
-port-forward: ## Setup port forwarding for Flink Web UI
-	@echo "$(BLUE)Setting up port forwarding...$(NC)"
-	@echo "Flink Web UI will be available at: http://localhost:8081"
-	@kubectl port-forward service/flink-jobmanager 8081:8081 -n $(NAMESPACE)
 
 ##@ Cleanup
 
@@ -297,23 +289,12 @@ dry-run: ## Show what would be deployed (dry run)
 
 validate: ## Validate Kubernetes manifests
 	@echo "$(BLUE)Validating Kubernetes manifests...$(NC)"
-	@for file in *.yaml; do \
+	@for file in k8s/*.yaml; do \
 		echo "Validating $$file..."; \
 		kubectl apply --dry-run=client -f $$file || exit 1; \
 	done
 	@echo "$(GREEN)All manifests are valid$(NC)"
 
-lint: ## Lint Kubernetes manifests
-	@echo "$(BLUE)Linting Kubernetes manifests...$(NC)"
-	@command -v kubeval >/dev/null 2>&1 || { \
-		echo "$(YELLOW)kubeval not found, skipping validation$(NC)"; \
-		echo "Install with: go install github.com/instrumenta/kubeval@latest"; \
-		exit 0; \
-	}
-	@for file in *.yaml; do \
-		echo "Linting $$file..."; \
-		kubeval $$file; \
-	done
 
 debug: ## Debug deployment issues
 	@echo "$(BLUE)Debugging deployment...$(NC)"
@@ -333,18 +314,21 @@ shell-jobmanager: ## Open shell in JobManager pod
 shell-taskmanager: ## Open shell in TaskManager pod
 	@kubectl exec -it deployment/flink-taskmanager -n $(NAMESPACE) -- bash
 
+start_flink_shell: ## Start a Flink shell
+	@confluent flink shell --compute-pool $(COMPUTE_POOL_ID) --environment $(ENV_NAME) --url $(CMF_URL)
+
 ##@ Testing
 
 test-connectivity: ## Test external dependencies connectivity
 	@echo "$(BLUE)Testing connectivity to external dependencies...$(NC)"
 	@echo "Testing Kafka connectivity..."
 	@kubectl run test-kafka --rm -i --tty --image=busybox \
+		--restart=Never --namespace=$(CFNT_NS) \
+		-- nc -zv kafka.confluent 9071 || true
+	@echo "Testing ClaimDB connectivity..."
+	@kubectl run test-claimdb --rm -i --tty --image=curlimages/curl \
 		--restart=Never --namespace=$(NAMESPACE) \
-		-- nc -zv kafka.confluent 9092 || true
-	@echo "Testing DuckDB connectivity..."
-	@kubectl run test-duckdb --rm -i --tty --image=curlimages/curl \
-		--restart=Never --namespace=$(NAMESPACE) \
-		-- curl -f http://duckdb-external-lookup.el-demo:8080/health || true
+		-- curl -f http://claimdb-svc.el-demo:8080/health || true
 
 test-smoke: ## Run smoke tests after deployment
 	@echo "$(BLUE)Running smoke tests...$(NC)"
@@ -352,11 +336,6 @@ test-smoke: ## Run smoke tests after deployment
 	@kubectl exec deployment/flink-jobmanager -n $(NAMESPACE) -- \
 		/opt/flink/bin/flink list | grep RUNNING || \
 		echo "$(YELLOW)No running jobs found$(NC)"
-
-load-test: ## Scale up event generator for load testing
-	@echo "$(BLUE)Starting load test...$(NC)"
-	@kubectl scale deployment event-generator --replicas=3 -n el-demo || \
-		echo "$(YELLOW)Event generator not found in el-demo namespace$(NC)"
 
 ##@ Information
 
@@ -386,9 +365,12 @@ list-resources: ## List all related Kubernetes resources
 	@echo ""
 	@echo "$(BLUE)PersistentVolumeClaims:$(NC)"
 	@kubectl get pvc -l app=$(APP_NAME) -n $(NAMESPACE) || true
+	@echo ""
+	@echo "$(BLUE)FlinkApplications:$(NC)"
+	@kubectl get flinkapplication -l app=$(APP_NAME) -n $(NAMESPACE) || true
 
 version: ## Show versions
 	@echo "$(BLUE)Versions:$(NC)"
-	@echo "kubectl: $$(kubectl version --client --short)"
-	@echo "Kubernetes: $$(kubectl version --short | grep Server || echo 'Server version unavailable')"
-	@echo "Application version: $$(grep 'app.version' configmap.yaml | cut -d':' -f2 | tr -d ' \"')"
+	@echo "kubectl: $$(kubectl version)"
+	@echo "Kubernetes: $$(kubectl version | grep Server || echo 'Server version unavailable')"
+

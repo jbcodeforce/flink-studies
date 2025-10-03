@@ -14,7 +14,7 @@ This folder includes some basic SQL examples to be used with local Flink OSS or 
     $FLINK_HOME/bin/start-cluster.sh
     $FLINK_HOME/bin/sql-client.sh --library $FLINK_HOME/sql-lib
     ```
-1. Use docker images and docker-compose. See the docker compose in deployment-local folder of this project. The docker engine mounts a project folder in `/home`, so content of the data will be in `/home/flink-sql/data`. As it may not be possible to have Docker Desktop on your machine, consider minikube
+1. Use docker images and docker-compose. See the docker compose in deployment/docker folder of this project. The docker engine mounts a project folder in `/home`, so content of the data will be in `/home/flink-sql/data`. As it may not be possible to have Docker Desktop on your machine, consider colima VM.
 1. Kubernetes with  [Minikube or Colima](https://jbcodeforce.github.io/flink-studies/coding/k8s-deploy/)
 
 For each installation, start one Flink **Job manager** and one **Task manager** container. 
@@ -40,7 +40,9 @@ kubectl exec -ti <flink-pod> -- bash
 sql-client.sh
 # Validate some basic query
 show catalogs;
+use catalog default;
 show databases;
+use <yourdatabase>
 show tables;
 ```
 
@@ -55,9 +57,9 @@ CREATE TABLE employees (
     emp_id INT,
     name VARCHAR,
     dept_id INT
-) WITH ( 
+) WITH (
     'connector' = 'filesystem',
-    'path' = '/Users/jerome/Code/ReadOnlyRepos/flink-studies/code/flink-sql/00-basic-sql/data/employees.csv',
+    'path' = '/Users/jerome/Documents/Code/flink-studies/code/flink-sql/00-basic-sql/data/employees.csv',
     'format' = 'csv'
 );
 ```
