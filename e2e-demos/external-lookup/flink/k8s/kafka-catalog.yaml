@@ -1,0 +1,14 @@
+apiVersion: platform.confluent.io/v1beta1
+kind: KafkaCatalog
+metadata:
+  name: payments-catalog
+spec:
+  kafkaClusters:
+    - databaseName: kafka-cluster
+      connectionConfig:
+        bootstrap.servers: kafka.confluent.svc.cluster.local:9071
+  topicName: payment-events
+  srInstance:
+    connectionConfig:
+      schema.registry.url: http://schemaregistry.confluent.svc.cluster.local:8081
+    

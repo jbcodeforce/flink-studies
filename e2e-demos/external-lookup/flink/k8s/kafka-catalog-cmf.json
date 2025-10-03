@@ -1,0 +1,22 @@
+{
+    "apiVersion": "cmf.confluent.io/v1",
+    "kind": "KafkaCatalog",
+    "metadata": {
+      "name": "payments-catalog"
+    },
+    "spec": {
+      "srInstance": {
+        "connectionConfig": {
+          "schema.registry.url": "http://schemaregistry.confluent.svc.cluster.local:8081"
+        }
+      },
+      "kafkaClusters": [
+        {
+          "databaseName": "kafka-cluster", 
+          "connectionConfig": {
+            "bootstrap.servers": "kafka.confluent.svc.cluster.local:9071"
+          }
+        }
+      ]
+    }
+  }

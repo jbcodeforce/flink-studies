@@ -6,7 +6,8 @@ DEPLOYMENT_MODE ?= standalone
 BUILD_IMAGE ?= false
 DOCKER_REGISTRY ?= 
 IMAGE_VERSION ?= latest
-
+CMF_URL ?= http://localhost:8084
+ENV_NAME ?= dev-env
 # Application Configuration
 APP_NAME ?= external-lookup
 DOCKER_IMAGE ?= payment-claims-enrichment
@@ -48,13 +49,20 @@ help: ## Show this help message
 
 ##@ Deployment
 
-deploy: deploy-rbac ## Deploy the Flink application to Kubernetes
+deploy-kafka-catalog: ## Deploy the Kafka Catalog
+	@echo "$(BLUE)Deploying Kafka Catalog...$(NC)"
+	@confluent flink catalog create k8s/kafka-catalog-cmf.json --url $(CMF_URL)
+
+deploy: deploy-rbac deploy-kafka-catalog ## Deploy the Flink application to Kubernetes
 	@echo "$(BLUE)Deploying Payment Claims Enrichment...$(NC)"
 	@kubectl apply -f k8s/flink-application.yaml -n $(NAMESPACE)
 
-deploy-with-port-forward: ## Deploy and setup port forwarding
-	@echo "$(BLUE)Deploying with port forwarding...$(NC)"
-	@./deploy.sh --mode $(DEPLOYMENT_MODE) --namespace $(NAMESPACE) --port-forward
+deploy-compute-pool: ## Deploy the Compute Pool
+	@echo "$(BLUE)Deploying Compute Pool...$(NC)"
+	@confluent flink compute-pool create k8s/compute-pool-cmf.json  --environment $(ENV_NAME) --url $(CMF_URL)
+
+list-compute-pools: ## List the Compute Pools
+	@confluent flink compute-pool list --environment $(ENV_NAME) --url $(CMF_URL)
 
 deploy-rbac: ## Deploy the RBAC resources
 	@echo "$(BLUE)Deploying RBAC resources...$(NC)"
@@ -132,6 +140,13 @@ status: ## Check deployment status
 	@echo ""
 	@echo "$(BLUE)💾 Storage:$(NC)"
 	@kubectl get pvc -l app=$(APP_NAME) -n $(NAMESPACE) 2>/dev/null || echo "No PVCs found"
+	@echo ""
+	@echo "$(BLUE)🔍 Kafka Catalog:$(NC)"
+	@confluent flink catalog list  --url $(CMF_URL)
+	@echo ""
+	@echo "$(BLUE)🔍 Compute Pools:$(NC)"
+	@confluent flink compute-pool list --environment $(ENV_NAME) --url $(CMF_URL)
+	@echo ""
 
 status-detailed: ## Check detailed deployment status
 	@echo "$(BLUE)Detailed deployment status in namespace: $(NAMESPACE)$(NC)"

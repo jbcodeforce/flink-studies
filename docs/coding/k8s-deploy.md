@@ -127,7 +127,7 @@ spec:
                 name: flink-app-cm
 ```
 
-### Confluent Specifics CRs
+### Confluent Specific CRs
 
 [First an important document: The Operator API reference](https://docs.confluent.io/operator/current/co-api.html)
 
@@ -176,7 +176,9 @@ Confluent Managed for Flink manages supports application mode only and is using 
   ```
 
 * [`FlinkApplication`](https://docs.confluent.io/platform/current/flink/get-started/get-started-application.html#step-2-deploy-af-jobs) in the context of Confluent Manager for Flink is the same as Flink OSS but it supports references to Environment and to the CMFRestClass.
-* Service Account: Service accounts provide a secure way for applications (like Flink jobs deployed via CMF) to interact with Confluent Cloud resources (e.g., Kafka clusters, Schema Registry) without relying on individual user credentials. Service accounts are central to the RBAC system. 
+* **Service Account**: Service accounts provide a secure way for applications (like Flink jobs deployed via CMF) to interact with Confluent Cloud resources (e.g., Kafka clusters, Schema Registry) without relying on individual user credentials. Service accounts are central to the RBAC system. Need one service account per application or most likely per environment. The SA, cluster role, role and the role bindings need to be defined in the target namespace where the Flink app will be deployed. [See this example for one application](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/external-lookup/flink/k8s/rbac.yaml)
+* **[KafkaCatalog](https://docs.confluent.io/platform/current/flink/configure/catalog.html#create-a-catalog)** is used to expose Kafka Topics as Tables for Flink. This CRD defines a Kafka Catalog object to connect to Kafka and Schema Registry. Each referenced Kafka Cluster is mapped as a Database. See [the kafka catalog example in external lookup demo](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/external-lookup/flink/k8s/kafka-catalog.yaml)
+* **[ComputePool]** See [the kafka catalog example in external lookup demo](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/external-lookup/flink/k8s/kafka-catalog.yaml)
 
 ### Durable Storage
 

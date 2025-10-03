@@ -1,0 +1,128 @@
+{
+  "$defs": {
+    "PaymentMethod": {
+      "description": "Payment method types",
+      "enum": [
+        "ACH",
+        "WIRE",
+        "CHECK",
+        "CARD",
+        "ELECTRONIC"
+      ],
+      "title": "PaymentMethod",
+      "type": "string"
+    },
+    "PaymentStatus": {
+      "description": "Payment processing status",
+      "enum": [
+        "PENDING",
+        "PROCESSING",
+        "COMPLETED",
+        "FAILED",
+        "CANCELLED"
+      ],
+      "title": "PaymentStatus",
+      "type": "string"
+    }
+  },
+  "description": "Payment event model matching the design specification.\n\nThis represents a payment transaction that references a claim_id\nfor external lookup and enrichment.",
+  "properties": {
+    "payment_id": {
+      "description": "Unique payment identifier",
+      "title": "Payment Id",
+      "type": "string"
+    },
+    "claim_id": {
+      "description": "Referenced claim ID for external lookup",
+      "title": "Claim Id",
+      "type": "string"
+    },
+    "payment_amount": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "Payment amount in USD",
+      "title": "Payment Amount"
+    },
+    "payment_date": {
+      "description": "Payment timestamp",
+      "format": "date-time",
+      "title": "Payment Date",
+      "type": "string"
+    },
+    "processor_id": {
+      "description": "Payment processor identifier",
+      "title": "Processor Id",
+      "type": "string"
+    },
+    "payment_method": {
+      "$ref": "#/$defs/PaymentMethod",
+      "default": "ELECTRONIC",
+      "description": "Payment method"
+    },
+    "payment_status": {
+      "$ref": "#/$defs/PaymentStatus",
+      "default": "PENDING",
+      "description": "Payment status"
+    },
+    "reference_number": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "External reference number",
+      "title": "Reference Number"
+    },
+    "transaction_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Bank transaction ID",
+      "title": "Transaction Id"
+    },
+    "notes": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Payment notes",
+      "title": "Notes"
+    },
+    "created_by": {
+      "default": "system",
+      "description": "Created by user/system",
+      "title": "Created By",
+      "type": "string"
+    }
+  },
+  "required": [
+    "payment_id",
+    "claim_id",
+    "payment_amount",
+    "processor_id"
+  ],
+  "title": "PaymentEvent",
+  "type": "object"
+}
