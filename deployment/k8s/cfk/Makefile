@@ -1,7 +1,7 @@
 CFNT_NS=confluent
 CERT_MGR_VERSION=v1.18.1
 DEMO_NS=el-demo
-FLCK_NS=flink
+FLCK_NS=confluent
 
 
 # ---------------------- Common functions ----------------------

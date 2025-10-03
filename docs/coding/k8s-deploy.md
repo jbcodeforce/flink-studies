@@ -46,11 +46,14 @@ The kubernetes Confluent Platform and Confluent Manager for Flink deployment, ma
 <figcaption>Figure 3: K8S deployment</figcaption>
 </figure>
 
-CFK Operator is the control plane for deploying and managing Confluent in your Kubernetes private cloud environment. It defines custom resource definitions to support Kafka based resources like topics, brokers, schema registry... Confluent Manager for Flink is a kubernetes operator, component to manage Flink Applications, environments, compute pools, catalogs, we will detail later below.
+**CFK Operator** is the control plane for deploying and managing Confluent in your Kubernetes private cloud environment. It defines custom resource definitions to support Kafka based resources like topics, brokers, schema registry... **Confluent Manager for Flink** is a kubernetes operator, to manage Flink Applications, environments, compute pools, catalogs, we will detail it in a later section.
 
 <figure markdown="span">
 ![4](../techno/diagrams/cp-flink-deployment.drawio.png)
+<figcaption>Figure 4: The operators playing together</figcaption>
 </figure>
+
+It is important to note that all CRs deployment via `kubectl` go to the CFK with the `apiVersion: platform.confluent.io/v1beta1`, but when CRs touch Flink resources they are delegated to the CMF operator. While deploying Flink component via confluent CLI uses the CMF CRDs which use different apiVersion. 
 
 * Helpful commands to work on CRDs
 
@@ -61,11 +64,11 @@ kubectl describe crd kafkatopics.platform.confluent.io
 
 See some CP for kubernetes deployment [examples from github](https://github.com/confluentinc/confluent-kubernetes-examples).
 
-### Flink specific
+### Flink specific custom resource
 
-A **Flink Application** is any user's program that spawns one or multiple Flink jobs from its `main()` method and is deploying a JobManager and n Task managers. They also run in their own namespace. 
+A **Flink Application** is any user's program that spawns one or multiple Flink jobs from its `main()` method and is deploying a JobManager and n Task managers. They may run in their own namespace. 
 
-The **Flink Kubernetes Operator** is looking at different `Flink Deployment` defintions, so can be isolated within its own namespace. When deploying the FKO it is important to specify the namespace to watch for future deployment. The following command modify this list:
+The **Flink Kubernetes Operator** is looking at different `Flink Deployment`, so it can be isolated within its own namespace. When deploying the FKO it is important to specify the namespaces to watch for future deployment. The following command modify this list:
 ```sh
 helm upgrade --install cp-flink-kubernetes-operator --version "~1.120.0"  confluentinc/flink-kubernetes-operator --set watchNamespace="{flink, confluent, el-demo}" -n flink
 ```
@@ -87,41 +90,27 @@ Confluent Manager for Apache Flink® (CMF) manages a fleet of Flink Applications
 CMF integrates with FKO to support Flink native custom resources:
 
 <figure markdown="span">
-![2](./diagrams/cmf-cko.drawio.png)
-<figcaption>CMF and CKO</figcaption>
+![5](./diagrams/cmf-cko.drawio.png)
+<figcaption>Figure 5: CFK, CMF and CKO</figcaption>
 </figure>
 
-* Environments can be created with Manifests or using the Confluent CLI. The metadata is persisted in an embedded database. The concept is to group multiple Flink application together. This is an isolation layer for RBAC, and runs on its own namespace. It may define Flink Configuration cross applications, like common observability and checkpointing storage.
-* a REST API supports all the external integration to the operator.
+* Flink Environments can be created with Manifests or using the Confluent CLI. The metadata is persisted in an embedded database. The concept is to group multiple Flink applications together. This is an isolation layer for RBAC, and runs on its own namespace. It may define Flink Configuration cross applications, like common observability and checkpointing storage.
+* a REST API supports all the external integration to the operator. **Confluent Control Center** is using this end point, as the `confluent` cli.
 * CMF manages FlinkDeployment resources internally
-* Confluent For Kubernetes is the Confluent operator to manage Kafka resources, but it adds the FlinkEnvironment and an adapted FlinkApplication (tpo reference an environment)
-* [The flinkEnvironment and FlinkApplication CRDs are defined here](https://docs.confluent.io/operator/current/co-manage-flink.html#create-a-af-application).
-* As part of Flink SQL on Confluent, CMF defines new CR for Compute pool, and Flink Catalog.
+* **Confluent For Kubernetes** is the Confluent operator to manage Kafka resources, but it supports the FlinkEnvironment and an adapted FlinkApplication (to reference an environment) so kubectl command can access this operator for confluent platform CRs.
 
-### Custom Resources
+Let review the kubernetes custom resources for Flink.
+
+### Flink Custom Resources
 
 Once the Flink for Kubernetes Operator is running, we can submit jobs using  `FlinkDeployment` (for Flink Application or for Job manager and task manager for session cluster) and `FlinkSessionJob` Custom Resources for Session. The following figure represents those concepts: 
 
 <figure markdown=span>
-![3](./diagrams/fko-cr.drawio.png)
+![6](./diagrams/fko-cr.drawio.png)
 <caption>FKO main Custom Resources Definitions</capture>
 </figure>
 
 On the left, a `FlinkSessionJob` references an existing FlinkDeployment as multiple session jobs can run into the same Flink cluster. The `job` declaration specifies the code to run with its specific configuration. While on the right, the application mode, has the job definition as part of the FlinkDeployment, as the JobManager and TaskManager mininum resource requirements.
-
-### Confluent Specifics CRs
-
-Confluent Managed for Flink manages supports application mode only and is using new CRDs to define `Environment` and `FlinkApplication`. [The CRDs are defined here](https://docs.confluent.io/operator/current/co-manage-flink.html#create-a-af-application).
-
-<figure markdown=span>
-![3](./diagrams/cmf-cr.drawio.png)
-<caption>Confluent Manager for Flink - Custom Resources Definitions</capture>
-</figure>
-
-* An [FlinkEnvironment](https://docs.confluent.io/operator/current/co-manage-flink.html#create-a-af-environment) defines configurations cross applications. See [one example](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cp-flink/flink-env.yaml)
-  ```yaml
-  ```
-
 
 The [Apache Flink FlinkDeployment spec is here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/) and is used to define Flink application (will have a job section) or session cluster (only job and task managers configuration).
 
@@ -137,6 +126,57 @@ spec:
             - configMapRef:
                 name: flink-app-cm
 ```
+
+### Confluent Specifics CRs
+
+[First an important document: The Operator API reference](https://docs.confluent.io/operator/current/co-api.html)
+
+Confluent Managed for Flink manages supports application mode only and is using new CRDs to define `FlinkEnvironment` and `FlinkApplication`. [The CRDs are defined here](https://docs.confluent.io/operator/current/co-manage-flink.html#create-a-af-application).
+
+* As part of Flink SQL on Confluent, CMF defines new CR for Compute pool, and Flink Catalog.
+
+<figure markdown=span>
+![7](./diagrams/cmf-cr.drawio.png)
+<caption>Confluent Manager for Flink - Custom Resources Definitions</capture>
+</figure>
+
+* An [FlinkEnvironment](https://docs.confluent.io/operator/current/co-manage-flink.html#create-a-af-environment) defines configurations cross applications. See [one example in deployment/k8s/cp-flink](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cp-flink/flink-dev-env.yaml). 
+  ```yaml
+  apiVersion: platform.confluent.io/v1beta1
+  kind: FlinkEnvironment
+  metadata:
+    name: dev-env
+    namespace: confluent
+  spec:
+    kubernetesNamespace: el-demo
+    flinkApplicationDefaults: 
+      metadata:
+        labels:
+          env: dev-env
+      spec:
+        flinkConfiguration:
+          taskmanager.numberOfTaskSlots: '1'
+          ...
+    cmfRestClassRef:
+      name: default
+      namespace: confluent
+  ```
+  Some important elements to consider are: `kubernetesNamespace` is the namespace where the Flink deployment(s) will be deployed. So one environment establishes foundations for those Flink applications. It can define default Flink configuration for all applications and add common labels, like specifying the environment name they run in. `FlinkApplication` is referencing back the Flink Environment which is not what Flink OSS Application does. The last piece is the cmfRestClassRef to reference the kubernetes object/resource used to define access point to the CMF REST api.
+
+* `CMFRestClass` defines the client configuration to access CMF Rest APIs. This resource is referenced by other CFK resources (ex FlinkEnvironment, FlinkApplication) to access CMF Rest APIs. In a more advance configuration, this CR defines security like the authentication mechanism and mTLS to access the REST api.
+  ```yaml
+  apiVersion: platform.confluent.io/v1beta1
+  kind: CMFRestClass
+  metadata:
+    name: default
+    namespace: confluent
+  spec:
+    cmfRest:
+      endpoint: http://cmf-service.confluent.svc.cluster.local
+  ```
+
+* [`FlinkApplication`](https://docs.confluent.io/platform/current/flink/get-started/get-started-application.html#step-2-deploy-af-jobs) in the context of Confluent Manager for Flink is the same as Flink OSS but it supports references to Environment and to the CMFRestClass.
+* Service Account: Service accounts provide a secure way for applications (like Flink jobs deployed via CMF) to interact with Confluent Cloud resources (e.g., Kafka clusters, Schema Registry) without relying on individual user credentials. Service accounts are central to the RBAC system. 
 
 ### Durable Storage
 

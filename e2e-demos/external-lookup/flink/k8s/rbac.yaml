@@ -11,39 +11,87 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: flink-cluster-role
+  name: flink-sa-cr
   labels:
     app: external-lookup
     component: rbac
 rules:
-- apiGroups: [""]
-  resources: ["pods", "services", "endpoints", "persistentvolumeclaims", "events", "configmaps", "secrets"]
-  verbs: ["get", "watch", "list", "create", "delete", "patch", "update"]
-- apiGroups: [""]
-  resources: ["nodes"]
-  verbs: ["get", "watch", "list"]
-- apiGroups: ["apps"]
-  resources: ["deployments", "deployments/scale", "replicasets"]
-  verbs: ["get", "watch", "list", "create", "delete", "patch", "update"]
-- apiGroups: ["extensions"]
-  resources: ["deployments", "deployments/scale", "replicasets"]
-  verbs: ["get", "watch", "list", "create", "delete", "patch", "update"]
-
+  - apiGroups: ["flink.apache.org"]
+    resources: ["flinkdeployments", "flinkdeployments/status"]
+    verbs: ["*"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "deployments/finalizers"]
+    verbs: ["*"]
+  - apiGroups: [""]
+    resources: ["pods", "endpoints", "persistentvolumeclaims",  "configmaps", "serviceaccounts", "secrets"]
+    verbs: ["get", "watch", "list", "create", "delete", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["nodes", "services", "namespaces", "events"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: ["extensions"]
+    resources: ["deployments", "deployments/scale", "replicasets"]
+    verbs: ["get", "watch", "list", "create", "delete", "patch", "update"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings"]
+    verbs: ["create", "get", "list", "watch", "delete", "update", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: flink-cluster-role-binding
+  name: flink-sa-cr-binding
   labels:
     app: external-lookup
     component: rbac
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: flink-cluster-role
+  name: flink-sa-cr
+subjects:
+  - kind: ServiceAccount
+    name: flink-sa
+    namespace: el-demo
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: flink-sa-r
+  namespace: el-demo
+rules:
+  - apiGroups: [ "apps" ]
+    resources: [ "deployments", "deployments/scale", "deployments/finalizers" ]
+    verbs: [ "*" ]
+  - apiGroups: ["flink.apache.org"]
+    resources: ["flinkdeployments", "flinkdeployments/status"]
+    verbs: ["*"]
+  - apiGroups: [""]
+    resources: ["services", "namespaces"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [ "" ]
+    resources: [ "configmaps", "pods" ]
+    verbs: [ "*" ]
+  - apiGroups: [ "" ]
+    resources: [ "events" ]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "" ]
+    resources: [ "serviceaccounts", "secrets" ]
+    verbs: [ "create", "get", "list", "watch", "delete", "update"]
+  - apiGroups: [ "rbac.authorization.k8s.io" ]
+    resources: [ "roles", "rolebindings" ]
+    verbs: [ "create", "get", "list", "watch", "delete", "update", "patch" ]
+
+---
+
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: el-demo
+  name: flink-sa-rb
 subjects:
 - kind: ServiceAccount
-  name: flink-sa
   namespace: el-demo
-
-
+  name: flink-sa
+roleRef:
+  kind: Role
+  name: flink-sa-r
+  apiGroup: rbac.authorization.k8s.io

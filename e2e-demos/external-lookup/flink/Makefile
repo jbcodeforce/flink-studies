@@ -48,15 +48,17 @@ help: ## Show this help message
 
 ##@ Deployment
 
-deploy: ## Deploy the Flink application to Kubernetes
+deploy: deploy-rbac ## Deploy the Flink application to Kubernetes
 	@echo "$(BLUE)Deploying Payment Claims Enrichment...$(NC)"
-	@kubectl apply -f k8s/rbac.yaml -n $(NAMESPACE)
 	@kubectl apply -f k8s/flink-application.yaml -n $(NAMESPACE)
 
 deploy-with-port-forward: ## Deploy and setup port forwarding
 	@echo "$(BLUE)Deploying with port forwarding...$(NC)"
 	@./deploy.sh --mode $(DEPLOYMENT_MODE) --namespace $(NAMESPACE) --port-forward
 
+deploy-rbac: ## Deploy the RBAC resources
+	@echo "$(BLUE)Deploying RBAC resources...$(NC)"
+	@kubectl apply -f k8s/rbac.yaml -n $(NAMESPACE)
 
 ##@ Building
 

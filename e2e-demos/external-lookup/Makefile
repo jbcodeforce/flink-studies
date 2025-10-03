@@ -1,5 +1,5 @@
 CFNT_NS=confluent
-FLCK_NS=flink
+FLCK_NS=confluent
 DEMO_NS=el-demo
 CERT_MGR_VERSION=v1.18.1
 FLINK_OPERATOR_VERSION=1.11.0
@@ -59,20 +59,15 @@ port_forward_cmf:
 list_flink_env:
 	@confluent flink environment list --url $(CMF_URL)
 
-create_compute_pool:
-	@confluent flink compute-pool create ../cmf/compute_pool.json --environment $(ENV_NAME) --url $(CMF_URL)
-
-list_compute_pools:
-	@confluent flink compute-pool list --environment $(ENV_NAME) --url $(CMF_URL)
-
-
-
 # ----------- Applications ----------------------
 
 create_topics:
 	@kubectl apply -f k8s/enriched-payments-topic.yaml
 	@kubectl apply -f k8s/failed-payments-topic.yaml
 	@kubectl apply -f k8s/payment-events-topic.yaml
+
+list_kafka_topics:
+	@kubectl get kafkatopics -n $(CFNT_NS)
 
 port_forward_claimdb_api:
 	@echo "Getting ClaimDB pod name and starting port-forward..."

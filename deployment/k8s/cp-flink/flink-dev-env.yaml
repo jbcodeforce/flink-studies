@@ -1,14 +1,14 @@
 apiVersion: platform.confluent.io/v1beta1
 kind: FlinkEnvironment
 metadata:
-  name: env1
-  namespace: flink
+  name: dev-env
+  namespace: confluent
 spec:
   kubernetesNamespace: el-demo
   flinkApplicationDefaults: 
     metadata:
       labels:
-        env: env1
+        env: dev-env
     spec:
       flinkConfiguration:
         taskmanager.numberOfTaskSlots: '1'
@@ -24,5 +24,5 @@ spec:
         state.backend.rocksdb.block-size: '1024m'
         state.backend.rocksdb.block-size-multiplier: '10'
   cmfRestClassRef:
-    name: cmf-rest-class
-    namespace: flink
+    name: default
+    namespace: confluent

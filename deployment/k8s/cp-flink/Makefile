@@ -1,9 +1,9 @@
 CFNT_NS=confluent
-FLCK_NS=flink
+FLCK_NS=confluent
 CERT_MGR_VERSION=v1.18.1
 FLINK_OPERATOR_VERSION=1.11.0
 CMF_URL=http://localhost:8084
-ENV_NAME=env1
+ENV_NAME=dev
 
 # For Confluent Platform see Makefile in cfk folder
 
@@ -50,7 +50,7 @@ update_helm_confluent_repo:
 	@helm repo update
 
 # ---------------------- Confluent Manager for Flink ----------------------
-install_cmf: prepare update_helm_confluent_repo install_flink_kubernetes_operator deploy_cmf
+install_cmf: prepare update_helm_confluent_repo install_flink_kubernetes_operator deploy_cmf deploy_cmf_rest_class deploy_flink_env
 
 install_flink_kubernetes_operator:
 	@helm upgrade --install cp-flink-kubernetes-operator --version "~1.120.0"  confluentinc/flink-kubernetes-operator --set watchNamespace="{flink, confluent, el-demo}" -n $(FLCK_NS)
@@ -58,6 +58,17 @@ install_flink_kubernetes_operator:
 deploy_cmf:
 	@helm upgrade --install cmf --version "~2.0.2"  confluentinc/confluent-manager-for-apache-flink --namespace $(FLCK_NS) --set cmf.sql.production=false --set cmf.sql.examples-catalog.enabled=true 
 
+deploy_cmf_rest_class:
+	@kubectl apply -f cmf-rest-class.yaml
+
+verify_cmf_rest_class:
+	@kubectl get cmfrestclasses -n $(FLCK_NS)
+
+deploy_flink_env:
+	@kubectl apply -f flink-dev-env.yaml
+
+verify_flink_env:
+	@kubectl get flinkenvironments -n $(FLCK_NS)
 
 use_flink_ns:
 	@kubectl config set-context --current --namespace=$(FLCK_NS)

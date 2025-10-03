@@ -1,36 +1,32 @@
 # Flink on k8s with the operator (Open-source or Confluent Platform)
 
-This folder includes different deployment manifests for Confluent Platform for Flink. The approach is to encapsulate some of the kubectl commands using `make` targets. The code and/or instructions here available are NOT intended for production usage.
+This folder includes different deployment manifests for Confluent Manager for Flink. The approach is to encapsulate some of the kubectl commands using `make` targets. The code and/or instructions here are NOT intended for production usage.
 
 See the [Flink operator - open source documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/) and the [Confluent platform for flink operator](https://docs.confluent.io/platform/current/flink/get-started.html) for details.
 
-This deployment is using nodePort so the following mapping applies:
-
-| Component | nodePort | URL | 
-| --- | --- | --- |
-| 🌐 Console | 30200 | http://localhost:30200 |
-| 🌐 Kafka bootstrap | 30000 | |
-| 🌐 Schema Registry | 30500 | http://localhost:30500 |
+Read also our analysis of Kubernetes deployment for Flink in [this chapter](https://github.com/jbcodeforce/flink-studies/coding/k8-deploy).
 
 
 ## Planning deployment
 
-* Confluent Plaform deployment on k8s supports [two options](https://docs.confluent.io/operator/current/co-plan.html#co-plan): [CFK](https://docs.confluent.io/operator/current/co-deploy-cfk.html#co-deploy-operator) or [CFK Blueprints](https://docs.confluent.io/operator/current/blueprints/cob-overview.html#cob-overview)
-* Review sizing needs: Minimum of 3 kafka brokers, even for development.
-* Plan to use a log retention management like ELK, or Grafana / Loki.
+* Confluent Plaform deployment on k8s supports [two options](https://docs.confluent.io/operator/current/co-plan.html#co-plan): [CFK](https://docs.confluent.io/operator/current/co-deploy-cfk.html#co-deploy-operator) or [CFK Blueprints](https://docs.confluent.io/operator/current/blueprints/cob-overview.html#cob-overview). We use the CFK approach here.
 
-## Pre-requisites
+* Review sizing needs: Minimum of 3 kafka brokers, for pure demonstration and development we can use one broker.
 
-* [See the pre-requisites note for CLIs installation and other general dependencies](https://github.com/jbcodeforce/flink-studies/coding/k8-deploy/#pre-requisites)
+## Prerequisites
+
+* [See the pre-requisites note for CLIs installation and other general dependencies](https://github.com/jbcodeforce/flink-studies/coding/k8-deploy/#prerequisites)
 
 * Access to a Kubernetes cluster using Colima VM:
     ```sh
     make start_colima
     ```
-* The next steps are automated with:
+
+* The next steps are automated with one make command:
     ```sh
     make prepare
     ```
+    But are doing the following steps:
 
     * Install certification manager (only one time per k8s cluster): See [Release version here](https://github.com/cert-manager/cert-manager/), change in the Makefile the version number and the make commands:
         ```sh
@@ -40,8 +36,8 @@ This deployment is using nodePort so the following mapping applies:
         kubeclt get pods -n cert-manager
         ```
 
-    * Create `flink` and `confluent` namespaces: `make create_ns`
-    * Install Minio to persist jar or expose object storage in the K8S cluster. [See Minio quickstart](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) and [the minio section in k8s deployment chapter.](https://jbcodeforce.github.io/flink-studies/coding/k8s-deploy/#using-minio)
+    * Create `flink` and `confluent` namespaces: `make create_ns` - 10/01/2025 To simplify we merged both namespace into `confluent`
+    * Install Minio to persist jar or expose object storage in the K8S cluster. [See Minio quickstart](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) and [the minio section in k8s deployment chapter.](https://jbcodeforce.github.io/flink-studies/coding/k8s-deploy/#using-minio-for-app-deployment)
         ```sh
         make deploy_minio
         make verify_minio
@@ -50,7 +46,11 @@ This deployment is using nodePort so the following mapping applies:
 
 ## Deploy Confluent Platform and Confluent Manager for Flink
 
-[Confluent Plafform product documentation](https://docs.confluent.io/operator/current/co-cfk-overview.html).
+See the steps as described in [Confluent Plafform product documentation](https://docs.confluent.io/operator/current/co-cfk-overview.html).
+
+--- 
+TO BE MODIFIED
+
 
 1. Deploy Confluent Platform:
     ```sh
@@ -183,3 +183,12 @@ The `org.apache.flink.connector.file.src.reader.StreamFormat` class is part of t
 * [Deploy Confluent Platform with Kraft.](https://github.com/confluentinc/confluent-kubernetes-examples/tree/master/quickstart-deploy)
 
 ## Deploy on AWS EKS
+
+
+This deployment is using nodePort so the following mapping applies:
+
+| Component | nodePort | URL | 
+| --- | --- | --- |
+| 🌐 Console | 30200 | http://localhost:30200 |
+| 🌐 Kafka bootstrap | 30000 | |
+| 🌐 Schema Registry | 30500 | http://localhost:30500 |
