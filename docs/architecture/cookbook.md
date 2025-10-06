@@ -58,16 +58,62 @@ This architecture helps to clearly separate schema management per environment, a
 
 ## Sizing
 
-Sizing a Flink cluster is a complex process influenced by many factors, including workload demands, application logic, data characteristics, expected state size, required throughput and latency, concurrency, and hardware. Because of these variables, every Flink deployment needs a unique sizing approach. The most effective method is to run a real job on real hardware and tune Flink to that specific workload.
+Sizing a Flink cluster is a complex process influenced by many factors, including workload demands, application logic, data characteristics, expected state size, required throughput and latency, concurrency, and hardware. 
 
-For architects seeking sizing guidance, it's helpful to consider workload complexity (aggregations, joins, windows, processing type), input throughput (MB/s or records/second), expected state size (GB), and expected latency.
+Because of those variables, every Flink deployment needs a unique sizing approach. The most effective method is to run a real job, on real hardware and tune Flink to that specific workload.
 
-While Kafka sizing estimates are based on throughput and latency, this is a very crude method for Flink, as it overlooks many critical details. For new Flink deployments, a preliminary estimate can be provided, but it's important to stress its inexact nature. A simple Flink job can process approximately 10,000 records per second per CPU. However, a more substantial job, based on benchmarks, might process closer to 5,000 records per second per CPU. Sizing may use record size, throughput, and Flink statement complexity to estimate CPU load.
+For architects seeking sizing guidance, it's helpful to consider:
+* the workload semantic complexity, with the usage of aggregations, joins, windows, processing type, 
+* the input throughput (MB/s or records/second), 
+* the expected state size (GB), 
+* the expected latency.
 
-???- into "Tool to do estimation"
-    Go under the `code/tools/flink-estimator` folder and start `uv run main.py`, to access a web app used for Flink cluster estimation. It can be started with `docker-compose start -d` or deployed to local kubernetes: `kubectl apply -k k8s`. Access via web browser [http://localhost:8002/](http://localhost:8002/)
+While Kafka sizing estimates are based on throughput and latency, this is a very crude method for Flink, as it overlooks many critical details. 
+
+For new Flink deployments, a preliminary estimate can be provided, but it's important to stress its inexact nature. 
+A simple Flink job can process approximately **10,000 records per second per CPU**. However, a more substantial job, based on benchmarks, might process closer to 5,000 records per second per CPU. Sizing may use record size, throughput, and Flink statement complexity to estimate CPU load.
+
+???+ info "Tool help manage Flink Cluster estimations"
+    The [flink-estimator git repository](https://github.com/jbcodeforce/flink-estimator) includes a web app with backend estimator for Flink Cluster sizing and locally manage your own configuration. To access this web app there is a docker image at [dockerhub - flink-estimator](https://hub.docker.com/repository/docker/jbcodeforce/flink-estimator/general). It can be started with `docker-compose start -d` or deployed to local kubernetes: `kubectl apply -k k8s`. Access via web browser [http://localhost:8002/](http://localhost:8002/)
 
     ![](./images/flink-estimator.png)
+
+## Exactly-once-delivery
+
+Flink's internal exactly-once guarantee is robust, but for the results to be accurate in the external system, that system (the sink) must cooperate.
+
+This is a complex subject to address and context is important on how to assess exactly-once-delivery: within Flink processing, versus with an end-to-end solution context. 
+
+### Flink context
+
+For Flink, "Each incoming event affects the final Flink statement results exactly once." as said [Piotr Nowojski during his presentation at the Flink Forward 2017 conference](https://www.youtube.com/watch?v=rh7wdvZXTOo). No data duplication and no data loss. Flink achieves it through a combination of checkpointing, state management, and transactional sinks. Checkpoints save the state of the stream processing application at regular intervals. State management maintains the consistency of data between the checkpoints. Transactional sinks ensure that data gets written out exactly once, even during failures 
+
+Flink uses transactions when writing messages into Kafka. Kafka messages are only visible when the transaction is actually committed as part of a Flink checkpoint. `read_committed` consumers will only get the committed messages. `read_uncommitted` consumers see all messages.
+
+As the default checkpoint interval is set to 60 seconds, `read_committed` consumers will see up to one minute latency: a Kafka message sent just before the commit will have few second latency, while older messages will be above 60 seconds.
+
+When multiple Flink statements are chained in a pipeline, the latency may be even bigger, as Flink Kafka source connector uses `read_committed` isolation.
+
+The checkpoints frequency can be updated but could not go below 10s. Shorter interval improves fault tolerance, but adds persistence and performance overhead.
+
+### End-to-end solution
+
+On the sink side, Flink has a [2 phase commit sink function](https://nightlies.apache.org/flink/flink-docs-release-1.4/api/java/org/apache/flink/streaming/api/functions/sink/TwoPhaseCommitSinkFunction.html) on specific data sources, which includes Kafka, message queue and JDBC. 
+
+For stream processing requiring an **upsert** capability (insert new records or update existing ones based on a key), the approach is to assess:
+
+* if the sink kafka connector support upsert operations: it emits only the latest state for each key, and a tombstone message for delete (which is crucial for Kafka's log compaction to work correctly).
+* For Datsabase, be sure to use a JDBC connector, with upsert support. Achieving exactly-once to a traditional database is done by leveraging the sink's implementation of Flink's Two-Phase Commit protocol. The database's transactions must be compatible with this to make sure writes are only committed when a Flink checkpoint successfully completes.
+* For Lakehouse Sink
+
+The external system must provide support for transactions that integrates with a two-phase commit protocol. 
+
+When using transactions on sink side, there is a pre-commit phase which starts from the checkpointing: the Job Manager injects a checkpoint barrier to seperate streamed in records before or after the barrier. As the barrier flows to the operators, each one of them, takes a snapshot or their state. The sink operators that support transactions, need to start the transaction in the precommit phase while saving its state to the state backend. After a successful pre-commit phase, the commit must guarantee the success for all operators. In case of any failure, the tx is aborted and rolled back.
+
+
+* [Article: An Overview of End-to-End Exactly-Once Processing in Apache Flink (with Apache Kafka, too!)](https://flink.apache.org/2018/02/28/an-overview-of-end-to-end-exactly-once-processing-in-apache-flink-with-apache-kafka-too/).
+* [Confluent documentation](https://docs.confluent.io/cloud/current/flink/concepts/delivery-guarantees.html).
+* [Confluent Platform - Kafka consumer isolation level property.](https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#isolation-level)
 
 ## Troubleshooting
 
@@ -167,23 +213,7 @@ TO BE DONE
 
 ## Exactly once
 
-"Each incoming event affects the final Flink statement results exactly once." Piotr Nowojski. No data duplication and no data loss. Flink achieves it through a combination of checkpointing, state management, and transactional sinks. Checkpoints save the state of the stream processing application at regular intervals. State management maintains the consistency of data between the checkpoints. Transactional sinks ensure that data gets written out exactly once, even during failures 
 
-Flink uses transactions when writing messages into Kafka. Kafka messages are only visible when the transaction is actually committed as part of a Flink checkpoint. `read_committed` consumers will only get the committed messages. `read_uncommitted` consumers see all messages.
-
-As the default checkpoint interval is set to 60 seconds, `read_committed` consumers will see up to one minute latency: a Kafka message sent just before the commit will have few second latency, while older message will be aboce 60 seconds.
-
-When multiple Flink statements are chained in a pipeline, the latency may be even bigger, as Flink Kafka source connector uses `read_committed` isolation.
-
-The checkpoints frequency can be updated but could not go below 10s. Shorter interval improves fault tolerance, but adds persistence and performance overhead.
-
-On the sink side, Flink has a [2 phase commit sink function](https://nightlies.apache.org/flink/flink-docs-release-1.4/api/java/org/apache/flink/streaming/api/functions/sink/TwoPhaseCommitSinkFunction.html) on specific data sources, which includes Kafka, message queue and JDBC. The external system must provide support for transactions that integrates with a two-phase commit protocol. When using transactions on sink side, there is a pre-commit phase which starts from the checkpointing: the Job Manager injects a checkpoint barrier to seperate streamed records in before or after the barrier. As the barrier flows to the operators, each one of them, takes a snapshot or their state. The sink operators that support transactions, need to start the transaction in the precommit phase while saving its state to the state backend. After a successful pre-commit phase, the commit must guarantee the success for all operators. In case of failure all is aborted and rolled back.
-
-Use Flink WebUI to see the throughput and latency of each Flink application. Flink metrics are exposed to Prometheus and Grafana.
-
-* [Article: An Overview of End-to-End Exactly-Once Processing in Apache Flink (with Apache Kafka, too!)](https://flink.apache.org/2018/02/28/an-overview-of-end-to-end-exactly-once-processing-in-apache-flink-with-apache-kafka-too/).
-* [Confluent documentation](https://docs.confluent.io/cloud/current/flink/concepts/delivery-guarantees.html).
-* [Confluent Platform - Kafka consumer isolation level property.](https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#isolation-level)
 
 ## Query Evolution
 

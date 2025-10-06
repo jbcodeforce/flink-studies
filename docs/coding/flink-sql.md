@@ -1083,6 +1083,22 @@ Here is a list of important tutorials on Joins:
     
     When the internal time has expired the results will be published. This puts an upper bound on how much state Flink needs to keep to handle a query, which in this case is related to the number of different product type. 
 
+    It is possible to use another timestamp from the input table. For example the `transaction_ts TIMESTAMP(3),` 
+    then we need to declare a watermark on this ts:
+
+    `WATERMARK FOR transaction_ts AS transaction_ts - INTERVAL '5' SECOND,`
+    so it can be used in the descriptor function.
+    
+    ```sql
+    INSERT INTO app_orders
+    select 
+        window_start, 
+        window_end, 
+        customer_id, sum(order_amount) 
+    from table(tumble(table `daily_spend`, DESCRIPTOR(transaction_ts), interval '24' hours)) 
+    group by window_start, window_end, customer_id 
+    ```
+
 
 
 ???- question "Aggregation over a window"

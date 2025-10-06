@@ -5,7 +5,7 @@ Welcome to **"A Guide to Apache Flink and Confluent Flink"** - a comprehensive, 
 To make it fun, here is the book cover! Very imaginative for a book that will never go to press.
 
 <figure markdown="span">
-  ![Book cover](./images/flink_book_cover.drawio.png)
+  ![Book cover](./images/flink-book-cover.png)
   <figcaption>A virtual book about Apache Flink - 2018 to 2025</figcaption>
 </figure>
 
