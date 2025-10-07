@@ -49,11 +49,11 @@ Once Flink is started (for example with the docker image), Flink Dashboard [http
 
 The execution is from one of the training examples, the number of task slot was set to 4, and one job is running.
 
-Spark Streaming is using microbatching which is not a true real-time processing while Flink is. Both Flink and Spark support batch processing. 
+Spark Streaming is using microbatching which is not a true real-time processing while Flink is a RT engine. Both Flink and Spark support batch processing. 
 
 Only one Job Manager is active at a given point of time, and there may be `n` Task Managers. It is a single point of failure, but it startes quickly and can leverage the checkpoints data to restart its processing.
 
-There are different [deployment models](https://ci.apache.org/projects/flink/flink-docs-release-1.14/ops/deployment/): 
+There are different [deployment models](https://ci.apache.org/projects/flink/flink-docs-release-1.20/ops/deployment/): 
 
 * Deploy on executing cluster, this is the **session mode**. Use **session** cluster to run multiple jobs: we need a separate JobManager container for that. 
 * **Per job** mode: spin up a cluster per job submission. This provides better resource isolation. 
@@ -65,8 +65,6 @@ See also [deployment to Kubernetes](../coding/k8s-deploy.md)
 
 The new K8s operator, deploys and monitors Flink Application and Session deployments.
 
-! add screen shot of k8s deployment
-
 ## Batch processing
 
 Process all the data in one job with bounded dataset. It is used when we need all the data, to assess trend, develop AI model, and with a focus on throughput instead of latency. Jobs are run when needed, on input that can be pre-sorted by time or by any other key.
@@ -76,13 +74,38 @@ The results are reported at the end of the job execution. Any failure means to d
 Hadoop was designed to do batch processing. Flink has capability to replace the Hadoop map-reduce processing.
 
 When latency is a major requirements, like monitoring and alerting, fraud detection then streaming is the only choice.
- 
-## High Availability
 
+
+## State management
+
+[See 'working with state' from Flink documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream/fault-tolerance/state/).
+
+* All data maintained by a task and used to compute the results of a function belong to the state of the task. Function may use <k,V> pairs to store values, and may implement The ChekpointedFunctions to make local state fault tolerant.
+
+* While processing the data, the task can read and update its state and computes its results based on its input data and state.
+* State management may address very large states, and no state is lost in case of failures.
+* Within a DAG, each operator needs to register its state.
+* **Operator state** is scoped to an operator task: all records processed by the same parallel task have access to the same state.
+* **Keyed state** is maintained and accessed with respect to a key defined in the records of an operator’s input stream. Flink maintains one state instance per key value and Flink partitions all records with the same key to the operator task that maintains the state for this key. The key-value map is sharded across all parallel tasks:
+
+<figure markdown="span">
+![](./images/key-state.png){ width=600 }
+<figcaption>Keyes states</figcaption>
+</figure>
+
+* Each task maintains its state locally to improve latency. For small state, the state backends will use JVM heap, but for larger state RocksDB is used. A [**state backend**](https://nightlies.apache.org/flink/flink-docs-master/docs/ops/state/state_backends/) takes care of checkpointing the state of a task to a remote and persistent storage.
+* With stateful distributed processing, scaling stateful operators, enforces state repartitioning and assigning to more or fewer parallel tasks. Keys are organized in key-groups, and key groups are assigned to tasks. Operators with operator list state are scaled by redistributing the list entries. Operators with operator union list state are scaled by broadcasting the full list of state entries to each task.
+
+???- info "State Backend"
+    * Embedded rockdb will persist on Task manager local data directories. It saves asynchronously. Serializes using bytes. But there is a limit to the size per key and valye of 2^31 bytes. Supports incremental checkpoints
+    * ForStState use tree structured k-v store. May use object storage for remote file systems. Allows Flink to scale the state size beyond the local disk capacity of the TaskManager. 
+    * `HashMapStateBackend` use Java heap to keep state, as java object. So unsafe to reuse!.
+
+## High Availability
 
 With Task managers running in parallel, if one fails the number of available slots drops, and the JobManager asks the Resource Manager to get new processing slots. The application's restart strategy determines how often the JobManager restarts the application and how long it waits between restarts.
 
-Flink uses Zookeeper to manage multiple JobManagers and select the leader to control the execution of the streaming application. Application's tasks checkpoints and other states are saved in a remote storage, but metadata are saved in Zookeeper. When a JobManager fails, all tasks that belong to its application are automatically cancelled. A new JobManager that takes over the work by getting information of the storage from Zookeeper, and then restarts the process with the JobManager.
+Flink OSS uses Zookeeper to manage multiple JobManagers and select the leader to control the execution of the streaming jobs. Application's tasks checkpoints and other states are saved in a remote storage, but metadata are saved in Zookeeper. When a JobManager fails, all tasks that belong to its application are automatically cancelled. A new JobManager that takes over the work by getting information of the storage from Zookeeper, and then restarts the process with the JobManager.
 
 
 ## Fault Tolerance
@@ -91,7 +114,7 @@ The two major Flink features to support fault tolerance are the checkpoints and 
 
 ### Checkpointing
 
-[Checkpoints](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/ops/state/checkpoints/) are snapshots of the input data stream, capturing the state of each operator at a specific point in time. They are created automatically and periodically by Flink. The saved states are used to recover from failures, and checkpoints are optimized for quick recovery.
+[Checkpoints](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/ops/state/checkpoints/) are snapshots of the input data stream, capturing the state of each operator, of the DAG, at a specific point in time. They are created automatically and periodically by Flink. The saved states are used to recover from failures, and checkpoints are optimized for quick recovery.
 
 **Checkpoints** allow a streaming dataflow to be resumed from a checkpoint while maintaining consistency through exactly-once processing semantics. When a failure occurs, Flink can restore the state of the operators and replay the records starting from the checkpoint.
 
@@ -99,9 +122,9 @@ In the event of a failure in a parallel execution, Flink halts the stream flow a
 
 Checkpointing is coordinated by the Job Manager, it knows the location of the latest completed checkpoint which will get important later on. This checkpointing and recovery mechanism can provide exactly-once consistency for application state, given that all operators checkpoint and restore all of their states and that all input streams are reset to the position up to which they were consumed when the checkpoint was taken. This will work perfectly with Kafka, but not with sockets or queues where messages are lost once consumed. Therefore exactly-once state consistency can be ensured only if all input streams are from reset-able data sources.
 
-As part of the checkpointing process, Flink saves the 'offset read commit' information of the append log, so in case of a failure, Flink recovers a stateful streaming application by restoring its state from a previous checkpoint and resetting the read position on the append log.
+As part of the checkpointing process, Flink saves the 'offset read commit' information of the append log, so in case of a failure, Flink recovers the stateful streaming application by restoring its state from a previous checkpoint and resetting the read position on the append log.
 
-During the recovery and depending on the sink operators of an application, some result records might be emitted multiple times to downstream systems.
+During the recovery and depending on the sink operators of an application, some result records might be emitted multiple times to downstream systems. Downstream systems need to be idempotent.
 
 Flink utilizes the concept of **Checkpoint Barriers** to delineate records. These barriers separate records so that those received after the last snapshot are included in the next checkpoint, ensuring a clear and consistent state transition.
 
@@ -116,7 +139,7 @@ Checkpoint barriers flow with the stream, allowing them to be distributed across
 
 Once all sink operators have acknowledged a snapshot, it is considered completed. After `snapshot n` is finalized, the job will not request any records from the source prior to that snapshot, ensuring data consistency and integrity.
 
-State snapshots are stored in a state backend, which can include options such as in-memory storage, HDFS, or RocksDB. This flexibility allows for optimal performance and scalability based on the application’s requirements.
+State snapshots are stored in a [state backend](https://nightlies.apache.org/flink/flink-docs-master/docs/ops/state/state_backends/), which can include options such as in-memory storage, HDFS, object storage or RocksDB. This flexibility allows for optimal performance and scalability based on the application’s requirements.
 
 In the context of a KeyedStream, Flink functions as a key-value store where the key corresponds to the key in the stream. State updates do not require transactions, simplifying the update process.
 
@@ -184,25 +207,27 @@ State is always accessed locally, which helps Flink applications achieve high th
 Savepoints are user triggered snapshot at a specific point in time. It is used during system operations like product upgrades. The Flink operator for kubernetes has [custom resource definition](../coding/k8s-deploy.md#ha-configuration) to support the savepoint process. See also the end to end demo for savepoint in [this folder.](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/savepoint-demo)
 
 
-## State management
+### FAQs
 
-[See 'working with state' from Flink documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream/fault-tolerance/state/).
+### Checkpoints impact throughput
 
-* All data maintained by a task and used to compute the results of a function belong to the state of the task.
-* While processing the data, the task can read and update its state and computes its results based on its input data and state.
-* State management may address very large states, and no state is lost in case of failures.
-* Each operator needs to register its state.
-* **Operator state** is scoped to an operator task: all records processed by the same parallel task have access to the same state.
-* **Keyed state** is maintained and accessed with respect to a key defined in the records of an operator’s input stream. Flink maintains one state instance per key value and Flink partitions all records with the same key to the operator task that maintains the state for this key. The key-value map is sharded across all parallel tasks:
+* The persistence to remote storage is done asynchronously, but at the level of a task. So too frequent checkpointing will impact throughput. Now it also depends if the tasks are compute or IO intensive. 
 
-<figure markdown="span">
-![](./images/key-state.png){ width=600 }
-<figcaption>Keyes states</figcaption>
-</figure>
+### Interuption while writing checkpoints
 
-* Each task maintains its state locally to improve latency. For small state, the state backends will use JVM heap, but for larger state RocksDB is used. A **state backend** takes care of checkpointing the state of a task to a remote and persistent storage.
-* With stateful distributed processing, scaling stateful operators, enforces state repartitioning and assigning to more or fewer parallel tasks. Keys are organized in key-groups, and key groups are assigned to tasks. Operators with operator list state are scaled by redistributing the list entries. Operators with operator union list state are scaled by broadcasting the full list of state entries to each task.
+* The processing will restart from the last persisted checkpoints so no data loss. Specially true when source of the data are coming from Kafka topics. The checkpoint points to last read-commited offset within topic/partition so Flink will reload from there
 
+### When Flink cluster has 10 nodes what happen in one node failure
+
+It will depend of the operator allocation to the task to the task manager and what the operator needs (as state). At worse case the full DAG needs to be restored, every operator needs to rebuild their state so multiple task managers in the cluster.
+
+It can take sometime to recover. Reread data and reprocess it, will take many seconds, or minutes. 
+
+With hot-hot deployment, it is possible to get the same running application running in parallel, and then switch the output sink / topic for the consumer. For real-time payment we can achieve around 3 to 7 seconds recovery time, with million of records per second.  
+
+### Can we set one task manager one task to run all a DAG to make it simple?
+
+It will depend of the application state size and logic to operate. If all state stays in memory, yes this is a common pattern to use. If state are bigger than physical memory of the computer running the task manager, then the processing needs more computers, so more task managers and need to distribute data. Then it needs distributed storage to persist states. 
 
 ## Network Stack
 

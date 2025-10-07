@@ -3,13 +3,30 @@
 ## Difference between Kafka Streams and Flink
 
 * Flink is a complete streaming computation system that supports HA, Fault-tolerance, self-monitoring, and a variety of deployment models.
+* Kafka Streams is a library that any  standard Java application can embed and hence does not attempt to dictate a deployment method
 * Kafka Streams within k8s will provide horizontal scaling. But it is bounded by the number of partitions. Resilience is ensured with Kafka topics.
+* In term of application Life Cycle:
+    * Flink: User’s stream processing code is deployed and **run as a job** in the Flink cluster
+    * Kakfa Streams: User’s stream processing code **runs inside Java application**
+* Flink supports data at rest or in motion, and **multiple sources and sinks**, no need to be only Kafka as KStream.
 * Flink has Complex Event Processing capabilities to search for pattern of event occurences.
-* Flink supports data at rest or in motion, and multiple sources and sinks, no need to be only Kafka.
+* Restorate State after Failure
+    * Flink can restore state after failure from most recent incremental snapshot
+    * KStreams and KSQL Restore state after failure by replaying all messages 
+* Coordination
+    * Flink JobManager is part of the streaming application and orchestrate task manager. Job manager orchestration is done via Kubernetes scheduler.
+    * KStreams - Leverages the Kafka cluster for coordination, load balancing, and  fault-tolerance.
+* Bounded and unbounded data streams	
+    & Flink: Stream or Batch processing on Bounded
+    * Kstreams: Stream only
+* Language Flexibility
+    * Flink has a layered API - with most popular languages being Java, Python and SQL
+    * KStreams is Java only.
+
 * Flink needs a custom implementation of `KafkaDeserializationSchema<T>` to read both key and value from Kafka topic.
-* Kafka streams is easier to define a pipeline for Kafka records and to do the `consume - process - produce` loop. In Flink we need to code producer and consumer.
+* Kafka streams is easier to define a pipeline for Kafka records and to do the `consume - process - produce` loop. 
 * KStreams uses the Kafka Record time stamp, while with Flink we need to implement how to deserialize the KafkaRecord and get the timestamp from it.
-* Support of late arrival is easier with KStreams, while Flink uses the concept of side output stream.
+* Support of late arrival is easier with KStreams, while Flink uses the concept of watermark.
 
 ## When to use rule engine versus Flink
 

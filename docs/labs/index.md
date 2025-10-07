@@ -13,6 +13,7 @@ See the [e2e-demos](https://github.com/jbcodeforce/flink-studies/tree/master/e2e
 * [ ] [e-commerce sale](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale)
 * [ ] [Transform json records](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/json-transformation)
 * [ ] [Qlik CDC emulated to Flink dedup, filtering, transform logic](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cdc-dedup-transform)
+* [ ] [External lookup](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/external-lookup)
 * [ ] Flink to JDBC Sink connector
 * [ ] Savepoint demonstration
 * [ ] SQL Gateway demonstration

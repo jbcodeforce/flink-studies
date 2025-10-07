@@ -2,6 +2,8 @@
 
 [The official product documentation after 07/2025 release is here.](https://docs.confluent.io/platform/current/flink/overview.html) 
 
+CP Flink is the Confluent Flink product that is extremely flexible and configurable to address a large set of user's requirements. It is a supported Flink with a subset of Flink components: SQL, Table API, DataStream API, ProcessFunction. Using Kafka, FileSystem, JDBC and CDC connectors, and using a central management feature for Kubernettes deployment and security.
+
 The main features are:
 
 * Fully compatible with open-source Flink. 
@@ -27,9 +29,16 @@ Be sure to have [confluent cli.](https://docs.confluent.io/confluent-cli/current
 
 ## Specific concepts added on top of Flink
 
-* Environment: for access control isolation, configuration sharing
-* Compute pool represents resources to run Task manager and Job manager. Each Flink SQL statement is associated with exactly one Compute Pool. [See example of pool definition](https://docs.confluent.io/platform/current/flink/configure/compute-pools.html) and in [cmf folder](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cmf)
-* For SQL catalog to group database concept for Flink SQL table queries. It references a Schema Registry instance and one or more Kafka clusters.
+* Confluent Manager for Flink (**CMF**) provides:
+    * Job life-cycle management for Flink jobs.
+    * Integration with Confluent Platform for authentication and authorization (RBAC).
+    * Well-defined REST APIs and command-line interfaces (CLIs).
+    * Store metadata in its own embedded database
+    * It is a kubernetes operator to manage custom resources
+
+* **Environment**: for access control isolation, and Flink configuration sharing
+* **Compute pool** represents resources to run Task manager and Job manager. Each Flink SQL statement is associated with exactly one Compute Pool. [See example of pool definition](https://docs.confluent.io/platform/current/flink/configure/compute-pools.html) and in [cmf folder](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cmf)
+* **SQL catalog** to group database concept for Flink SQL table queries. It references a Schema Registry instance and one or more Kafka clusters.
 
 ## Product Set Up
 
@@ -38,9 +47,8 @@ Be sure to have [confluent cli.](https://docs.confluent.io/confluent-cli/current
 
 ## Deployment architecture
 
-* A Flink cluster always needs to run in one K8s cluster in one region, as the Flink nodes are typically exchanging a lot of data, requiring low latency.
-* For failover between data centers, the approach if to share durable storage (HDFS, S3, Minio) accessible between data centers.
-* For efficiency, the checkpoints are saved in Rockdb. For large state, it is recommended to have host instance with high disk IO support like SSDs. 
+* A Flink cluster always needs to run in one K8s cluster in one region, as the Flink nodes are typically exchanging a lot of data, requiring low latency network.
+* For failover between data centers, the approach if to share durable storage (HDFS, S3, Minio) accessible between data centers, get Kafka topic replicated, and being able to restart from checkpoints.
 * Recall that Flink can interact with multiple Kafka Clusters at the same time.
 
 

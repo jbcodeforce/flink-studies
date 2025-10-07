@@ -4,7 +4,7 @@
     * Created 10/2024 
     * Review 10/31/24 Updated 4/08/2025
 
-[Confluent Cloud for Apache Flink®](https://docs.confluent.io/cloud/current/flink/overview.html) is a cloud-native, managed service, for Flink, integrated with the Confluent Cloud Kafka managed service.
+[Confluent Cloud for Apache Flink®](https://docs.confluent.io/cloud/current/flink/overview.html) is a cloud-native, managed service, for Flink, strongly integrated with the Confluent Cloud Kafka managed service. It is a simple, serverless and scalable way to build real-time, reusable data products over streams.
 
 ![](./diagrams/ccloud-flink.drawio.png){ width=800 }
 
@@ -35,10 +35,19 @@ Some **limitations**:
 * The differences with the OSS version, is that the DDL statements of catalog, database, table are mapped to physical Kafka objects. Table is a schema and a topic, catalog is an environment, and database is a Kafka cluster.
 * Developers work in a [**workspace**](https://www.confluent.io/blog/flink-sql-workspaces/), to manage their Apache Flink® streaming applications, allowing them to easily write, execute, and monitor real-time data processing queries using a user-friendly SQL editor. Workspaces are not mandatory, as Developers may also deploy Flink statements via CLI or REST API.
 * CC offers the **Autopilot** feature, to automatically adjusts resources for SQL statements based on demand. When messages processing starts to be behind, **Autopilot** adjusts resource allocation.
-* Supports [role-based access control]() for both user and service accounts.
-* **Stream lineage** provides insights at the tospic level about data origins. 
+* Supports [role-based access control](#role-base-access-control) for both user and service accounts.
+* **Stream lineage** provides insights at the topic level about data origin to destinations. 
 * For **Watermark** configuration, Confluent Cloud for Apache Flink® manages it automatically, by using the `$rowtime` column, which is mapped to the Kafka record timestamp, and by observing the behavior of the streams to dynamically adapt the configuration.
 * [Service accounts](https://docs.confluent.io/cloud/current/security/authenticate/workload-identities/service-accounts/overview.html#service-accounts) are used for production deployment to enforce security boundaries. Permissions are done with ACL and role binding. They can own any type of API keys that can be used for CLI or API access.
+* [Snapshot query](https://docs.confluent.io/cloud/current/flink/how-to-guides/run-snapshot-query.html#flink-sql-run-snapshot-query) helps to do a**point-in-time**/snapshot query, to get a result at the moment of query submission, and that query would transition to Completed once done. Generates only one final result set. It will query from kafka topic earliest record, until now, or can mix with Tableflow parquet table. This is a combination of Flink batch + time constraint query. 
+    ```sql
+    SET 'sql.snapshot.mode' = 'now';
+    SELECT count(*) as nb_records from tablename;
+    ```
+
+    See [simple demo](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/08-snapshot-query)
+
+* [External lookups](https://docs.confluent.io/cloud/current/ai/external-tables/overview.html)
 
 ???- info "Statement life cycle"
     Use a service account for background statements.
@@ -80,7 +89,7 @@ See those tutorials for getting started.
 
 * [Quickstart with Console](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-cloud-console.html)
 * [Apache Flink® SQL](https://developer.confluent.io/courses/flink-sql/overview/)
-* [confluent github, Flink workshop](https://github.com/confluentinc/confluent-cloud-flink-workshop/tree/master/flink-getting-started)
+* [Confluent github, Flink workshop](https://github.com/confluentinc/confluent-cloud-flink-workshop/tree/master/flink-getting-started)
 * [Java Table API Quick Start](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-java-table-api.html)
 
 There is also a new confluent cli plugin: `confluent-flink-quickstart` to create an environment, a Flink compute pool, enable a schema registry, create a Kafka cluster and starts a Flink shell. 
@@ -150,7 +159,7 @@ confluent flink shell --compute-pool $COMPUTE_POOL_ID --environment $ENV_ID
 
 ### Using the Flink editor in Confluent Cloud
 
-Nothing special, except that once the job is started, we cannot modify it, we need to stop before any future edition. It is recommended to persist the Flink statement in a git repository and manage the deployment using Confluent CLI or [shift_left tool](https://jbcodeforce.github.io/shift_left_utils/blue_green_deploy/).
+Nothing special to mention, except that users need to recall that once the job is started, they cannot modify it:they need to stop before any future edition. Restarting may mean reprocess from the earliest records. It is recommended to persist the Flink statement in a git repository and manage the deployment using Confluent CLI or [shift_left CLI tool](https://jbcodeforce.github.io/shift_left_utils/blue_green_deploy/).
 
 ## Using the Flink Table API
 

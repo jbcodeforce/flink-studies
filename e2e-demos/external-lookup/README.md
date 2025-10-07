@@ -13,15 +13,17 @@ The Database can be a simple postgresql or duckdb database. The processing is do
 ![](./docs/architecture.drawio.png)
 
 This demonstration implements a streaming enrichment pattern where:
-- Payment events flow through Kafka containing `claim_id` references
-- An external database stores insurance claim metadata (claim_amount, member_id)
-- A Flink streaming job performs real-time lookups to enrich payment events
-- Enriched events are written to an output Kafka topic
+- **Payment** events flow through Kafka topic and containing a `claim_id` as a foreign key to the Claims table
+- An external database stores insurance claim metadata (claim_id, claim_amount, member_id...)
+- A Flink streaming job performs real-time lookups to enrich payment events by doing a left joins on the claim_id key
+- Enriched events are written to an output Kafka topic, to be processed by another Flink job, which may filter-in large claims only. 
 - Error handling manages lookup failures and database unavailability
 
 #### Physical deployment
 
-TODO add a diagram of k8s deployment
+Here is a potential physical deployment using two namespaces, and two Flink Applications deployed.
+
+![](./docs/k8s_deployment.drawio.png)
 
 ### Data Models
 
