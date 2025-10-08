@@ -12,7 +12,17 @@
       "flinkConfiguration": {
         "pipeline.operator-chaining.enabled": "false",
         "execution.checkpointing.interval": "10s",
-        "taskmanager.numberOfTaskSlots": "4"
+        "taskmanager.numberOfTaskSlots": "4",
+        "s3.endpoint": "http://minio.e2e.svc.cluster.local:9000",
+        "s3.path.style.access": "true",
+        "s3.connection.ssl.enabled": "false",
+        "s3.access-key": "console",
+        "s3.secret-key": "console123",
+        "state.checkpoints.dir": "s3://flink/stateful-flink/checkpoints",
+        "state.savepoints.dir": "s3://flink/stateful-flink/savepoints",
+        "state.checkpoints.interval": "10000",
+        "state.checkpoints.timeout": "600000"
+  
       },
       "taskManager": {
         "resource": {

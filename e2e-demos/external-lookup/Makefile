@@ -1,9 +1,11 @@
 CFNT_NS=confluent
 FLCK_NS=confluent
 DEMO_NS=el-demo
+MINIO_NS=minio-dev
 CERT_MGR_VERSION=v1.18.1
 FLINK_OPERATOR_VERSION=1.11.0
 CMF_URL=http://localhost:8084
+SR_URL=http://localhost:8081
 ENV_NAME=env1
 APP_NAME=external-lookup
 
@@ -51,6 +53,12 @@ port_forward_cp_console:
 port_forward_kafka_bootstrap_old:
 	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/kafka 9092:9092"'
 
+port_forward_schema_registry:
+	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/schemaregistry 8081:8081"' -e 'tell application "Terminal" to set current settings of front window to settings set "Pro"'
+
+port_forward_minio_console:
+	@osascript -e 'tell app "Terminal" to do script "kubectl port-forward pod/minio 9090 9090 -n $(MINIO_NS)"'
+
 # ---------------------- Confluent Manager for Flink ----------------------
 
 port_forward_cmf:
@@ -69,6 +77,23 @@ create_topics:
 list_kafka_topics:
 	@kubectl get kafkatopics -n $(CFNT_NS)
 
+# ---------------------- Schema Registry ----------------------
+
+
+
+list_schemas: ## List all schemas in Schema Registry
+	@echo "📋 Listing schemas in Schema Registry..."
+	@curl -X GET $(SR_URL)/subjects
+
+describe_payment_event_schema: ## Describe payment event schema
+	@echo "📋 Describing payment event schema..."
+	@confluent schema-registry schema describe --subject payment-events-value --version latest --url $(SR_URL)
+
+delete_payment_event_schema: ## Delete payment event schema from Schema Registry
+	@echo "🗑️  Deleting payment event schema..."
+	@confluent schema-registry schema delete --subject payment-events-value --version all --force --url $(SR_URL)
+	@echo "✅ Payment event schema deleted"
+
 port_forward_claimdb_api:
 	@echo "Getting ClaimDB pod name and starting port-forward..."
 	@POD_NAME=$$(kubectl get pods -n $(DEMO_NS) -l app=$(APP_NAME) -o jsonpath='{.items[0].metadata.name}' 2>/dev/null); \
@@ -80,6 +105,7 @@ port_forward_claimdb_api:
 		echo "Available pods:"; \
 		kubectl get pods -n $(DEMO_NS); \
 	fi
+
 
 port_forward_event_generator_metrics:
 	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(DEMO_NS) port-forward svc/event-generator-metrics 8090:8090"' -e 'tell application "Terminal" to set current settings of front window to settings set "Grass"'

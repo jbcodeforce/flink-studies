@@ -61,7 +61,7 @@ payment-generator generate --dry-run --rate 2 --duration 10
 
 ```bash
 # Build container
-./build-image.sh
+make build
 
 # Test locally
 docker run -e PAYMENT_GEN_DRY_RUN=true external-lookup-event-generator:latest \
@@ -76,16 +76,21 @@ docker run \
 
 ### 3. Kubernetes Deployment
 
-```bash
-# Deploy all resources
-cd k8s/
-./deploy.sh auto
+* Define the schema to the schema registry:
+  ```sh
+  # Be sure the schema end point is visible
+  make port_forward_schema_registry
+  make publish_schema
+  ```
 
-# Or interactive mode
-./deploy.sh
+* Deploy all resources
+  ```bash
+  make deploy
+  ```
 
-# Check status
-kubectl get pods -l app=external-lookup-event-generator
+*Check status
+make status
+kubectl get pods -l app=external-lookup-event-generator -n el-demos
 ```
 
 ## Configuration

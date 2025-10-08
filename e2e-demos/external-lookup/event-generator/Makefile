@@ -5,7 +5,10 @@ IMAGE_NAME = demo-event-generator
 IMAGE_TAG = latest
 REGISTRY ?= 
 NAMESPACE = el-demo
+CFNT_NS=confluent
 APP_NAME = external-lookup
+SR_URL=http://localhost:8081
+
 # Docker build configuration
 DOCKERFILE = Dockerfile
 BUILD_CONTEXT = .
@@ -90,6 +93,10 @@ status: ## Check Kubernetes deployment status
 	@kubectl get pods -n $(NAMESPACE) -l app=$(APP_NAME)
 	@kubectl get services -n $(NAMESPACE) -l app=$(APP_NAME)
 
+port_forward_schema_registry:
+	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/schemaregistry 8081:8081"' -e 'tell application "Terminal" to set current settings of front window to settings set "Pro"'
+
+
 clean: ## Remove built images and containers
 	@echo "🧹 Cleaning up..."
 	@docker stop claimdb || true
@@ -100,6 +107,20 @@ clean: ## Remove built images and containers
 	fi
 	@echo "✅ Cleanup complete"
 
+publish_schema: ## Deploy payment event schema to Schema Registry
+	@echo "📋 Deploying payment event schema to Schema Registry..."
+	@if [ ! -f schemas/payment_event_schema.json ]; then \
+		echo "❌ Schema file not found: schemas/payment_event_schema.json"; \
+		exit 1; \
+	fi
+	@curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
+  --data @schemas/payment_event_schema.json $(SR_URL)/subjects/payment-events-value/versions
+	@echo "✅ Payment event schema deployed successfully"
+
+delete_schema: ## Delete payment event schema from Schema Registry
+	@echo "🗑️  Deleting payment event schema from Schema Registry..."
+	@curl -X DELETE $(SR_URL)/subjects/payment-events-value/versions/latest
+	@echo "✅ Payment event schema deleted successfully"
 
 load-test: ## Scale up event generator for load testing
 	@echo "$(BLUE)Starting load test...$(NC)"

@@ -46,11 +46,13 @@ Since DuckDB is an embedded database without native network connectivity, this i
 ### 1. Build the Container
 ```bash
 cd database/
-./build.sh
+make build
 ```
 
 ### 2. Test Locally
 ```bash
+make run
+# OR
 docker run -p 8080:8080 --name duckdb -v ./data:/data duckdb-external-lookup:latest
 ```
 
@@ -58,7 +60,7 @@ docker run -p 8080:8080 --name duckdb -v ./data:/data duckdb-external-lookup:lat
 
 ```bash
 # OpenAPI
-chrome 
+chrome http://localhost:8080/docs
 # Health check
 curl http://localhost:8080/health
 
@@ -72,8 +74,13 @@ curl http://localhost:8080/stats
 ### 4. Deploy to Kubernetes
 
 ```bash
-cd ../k8s/
-./deploy.sh
+make deploy
+# Verify
+make status
+```
+### 5. Clean up
+```bash
+make undeploy
 ```
 
 ## Kubernetes Deployment
@@ -86,18 +93,6 @@ The deployment automatically sets up persistent storage for the DuckDB database:
 - **kind**: Database stored at `/tmp/hostpath-provisioner/duckdb-external-lookup` on host
 - **Auto-detection**: Deployment script detects your K8s environment automatically
 
-### Deployment Commands
-
-```bash
-# Deploy with automatic storage setup
-./deploy.sh
-
-# Check deployment status
-./status.sh
-
-# Clean up everything
-./cleanup.sh
-```
 
 ### Storage Architecture
 
@@ -125,13 +120,11 @@ http://duckdb-external-lookup.default.svc.cluster.local:8080
 ### Port Forward for Testing
 
 ```bash
+make port-forward
+# OR 
 kubectl port-forward svc/duckdb-external-lookup 8080:8080
 ```
 
-### NodePort Access
-```
-http://localhost:30080
-```
 
 ## Configuration
 
@@ -174,25 +167,6 @@ curl -X POST http://localhost:8080/simulate/recover
 - **Memory**: 256Mi-1Gi resource limits
 - **Storage**: 1Gi persistent volume
 
-## Integration with Flink
-
-The HTTP API is designed for integration with Flink's AsyncDataStream API:
-
-1. Flink extracts `claim_id` from payment events
-2. Makes HTTP GET request to `/claims/{claim_id}`
-3. Handles success (200), not found (404), and error (5xx) responses
-4. Implements retry logic with exponential backoff
-5. Routes events based on lookup results
-
-## Next Steps
-
-This database component is ready for integration with:
-
-- Flink streaming application (async HTTP lookups)
-- Kafka event generator (payment events)
-- Monitoring and alerting systems
-- Load testing frameworks
-
 ## Troubleshooting
 
 ### Common Storage Issues
@@ -204,7 +178,7 @@ This database component is ready for integration with:
 **Solution**:
 ```bash
 # Check deployment status
-./status.sh
+make status
 
 # Check PVC events
 kubectl describe pvc duckdb-pvc
@@ -213,7 +187,8 @@ kubectl describe pvc duckdb-pvc
 kubectl get pv duckdb-pv
 
 # Recreate if needed
-./cleanup.sh && ./deploy.sh
+make undeploy
+make deploy
 ```
 
 #### Pod Cannot Start
@@ -262,24 +237,11 @@ colima ssh ls -la /tmp/duckdb-external-lookup
 colima ssh sudo chown -R 65534:65534 /tmp/duckdb-external-lookup
 ```
 
-#### For kind:
-```bash
-# Check kind cluster
-kind get clusters
-
-# Load image if needed
-kind load docker-image external-lookup-duckdb:latest
-
-# Check hostPath mount
-kubectl exec deployment/duckdb-external-lookup -- df -h /data
-```
-
 ### Debugging Commands
 
 ```bash
 # Complete status overview
-./status.sh
-
+make status
 # Real-time logs
 kubectl logs -l app=external-lookup-duckdb -f
 

@@ -88,10 +88,15 @@ deploy: ## Deploy to Kubernetes
 	@kubectl apply -f k8s/claimdb-service.yaml
 	@echo "✅ Deployed to Kubernetes"
 
+port-forward: ## Port forward the service
+	@kubectl port-forward svc/claimdb-svc 8080:8080 -n $(NAMESPACE)
+
+
 undeploy: ## Remove from Kubernetes
 	@echo "🗑️  Removing from Kubernetes..."
 	@kubectl delete -f k8s/ --ignore-not-found
 	@echo "✅ Removed from Kubernetes"
+
 
 status: ## Check Kubernetes deployment status
 	@echo "📊 Checking deployment status in namespace: $(NAMESPACE)"
