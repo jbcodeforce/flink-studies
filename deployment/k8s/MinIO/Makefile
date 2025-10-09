@@ -12,13 +12,13 @@ ensure_ns = \
 			echo "$1 exists";\
 	fi
 # ------- Common elements to install -------------
-prepare: create_ns  deploy_minio verify_minio 
+prepare: create_ns  deploy verify_minio 
 
 create_ns:
 	$(call ensure_ns, $(MINIO_NS))
 
 # ---------------------- Minio ----------------------
-deploy_minio:
+deploy:
 	@kubectl apply -f minio-dev.yaml 
 
 port_forward_minio_console:

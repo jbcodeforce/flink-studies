@@ -88,7 +88,8 @@ docker run \
   make deploy
   ```
 
-*Check status
+* Check status
+```sh
 make status
 kubectl get pods -l app=external-lookup-event-generator -n el-demos
 ```

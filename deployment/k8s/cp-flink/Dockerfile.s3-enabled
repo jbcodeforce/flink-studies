@@ -1,0 +1,44 @@
+# Custom Flink Image with S3A/MinIO Support
+# This Dockerfile adds the necessary S3 filesystem plugin for checkpointing to MinIO
+
+# Use Confluent Flink image as base (adjust version as needed)
+FROM confluentinc/cp-flink:1.20.2-cp1-java17
+
+# Switch to root to install plugins
+USER root
+
+# Create plugins directory for S3 filesystem
+RUN mkdir -p /opt/flink/plugins/s3-fs-hadoop
+
+# Download and install flink-s3-fs-hadoop plugin
+# This provides S3A filesystem support for MinIO
+# Version should match your Flink version (1.20.x)
+ARG FLINK_VERSION=1.20.2
+RUN wget -P /opt/flink/plugins/s3-fs-hadoop/ \
+    https://repo.maven.apache.org/maven2/org/apache/flink/flink-s3-fs-hadoop/${FLINK_VERSION}/flink-s3-fs-hadoop-${FLINK_VERSION}.jar
+
+# Alternative: Copy from opt directory if it exists
+# RUN if [ -f /opt/flink/opt/flink-s3-fs-hadoop-${FLINK_VERSION}.jar ]; then \
+#     cp /opt/flink/opt/flink-s3-fs-hadoop-${FLINK_VERSION}.jar /opt/flink/plugins/s3-fs-hadoop/; \
+#     fi
+
+# Set proper permissions
+RUN chown -R flink:flink /opt/flink/plugins
+
+# Switch back to flink user
+USER flink
+
+# Expose Flink ports
+EXPOSE 8081 6123 6124 6125
+
+# Optional: Add environment variables for S3 configuration
+# These can be overridden at runtime
+ENV S3_ENDPOINT=""
+ENV S3_ACCESS_KEY=""
+ENV S3_SECRET_KEY=""
+ENV S3_PATH_STYLE_ACCESS="true"
+
+# Default command (inherited from base image)
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["help"]
+

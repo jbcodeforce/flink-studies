@@ -1,0 +1,28 @@
+# Lightweight Custom Flink Image with S3A/MinIO Support
+# For Confluent Platform Flink deployments with S3 checkpointing
+
+# Use Confluent Flink image as base
+FROM confluentinc/cp-flink:1.20.2-cp1-java17
+
+USER root
+
+# Create plugins directory structure
+RUN mkdir -p /opt/flink/plugins/s3-fs-hadoop
+
+# Flink version for plugin compatibility
+ARG FLINK_VERSION=1.20.2
+
+# Download flink-s3-fs-hadoop plugin
+# This single JAR provides all S3A support including:
+# - Hadoop S3A filesystem implementation
+# - AWS SDK dependencies
+# - S3 credential providers
+RUN wget -q -O /opt/flink/plugins/s3-fs-hadoop/flink-s3-fs-hadoop-${FLINK_VERSION}.jar \
+    https://repo.maven.apache.org/maven2/org/apache/flink/flink-s3-fs-hadoop/${FLINK_VERSION}/flink-s3-fs-hadoop-${FLINK_VERSION}.jar && \
+    chown -R flink:flink /opt/flink/plugins
+
+USER flink
+
+# The plugin will be automatically loaded by Flink's plugin mechanism
+# No additional configuration needed beyond the FlinkEnvironment spec
+

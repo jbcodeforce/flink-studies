@@ -42,7 +42,86 @@ Read also our analysis of Kubernetes deployment for Flink in [this chapter](http
         make deploy_minio
         make verify_minio
         ```
+    
+    * Deploy MinIO S3 credentials secret (for secure Flink checkpointing):
+        ```sh
+        make deploy_minio_secret
+        make verify_minio_secret
+        ```
+        
+        **Note:** For production, create secrets using kubectl instead of committing to git:
+        ```sh
+        kubectl create secret generic minio-s3-credentials \
+          --from-literal=s3.access-key=<your-access-key> \
+          --from-literal=s3.secret-key=<your-secret-key> \
+          --from-literal=s3.endpoint=http://minio.minio-dev.svc.cluster.local:9000 \
+          -n el-demo
+        ```
 
+
+## Flink Checkpointing with MinIO
+
+The FlinkEnvironment is configured to use MinIO as the S3-compatible storage backend for checkpoints and savepoints. This setup uses Kubernetes Secrets for secure credential management.
+
+### Prerequisites
+
+**Important:** You must build a custom Flink image with the S3 filesystem plugin to enable S3A protocol support for MinIO.
+
+#### Build Custom Flink Image with S3 Support
+
+```bash
+# Build the image with S3 plugin
+make build_flink_s3_image
+
+# Push to your registry
+make build_and_push_flink_s3_image
+
+# Or manually
+docker build -f Dockerfile.s3-enabled-alpine -t jbcodeforce/cp-flink-s3:1.20.2-s3 .
+docker push jbcodeforce/cp-flink-s3:1.20.2-s3
+```
+
+**📖 See [`S3_JAR_REQUIREMENTS.md`](./S3_JAR_REQUIREMENTS.md) for detailed information about:**
+- Required JAR files (`flink-s3-fs-hadoop`)
+- Installation methods
+- Version compatibility
+- Troubleshooting
+
+### Architecture
+
+1. **Custom Flink Image**: Includes `flink-s3-fs-hadoop` plugin for S3A support
+2. **MinIO Service**: Exposed via `minio.minio-dev.svc.cluster.local:9000`
+3. **Kubernetes Secret**: Stores S3 credentials (`minio-s3-credentials`)
+4. **Pod Template**: Injects secret values as environment variables
+5. **Flink Configuration**: References environment variables for S3 access
+
+### Configuration Details
+
+The following Flink properties are configured in `flink-dev-env.yaml`:
+
+- `state.checkpoints.dir`: `s3a://flink/checkpoints`
+- `state.savepoints.dir`: `s3a://flink/savepoints`
+- `s3.endpoint`: Dynamically loaded from secret
+- `s3.access-key`: Dynamically loaded from secret
+- `s3.secret-key`: Dynamically loaded from secret
+- `s3.path.style.access`: `true` (required for MinIO)
+
+**📖 See [`MINIO_S3_SETUP.md`](./MINIO_S3_SETUP.md) for complete setup documentation.**
+
+### Creating the Flink Bucket
+
+Before running Flink jobs, create the `flink` bucket in MinIO:
+
+```sh
+# Option 1: Using MinIO Console
+make port_forward_minio_console
+# Access http://localhost:9090 (login: minioadmin/minioadmin)
+# Create bucket named "flink"
+
+# Option 2: Using mc CLI
+kubectl run -it --rm mc --image=minio/mc --restart=Never -- \
+  sh -c "mc alias set minio http://minio.minio-dev:9000 minioadmin minioadmin && mc mb minio/flink"
+```
 
 ## Deploy Confluent Platform and Confluent Manager for Flink
 

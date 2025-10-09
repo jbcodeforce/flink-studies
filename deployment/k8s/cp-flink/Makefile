@@ -37,11 +37,34 @@ create_ns:
 deploy_minio:
 	@kubectl apply -f../MinIO/minio-dev.yaml 
 
+deploy_minio_secret:
+	@kubectl apply -f minio-credentials-secret.yaml
+
 port_forward_minio_console:
 	@kubectl port-forward pod/minio 9000 9090 -n minio-dev
 
 verify_minio:
 	@kubectl get pods -n minio-dev
+
+verify_minio_secret:
+	@kubectl get secret minio-s3-credentials -n el-demo
+
+# ---------------------- Custom Flink Image with S3 Support ----------------------
+DOCKER_REGISTRY?=jbcodeforce
+IMAGE_NAME?=cp-flink-s3
+IMAGE_TAG?=1.20.2-s3
+
+build_flink_s3_image:
+	@docker build -f Dockerfile.s3-enabled-alpine -t $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG) .
+	@echo "Built image: $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)"
+
+build_and_push_flink_s3_image: build_flink_s3_image
+	@docker push $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
+	@echo "Pushed image: $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)"
+
+# For local testing with colima/minikube
+load_flink_s3_image_local: build_flink_s3_image
+	@docker save $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG) | kubectl apply -f -
 
 	
 # ---------------------- Confluent Platform  --------------------------------
@@ -50,7 +73,7 @@ update_helm_confluent_repo:
 	@helm repo update
 
 # ---------------------- Confluent Manager for Flink ----------------------
-install_cmf: prepare update_helm_confluent_repo install_flink_kubernetes_operator deploy_cmf deploy_cmf_rest_class deploy_flink_env
+install_cmf: prepare update_helm_confluent_repo install_flink_kubernetes_operator deploy_cmf deploy_cmf_rest_class deploy_minio_secret deploy_flink_env
 
 install_flink_kubernetes_operator:
 	@helm upgrade --install cp-flink-kubernetes-operator --version "~1.120.0"  confluentinc/flink-kubernetes-operator --set watchNamespace="{flink, confluent, el-demo}" -n $(FLCK_NS)
