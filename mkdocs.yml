@@ -15,6 +15,7 @@ nav:
     - Flink SQL concepts: architecture/flink-sql.md
     - Flink SQL coding: coding/flink-sql.md
     - First Java Apps: coding/firstapp.md
+    - UDFs for SQL: coding/udf_sql.md
     - Kubernetes Deployment: coding/k8s-deploy.md
     - DataStreams: coding/datastream.md
     - Flink Cookbook: architecture/cookbook.md
