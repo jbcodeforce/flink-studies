@@ -13,9 +13,11 @@ data:
   kafka.enriched.payments.topic: "enriched-payments"
   kafka.failed.payments.topic: "failed-payments"
   
-  # DuckDB Configuration
-  duckdb.url: "jdbc:duckdb:http://duckdb-external-lookup.duckdb:8080/database"
-  duckdb.driver: "org.duckdb.DuckDBDriver"
+  # PostgreSQL Configuration
+  postgres.url: "jdbc:postgresql://claims-db:5432/claims"
+  postgres.driver: "org.postgresql.Driver"
+  postgres.user: "${POSTGRES_USER}"
+  postgres.password: "${POSTGRES_PASSWORD}"
   
   # Flink Configuration
   flink.parallelism: "2"

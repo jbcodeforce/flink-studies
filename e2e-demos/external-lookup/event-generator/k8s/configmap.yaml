@@ -36,7 +36,7 @@ data:
   # Testing Configuration
   TEST_KAFKA: "true"           # Test Kafka on startup
   VALIDATE_DATABASE: "false"   # Don't validate DB on startup
-  DATABASE_URL: "http://claimdb:8080"
+  DATABASE_URL: "jdbc:duckdb://claimdb-svc:8080/database"
 
 ---
 # ConfigMap for scenarios-based deployment (high-rate testing)

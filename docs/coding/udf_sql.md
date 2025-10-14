@@ -2,20 +2,18 @@
 
 [User-defined functions (UDFs)](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/udfs/) are extension to SQL for frequently used logic and custom program and integration. It can be done in Java or PyFlink.
 
-[Confluent documentation on UDF](https://docs.confluent.io/cloud/current/flink/how-to-guides/create-udf.html#flink-sql-create-udf) and a [git repo](https://github.com/confluentinc/flink-udf-java-examples) with a sample UDF.
+[Confluent documentation on UDF](https://docs.confluent.io/cloud/current/flink/how-to-guides/create-udf.html#flink-sql-create-udf) and a [Confluent git repo](https://github.com/confluentinc/flink-udf-java-examples) with a sample UDF, and my [new repository for UDFs catalog](https://github.com/jbcodeforce/flink-udfs-catalog).
 
 ## UDF Catalog
 
 This repository includes the following UDFs:
 
-* [Geo Distance](https://github.com/jbcodeforce/flink-studies/tree/master/code/UDFs/geo_distance) using the Haversine formula to compute distance between two points on earth. It requires the latitude and longitude of the two points.
+* [Geo Distance](https://github.com/jbcodeforce/flink-udfs-catalog/tree/main/geo_distance) using the Haversine formula to compute distance between two points on earth. It requires the latitude and longitude of the two points.
 
 ## Deploying to Confluent Cloud
 
-### Prerequisites
-
 * Get FlinkDeveloper RBAC to be able to manage workspaces and artifacts
-* Use the Confluent CLI to upload the jar file. Example
+* Use the Confluent CLI to upload the jar file. Example from GEO_DISTANCE
     ```sh
     confluent environment list
     # then in your environment

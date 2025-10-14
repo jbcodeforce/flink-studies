@@ -57,24 +57,7 @@ payment-generator scenarios
 payment-generator generate --dry-run --rate 2 --duration 10
 ```
 
-### 2. Docker Deployment
-
-```bash
-# Build container
-make build
-
-# Test locally
-docker run -e PAYMENT_GEN_DRY_RUN=true external-lookup-event-generator:latest \
-    generate --rate 5 --duration 10
-
-# Run with Kafka
-docker run \
-    -e PAYMENT_GEN_KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
-    external-lookup-event-generator:latest \
-    generate --rate 10 --duration 60
-```
-
-### 3. Kubernetes Deployment
+### 2. Kubernetes Deployment
 
 * Define the schema to the schema registry:
   ```sh

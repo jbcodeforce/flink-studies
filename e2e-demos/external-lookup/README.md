@@ -6,6 +6,22 @@ The demonstration needs to be able to simulate lookup failure for invalid claim_
 
 The Database can be a simple postgresql or duckdb database. The processing is done via Flink, and the stream of events are in Kafka topic.
 
+## TL;DR
+
+* start_colima, with Confluent Plaform and Confluent Manager for Flink Services already installed (see [deployment/k8s](../../deployment/k8s/README.md))
+  ```
+  make start_colima
+  ```
+* Be sure to do not have an old confluent cloud session, if so do a `confluent login`, followed by `confluent logout`.
+* First time deployment to deploy services
+  ```sh
+  make prepare_demo
+  ```
+* Demonstrate the application (see [narative]())
+  ```sh
+  make run_demo
+  ```
+
 ## Design
 
 ### Architecture Overview
@@ -72,7 +88,7 @@ CREATE TABLE claims (
    - `payment-events`: Input stream
    - `enriched-payments`: Successfully enriched events
    - `failed-payments`: Events that couldn't be enriched
-4. **Flink Application**: Streaming job with async database lookups. [See Flink readme.](./flink/README.md)
+4. [x] **Flink Application**: Streaming job with async database lookups. [See Flink readme.](./flink/README.md)
 5. **Monitoring**: Metrics for lookup success/failure rates
 
 ### Data Flow
@@ -105,9 +121,9 @@ CREATE TABLE claims (
 
 - Leverage Confluent Manager for Flink service capabilities
 - Integration with Confluent Platform Schema Registry
-- The Database implementation is documented in [database/README.md](./database/README.md) with how to build and deploy the docker container. The image starts and populates test records.
+- The Database implementation is documented in [database/README.md](./database/README.md) with how to build and deploy the docker container to kubernetes. When the container starts, it populates test records.
 - The Event producer is done and documented in the [event-generator/README.md](./event-generator/README.md).
-- The First Flink application is doing the external lookup is done in flink folder, [see the readme](./event-generator/README.md)
+- The First Flink application is doing the external lookup is done in flink folder, [see the readme](./flink/README.md)
 
 ### Testing Scenarios
 
@@ -141,14 +157,18 @@ See each component's readme for more information. Here is a summary of an end-to
 
 #### Setup
 
-* Start Kubernetes via colima VM (See command in `deployment/k8s` folder)
+* Start Kubernetes via colima VM (See command in `deployment/k8s` folder) or the Makefile in current folder:
+  ```sh
+  make start_colima
+  ```
+
 * Basic demo settings
   ```sh
   # under the external-lookup folder
   make prepare
   ```
 
-* To get access to checkpoints saved in s3 type object storage, wwe use Minio. Minio is deployed on kubernetes and exposed with a service so it can have a DNS name. See [deployment/k8s/minio]
+* To get access to checkpoints saved in s3 type object storage, we use Minio. Minio is deployed on kubernetes and exposed with a service so it can have a DNS name. See [deployment/k8s/minio]()
 * A dedicated bucket for Flink checkpoints (e.g., flink-checkpoints) must be created in MinIO.
 * Obtain the Access Key and Secret Key for a user that has read/write access to the MinIO bucket.
 * Flink requires the S3 filesystem plugin to interact with MinIO (or any S3-compatible store). For Confluent Platform Flink, you should enable the built-in S3 plugin on your Flink environment, compute pool or application CR. [see environment manifest](../../deployment/k8s/cp-flink/flink-dev-env.yaml).

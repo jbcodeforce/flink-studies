@@ -13,7 +13,7 @@ SR_URL=http://localhost:8081
 DOCKERFILE = Dockerfile
 BUILD_CONTEXT = .
 
-.PHONY: help build clean test push deploy status logs
+.PHONY: help build clean test deploy status
 
 # Default target
 help: ## Show this help message
@@ -37,17 +37,6 @@ build: ## Build the claimdb database Docker image
 	@docker images $(IMAGE_NAME):$(IMAGE_TAG) --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
 
 
-tag: ## Tag image for registry (use REGISTRY=your-registry.com make tag)
-	@if [ -z "$(REGISTRY)" ]; then \
-		echo "❌ REGISTRY not set. Use: make tag REGISTRY=your-registry.com"; \
-		exit 1; \
-	fi
-	@docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
-	@echo "✅ Tagged as $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)"
-
-push: tag ## Push image to registry (requires REGISTRY to be set)
-	@docker push $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
-	@echo "✅ Pushed $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)"
 
 test: ## Test the built image locally
 	@echo "🧪 Testing event-generator image locally..."
@@ -62,18 +51,6 @@ test: ## Test the built image locally
 	@docker stop test-event-generator
 	@echo "✅ All tests passed!"
 
-run: ## Run the image locally on port 8080
-	@echo "🚀 Running event-generator container locally..."
-	@docker run --rm -p 8080:8080 --name event-generator $(IMAGE_NAME):$(IMAGE_TAG)
-
-
-stop: ## Stop the running container
-	@docker stop event-generator || true
-	@docker rm event-generator || true
-	@echo "✅ Container stopped"
-
-logs: ## Show logs from the running container
-	@docker logs -f event-generator
 
 # Kubernetes deployment targets
 deploy: ## Deploy to Kubernetes
@@ -93,19 +70,13 @@ status: ## Check Kubernetes deployment status
 	@kubectl get pods -n $(NAMESPACE) -l app=$(APP_NAME)
 	@kubectl get services -n $(NAMESPACE) -l app=$(APP_NAME)
 
-port_forward_schema_registry:
-	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/schemaregistry 8081:8081"' -e 'tell application "Terminal" to set current settings of front window to settings set "Pro"'
-
-
-clean: ## Remove built images and containers
-	@echo "🧹 Cleaning up..."
-	@docker stop claimdb || true
-	@docker rm claimdb || true
-	@docker rmi $(IMAGE_NAME):$(IMAGE_TAG) || true
-	@if [ ! -z "$(REGISTRY)" ]; then \
-		docker rmi $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG) || true; \
-	fi
-	@echo "✅ Cleanup complete"
+verify_schemas: ## Verify schemas in Schema Registry
+	@echo "📋 Verifying schemas in Schema Registry..."
+	@curl -X GET $(SR_URL)/subjects
+	@echo ""
+	@curl -X GET $(SR_URL)/subjects/payment-events-value/versions/latest | jq .schema
+	@echo ""
+	@echo "✅ Schemas verified successfully"
 
 publish_schema: ## Deploy payment event schema to Schema Registry
 	@echo "📋 Deploying payment event schema to Schema Registry..."

@@ -1,12 +1,12 @@
 # Claim Database for Lookup Demo
 
-This directory contains the database components for the external lookup demonstration, implementing a DuckDB-based claims database accessible via HTTP API.
+This directory contains the database components for the external lookup demonstration, implementing a Postgresql-based claims database accessible via HTTP API.
 
 ## Overview
 
-Since DuckDB is an embedded database without native network connectivity, this implementation provides:
+This implementation provides:
 
-1. **DuckDB Database** - File-based database with claims metadata
+1. **Postgresql Database** - File-based database with claims metadata
 2. **HTTP API Wrapper** - FastAPI service to expose DuckDB via REST endpoints  
 3. **Docker Container** - Containerized database service
 4. **Kubernetes Deployment** - K8s manifests for production-like deployment
@@ -26,7 +26,7 @@ Since DuckDB is an embedded database without native network connectivity, this i
 - Test data specifically for payment correlation
 - Invalid claim scenarios for error testing
 
-### HTTP API (`duckdb_api.py`)
+### HTTP API (`claimdb_api.py`)
 - **GET /claims/{claim_id}** - Single claim lookup
 - **GET /claims** - Multiple claims with filtering
 - **GET /health** - Health check with database status

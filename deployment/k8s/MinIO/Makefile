@@ -12,7 +12,7 @@ ensure_ns = \
 			echo "$1 exists";\
 	fi
 # ------- Common elements to install -------------
-prepare: create_ns  deploy verify_minio 
+prepare: create_ns  deploy verify_minio port_forward_minio_console create_mc_alias
 
 create_ns:
 	$(call ensure_ns, $(MINIO_NS))
@@ -26,3 +26,6 @@ port_forward_minio_console:
 
 verify_minio:
 	@kubectl get pods -n $(MINIO_NS)
+
+create_mc_alias:
+	@mc alias set minio-dev http://localhost:9090 minioadmin minioadmin

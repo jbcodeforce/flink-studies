@@ -62,20 +62,24 @@ public class PaymentClaimsEnrichment {
      */
     private void createTables(StreamTableEnvironment tableEnv) {
         LOG.info("Creating tables...");
-        
-        // 1. Create payment events source table (Kafka)
-        createPaymentEventsTable(tableEnv);
-        
-        // 2. Create claims lookup table (JDBC/DuckDB)
-        createClaimsLookupTable(tableEnv);
-        
-        // 3. Create enriched payments sink table (Kafka)
-        createEnrichedPaymentsSinkTable(tableEnv);
-        
-        // 4. Create failed payments sink table (Kafka)
-        createFailedPaymentsSinkTable(tableEnv);
-        
-        LOG.info("All tables created successfully");
+        try {
+            // 1. Create payment events source table (Kafka)
+            createPaymentEventsTable(tableEnv);
+            
+            // 2. Create claims lookup table (JDBC/DuckDB)
+            createClaimsLookupTable(tableEnv);
+            
+            // 3. Create enriched payments sink table (Kafka)
+            createEnrichedPaymentsSinkTable(tableEnv);
+            
+            // 4. Create failed payments sink table (Kafka)
+            createFailedPaymentsSinkTable(tableEnv);
+            
+            LOG.info("All tables created successfully");
+        } catch (Exception e) {
+            LOG.error("Error creating tables", e);
+            throw e;
+        }
     }
     
     /**
@@ -95,9 +99,8 @@ public class PaymentClaimsEnrichment {
             "    transaction_id STRING,\n" +
             "    notes STRING,\n" +
             "    created_by STRING,\n" +
-            "    proc_time AS PROCTIME(),\n" +  // Processing time for lookup joins
             "    event_time AS CAST(payment_date AS TIMESTAMP(3)),\n" +
-            "    WATERMARK FOR event_time AS event_time - INTERVAL '30' SECOND\n" +
+            "    WATERMARK FOR event_time AS event_time - INTERVAL '2' MINUTE\n" +
             ") WITH (\n" +
             "    'connector' = 'kafka',\n" +
             "    'topic' = '%s',\n" +
@@ -124,16 +127,15 @@ public class PaymentClaimsEnrichment {
             "    member_id STRING,\n" +
             "    claim_amount DECIMAL(10,2),\n" +
             "    claim_status STRING,\n" +
-            "    created_date TIMESTAMP(3)\n" +
+            "    created_date TIMESTAMP(3),\n" +
+            "    updated_date TIMESTAMP(3),\n" +
+            "    policy_number STRING,\n" +
+            "    provider_id STRING,\n" +
+            "    diagnosis_code STRING\n" +
             ") WITH (\n" +
             "    'connector' = 'jdbc',\n" +
             "    'url' = '%s',\n" +
-            "    'table-name' = 'claims',\n" +
-            "    'lookup.cache' = 'LRU',\n" +
-            "    'lookup.cache.max-rows' = '10000',\n" +
-            "    'lookup.cache.ttl' = '1min',\n" +
-            "    'lookup.async' = 'true',\n" +
-            "    'lookup.max-retries' = '3'\n" +
+            "    'table-name' = 'claims'\n" +
             ")", CLAIMDB_URL);
             
         LOG.info("Creating claims_lookup table with DDL: {}", ddl);
@@ -167,8 +169,7 @@ public class PaymentClaimsEnrichment {
             "    'connector' = 'kafka',\n" +
             "    'topic' = '%s',\n" +
             "    'properties.bootstrap.servers' = '%s',\n" +
-            "    'format' = 'json',\n" +
-            "    'sink.partitioner' = 'round-robin'\n" +
+            "    'format' = 'json'\n" +
             ")", ENRICHED_PAYMENTS_TOPIC, KAFKA_BOOTSTRAP_SERVERS);
             
         LOG.info("Creating enriched_payments_sink table with DDL: {}", ddl);
@@ -199,8 +200,7 @@ public class PaymentClaimsEnrichment {
             "    'connector' = 'kafka',\n" +
             "    'topic' = '%s',\n" +
             "    'properties.bootstrap.servers' = '%s',\n" +
-            "    'format' = 'json',\n" +
-            "    'sink.partitioner' = 'round-robin'\n" +
+            "    'format' = 'json'\n" +
             ")", FAILED_PAYMENTS_TOPIC, KAFKA_BOOTSTRAP_SERVERS);
             
         LOG.info("Creating failed_payments_sink table with DDL: {}", ddl);
@@ -237,7 +237,7 @@ public class PaymentClaimsEnrichment {
             "    END as enrichment_status,\n" +
             "    CURRENT_TIMESTAMP as enrichment_timestamp\n" +
             "FROM payment_events p\n" +
-            "LEFT JOIN claims_lookup FOR SYSTEM_TIME AS OF p.proc_time AS c\n" +
+            "LEFT JOIN claims_lookup AS c\n" +
             "    ON p.claim_id = c.claim_id";
         
         // Split results into successful and failed enrichments

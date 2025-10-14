@@ -1,0 +1,26 @@
+[project]
+name = "claimdb-api"
+version = "1.0.0"
+description = "FastAPI service for claims database external lookup demo"
+authors = [
+    { name = "Demo Team" }
+]
+dependencies = [
+    "fastapi==0.104.1",
+    "uvicorn==0.24.0",
+    "pydantic==2.5.0",
+    "psycopg2-binary==2.9.9",
+]
+requires-python = ">=3.12"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = [
+    "pytest>=7.4.3",
+    "httpx>=0.25.1",
+    "pytest-asyncio>=0.21.1"
+]

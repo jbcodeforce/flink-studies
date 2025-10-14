@@ -10,7 +10,7 @@ APP_NAME = external-lookup
 DOCKERFILE = Dockerfile
 BUILD_CONTEXT = .
 
-.PHONY: help build clean test push deploy status logs
+.PHONY: help build clean test push deploy status logs install dev-install run-api
 
 # Default target
 help: ## Show this help message
@@ -19,6 +19,18 @@ help: ## Show this help message
 
 use_demo_ns:
 	@kubectl config set-context --current --namespace=$(NAMESPACE)
+
+install: ## Install production dependencies using uv
+	@echo "📦 Installing production dependencies..."
+	@uv pip install --system -r <(uv pip compile pyproject.toml)
+
+dev-install: ## Install development dependencies using uv
+	@echo "📦 Installing development dependencies..."
+	@uv pip install --system -r <(uv pip compile --all-extras pyproject.toml)
+
+run-api: ## Run the FastAPI application locally
+	@echo "🚀 Starting FastAPI application..."
+	@python -m uvicorn claimdb_api:app --host 0.0.0.0 --port 8080 --reload
 
 build: ## Build the claimdb database Docker image
 	@echo "🏗️  Building claimdb External Lookup Database Image..."
@@ -32,7 +44,6 @@ build: ## Build the claimdb database Docker image
 	@echo ""
 	@echo "📊 Image Information:"
 	@docker images $(IMAGE_NAME):$(IMAGE_TAG) --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
-
 
 tag: ## Tag image for registry (use REGISTRY=your-registry.com make tag)
 	@if [ -z "$(REGISTRY)" ]; then \
@@ -91,12 +102,10 @@ deploy: ## Deploy to Kubernetes
 port-forward: ## Port forward the service
 	@kubectl port-forward svc/claimdb-svc 8080:8080 -n $(NAMESPACE)
 
-
 undeploy: ## Remove from Kubernetes
 	@echo "🗑️  Removing from Kubernetes..."
 	@kubectl delete -f k8s/ --ignore-not-found
 	@echo "✅ Removed from Kubernetes"
-
 
 status: ## Check Kubernetes deployment status
 	@echo "📊 Checking deployment status in namespace: $(NAMESPACE)"
@@ -112,7 +121,6 @@ clean: ## Remove built images and containers
 		docker rmi $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG) || true; \
 	fi
 	@echo "✅ Cleanup complete"
-
 
 all: clean build test ## Clean, build, and test everything
 	@echo "✅ Full build pipeline complete!"

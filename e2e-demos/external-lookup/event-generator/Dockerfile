@@ -14,18 +14,14 @@ RUN apt-get update && apt-get install -y \
 
 # Copy pyproject.toml first for better layer caching
 COPY pyproject.toml ./
+# Copy source code
+COPY . /app
 
 # Install uv and Python dependencies  
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     export PATH="/root/.cargo/bin:$HOME/.local/bin:$PATH" && \
-    uv pip install --system --no-cache -r pyproject.toml
+    $HOME/.local/bin/uv pip install --system --no-cache -r pyproject.toml
 
-# Copy source code
-COPY . /app
-
-# Install the package itself to make payment-generator CLI available
-RUN export PATH="/root/.cargo/bin:$HOME/.local/bin:$PATH" && \
-    uv pip install --system --no-deps -e .
 
 # Create non-root user
 RUN groupadd -r eventgen && useradd -r -g eventgen eventgen

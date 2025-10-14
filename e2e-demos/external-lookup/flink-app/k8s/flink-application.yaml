@@ -8,7 +8,16 @@ spec:
   flinkEnvironment: dev-env
   flinkVersion: v1_19
   flinkConfiguration:
-    taskmanager.numberOfTaskSlots: "1"
+      taskmanager.numberOfTaskSlots: "1"
+      s3.endpoint: http://minio.minio-dev.svc.cluster.local:9000
+      s3.path.style.access: "true"
+      s3.connection.ssl.enabled: "false"
+      s3.access-key: minioadmin
+      s3.secret-key: minioadmin
+      state.checkpoints.dir: s3://flink/stateful-flink/checkpoints
+      state.savepoints.dir: s3://flink/stateful-flink/savepoints
+      state.checkpoints.interval: "10000"
+      state.checkpoints.timeout: "600000"
   serviceAccount: flink-sa
   jobManager:
     resource:

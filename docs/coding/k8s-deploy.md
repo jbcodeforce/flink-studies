@@ -7,6 +7,7 @@
     * 05/25: merge content, simplify, add some details on deployment - fully test k8s deployment on Colima
     * 07/25: Update for Confluent Platform v8
     * 09/29: Update to diagrams and doc structure.
+    * 10/12: update to Minio and snapshot / checkpoint configuration
 
 
 Apache Flink has defined a Kubernetes Operator (FKO) to deploy and manage custom resources for Flink deployments. Confluent Platform managed for Flink is also deployed on kubernetes with its own operator but leveraging the FKO
@@ -37,7 +38,7 @@ The following figure represents a simple deployment view of a Flink Cluster, in 
 
 The Kafka cluster runs in its own namespace (e.g. confluent), and the Confluent for Kubernetes operator manages the custom resources (CRs) life cycle.  
 
-### Confluent for Kubernetes Operator
+### [Confluent for Kubernetes Operator](https://docs.confluent.io/operator/current/overview.html)
 
 The kubernetes Confluent Platform and Confluent Manager for Flink deployment, may look like in the following figure:
 
@@ -46,14 +47,15 @@ The kubernetes Confluent Platform and Confluent Manager for Flink deployment, ma
 <figcaption>Figure 3: K8S deployment</figcaption>
 </figure>
 
-**CFK Operator** is the control plane for deploying and managing Confluent in your Kubernetes private cloud environment. It defines custom resource definitions to support Kafka based resources like topics, brokers, schema registry... **Confluent Manager for Flink** is a kubernetes operator, to manage Flink Applications, environments, compute pools, catalogs, we will detail it in a later section.
+* **CFK Operator** is the control plane for deploying and managing Confluent in your Kubernetes private cloud environment. It defines custom resource definitions to support Kafka based resources like topics, brokers, schema registry...
+* **Confluent Manager for Flink** is a kubernetes operator, to manage Flink Applications, environments, compute pools, catalogs, we will detail it in a later section.
 
 <figure markdown="span">
 ![4](../techno/diagrams/cp-flink-deployment.drawio.png)
 <figcaption>Figure 4: The operators playing together</figcaption>
 </figure>
 
-It is important to note that all CRs deployment via `kubectl` go to the CFK with the `apiVersion: platform.confluent.io/v1beta1`, but when CRs touch Flink resources they are delegated to the CMF operator. While deploying Flink component via confluent CLI uses the CMF CRDs which use different apiVersion. 
+It is important to note that all CR deployments via `kubectl` go to the CFK with the `apiVersion: platform.confluent.io/v1beta1`, but when CRs touch Flink resources they are delegated to the CMF operator. While deploying Flink component via confluent CLI uses the CMF CRDs which use different apiVersion. 
 
 * Helpful commands to work on CRDs
 
@@ -64,11 +66,11 @@ kubectl describe crd kafkatopics.platform.confluent.io
 
 See some CP for kubernetes deployment [examples from github](https://github.com/confluentinc/confluent-kubernetes-examples).
 
-### Flink specific custom resource
+### Apache Flink specific custom resources
 
 A **Flink Application** is any user's program that spawns one or multiple Flink jobs from its `main()` method and is deploying a JobManager and n Task managers. They may run in their own namespace. 
 
-The **Flink Kubernetes Operator** is looking at different `Flink Deployment`, so it can be isolated within its own namespace. When deploying the FKO it is important to specify the namespaces to watch for future deployment. The following command modify this list:
+The **Flink Kubernetes Operator** is looking at different `Flink Deployment`, so it can be isolated within its own namespace. When deploying the FKO it is important to **specify the namespaces to watch** for future deployment. The following command modify this list:
 ```sh
 helm upgrade --install cp-flink-kubernetes-operator --version "~1.120.0"  confluentinc/flink-kubernetes-operator --set watchNamespace="{flink, confluent, el-demo}" -n flink
 ```
@@ -85,7 +87,7 @@ The custom resource definition that describes the schema of a FlinkDeployment is
 
 ### Confluent Manager for Flink and FKO
 
-Confluent Manager for Apache Flink® (CMF) manages a fleet of Flink Applications (cluster) across multiple Environments. It integrates with CP Console. It exposes a REST API and cli integration for managing Flink statements.
+[Confluent Manager for Apache Flink®](https://docs.confluent.io/platform/current/flink/installation/overview.html#install-and-upgrade-cmf-long) (CMF) manages a fleet of Flink Applications (cluster) across multiple Environments. CP console is integrated with CMF. It exposes a REST API and cli integration for managing Flink statements.
 
 CMF integrates with FKO to support Flink native custom resources. The following figure illustrates the current (Oct 2025) configuration of Flink solution deployment using the different CRs apiVersion.
 
@@ -94,10 +96,10 @@ CMF integrates with FKO to support Flink native custom resources. The following 
 <figcaption>Figure 5: CFK, CMF and CKO</figcaption>
 </figure>
 
-* Flink Environments can be created with Manifests or using the Confluent CLI. The metadata is persisted in an embedded database. The concept is to group multiple Flink applications together. This is an isolation layer for RBAC, and to define Flink Configuration cross applications deployed within an environemnt. Flink Configuration may include common observability and checkpointing storage (HDFS or S3).
+* Flink Environments can be created with Manifests or using the Confluent CLI. The metadata is persisted in an embedded database. The 'Environment' concept is to group multiple Flink applications together. This is an isolation layer for RBAC, and to define Flink Configuration cross compute pools and applications deployed within an environemnt. Flink Configuration may include common observability and checkpointing storage (HDFS or S3).
 * a REST API supports all the external integration to the operator. **Confluent Control Center** is using this end point, as the `confluent` cli.
 * CMF manages FlinkDeployment resources internally
-* **Confluent For Kubernetes** is the Confluent operator to manage Kafka resources, but it supports the deployment of FlinkEnvironment and an "adapted" FlinkApplication (to reference an environment) so kubectl command can access this operator for confluent platform CRs ( `apiVersion: platform.confluent.io/v1beta1`).
+* **Confluent For Kubernetes** is the Confluent operator to manage Kafka resources, but it supports the deployment of FlinkEnvironment and an "adapted" FlinkApplication (to reference an Environment) so kubectl command can access this operator for confluent platform CRs ( `apiVersion: platform.confluent.io/v1beta1`).
 
 It is still possible to do pure OSS FlinkDeployment CRs but this strongly not recommended to leverage the full power of Confluent Platform.
 
@@ -116,7 +118,7 @@ On the left, a `FlinkSessionJob` references an existing FlinkDeployment as multi
 
 The [Apache Flink FlinkDeployment spec is here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/reference/) and is used to define Flink application (will have a job section) or session cluster (only job and task managers configuration).
 
-It is important to note that `FlinkDeployment` and `FlinkApplication` CRD have a podTemplate, so ConfigMap(s) and Secret(s) can be used to configure environment variables for the flink app. (Be sure to keep the name as `flink-main-container`)
+It is important to note that `FlinkDeployment` and `FlinkApplication` CRDs have a podTemplate, so ConfigMap(s) and Secret(s) can be used to configure environment variables for the flink app. (Be sure to keep the container name as `flink-main-container`)
 
 ```yaml
 spec:
@@ -190,7 +192,46 @@ The configuration flexibility:
 
 ### Durable Storage
 
-Durable storage is used to store consistent checkpoints of the Flink state. Review [the state management](../concepts/index.md#state-management) section in the concept chapter. The checkpoints are saved to object storage compatible with S3 protocol.
+Durable storage is used to store consistent checkpoints of the Flink state. Review [the state management](../concepts/index.md#state-management) section in the concept chapter. The checkpoints are saved to object storage [compatible with S3](https://docs.confluent.io/platform/current/flink/how-to-guides/checkpoint-s3.html), or HDFS protocol. The FlinkConfiguration can be set at the Application, ComputePool or Environment level.
+
+Two important elements to confifure: 
+1. the environment variable ENABLE_BUILT_IN_PLUGINS
+1. The `state.checkpoints.dir` to the location of S3 bucket.
+
+The following is a configuration using minio and the presto S3FileSystem which is a specific implementation (created by Presto) of the file system interface within Apache Flink. (See the [S3FileSystemFactory class](https://nightlies.apache.org/flink/flink-docs-master/api/java/org/apache/flink/fs/s3presto/S3FileSystemFactory.html)). 
+
+```json
+"flinkConfiguration": {
+        "pipeline.operator-chaining.enabled": "false",
+        "execution.checkpointing.interval": "10s",
+        "taskmanager.numberOfTaskSlots": "4",
+        "fs.s3.impl": "org.apache.flink.fs.s3presto.S3FileSystem",
+        "presto.s3.endpoint": "http://minio.minio-dev.svc.cluster.local:9000",
+        "presto.s3.path.style.access": "true",
+        "presto.s3.connection.ssl.enabled": "false",
+        "presto.s3.access-key": "admin",
+        "presto.s3.secret-key": "admin123",
+        "state.checkpoints.dir": "s3://flink/stateful-flink/checkpoints",
+        "state.savepoints.dir": "s3://flink/stateful-flink/savepoints",
+        "state.checkpoints.interval": "10000",
+        "state.checkpoints.timeout": "600000"
+  
+      },
+```
+
+For Minio settings:
+
+```yaml
+  s3.endpoint: http://minio.minio-dev.svc.cluster.local:9000
+  s3.path.style.access: "true"
+  s3.connection.ssl.enabled: "false"
+  s3.access-key: minioadmin
+  s3.secret-key: minioadmin
+  state.checkpoints.dir: s3://flink/stateful-flink/checkpoints
+  state.savepoints.dir: s3://flink/stateful-flink/savepoints
+  state.checkpoints.interval: "10000"
+  state.checkpoints.timeout: "600000"
+```
 
 TO BE CONTINUED
 

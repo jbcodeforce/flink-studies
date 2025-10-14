@@ -3,16 +3,16 @@
 
 -- Create claims table to store insurance claim metadata
 CREATE TABLE IF NOT EXISTS claims (
-    claim_id VARCHAR PRIMARY KEY,
-    member_id VARCHAR NOT NULL,
+    claim_id VARCHAR(50) PRIMARY KEY,
+    member_id VARCHAR(50) NOT NULL,
     claim_amount DECIMAL(10,2) NOT NULL,
-    claim_status VARCHAR CHECK (claim_status IN ('PENDING', 'APPROVED', 'DENIED', 'PROCESSING')) DEFAULT 'PENDING',
-    claim_type VARCHAR CHECK (claim_type IN ('MEDICAL', 'DENTAL', 'VISION', 'LIFE', 'DISABILITY')) NOT NULL,
+    claim_status VARCHAR(20) CHECK (claim_status IN ('PENDING', 'APPROVED', 'DENIED', 'PROCESSING')) DEFAULT 'PENDING',
+    claim_type VARCHAR(20) CHECK (claim_type IN ('MEDICAL', 'DENTAL', 'VISION', 'LIFE', 'DISABILITY')) NOT NULL,
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    policy_number VARCHAR,
-    provider_id VARCHAR,
-    diagnosis_code VARCHAR
+    policy_number VARCHAR(50),
+    provider_id VARCHAR(50),
+    diagnosis_code VARCHAR(20)
 );
 
 -- Create index on member_id for efficient lookups
@@ -28,7 +28,7 @@ CREATE INDEX IF NOT EXISTS idx_claims_type ON claims(claim_type);
 CREATE INDEX IF NOT EXISTS idx_claims_created_date ON claims(created_date);
 
 -- Create a view for active claims (non-denied)
-CREATE VIEW IF NOT EXISTS active_claims AS
+CREATE OR REPLACE VIEW active_claims AS
 SELECT 
     claim_id,
     member_id,

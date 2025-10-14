@@ -1,90 +1,81 @@
-# DuckDB External Lookup Database Container
-# This container initializes a DuckDB database with claims data for the external lookup demo
+# PostgreSQL External Lookup Database Container
+# This container initializes a PostgreSQL database with claims data for the external lookup demo
 
-FROM ubuntu:22.04
+FROM postgres:16-alpine
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    unzip \
-    openjdk-11-jre-headless \
+# Install additional dependencies
+RUN apk add --no-cache \
     python3 \
-    python3-pip \
-    && rm -rf /var/lib/apt/lists/*
+    py3-pip \
+    curl \
+    gcc \
+    python3-dev \
+    musl-dev \
+    libpq-dev
 
-# Install DuckDB CLI - detect architecture and download appropriate binary
-RUN ARCH=$(dpkg --print-architecture) \
-    && echo "Detected architecture: $ARCH" \
-    && if [ "$ARCH" = "amd64" ]; then \
-        DUCKDB_ARCH="linux-amd64"; \
-    elif [ "$ARCH" = "arm64" ]; then \
-        DUCKDB_ARCH="linux-aarch64"; \
-    else \
-        echo "Unsupported architecture: $ARCH"; \
-        exit 1; \
-    fi \
-    && echo "Downloading DuckDB for: $DUCKDB_ARCH" \
-    && curl -L https://github.com/duckdb/duckdb/releases/download/v1.1.3/duckdb_cli-${DUCKDB_ARCH}.zip -o duckdb.zip \
-    && unzip duckdb.zip \
-    && mv duckdb /usr/local/bin/ \
-    && rm duckdb.zip \
-    && chmod +x /usr/local/bin/duckdb
+# Install uv and Python dependencies  
 
-# Install Python DuckDB for HTTP API wrapper
-RUN pip3 install duckdb==1.1.3 fastapi==0.104.1 uvicorn==0.24.0 pydantic==2.5.0
 
 # Create app directory
 WORKDIR /app
 
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
-# Create data directory
-RUN mkdir -p /data
-
-# Copy SQL scripts
-COPY 01_create_schema.sql .
-COPY 02_insert_data.sql .
-
-# Copy HTTP API wrapper script
+# Copy project files
+COPY pyproject.toml .
 COPY claimdb_api.py .
 
+# Install dependencies using uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    export PATH="/root/.cargo/bin:$HOME/.local/bin:$PATH" && \
+    $HOME/.local/bin/uv pip install --system --no-cache -r  pyproject.toml
+
+# Copy SQL scripts
+COPY 01_create_schema.sql /docker-entrypoint-initdb.d/01_create_schema.sql
+COPY 02_insert_data.sql /docker-entrypoint-initdb.d/02_insert_data.sql
+
+# Set PostgreSQL environment variables
+ENV POSTGRES_DB=claims
+ENV POSTGRES_USER=claims_user
+ENV POSTGRES_PASSWORD=claims_password
+ENV PGDATA=/data
+
 # Create database initialization script
-RUN echo '#!/bin/bash\n\
+COPY <<EOF /docker-entrypoint-initdb.d/00_init.sh
+#!/bin/sh
+set -e
+
+echo "PostgreSQL initialization script running..."
+
+# Create claims database and user if they don't exist
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    CREATE USER $POSTGRES_USER WITH PASSWORD '$POSTGRES_PASSWORD';
+    CREATE DATABASE $POSTGRES_DB;
+    GRANT ALL PRIVILEGES ON DATABASE $POSTGRES_DB TO $POSTGRES_USER;
+EOSQL
+
+echo "Database initialization completed"
+EOF
+
+RUN chmod +x /docker-entrypoint-initdb.d/00_init.sh
+
+# Create API startup script
+RUN echo '#!/bin/sh\n\
 set -e\n\
-echo "Initializing DuckDB database..."\n\
-echo "Creating database directory..."\n\
-mkdir -p /data\n\
-echo "Running schema creation..."\n\
-if duckdb /data/claims.db < 01_create_schema.sql; then\n\
-    echo "Schema creation successful"\n\
-else\n\
-    echo "Schema creation failed"\n\
-    exit 1\n\
-fi\n\
-echo "Inserting data..."\n\
-if duckdb /data/claims.db < 02_insert_data.sql; then\n\
-    echo "Data insertion successful"\n\
-else\n\
-    echo "Data insertion failed"\n\
-    exit 1\n\
-fi\n\
-echo "Verifying database exists..."\n\
-if [ -f "/data/claims.db" ]; then\n\
-    echo "Database file exists: $(ls -la /data/claims.db)"\n\
-else\n\
-    echo "ERROR: Database file does not exist!"\n\
-    exit 1\n\
-fi\n\
-echo "Database initialized successfully"\n\
+\n\
 echo "Starting ClaimDB HTTP API..."\n\
-python3 claimdb_api.py' > init_and_serve.sh && chmod +x init_and_serve.sh
+python3 -m uvicorn claimdb_api:app --host 0.0.0.0 --port 8080' > /app/start_api.sh && chmod +x /app/start_api.sh
 
-
-# Expose port for HTTP API
-EXPOSE 8080
+# Expose port for HTTP API and PostgreSQL
+EXPOSE 8080 5432
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
 
-# Run initialization and API server
-CMD ["./init_and_serve.sh"]
+# Use the official PostgreSQL entrypoint script
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+
+# Start both PostgreSQL and the API server
+CMD ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]

@@ -4,7 +4,6 @@
 NAMESPACE ?= el-demo
 CFNT_NS ?= confluent
 DEPLOYMENT_MODE ?= standalone
-BUILD_IMAGE ?= false
 DOCKER_REGISTRY ?= 
 IMAGE_VERSION ?= latest
 CMF_URL ?= http://localhost:8084
@@ -20,50 +19,20 @@ YELLOW := \033[1;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: help deploy status cleanup build push test validate
-
-# Default target
-.DEFAULT_GOAL := help
-
-help: ## Show this help message
-	@echo "Payment Claims Enrichment - Kubernetes Deployment"
-	@echo ""
-	@echo "$(BLUE)Usage:$(NC)"
-	@echo "  make <target> [VARIABLE=value]"
-	@echo ""
-	@echo "$(BLUE)Available targets:$(NC)"
-	@awk 'BEGIN {FS = ":.*##"; printf ""} /^[a-zA-Z_-]+:.*?##/ { printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2 } /^##@/ { printf "\n$(BLUE)%s$(NC)\n", substr($$0, 5) }' $(MAKEFILE_LIST)
-	@echo ""
-	@echo "$(BLUE)Variables:$(NC)"
-	@echo "  $(GREEN)NAMESPACE$(NC)        Kubernetes namespace (default: el-demo)"
-	@echo "  $(GREEN)DEPLOYMENT_MODE$(NC)  Deployment mode: standalone, operator, session (default: standalone)"
-	@echo "  $(GREEN)BUILD_IMAGE$(NC)      Build Docker image before deployment (default: false)"
-	@echo "  $(GREEN)DOCKER_REGISTRY$(NC)  Docker registry for image push"
-	@echo "  $(GREEN)IMAGE_VERSION$(NC)    Image version tag (default: latest)"
-	@echo "  $(GREEN)APP_NAME$(NC)         Application name for labels and resources (default: payment-claims-enrichment)"
-	@echo "  $(GREEN)DOCKER_IMAGE$(NC)     Docker image name (default: \$$APP_NAME)"
-	@echo ""
-	@echo "$(BLUE)Examples:$(NC)"
-	@echo "  make deploy NAMESPACE=production DEPLOYMENT_MODE=operator"
-	@echo "  make build-and-deploy BUILD_IMAGE=true DOCKER_REGISTRY=myregistry.com"
-	@echo "  make status NAMESPACE=staging"
+.PHONY: deploy status cleanup build push test validate
 
 ##@ Deployment
 
-deploy-kafka-catalog: ## Deploy the Kafka Catalog
-	@echo "$(BLUE)Deploying Kafka Catalog...$(NC)"
-	@confluent flink catalog create k8s/kafka-catalog-cmf.json --url $(CMF_URL)
 
-deploy: deploy-rbac deploy-kafka-catalog ## Deploy the Flink application to Kubernetes
+deploy: deploy-rbac ## Deploy the Flink application to Kubernetes
 	@echo "$(BLUE)Deploying Payment Claims Enrichment...$(NC)"
+	@kubectl apply -f k8s/configmap.yaml -n $(NAMESPACE)
+	@kubectl apply -f k8s/minio-credentials-secret.yaml -n $(NAMESPACE)
 	@kubectl apply -f k8s/flink-application.yaml -n $(NAMESPACE)
 
-deploy-compute-pool: ## Deploy the Compute Pool
-	@echo "$(BLUE)Deploying Compute Pool...$(NC)"
-	@confluent flink compute-pool create k8s/compute-pool-cmf.json  --environment $(ENV_NAME) --url $(CMF_URL)
-
-list-compute-pools: ## List the Compute Pools
-	@confluent flink compute-pool list --environment $(ENV_NAME) --url $(CMF_URL)
+undeploy: ## Undeploy the Flink application from Kubernetes
+	@echo "$(BLUE)Undeploying Payment Claims Enrichment...$(NC)"
+	@kubectl delete -f k8s/flink-application.yaml -n $(NAMESPACE)
 
 deploy-rbac: ## Deploy the RBAC resources
 	@echo "$(BLUE)Deploying RBAC resources...$(NC)"
@@ -71,27 +40,14 @@ deploy-rbac: ## Deploy the RBAC resources
 
 ##@ Building
 
-check-mvn: ## Check if Maven is available
-	@echo "$(BLUE)Checking Maven installation...$(NC)"
-	@command -v mvn >/dev/null 2>&1 || { \
-		echo "$(RED)❌ Maven not found. Please install Maven 3.6+$(NC)"; \
-		echo "$(YELLOW)Install with: brew install maven (macOS) or apt-get install maven (Ubuntu)$(NC)"; \
-		exit 1; \
-	}
-	@echo "$(GREEN)✅ Maven found: $$(mvn --version | head -1)$(NC)"
 
-build: check-mvn ## Build the application JAR
+build:  ## Build the application JAR
 	@echo "$(BLUE)Building application JAR with Maven...$(NC)"
 	@echo "🔨 Running Maven clean package..."
 	@mvn clean package -DskipTests
 	@echo "$(GREEN)✅ Application JAR built successfully$(NC)"
 	@ls -la target/*.jar
 
-build-with-tests: check-mvn ## Build the application JAR including tests
-	@echo "$(BLUE)Building application JAR with tests...$(NC)"
-	@echo "🧪 Running Maven clean package with tests..."
-	@mvn clean package
-	@echo "$(GREEN)✅ Application JAR built with tests$(NC)"
 
 build-image: ## Build Docker image
 	@echo "$(BLUE)Building Docker image...$(NC)"
@@ -100,30 +56,19 @@ build-image: ## Build Docker image
 	@echo "$(GREEN)✅ Docker image built successfully$(NC)"
 	@docker images $(DOCKER_IMAGE):latest
 
-test: check-mvn ## Run tests only
+test:  ## Run tests only
 	@echo "$(BLUE)Running Maven tests...$(NC)"
 	@mvn test
 	@echo "$(GREEN)✅ Tests completed$(NC)"
 
-clean: check-mvn ## Clean Maven build artifacts
+clean:  ## Clean Maven build artifacts
 	@echo "$(BLUE)Cleaning build artifacts...$(NC)"
 	@mvn clean
 	@echo "$(GREEN)✅ Build artifacts cleaned$(NC)"
 
-build-and-push: ## Build and push Docker image
-	@echo "$(BLUE)Building and pushing Docker image...$(NC)"
-	@if [ -z "$(DOCKER_REGISTRY)" ]; then \
-		echo "$(RED)Error: DOCKER_REGISTRY must be set$(NC)"; \
-		exit 1; \
-	fi
+build-and-deploy: build ## Build image and deploy
 	@$(MAKE) build-image
-	@docker tag $(DOCKER_IMAGE):latest $(DOCKER_REGISTRY)/$(DOCKER_IMAGE):$(IMAGE_VERSION)
-	@docker push $(DOCKER_REGISTRY)/$(DOCKER_IMAGE):$(IMAGE_VERSION)
-	@echo "$(GREEN)Image pushed: $(DOCKER_REGISTRY)/$(DOCKER_IMAGE):$(IMAGE_VERSION)$(NC)"
-
-build-and-deploy: ## Build image and deploy
-	@$(MAKE) build-image
-	@$(MAKE) deploy BUILD_IMAGE=true
+	@$(MAKE) deploy
 
 ##@ Monitoring
 
@@ -274,28 +219,6 @@ cleanup-keep-namespace: ## Remove resources but keep namespace
 
 ##@ Development
 
-dry-run: ## Show what would be deployed (dry run)
-	@echo "$(BLUE)Dry run deployment in namespace: $(NAMESPACE)$(NC)"
-	@echo ""
-	@echo "$(BLUE)📋 Kubernetes manifests that would be applied:$(NC)"
-	@for file in k8s/*.yaml; do \
-		if [ -f "$$file" ]; then \
-			echo "$(YELLOW)🔍 Validating: $$file$(NC)"; \
-			kubectl apply --dry-run=client -f "$$file" -n $(NAMESPACE) || exit 1; \
-		fi; \
-	done
-	@echo ""
-	@echo "$(GREEN)✅ All manifests are valid for deployment$(NC)"
-
-validate: ## Validate Kubernetes manifests
-	@echo "$(BLUE)Validating Kubernetes manifests...$(NC)"
-	@for file in k8s/*.yaml; do \
-		echo "Validating $$file..."; \
-		kubectl apply --dry-run=client -f $$file || exit 1; \
-	done
-	@echo "$(GREEN)All manifests are valid$(NC)"
-
-
 debug: ## Debug deployment issues
 	@echo "$(BLUE)Debugging deployment...$(NC)"
 	@echo "Pods:"
@@ -307,12 +230,6 @@ debug: ## Debug deployment issues
 	@echo "Problematic pods:"
 	@kubectl get pods -l app=$(APP_NAME) -n $(NAMESPACE) \
 		--field-selector=status.phase!=Running,status.phase!=Succeeded
-
-shell-jobmanager: ## Open shell in JobManager pod
-	@kubectl exec -it deployment/flink-jobmanager -n $(NAMESPACE) -- bash
-
-shell-taskmanager: ## Open shell in TaskManager pod
-	@kubectl exec -it deployment/flink-taskmanager -n $(NAMESPACE) -- bash
 
 start_flink_shell: ## Start a Flink shell
 	@confluent flink shell --compute-pool $(COMPUTE_POOL_ID) --environment $(ENV_NAME) --url $(CMF_URL)
@@ -330,47 +247,4 @@ test-connectivity: ## Test external dependencies connectivity
 		--restart=Never --namespace=$(NAMESPACE) \
 		-- curl -f http://claimdb-svc.el-demo:8080/health || true
 
-test-smoke: ## Run smoke tests after deployment
-	@echo "$(BLUE)Running smoke tests...$(NC)"
-	@echo "Checking if Flink job is running..."
-	@kubectl exec deployment/flink-jobmanager -n $(NAMESPACE) -- \
-		/opt/flink/bin/flink list | grep RUNNING || \
-		echo "$(YELLOW)No running jobs found$(NC)"
-
-##@ Information
-
-info: ## Show deployment information
-	@echo "$(BLUE)Deployment Information$(NC)"
-	@echo "Namespace: $(NAMESPACE)"
-	@echo "Deployment Mode: $(DEPLOYMENT_MODE)"
-	@echo "Build Image: $(BUILD_IMAGE)"
-	@echo "Docker Registry: $(DOCKER_REGISTRY)"
-	@echo "Image Version: $(IMAGE_VERSION)"
-	@echo ""
-	@echo "$(BLUE)Current Context:$(NC)"
-	@kubectl config current-context
-	@echo ""
-	@echo "$(BLUE)Cluster Info:$(NC)"
-	@kubectl cluster-info
-
-list-resources: ## List all related Kubernetes resources
-	@echo "$(BLUE)Resources in namespace: $(NAMESPACE)$(NC)"
-	@kubectl get all -l app=$(APP_NAME) -n $(NAMESPACE) || true
-	@echo ""
-	@echo "$(BLUE)ConfigMaps:$(NC)"
-	@kubectl get configmaps -l app=$(APP_NAME) -n $(NAMESPACE) || true
-	@echo ""
-	@echo "$(BLUE)Secrets:$(NC)"
-	@kubectl get secrets -l app=$(APP_NAME) -n $(NAMESPACE) || true
-	@echo ""
-	@echo "$(BLUE)PersistentVolumeClaims:$(NC)"
-	@kubectl get pvc -l app=$(APP_NAME) -n $(NAMESPACE) || true
-	@echo ""
-	@echo "$(BLUE)FlinkApplications:$(NC)"
-	@kubectl get flinkapplication -l app=$(APP_NAME) -n $(NAMESPACE) || true
-
-version: ## Show versions
-	@echo "$(BLUE)Versions:$(NC)"
-	@echo "kubectl: $$(kubectl version)"
-	@echo "Kubernetes: $$(kubectl version | grep Server || echo 'Server version unavailable')"
 
