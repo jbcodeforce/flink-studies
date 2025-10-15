@@ -1,0 +1,36 @@
+{
+  "before": null,
+  "after": {
+    "person_id": "P123456",
+    "first_name": "John",
+    "last_name": "Doe",
+    "birth_date": "1980-05-15",
+    "street_address": "123 Health Street",
+    "city": "Medical City",
+    "state": "MC",
+    "postal_code": "12345",
+    "phone_number": "555-0123",
+    "email_address": "john.doe@example.com"
+  },
+  "source": {
+    "version": "1.9.7.Final",
+    "connector": "postgresql",
+    "name": "mdm",
+    "ts_ms": 1632345678900,
+    "snapshot": "false",
+    "db": "mdm_db",
+    "sequence": "[\"23456789\",\"23456789\"]",
+    "schema": "public",
+    "table": "person",
+    "txId": 12345,
+    "lsn": 23456789,
+    "xmin": null
+  },
+  "op": "c",
+  "ts_ms": 1632345679000,
+  "transaction": {
+    "id": "12345",
+    "total_order": 1,
+    "data_collection_order": 1
+  }
+}

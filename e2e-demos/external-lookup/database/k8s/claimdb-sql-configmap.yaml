@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: claimdb-sql-scripts
+  namespace: el-demo
+  labels:
+    app: external-lookup
+    component: database
+data:
+  01_create_schema.sql: |
+    -- External Lookup Demo - Claims Database Schema
+    CREATE TABLE IF NOT EXISTS claims (
+        claim_id VARCHAR(50) PRIMARY KEY,
+        member_id VARCHAR(50) NOT NULL,
+        claim_amount DECIMAL(10,2) NOT NULL,
+        claim_status VARCHAR(20) CHECK (claim_status IN ('PENDING', 'APPROVED', 'DENIED', 'PROCESSING')) DEFAULT 'PENDING',
+        claim_type VARCHAR(20) CHECK (claim_type IN ('MEDICAL', 'DENTAL', 'VISION', 'LIFE', 'DISABILITY')) NOT NULL,
+        created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        policy_number VARCHAR(50),
+        provider_id VARCHAR(50),
+        diagnosis_code VARCHAR(20)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_claims_member_id ON claims(member_id);
+    CREATE INDEX IF NOT EXISTS idx_claims_status ON claims(claim_status);
+    CREATE INDEX IF NOT EXISTS idx_claims_type ON claims(claim_type);
+    CREATE INDEX IF NOT EXISTS idx_claims_created_date ON claims(created_date);
+
+    CREATE OR REPLACE VIEW active_claims AS
+    SELECT 
+        claim_id,
+        member_id,
+        claim_amount,
+        claim_status,
+        claim_type,
+        created_date,
+        policy_number,
+        provider_id
+    FROM claims 
+    WHERE claim_status != 'DENIED';
+
+  02_insert_data.sql: |
+    -- Insert sample claims data
+    INSERT INTO claims (claim_id, member_id, claim_amount, claim_status, claim_type, created_date, policy_number, provider_id, diagnosis_code) 
+    VALUES
+    ('CLM-001', 'MBR-12345', 1250.50, 'APPROVED', 'MEDICAL', '2024-01-15 10:30:00', 'POL-98765', 'PRV-101', 'Z23.1'),
+    ('CLM-002', 'MBR-12346', 875.25, 'PENDING', 'DENTAL', '2024-01-16 14:15:00', 'POL-98766', 'PRV-102', 'K02.9'),
+    ('CLM-003', 'MBR-12347', 2100.00, 'APPROVED', 'MEDICAL', '2024-01-17 09:45:00', 'POL-98767', 'PRV-103', 'M79.3');

@@ -1,8 +1,8 @@
 # Order and Jobs processing with Confluent Platform Flink
 
-This is a simple demo using Confluent Platform with Flink, or Confluent Cloud for Flink and Kafka to demonstrate a json schema mapping, a join and an aggregation Flink SQL query. The example if for a fictitious mover company, in 2090.
+This is a simple demo using Confluent Platform with Flink, or Confluent Cloud for Flink and Kafka to demonstrate a json schema mapping, a join and an aggregation with Flink SQL queries. The example is about a fictitious mover truck rental company, in 2190.
 
-The processing logic needs to address has the following basic architecture:
+The processing logic, we need to implement, has the following basic architecture:
 
   ![](./docs/dsp.drawio.png)
 
@@ -59,7 +59,7 @@ The jobs are related to a move order, so the join key is the OrderId.
   ```
 
 
-* The first transformation addresses taking the raw source records and build a JSON with nested structure, the `OrderDetails` which includes two main objects: the EquipmentRentalDetails and the MovingHelpDetails
+* The first transformation takes the raw source records and builds a JSON with nested structure: the `OrderDetails` which includes two main objects: the `EquipmentRentalDetails` and the `MovingHelpDetails`
   ```json
   {
       "OrderDetails": {
@@ -88,9 +88,11 @@ The jobs are related to a move order, so the join key is the OrderId.
         ],
         "MovingHelpDetails": null
       },
+      ...
+  }
   ```
 
-* The second real time processing is doing a join with the job, raw_topic, to enrich the OrderDetails with the jobs information.
+* The second real-time processing is doing a join with the job raw_topic, to enrich the `OrderDetails.MovingHelpDetails` with the jobs information:
   ```json
       "MovingHelpDetails": [
         {
@@ -108,7 +110,7 @@ The jobs are related to a move order, so the join key is the OrderId.
       ]
   ```
 
-* The equipment rental details can be used to compute aggregations and business analytics data elements.
+* Finally the equipment rental details can be used to compute aggregations and business analytics data products.
 
 ## Code explanation
 
@@ -122,9 +124,11 @@ The makefile under the cp-flink folder, helps to deploy those elements to the Co
 
 The Kafka order and job records producer code is under [producer folder](./producer/).
 
+The `cc-flink` folder includes the SQLs to run the demonstration within Confluent Cloud for Flink (see the [README.md](./cc-flink/README.md) for instructions).
+
 ### Producer Features
 
-- Support for jobs and orders records creation, and custom JSON record
+- Support for jobs and orders records creation, with custom JSON record
 - Type-safe record definitions with validation using Pydantic
 - Command-line interface for easy testing and automation
 - Built-in callback handling for message delivery confirmation
@@ -141,12 +145,12 @@ The following figure illustrates the different deployment model:
 
 * CLI based usage examples, to send 5 records to a specific topic
   ```sh
-  python kafka_json_producer.py --record-type order --topic raw-orders --count 5
+  uv run python kafka_json_producer.py --record-type order --topic raw-orders --count 5
   # 
-  python kafka_json_producer.py --record-type job --topic raw-jobs --count 5
+  uv run python kafka_json_producer.py --record-type job --topic raw-jobs --count 5
   ```
 
-* Webapp based usage: the following command is for development, as the final deployment should be via kubernetes.  
+* Webapp based usage: the following command is for development, as the final deployment should be via Kubernetes.  
   ```sh
   uv run api_server.py
   ```
@@ -374,9 +378,7 @@ CROSS JOIN UNNEST(rental_detail.Equipment) AS e(equipment_item);
 
 ## CMF Setup
 
-The code and/or instructions here available are NOT intended for production usage.
-
-Be sure to have Confluent Platform deployed on kubernetes ([See this readme](../../deployment/k8s/cp-flink/README.md)) and use the makefile in `deployment/k8s/cp-flink` to start Colima, deploy Confluent Platform, with Managed Flink and then verify Flink and Kafka are running. 
+The code and/or instructions are NOT intended for production usage. The Kubernetes deployment is done using Colima VM and Confluent Platform. [See the CP deployment readme](../../deployment/k8s/cp-flink/README.md) and use the makefile in `deployment/k8s/cp-flink` to start Colima, deploy Confluent Platform, with Managed Flink and then verify Flink and Kafka are running. 
 
 * Make sure the CMF REST API is accessible on localhost:
 ```sh

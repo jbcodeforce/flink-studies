@@ -7,18 +7,6 @@ metadata:
     app: external-lookup
     component: database
 data:
-  # claimdb API configuration
-  API_HOST: "0.0.0.0"
-  API_PORT: "8080"
-  
-  # Error simulation settings (for testing failure scenarios)
-  SIMULATE_ERRORS: "true"
-  ERROR_RATE: "0.1"        # 10% error rate
-  SLOW_QUERY_RATE: "0.05"  # 5% slow query rate
-  DATABASE_UNAVAILABLE: "false"
-  
-  # Connection settings
-  CONNECTION_POOL_SIZE: "5"
-  
-  # Logging configuration
-  LOG_LEVEL: "INFO"
+  DB_HOST: "postgresql.pgdb.svc.cluster.local"  # PostgreSQL service in pgdb namespace
+  DB_PORT: "5432"
+  DB_NAME: "claims"

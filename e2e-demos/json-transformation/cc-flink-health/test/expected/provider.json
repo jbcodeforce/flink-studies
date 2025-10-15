@@ -1,0 +1,17 @@
+{
+  "provider_id": "DR789012",
+  "first_name": "Sarah",
+  "last_name": "Smith",
+  "specialty": "Cardiology",
+  "primary_location": {
+    "facility_name": "Heart Care Center",
+    "address": {
+      "street": "456 Medical Plaza",
+      "city": "Healthcare City",
+      "state": "HC",
+      "zip": "67890"
+    }
+  },
+  "contact_number": "555-9876",
+  "npi_number": "1234567890"
+}

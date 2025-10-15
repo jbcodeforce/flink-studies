@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "provider_id": {
+      "type": "string",
+      "description": "Unique identifier for the provider"
+    },
+    "first_name": {
+      "type": "string",
+      "description": "Provider's first name"
+    },
+    "last_name": {
+      "type": "string",
+      "description": "Provider's last name"
+    },
+    "specialty": {
+      "type": "string",
+      "description": "Provider's medical specialty"
+    },
+    "primary_location": {
+      "type": "object",
+      "properties": {
+        "facility_name": {
+          "type": "string",
+          "description": "Name of the medical facility"
+        },
+        "address": {
+          "type": "object",
+          "properties": {
+            "street": {
+              "type": "string",
+              "description": "Street address"
+            },
+            "city": {
+              "type": "string",
+              "description": "City"
+            },
+            "state": {
+              "type": "string",
+              "description": "State/Province"
+            },
+            "zip": {
+              "type": "string",
+              "description": "ZIP/Postal code"
+            }
+          },
+          "required": ["street", "city", "state", "zip"],
+          "description": "Facility address details"
+        }
+      },
+      "required": ["facility_name", "address"],
+      "description": "Provider's primary practice location"
+    },
+    "contact_number": {
+      "type": "string",
+      "description": "Provider's contact phone number"
+    },
+    "npi_number": {
+      "type": "string",
+      "description": "National Provider Identifier number"
+    }
+  },
+  "required": ["provider_id", "first_name", "last_name", "specialty", "primary_location", "npi_number"],
+  "additionalProperties": false
+}

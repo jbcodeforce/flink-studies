@@ -1,27 +1,47 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: claimdb-external-lookup
+  name: claimdb-api
   namespace: el-demo
   labels:
     app: external-lookup
-    component: database
+    component: api
 spec:
-  replicas: 1  # claimdb is single-node, no replication
+  replicas: 1
   selector:
     matchLabels:
       app: external-lookup
-      component: database
+      component: api
   template:
     metadata:
       labels:
         app: external-lookup
-        component: database
+        component: api
     spec:
+      initContainers:
+      - name: init-db
+        image: postgres:16-alpine
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Initializing database schema..."
+          PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f /sql/01_create_schema.sql
+          echo "Inserting test data..."
+          PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f /sql/02_insert_data.sql
+          echo "Database initialization complete"
+        envFrom:
+        - configMapRef:
+            name: claimdb-config
+        - secretRef:
+            name: claimdb-secret
+        volumeMounts:
+        - name: sql-scripts
+          mountPath: /sql
       containers:
       - name: claimdb-api
         image: demo-claimdb:latest
-        imagePullPolicy: IfNotPresent  # Use local image for development
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
           name: http
@@ -29,13 +49,15 @@ spec:
         envFrom:
         - configMapRef:
             name: claimdb-config
+        - secretRef:
+            name: claimdb-secret
         resources:
           requests:
             memory: "256Mi"
             cpu: "250m"
           limits:
-            memory: "1Gi"
-            cpu: "1000m"
+            memory: "512Mi"
+            cpu: "500m"
         livenessProbe:
           httpGet:
             path: /health
@@ -53,38 +75,17 @@ spec:
           timeoutSeconds: 5
           failureThreshold: 2
         volumeMounts:
-        - name: claimdb-data
-          mountPath: /data
-        - name: init-logs
+        - name: logs
           mountPath: /app/logs
       volumes:
-      - name: claimdb-data
-        persistentVolumeClaim:
-          claimName: claimdb-pvc
-      - name: init-logs
+      - name: logs
         emptyDir: {}
+      - name: sql-scripts
+        configMap:
+          name: claimdb-sql-scripts
       restartPolicy: Always
-      # Security context for non-root container
       securityContext:
         runAsNonRoot: true
         runAsUser: 65534  # nobody user
         runAsGroup: 65534
         fsGroup: 65534
-
----
-# Persistent Volume Claim for claimdb database file
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: claimdb-pvc
-  namespace: el-demo
-  labels:
-    app: external-lookup
-    component: database
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
-  # No storageClassName for manual binding to pre-created PV

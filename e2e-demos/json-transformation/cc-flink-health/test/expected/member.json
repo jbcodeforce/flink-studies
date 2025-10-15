@@ -1,0 +1,14 @@
+{
+  "member_id": "P123456",
+  "first_name": "John",
+  "last_name": "Doe",
+  "date_of_birth": "1980-05-15",
+  "address": {
+    "street": "123 Health Street",
+    "city": "Medical City",
+    "state": "MC",
+    "zip": "12345"
+  },
+  "phone": "555-0123",
+  "email": "john.doe@example.com"
+}

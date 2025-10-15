@@ -55,7 +55,7 @@ The kubernetes Confluent Platform and Confluent Manager for Flink deployment, ma
 <figcaption>Figure 4: The operators playing together</figcaption>
 </figure>
 
-It is important to note that all CR deployments via `kubectl` go to the CFK with the `apiVersion: platform.confluent.io/v1beta1`, but when CRs touch Flink resources they are delegated to the CMF operator. While deploying Flink component via confluent CLI uses the CMF CRDs which use different apiVersion. 
+It is important to note that all CR deployments via `kubectl` go to the CFK with the `apiVersion: platform.confluent.io/v1beta1`, but when CRs touch Flink resources they are delegated to the CMF operator. While deploying Flink components via Confluent CLI uses the CMF CRDs which use different apiVersion. Therefore it is possible to run CMF without CFK, and use the CLI to configure Flink resources and not `kubectl`
 
 * Helpful commands to work on CRDs
 
@@ -64,7 +64,7 @@ kubectl get crds | grep confluent
 kubectl describe crd kafkatopics.platform.confluent.io  
 ```
 
-See some CP for kubernetes deployment [examples from github](https://github.com/confluentinc/confluent-kubernetes-examples).
+See some CP for kubernetes deployment [examples in Confluent github](https://github.com/confluentinc/confluent-kubernetes-examples).
 
 ### Apache Flink specific custom resources
 

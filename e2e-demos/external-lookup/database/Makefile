@@ -10,7 +10,14 @@ APP_NAME = external-lookup
 DOCKERFILE = Dockerfile
 BUILD_CONTEXT = .
 
-.PHONY: help build clean test push deploy status logs install dev-install run-api
+# PostgreSQL configuration for local development
+PG_CONTAINER_NAME = claims-postgres
+PG_PORT = 5432
+PG_DB = claims
+PG_USER = claims_user
+PG_PASSWORD = claims_password
+
+.PHONY: help build clean test push deploy status logs install dev-install run-api start-postgres stop-postgres init-postgres
 
 # Default target
 help: ## Show this help message
@@ -19,6 +26,32 @@ help: ## Show this help message
 
 use_demo_ns:
 	@kubectl config set-context --current --namespace=$(NAMESPACE)
+
+start-postgres: ## Start PostgreSQL container for local development
+	@echo "🚀 Starting PostgreSQL container..."
+	@docker run --rm -d \
+		--name $(PG_CONTAINER_NAME) \
+		-e POSTGRES_DB=$(PG_DB) \
+		-e POSTGRES_USER=$(PG_USER) \
+		-e POSTGRES_PASSWORD=$(PG_PASSWORD) \
+		-p $(PG_PORT):5432 \
+		postgres:16-alpine
+	@echo "⏳ Waiting for PostgreSQL to start..."
+	@sleep 5
+	@echo "✅ PostgreSQL is running on port $(PG_PORT)"
+
+stop-postgres: ## Stop PostgreSQL container
+	@echo "🛑 Stopping PostgreSQL container..."
+	@docker stop $(PG_CONTAINER_NAME) || true
+	@echo "✅ PostgreSQL stopped"
+
+init-postgres: ## Initialize PostgreSQL schema and data
+	@echo "🗃️  Initializing PostgreSQL schema and data..."
+	@docker cp 01_create_schema.sql $(PG_CONTAINER_NAME):/tmp/
+	@docker cp 02_insert_data.sql $(PG_CONTAINER_NAME):/tmp/
+	@docker exec -i $(PG_CONTAINER_NAME) psql -U $(PG_USER) -d $(PG_DB) -f /tmp/01_create_schema.sql
+	@docker exec -i $(PG_CONTAINER_NAME) psql -U $(PG_USER) -d $(PG_DB) -f /tmp/02_insert_data.sql
+	@echo "✅ PostgreSQL initialized"
 
 install: ## Install production dependencies using uv
 	@echo "📦 Installing production dependencies..."
@@ -30,7 +63,14 @@ dev-install: ## Install development dependencies using uv
 
 run-api: ## Run the FastAPI application locally
 	@echo "🚀 Starting FastAPI application..."
-	@python -m uvicorn claimdb_api:app --host 0.0.0.0 --port 8080 --reload
+	@DB_HOST=localhost \
+	DB_PORT=$(PG_PORT) \
+	DB_NAME=$(PG_DB) \
+	DB_USER=$(PG_USER) \
+	DB_PASSWORD=$(PG_PASSWORD) \
+	uv run python -m uvicorn claimdb_api:app --host 0.0.0.0 --port 8080 --reload
+
+dev: start-postgres init-postgres run-api ## Start everything needed for local development
 
 build: ## Build the claimdb database Docker image
 	@echo "🏗️  Building claimdb External Lookup Database Image..."
@@ -45,17 +85,6 @@ build: ## Build the claimdb database Docker image
 	@echo "📊 Image Information:"
 	@docker images $(IMAGE_NAME):$(IMAGE_TAG) --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
 
-tag: ## Tag image for registry (use REGISTRY=your-registry.com make tag)
-	@if [ -z "$(REGISTRY)" ]; then \
-		echo "❌ REGISTRY not set. Use: make tag REGISTRY=your-registry.com"; \
-		exit 1; \
-	fi
-	@docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
-	@echo "✅ Tagged as $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)"
-
-push: tag ## Push image to registry (requires REGISTRY to be set)
-	@docker push $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
-	@echo "✅ Pushed $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)"
 
 test: ## Test the built image locally
 	@echo "🧪 Testing claimdb image locally..."
@@ -81,7 +110,7 @@ run-detached: ## Run the image locally in detached mode
 	@echo "View logs: make logs"
 	@echo "Stop container: make stop"
 
-stop: ## Stop the running container
+stop: stop-postgres ## Stop all running containers
 	@docker stop claimdb || true
 	@docker rm claimdb || true
 	@echo "✅ Container stopped"
@@ -112,10 +141,8 @@ status: ## Check Kubernetes deployment status
 	@kubectl get pods -n $(NAMESPACE) -l app=$(APP_NAME)
 	@kubectl get services -n $(NAMESPACE) -l app=$(APP_NAME)
 
-clean: ## Remove built images and containers
+clean: stop ## Remove built images and containers
 	@echo "🧹 Cleaning up..."
-	@docker stop claimdb || true
-	@docker rm claimdb || true
 	@docker rmi $(IMAGE_NAME):$(IMAGE_TAG) || true
 	@if [ ! -z "$(REGISTRY)" ]; then \
 		docker rmi $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG) || true; \

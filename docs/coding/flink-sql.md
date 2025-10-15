@@ -431,12 +431,30 @@ A table registered with the CREATE TABLE statement can be used as a table source
     ``` 
 
 ???- question "How to support nested rows?"
-    Avro, Protobuf or Json schemas are very often hierarchical per design. It is possible to use CTAS to name a column within a sub-schema:
+    Avro, Protobuf or Json schemas are very often hierarchical per design. It is possible to use CAST to name a column within a sub-schema:
+    ```sql
+    -- DDL
+    create table t (
+        StatesTable ROW< states ARRAY<ROW<name STRING, city STRING, lg DOUBLE, lat DOUBLE>>>,
+        creationDate STRING
+    )
+
+    insert into t(StatesTable,creationDate)
+    values( 
+        (
+        ARRAY[  row('California', 'San Francisco', -122.4194, 37.7749),
+            row('New York', 'New York City', -74.0060, 40.7128),
+            row('Texas', 'Austin', -97.7431, 30.2672)
+        ]
+        ), 
+        '2020-10-10'
+    )
+    ```
 
     ```sql
     -- example of defining attribute from the idx element of an array from a nested json schema:
-      CAST(StatesTable.states[6] AS DECIMAL(10, 4)) AS longitude,
-      CAST(StatesTable.states[7] AS DECIMAL(10, 4)) AS latitude,
+      CAST(StatesTable.states[3] AS DECIMAL(10, 4)) AS longitude,
+      CAST(StatesTable.states[4] AS DECIMAL(10, 4)) AS latitude,
     ```
 
     See also the [CROSS JOIN UNNEST](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/joins/#array-expansion) keywords.

@@ -1,0 +1,55 @@
+ ARRAY[
+       ('NetworkSet',  -- name 
+         ARRAY[        -- changes
+            ('A1', 
+             ('1234'), 
+             'srcPubRef01')]  
+         ) 
+       ]
+
+ARRAY<
+    ROW<
+       `EXPR$0` CHAR(10) NOT NULL, 
+       `EXPR$1`  ARRAY<
+                   ROW<
+                     `EXPR$0` CHAR(2) NOT NULL, 
+                     `EXPR$1` CHAR(4) NOT NULL, 
+                     `EXPR$2` CHAR(11) NOT NULL
+                     > NOT NULL
+                > NOT NULL
+        > NOT NULL
+    > NOT NULL
+
+ARRAY<ROW<`name` STRING,                   
+          `changes` ARRAY<
+                       ROW<
+                         `action` STRING,
+                         `recordKeys` ROW<`providerNetworkId` STRING>, 
+                         `srcPublishRef` STRING
+                        >
+                    >
+        >
+    >
+
+{
+    "providerId": "PRV19999",
+    "npi": "1234567890",
+    "firstName": "Bob",
+    "lastName": "Builder",
+    "specialty": "Family Medicine",
+    "practiceName": "Johnson Family Care",
+    "address": {
+      "street": "123 Medical Center Drive",
+      "city": "Portland",
+      "state": "OR",
+      "zipCode": "97201"
+    },
+    "contactInfo": {
+      "phone": "503-555-0123",
+      "email": "bobbuilder@johnsoncare.example.com"
+    },
+    "active": true,
+    "lastUpdated": "2025-10-15T08:30:00Z"
+  }
+
+  Johnson Family Care,(123 Medical Center Drive, Portland, OR, 97201)

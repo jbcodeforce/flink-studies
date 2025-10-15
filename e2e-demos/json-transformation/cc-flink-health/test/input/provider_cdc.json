@@ -1,0 +1,38 @@
+{
+  "before": null,
+  "after": {
+    "provider_id": "DR789012",
+    "first_name": "Sarah",
+    "last_name": "Smith",
+    "specialty_code": "CAR",
+    "specialty_name": "Cardiology",
+    "facility_name": "Heart Care Center",
+    "facility_street": "456 Medical Plaza",
+    "facility_city": "Healthcare City",
+    "facility_state": "HC",
+    "facility_zip": "67890",
+    "contact_phone": "555-9876",
+    "npi_number": "1234567890"
+  },
+  "source": {
+    "version": "1.9.7.Final",
+    "connector": "postgresql",
+    "name": "mdm",
+    "ts_ms": 1632345678901,
+    "snapshot": "false",
+    "db": "mdm_db",
+    "sequence": "[\"23456790\",\"23456790\"]",
+    "schema": "public",
+    "table": "provider",
+    "txId": 12346,
+    "lsn": 23456790,
+    "xmin": null
+  },
+  "op": "c",
+  "ts_ms": 1632345679001,
+  "transaction": {
+    "id": "12346",
+    "total_order": 1,
+    "data_collection_order": 1
+  }
+}

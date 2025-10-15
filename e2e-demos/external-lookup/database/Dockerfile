@@ -13,23 +13,26 @@ RUN apk add --no-cache \
     musl-dev \
     libpq-dev
 
-# Install uv and Python dependencies  
-
-
 # Create app directory
 WORKDIR /app
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV VIRTUAL_ENV=/app/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-# Copy project files
+# Create virtual environment
+RUN python3 -m venv $VIRTUAL_ENV
+
+# Copy project files first for better layer caching
 COPY pyproject.toml .
 COPY claimdb_api.py .
 
-# Install dependencies using uv
+# Install uv and Python dependencies  
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     export PATH="/root/.cargo/bin:$HOME/.local/bin:$PATH" && \
-    $HOME/.local/bin/uv pip install --system --no-cache -r  pyproject.toml
+    . $VIRTUAL_ENV/bin/activate && \
+    $HOME/.local/bin/uv pip install --no-cache pyproject.toml
 
 # Copy SQL scripts
 COPY 01_create_schema.sql /docker-entrypoint-initdb.d/01_create_schema.sql
@@ -65,7 +68,12 @@ RUN echo '#!/bin/sh\n\
 set -e\n\
 \n\
 echo "Starting ClaimDB HTTP API..."\n\
+. $VIRTUAL_ENV/bin/activate\n\
 python3 -m uvicorn claimdb_api:app --host 0.0.0.0 --port 8080' > /app/start_api.sh && chmod +x /app/start_api.sh
+
+# Create non-root user for API
+RUN addgroup -S apiuser && adduser -S apiuser -G apiuser
+RUN chown -R apiuser:apiuser /app
 
 # Expose port for HTTP API and PostgreSQL
 EXPOSE 8080 5432

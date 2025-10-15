@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "member_id": {
+      "type": "string",
+      "description": "Unique identifier for the member"
+    },
+    "first_name": {
+      "type": "string",
+      "description": "Member's first name"
+    },
+    "last_name": {
+      "type": "string",
+      "description": "Member's last name"
+    },
+    "date_of_birth": {
+      "type": "string",
+      "format": "date",
+      "description": "Member's date of birth"
+    },
+    "address": {
+      "type": "object",
+      "properties": {
+        "street": {
+          "type": "string",
+          "description": "Street address"
+        },
+        "city": {
+          "type": "string",
+          "description": "City"
+        },
+        "state": {
+          "type": "string",
+          "description": "State/Province"
+        },
+        "zip": {
+          "type": "string",
+          "description": "ZIP/Postal code"
+        }
+      },
+      "required": ["street", "city", "state", "zip"],
+      "description": "Member's address details"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Member's contact phone number"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "Member's email address"
+    }
+  },
+  "required": ["member_id", "first_name", "last_name", "date_of_birth"],
+  "additionalProperties": false
+}
