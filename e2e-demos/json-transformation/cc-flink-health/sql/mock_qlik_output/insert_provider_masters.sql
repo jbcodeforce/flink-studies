@@ -84,11 +84,11 @@ VALUES (
   ),
     ARRAY[('NetworkSet',    -- name
           ARRAY[('A1', ROW('1234'), 'srcPubRef01')]  -- changes
-         ) 
+         )
        ]
 ),
 
-VALUES (
+(
   -- Headers: operation type, timestamp, and a transaction ID
   (
     'INSERT',  -- operation type

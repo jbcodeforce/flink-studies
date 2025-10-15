@@ -13,7 +13,7 @@ CREATE TABLE member_dimension (
     phone STRING,
     email STRING,
     PRIMARY KEY (member_id) NOT ENFORCED
-) WITH (
+) distributed by has(member_id) into 2 buckets WITH (
     'key.format' = 'json-registry',
     'value.format' = 'json-registry',
     'changelog.mode' = 'upsert'

@@ -22,3 +22,4 @@ e2e-demos/cdc-demo/datasets/
 **/dist/
 **/.cursor/
 **/.specify/
+**/client.properties

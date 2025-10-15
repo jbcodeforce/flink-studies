@@ -1,0 +1,42 @@
+{
+  "type": "record",
+  "name": "PersonMDM",
+  "namespace": "com.example.health",
+  "fields": [
+    {
+      "name": "headers",
+      "type": {
+        "type": "record",
+        "name": "Headers",
+        "fields": [
+          {"name": "op", "type": "string"},
+          {"name": "ts_ms", "type": "long"},
+          {"name": "transaction_id", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "data",
+      "type": "string"
+    },
+    {
+      "name": "beforeData",
+      "type": ["null", "string"],
+      "default": null
+    },
+    {
+      "name": "systemOfRecord",
+      "type": {
+        "type": "record",
+        "name": "SystemOfRecord",
+        "fields": [
+          {"name": "sourceSystem", "type": "string"},
+          {"name": "sourceEntity", "type": "string"},
+          {"name": "sourcePublishedDate", "type": "string"},
+          {"name": "sourceCorrelationReference", "type": "string"},
+          {"name": "entityKey", "type": "string"}
+        ]
+      }
+    }
+  ]
+}

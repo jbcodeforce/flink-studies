@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PersonMDM",
+  "type": "object",
+  "properties": {
+    "headers": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "description": "Operation type (INSERT, UPDATE, DELETE)"
+        },
+        "ts_ms": {
+          "type": "integer",
+          "description": "Timestamp in milliseconds"
+        },
+        "transaction_id": {
+          "type": "string",
+          "description": "Unique transaction identifier"
+        }
+      },
+      "required": ["op", "ts_ms", "transaction_id"]
+    },
+    "data": {
+      "type": ["string", "null"],
+      "description": "Main data payload"
+    },
+    "beforeData": {
+      "type": ["string", "null"],
+      "description": "Previous state of data for updates"
+    },
+    "systemOfRecord": {
+      "type": "object",
+      "properties": {
+        "sourceSystem": {
+          "type": "string",
+          "description": "Source system identifier"
+        },
+        "sourceEntity": {
+          "type": "string",
+          "description": "Source entity name"
+        },
+        "sourcePublishedDate": {
+          "type": "string",
+          "description": "Date when record was published"
+        },
+        "sourceCorrelationReference": {
+          "type": "string",
+          "description": "Correlation reference"
+        },
+        "entityKey": {
+          "type": "string",
+          "description": "Unique entity identifier"
+        }
+      },
+      "required": [
+        "sourceSystem",
+        "sourceEntity",
+        "sourcePublishedDate",
+        "sourceCorrelationReference",
+        "entityKey"
+      ]
+    }
+  },
+  "required": ["headers", "systemOfRecord"]
+}

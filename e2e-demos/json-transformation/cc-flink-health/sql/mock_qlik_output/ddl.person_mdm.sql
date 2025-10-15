@@ -14,4 +14,8 @@ CREATE TABLE person_mdm (
     entityKey STRING
   >
 
+) WITH (
+  'changelog.mode' = 'append',
+  'scan.startup.mode' = 'earliest-offset',
+  'value.format' = 'json-registry'
 )

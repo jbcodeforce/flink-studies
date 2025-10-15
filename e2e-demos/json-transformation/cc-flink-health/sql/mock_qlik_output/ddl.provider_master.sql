@@ -19,8 +19,8 @@ CREATE TABLE provider_master (
             >
 
 ) WITH (
-    'value.format' = 'json-registry',
-    'changelog.mode' = 'append',
-    'scan.startup.mode' = 'earliest-offset'
+  'changelog.mode' = 'append',
+  'scan.startup.mode' = 'earliest-offset',
+  'value.format' = 'json-registry'
 
 );

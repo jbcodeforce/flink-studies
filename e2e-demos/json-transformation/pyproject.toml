@@ -1,0 +1,13 @@
+[project]
+name = "json-transformation"
+version = "0.1.0"
+description = "A set of python code to produce and consume records to CC ou CP Kafka"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "confluent-kafka>=2.11.1",
+    "dotenv>=0.9.9",
+    "jsonschema>=4.25.1",
+    "pydantic>=2.12.2",
+    "requests>=2.32.5",
+]

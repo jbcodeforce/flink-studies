@@ -1,5 +1,8 @@
 # Health Care Example of Json Transformation
 
+This folder includes a set of Flink SQL to run on Confluent Cloud, to demonstrate processing of CDC records for transformation from nested CDC Json schema to flatten JSON schema for business entities construction. The basic use case is for insurance member and medical provider.
+
+
 ## Source Data Structure
 
 We'll need to handle CDC data from two main sources:
@@ -7,10 +10,11 @@ We'll need to handle CDC data from two main sources:
 - Person MDM data (for Member entity)
 - Medical Provider master data (for Provider entity)
 
-
-The existing architecture includes ETL jobs in Qlik to Kafka topic for CDC records: source database tables include different part of the information to group to the different final json business entities
+The existing architecture includes ETL jobs in Qlik to Kafka topics for CDC records: source database tables include different part of the information to group to the different final json business entities: Member and Provider.
 
 ## Business Entities
+
+The demonstration may add more business entities, if needed, with the potential candidates are:
 
 * Member
 * Group
@@ -19,7 +23,6 @@ The existing architecture includes ETL jobs in Qlik to Kafka topic for CDC recor
 * Provider
 
 Thoses entities may be saved to a document oriented database like MongoDB or Cassandra.
-
 
 ### 1. Define Target Entity Schemas
 
@@ -68,19 +71,22 @@ Provider Entity:
 
 ### 2. Flink SQL Implementation
 
-Create the following Flink SQL files:
+As we do not want to put in place a CDC with QLIK or Debezium we need to mock the raw data. The `sql/mock_qlik_output` folder includes the DDL and insert statements to create sample records:
 
-1. `cc-flink-health/sql/create_sources.sql`:
+1. `cc-flink-health/sql/mock_qlik_output/ddl.person_mdm.sql` and `cc-flink-health/sql/cmock_qlik_output/ddl.provider_master.sql`:
 
    - Create source tables for Person MDM and Provider master data
-   - Use CDC format with debezium-json encoding
+   - Use json-registry encoding
+   - changelog mode is append as it should be with any CDC output
    - Include metadata columns for CDC operations
 
-2. `cc-flink-health/sql/create_sinks.sql`:
+2. `cc-flink-health/sql/cmock_qlik_output/insert_provider_masters.sql`
+   - insert 2 Provider records to validate deduplication and filtering.
+
+2. `cc-flink-health/sql/cmock_qlik_output/ddl.provider_dimension.sql` and `cc-flink-health/sql/cmock_qlik_output/ddl.menber_dimension.sql`:
 
    - Create sink tables for Member and Provider entities
-   - Use upsert-kafka connector with json encoding
-   - Configure key fields for proper updates
+   - Use upsert change log to keep the last event per key with json encoding
 
 3. `cc-flink-health/sql/member_transform.sql`:
 
@@ -94,22 +100,6 @@ Create the following Flink SQL files:
    - Handle CDC operations
    - Apply field mappings and transformations
 
-### 3. Confluent Cloud Configuration
-
-Create configuration files for:
-
-- Source topics (CDC data)
-- Target topics (transformed entities)
-- Flink compute pool settings
-- Connector configurations
-
-### 4. Testing and Validation
-
-Create test data files:
-
-- Sample CDC records for Person data
-- Sample CDC records for Provider data
-- Expected output records for validation
 
 ## File Structure
 
@@ -120,12 +110,18 @@ cc-flink-health/
 │   ├── member.json
 │   └── provider.json
 ├── sql/
-│   ├── create_sources.sql
-│   ├── create_sinks.sql
-│   ├── member_transform.sql
-│   └── provider_transform.sql
-├── config/
-│   └── confluent-cloud.properties
+│   ├── ddl.member_dimension.sql
+│   ├── ddl.provider_dimension.sql
+│   ├── ddl.provider_error_sink.sql
+│   ├── member_transform.sql
+│   ├── mock_qlik_output
+│   │   ├── cmp.txt
+│   │   ├── ddl.person_mdm.sql
+│   │   ├── ddl.provider_master.sql
+│   │   ├── insert_person_mdm.sql
+│   │   ├── insert_provider_master.sql
+│   │   └── insert_provider_masters.sql
+│   └── provider_transform.sql
 └── test/
     ├── input/
     │   ├── person_cdc.json
@@ -137,6 +133,29 @@ cc-flink-health/
 
 ## Deploy to Confluent Cloud
 
-### Create mockup CDC topics
+Follow the following steps to demonstrate the transformation processing:
 
-* As a pre-requisite be sure to have define the SEQUENCE UDF (see [this repository]())
+### Prerequisites
+
+* As a pre-requisite be sure to have define the SEQUENCE User Define Function deployed in you Environment (see [this repository](https://github.com/jbcodeforce/flink-udfs-catalog/tree/main/geo_distance))
+* Create a compute pool and open the SQL Workspace
+
+### Create mockup CDC topics using SQL Workbench
+
+1. Copy/paste the content of `sql/mock_qlik_output/ddl.person_mdm.sql` and run
+1. Copy/paste the content of `sql/mock_qlik_output/ddl.provider_master.sql` and run
+1. Verify the topics are created and JSON schemas are in the Schema Registry
+1. Insert data using the SQL: `sql/cmock_qlik_output/insert_provider_masters.sql` wait until completed. Then validate the presence of the 3 records:
+    ```sql
+    select * from provider_master
+    ```
+    Then stop the statement.
+1. Insert member records using a Kafka Producer code:
+  ```
+  cd producer
+  uv run 
+  ```
+
+### Transformation for Provider
+
+The input structure has nested elements to transform from.

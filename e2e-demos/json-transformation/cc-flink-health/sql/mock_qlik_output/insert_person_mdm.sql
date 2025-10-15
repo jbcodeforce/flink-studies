@@ -74,4 +74,4 @@ SELECT
         'P' || LPAD(CAST(id AS STRING), 3, '0')
     ) AS systemOfRecord
 
-FROM lateral table(SEQUENCE(1, 50)) AS t(id)
+FROM lateral table(SEQUENCE(1, 30)) AS t(id)

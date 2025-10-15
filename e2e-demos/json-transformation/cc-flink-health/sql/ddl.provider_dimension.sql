@@ -15,7 +15,7 @@ CREATE TABLE provider_dimension (
     contact_number STRING,
     npi_number STRING,
     PRIMARY KEY (provider_id) NOT ENFORCED
-) WITH (
+) distributed by has(provider_id) into 2 buckets WITH (
     'key.format' = 'json-registry',
     'value.format' = 'json-registry',
     'changelog.mode' = 'upsert'
