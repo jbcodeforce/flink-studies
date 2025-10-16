@@ -5,9 +5,25 @@ description = "A set of python code to produce and consume records to CC ou CP K
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "authlib>=1.6.5",
+    "cachetools>=6.2.1",
     "confluent-kafka>=2.11.1",
-    "dotenv>=0.9.9",
+    "python-dotenv>=1.0.0", # Fixed package name
+    "fastavro>=1.12.1",
+    "httpx>=0.28.1",
     "jsonschema>=4.25.1",
+    "orjson>=3.11.3",
     "pydantic>=2.12.2",
     "requests>=2.32.5",
 ]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["cc-flink-health/producer"]
+python_files = ["test_*.py"]
+addopts = "-v"

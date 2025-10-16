@@ -126,7 +126,7 @@ VALUES (
     'PRV123456'                       -- entityKey (matches providerId)
   ),
     ARRAY[('NetworkSet',    -- name
-          ARRAY[('A2', ROW('1234'), 'srcPubRef01')]  -- changes
+          ARRAY[('A1', ROW('1234'), 'srcPubRef01')]  -- changes
          )
        ]
 )

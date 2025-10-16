@@ -1,0 +1,14 @@
+# Core dependencies
+confluent-kafka[avro,json,schema-registry]>=2.3.0
+python-dotenv>=1.0.0
+pydantic>=2.12.2
+orjson>=3.11.3  # Required by confluent-kafka schema registry
+requests>=2.32.5
+
+# Schema dependencies
+jsonschema>=4.25.1
+fastavro>=1.12.1
+
+# Test dependencies
+pytest>=7.4.0
+pytest-cov>=4.1.0

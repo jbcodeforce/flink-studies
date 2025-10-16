@@ -17,24 +17,19 @@ with providers as (
            JSON_VALUE(JSON_QUERY(afterData,'$.address'),'$.zipCode')
         )
     ) AS primary_location,
-   $rowtime AS ts_ms,
+   $rowtime
    cast(changeSet[1].changes[1].action as string) as action    -- navigate array to get the action
   from provider_master where  headers.op <> 'DELETE'  and changeSet is not null  -- filter out DELETE operations
-),
-
- deduplicated_providers AS (
-    SELECT 
-       *, ts_ms
-        -- Use ROW_NUMBER to identify duplicates
-        ROW_NUMBER() OVER (
-            PARTITION BY 
-                provider_id,  -- Partition by provider ID
-                npi_number -- and NPI number for additional uniqueness
-            ORDER BY ts_ms ASC) AS row_num
-    FROM providers  
 )
 SELECT
    *
-FROM deduplicated_providers
+FROM  (SELECT 
+       *,
+        -- Use ROW_NUMBER to identify duplicates
+        ROW_NUMBER() OVER (
+            PARTITION BY provider_id  -- Partition by provider ID
+
+            ORDER BY $rowtime ASC) AS row_num
+    FROM providers )
 -- Only keep the first record for each provider (row_num = 1)
 WHERE row_num = 1 

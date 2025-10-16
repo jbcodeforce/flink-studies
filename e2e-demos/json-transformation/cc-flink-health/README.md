@@ -151,11 +151,63 @@ Follow the following steps to demonstrate the transformation processing:
     ```
     Then stop the statement.
 1. Insert member records using a Kafka Producer code:
+    ```
+    cd producer
+    uv run member_mdm_producer.py --num-records 10
+    ```
+1. Verify in Flink the presence of the records using `select * from `person_mdm`
+
+### Transformation for the person / members
+
+This will be a simple json to json transformation using the record as string in the data column to a valid member_dimension. This is to illustrate JSON extraction from String and then creation of new nested json objects. Below is some constructs used
+
+* Extract attribute from the data string:
+  ```sql
+   JSON_VALUE(data, '$.member_id') AS member_id,
   ```
-  cd producer
-  uv run 
+
+* Extrating nested object to recreate a new nexted object
+  ```sql
+    ROW(
+        JSON_VALUE(JSON_QUERY(data,'$.address'), '$.street'),
+        JSON_VALUE(JSON_QUERY(data,'$.address'), '$.city'),
+        JSON_VALUE(JSON_QUERY(data,'$.address'), '$.state'),
+        JSON_VALUE(JSON_QUERY(data,'$.address'), '$.postal_code')
+    ) AS address,
+  ```
+
+* Filtering out delete operation, looking at the headers
+  ```sql
+  FROM person_mdm WHERE headers.op <> 'DELETE';
   ```
 
 ### Transformation for Provider
 
-The input structure has nested elements to transform from.
+The input structure has nested elements to transform from, by using the same patterns as above. There are array of json object in the source:
+
+* Source to process has array of object with other nested array
+  ```json
+  {
+    "changeSet": [
+      {
+        "name": "NetworkSet",
+        "changes": [
+          {
+            "action": "A1",
+            "recordKeys": {
+              "providerNetworkId": "1234"
+            },
+            "srcPublishRef": "srcPubRef01"
+          }
+        ]
+      }
+    ]
+  }
+```
+
+* If we want to extract the action and the providerNetworkId to flatten the model the query looks like
+  ```sql
+  cast(changeSet[1].changes[1].action as string) as action 
+  ```
+
+
