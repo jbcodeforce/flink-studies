@@ -1,7 +1,7 @@
 # Environment variables
 CFNT_NS=confluent
 FLCK_NS=confluent
-DEMO_NS=el-demo
+DEMO_NS=rental
 MINIO_NS=minio-dev
 CMF_URL=http://localhost:8084
 SR_URL=http://localhost:8081
@@ -25,7 +25,7 @@ ensure_ns = \
 	fi
 
 # --------- Build targets ---------
-.PHONY: help build build-all
+.PHONY: help build-all deploy-all status-all
 
 help: ## Show this help message
 	@echo "$(BLUE)Json Transformation Demo - Build & Deploy$(NC)"
@@ -33,35 +33,74 @@ help: ## Show this help message
 	@echo "$(BLUE)Available targets:$(NC)"
 	@awk 'BEGIN {FS = ":.*##"; printf ""} /^[a-zA-Z_-]+:.*?##/ { printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
+use_demo_ns: ## Use the rental namespace
+	@kubectl config set-context --current --namespace=$(DEMO_NS)
+
+use_confluent_ns: ## Use the confluent namespace	
+	@kubectl config set-context --current --namespace=$(CFNT_NS)
+
+# entry points
+build_all: ## Build the demonstation components
+	@echo "$(BLUE)Building demo...$(NC)"
+	kubectl apply -f k8s/rental.yaml
+	kubectl apply -f k8s/kafka_client_cm.yaml
+	cd producer && make build 
 
 
+deploy_all: ## Deploy the demonstation components
+	@echo "$(BLUE)Deploying demo...$(NC)"
+	cd producer && make deploy
+	@echo "Producer App Web Page should be visible at http://localhost:30080"
 
+
+status_all: ## Validate the demo
+	@echo "$(BLUE)Validating demo...$(NC)"
+	cd producer && make status
+
+tear_down_demo: ## Tear down the demo
+	@echo "$(BLUE)Tearing down demo...$(NC)"
+	cd producer && make undeploy
+
+# ------ PRIVATE TARGETS ------
 # --------- Service exposure ---------
-expose-services: ## Expose all services via port-forward
+expose-services: 
 	@echo "$(BLUE)Exposing services...$(NC)"
-	make port-forward-cp-console
-	make port-forward-cmf
-	make port-forward-schema-registry
-	make port-forward-kafka-bootstrap
-	make port-forward-event-generator-metrics
-	make port-forward-minio-console
-	make port-forward-claimdb-api
-
-# --------- Port forwarding ---------
-port-forward-cp-console:
-	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/controlcenter-ng 9021:9021"' -e 'tell application "Terminal" to set current settings of front window to settings set "Pro"'
-
-port-forward-cmf:
-	@osascript -e 'tell app "Terminal" to do script "kubectl port-forward svc/cmf-service 8084:80 -n $(FLCK_NS)"'
-
-port-forward-schema-registry:
-	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/schemaregistry 8081:8081"' -e 'tell application "Terminal" to set current settings of front window to settings set "Pro"'
-
-port-forward-minio-console:
-	@osascript -e 'tell app "Terminal" to do script "kubectl port-forward pod/minio 9090 9090 -n $(MINIO_NS)"' -e 'tell application "Terminal" to set custom title of selected tab of the front window to "Minio Console"'
+	cd cp-flink && make port_forward_cp_console
+	cd cp-flink && make port_forward_cmf
+	cd cp-flink && make port_forward_schema-registry
+	cd cp-flink && make port_forward_minio-console
+	cd cp-flink && make port_forward_kafka_bootstrap
 
 
-open_cp_console: ## Open Confluent Control Center in Chrome on localhost:9021
+
+open_cp_console: 
 	@echo "$(BLUE)Opening Confluent Control Center on http://localhost:9021 ...$(NC)"
 	@open -a "Google Chrome" http://localhost:9021
 
+
+
+
+# Complete setup for demo
+setup_demo: create_topics create_cms create_schemas deploy_all_producers
+	@echo "✅ Demo setup complete!"
+	@echo "📋 Next steps:"
+	@echo "  🌐 Web Interface: http://localhost:30080"
+	@echo "  📊 Job History Dashboard: http://localhost:30080/job-history"
+	@echo "  🔗 Port-forward alternative: 'make port_forward_producer_api' then http://localhost:8080"
+	@echo "  📚 API Docs: http://localhost:30080/docs"
+	@echo "  🔍 Health Check: 'make test_api_health_nodeport'"
+
+# Clean up everything
+cleanup_demo: delete_all_producers
+	@echo "🧹 Demo cleanup complete!"
+
+# ----- orders -----
+create_raw_orders_cm:
+	@echo "Creating raw-orders ConfigMap from schema file..."
+	@kubectl create configmap raw-orders-value \
+		--from-file=schema=schemas/raw-orders-schema.json \
+		-n $(CFNT_NS) \
+		--dry-run=client -o yaml | kubectl apply -f -
+
+delete_raw_orders_cm:
+	@kubectl delete -f k8s/raw_orders_cm.yaml -n $(CFNT_NS)

@@ -1,5 +1,7 @@
 # Nested objects and arrays
 
+This folder includes 2 examples, one for mock of health care json to json transformation with nested array and objects, and the other one illustrating Row and `cross join unnest`. 
+
 ## Pre-requisites
 
 * Create a Confluent cloud environment using quickstart
@@ -29,7 +31,7 @@ confluent flink shell --compute-pool $CPOOL --environment $CENV
     FROM `examples`.`marketplace`.`clicks`;
     ```
 
-    Recall to create those statements using CLI the commands look like:
+    Recall that to create those statements using Confluent CLI, the commands look like:
     
     ```sh
     confluent flink statement create $statement_name --sql "$sql_statement_file_as_string" --database $DB_NAME --compute-pool $CPOOL_ID --wait 
@@ -96,3 +98,5 @@ INSERT INTO all_flights_cleaned
       CAST(StatesTable.states[10] AS DECIMAL(10, 2)) AS velocity_m_per_s
     FROM all_flights CROSS JOIN UNNEST(all_flights.states) as StatesTable (states);
 ```
+
+News from 10/14/2025, there is a [UDF to compute goe_distance](https://github.com/jbcodeforce/flink-udfs-catalog/tree/main/geo_distance) that can also be used on top of this example.

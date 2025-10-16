@@ -1,11 +1,4 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: raw-orders-value
-  namespace: confluent
-data:
-  schema: |
-    {
+{
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://example.com/raw-orders-schema.json",
     "title": "Order Schema",
@@ -115,4 +108,4 @@ data:
       "OrderType"
     ],
     "additionalProperties": false
-    }
+}

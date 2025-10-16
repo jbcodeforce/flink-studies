@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: producer-api
+  namespace: rental
+  labels:
+    name: rental-demo
+    app: json-xform
+    component: api-server
+    service: kafka-producer
+spec:
+  restartPolicy: Always
+  containers:
+  - name: api-server
+    image: jbcodeforce/orders-producer:latest
+    imagePullPolicy: IfNotPresent
+    command: ["python", "api_server.py"]
+    ports:
+    - containerPort: 8000
+      name: http
+      protocol: TCP
+    envFrom:
+    - configMapRef:
+        name: kafka-client-config
+    env:
+    - name: PORT
+      value: "8000"
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 8000
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      timeoutSeconds: 10
+      failureThreshold: 3
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: 8000
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3

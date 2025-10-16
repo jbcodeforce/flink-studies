@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rental
+  labels:
+    name: rental-demo
+    app: json-xform
+    environment: dev
+  annotations:
+    description: "Namespace for rental demo components"

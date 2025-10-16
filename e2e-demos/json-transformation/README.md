@@ -2,13 +2,15 @@
 
 This is a simple demo using Confluent Platform with Flink, or Confluent Cloud for Flink and Kafka to demonstrate a json schema mapping, a join and an aggregation with Flink SQL queries. The example is about a fictitious mover truck rental company, in 2190.
 
-The processing logic, we need to implement, has the following basic architecture:
+The processing logic, we need to implement, has the following basic data pipeline architecture:
 
   ![](./docs/dsp.drawio.png)
 
-The input is an industrial vehicle rental event, with an example of order in data/order_detail.json. The second input is a job demand, which in the context of a Mover, a move demand.
+The input are 
+* Industrial vehicle rental events within `orders` kafka topic, 
+* Human Job demand, which in the context of a Mover, a move demand, helping to move furniture,..
 
-The jobs are related to a move order, so the join key is the OrderId.
+The jobs are related to a move `order`, so the join key is the `OrderId`.
 
 ## Use Case
 
@@ -112,7 +114,94 @@ The jobs are related to a move order, so the join key is the OrderId.
 
 * Finally the equipment rental details can be used to compute aggregations and business analytics data products.
 
+## Architecture
+
+The components involved in this demonstration are depicted in the following figure:
+
+![](./docs/components.drawio.png)
+
+* Confluent Platform with Kafka Brokers, Schema registry and Kafka Connectors cluster
+* Different topics to persist events
+* Confluent Manager for Flink to manage Flink Environments, Compute Pools, Applications
+* Schema Registry for schema governance
+* Flink Applications in the form of TableAPI application with SQL scripts
+* WebApp to support the demonstation
+
+---
+
+
+## Demonstration
+
+### Prerequisites
+
+* We assume a Kubernetes clsuter is up and running with the Confluent Platform and Confluent Manager for Flink deployed. Use at least version 8.0.x. See [deployments readme and Makefiles](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s) for platform deployments.
+* Clone this repository and work in the `flink-studies/e2e-demos/json-transformation` folder.
+* The project uses `make` tool
+
+### Build and Deploy the components
+
+All the kubernetes elements are deployed under the `rental` namespace, and will have the following metadata:
+```yaml
+metadata:
+  labels:
+    name: rental-demo
+    app: json-xform
+    component: <specific_name>
+```
+
+* build and deploy all
+  ```sh
+  make build_all
+  make deploy_all
+  ```
+
+*Remarks* all the components can be built individually using the Makefile under each component folder.
+
+### Demonstration from the user interface
+
+The demonstration user interface includes the form and controls to drive the demonstration, the scripts is inside the Demo Description section
+
+![](./docs/demo-ui.png)
+
+### Create input data in the two raw topics
+
+
+
+### 🌐 Web Interface Usage
+
+* **Step 1: Select Message Type**
+  * 📦 Order Records: E-commerce order data
+  * 💼 Job Records: Job posting data
+  * 🛠️ Custom JSON: Your own JSON payload
+
+* **Step 2: Configure Production**
+  * Topic: Kafka topic name (with smart auto-suggestions)
+  * Count: Number of records to produce (1-1000)
+  * Custom JSON: Rich editor for custom payloads
+
+* **Step 3: Monitor Progress**
+  * Real-time job status updates
+  * Automatic polling for completion
+  * Success/error notifications
+  * Job history tracking
+
+### Flink SQL processing
+
+* The first transformation script is to 
+
+---
 ## Code explanation
+
+### Project structure
+
+| Folder | Content |
+| --- | --- |
+| **k8s** | Makefile and common kubernetes elements of the demonstration |
+| **cp-flink** | Flink statemens as Table API code |
+| **docs** | Some diagrams |
+| **Producer** | Web App and CLI to produce demonstration records | 
+| **schemas** | Json schema definitions to be deployed by schema registry |
+| **cc-flink** | Equivalents Flink SQL for Confluent Cloud Flink |
 
 The `cp-flink` folder includes the configuration to create schemas and topics for the raw input data: `jobs` and `orders` and the OrderDetails topic and schema. When deploying to Kubernetes, the topic and schema are defined as config maps. The following diagram illustrates the relationships with those k8s elements:
 
@@ -155,7 +244,7 @@ The following figure illustrates the different deployment model:
   uv run api_server.py
   ```
 
-### Environment Variables
+#### Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -167,30 +256,6 @@ The following figure illustrates the different deployment model:
 | `KAFKA_SASL_MECHANISM` | `PLAIN` | SASL mechanism |
 | `KAFKA_CERT` | _(empty)_ | SSL certificate path |
 
-### Producers Kubernetes Deployment
-
-The cp-flink folder includes config_map and Kubernetes job manifests to start the producer to produce records for jobs and orders to the raw-orders and raw-jobs topics.
-
-* Deploy config map and orders as kuberneted job to create 10 orders
-  ```sh
-  make create_kafka_client_cm
-  make deploy_order_producer
-  ```
-
-* Deploy job producer for 10 jobs
-  ```sh
-  make deploy_job_producer
-  ```
-
-* Deploy the WebApp
-  ```sh
-  # Deploy the API
-  make deploy_producer_api
-  # Setup port forwarding  
-  make port_forward_producer_api
-  # Test the API
-  make test_api_health
-  ```
 
 ### The Flink SQL processing
 
@@ -376,6 +441,9 @@ CROSS JOIN UNNEST(OrderDetails.EquipmentRentalDetails) AS t(rental_detail)
 CROSS JOIN UNNEST(rental_detail.Equipment) AS e(equipment_item);
 ```
 
+---
+
+
 ## CMF Setup
 
 The code and/or instructions are NOT intended for production usage. The Kubernetes deployment is done using Colima VM and Confluent Platform. [See the CP deployment readme](../../deployment/k8s/cp-flink/README.md) and use the makefile in `deployment/k8s/cp-flink` to start Colima, deploy Confluent Platform, with Managed Flink and then verify Flink and Kafka are running. 
@@ -441,77 +509,4 @@ The `cp-flink` folder in this `e2e-demos/json-transformation` project, includes 
 
 * [ ] Confluent Console connection error with port forwarding
 
-## Demonstration
-
-### Create input data in the two raw topics
-
-* Deploy web interface + CLI producers:
-```bash
-make demo_web  # Complete setup with web access
-```
-
-* Access to the web interface for interactive control:
-```bash
-make open_web_ui
-```
-
-### **Interactive Documentation**
-- 🌐 **Web Interface**: `http://localhost:8080/` - User-friendly form interface
-- 📚 **Swagger UI**: `http://localhost:8080/docs` - Interactive API testing
-- 📖 **ReDoc**: `http://localhost:8080/redoc` - Beautiful API documentation  
-
-
-### 🌐 Web Interface Usage
-
-* **Step 1: Select Message Type**
-  * 📦 Order Records: E-commerce order data
-  * 💼 Job Records: Job posting data
-  * 🛠️ Custom JSON: Your own JSON payload
-
-* **Step 2: Configure Production**
-  * Topic: Kafka topic name (with smart auto-suggestions)
-  * Count: Number of records to produce (1-1000)
-  * Custom JSON: Rich editor for custom payloads
-
-* **Step 3: Monitor Progress**
-  * Real-time job status updates
-  * Automatic polling for completion
-  * Success/error notifications
-  * Job history tracking
-
-### **Quick Make Commands**
-```bash
-# Web Interface - Direct Access (RECOMMENDED)
-make demo_web_direct        # Complete setup + direct localhost access
-make open_web_ui_nodeport   # Open web interface (NodePort)
-make open_swagger_nodeport  # Open Swagger UI (NodePort)  
-make open_redoc_nodeport    # Open ReDoc (NodePort)
-
-# Web Interface - Port Forward Access
-make demo_web               # Complete setup + port-forward access
-make open_web_ui           # Open web interface (port-forward)
-make open_swagger          # Open Swagger UI (port-forward)
-make open_redoc            # Open ReDoc (port-forward)
-
-# Deployment & Status
-make deploy_producer_api   # Deploy API pod
-make status_producers      # Check all producer status (shows access URLs)
-
-# Testing - Direct Access
-make test_api_health_nodeport       # Test API health (NodePort)
-make test_api_produce_orders_nodeport  # Test order production (NodePort)
-make test_api_produce_jobs_nodeport    # Test job production (NodePort)
-
-# Testing - Port Forward Access  
-make test_api_health       # Test API health (port-forward)
-make test_api_produce_orders  # Test order production (port-forward)
-make test_api_produce_jobs    # Test job production (port-forward)
-
-# Management
-make cleanup_demo          # Remove all components
-```
-
-### Flink SQL processing
-
-* The first transformation script is to 
 ## CCF Setup

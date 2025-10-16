@@ -2,9 +2,10 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: kafka-client-config
-  namespace: confluent
+  namespace: rental
   labels:
-    app: kafka-client
+    name: rental-demo
+    app: json-xform
     component: config
 data:
   KAFKA_BOOTSTRAP_SERVERS: kafka.confluent.svc.cluster.local:9071

@@ -64,7 +64,7 @@ kubectl get crds | grep confluent
 kubectl describe crd kafkatopics.platform.confluent.io  
 ```
 
-See some CP for kubernetes deployment [examples in Confluent github](https://github.com/confluentinc/confluent-kubernetes-examples).
+See some Confluent Platform for kubernetes deployment [examples in Confluent github](https://github.com/confluentinc/confluent-kubernetes-examples) and [this How to Use Confluent for Kubernetes to Manage Resources Outside of Kubernetes Blog](https://www.confluent.io/blog/resource-management-with-confluent-for-kubernetes/). 
 
 ### Apache Flink specific custom resources
 

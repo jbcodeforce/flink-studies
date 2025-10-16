@@ -2,6 +2,10 @@ CFNT_NS=confluent
 FLCK_NS=flink
 CMF_URL=http://localhost:8084
 
+# Other services port forwarding
+port-forward-minio-console:
+	@osascript -e 'tell app "Terminal" to do script "kubectl port-forward pod/minio 9090 9090 -n $(MINIO_NS)"' -e 'tell application "Terminal" to set custom title of selected tab of the front window to "Minio Console"'
+
 
 # ---------------------- Confluent Kafka ----------------------
 use_cp_ns:
@@ -15,6 +19,7 @@ port_forward_schema_registry:
 
 port_forward_kafka_bootstrap:
 	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/kafka 9092:9092"'
+
 
 # ---------------------- Flink ----------------------
 use_flink_ns:
@@ -49,7 +54,11 @@ delete_app_kafka_elements: delete_raw_order delete_raw_job delete_order_details
 
 # ----- orders -----
 create_raw_orders_cm:
-	@kubectl apply -f raw_orders_cm.yaml -n $(CFNT_NS)
+	@echo "Creating raw-orders ConfigMap from schema file..."
+	@kubectl create configmap raw-orders-value \
+		--from-file=schema=schemas/raw-orders-schema.json \
+		-n $(CFNT_NS) \
+		--dry-run=client -o yaml | kubectl apply -f -
 
 create_raw_orders_topic:
 	@kubectl apply -f raw_orders_topic.yaml -n $(CFNT_NS)
@@ -195,57 +204,5 @@ test_api_produce_jobs:
 test_api_list_jobs:
 	@curl -s http://localhost:8080/jobs | jq .
 
-# Access via NodePort (direct localhost access)
-open_web_ui_nodeport:
-	@echo "🌐 Opening web interface via NodePort..."
-	@open http://localhost:30080
-
-open_swagger_nodeport:
-	@echo "📚 Opening Swagger UI via NodePort..."
-	@open http://localhost:30080/docs
-
-open_redoc_nodeport:
-	@echo "📖 Opening ReDoc via NodePort..."
-	@open http://localhost:30080/redoc
-
-# Access via Port Forward (alternative method)
-open_web_ui:
-	@echo "🌐 Opening web interface via port-forward..."
-	@open http://localhost:8080
-
-open_swagger:
-	@echo "📚 Opening Swagger UI via port-forward..."
-	@open http://localhost:8080/docs
-
-open_redoc:
-	@echo "📖 Opening ReDoc via port-forward..."
-	@open http://localhost:8080/redoc
-
-# Complete demo with direct NodePort access (no port-forward needed)
-demo_web_direct: setup_demo
-	@echo "🌐 Waiting for pod to be ready..."
-	@kubectl wait --for=condition=ready pod/producer-api -n $(CFNT_NS) --timeout=60s
-	@echo "✅ Pod ready! Opening web interface..."
-	@make open_web_ui_nodeport
-
-# Complete demo with port-forward access
-demo_web: setup_demo port_forward_producer_api
-	@echo "🌐 Opening web interface via port-forward..."
-	@sleep 3  # Wait for port-forward to establish
-	@make open_web_ui
-
-# Complete setup for demo
-setup_demo: create_topics create_cms create_schemas deploy_all_producers
-	@echo "✅ Demo setup complete!"
-	@echo "📋 Next steps:"
-	@echo "  🌐 Web Interface: http://localhost:30080"
-	@echo "  📊 Job History Dashboard: http://localhost:30080/job-history"
-	@echo "  🔗 Port-forward alternative: 'make port_forward_producer_api' then http://localhost:8080"
-	@echo "  📚 API Docs: http://localhost:30080/docs"
-	@echo "  🔍 Health Check: 'make test_api_health_nodeport'"
-
-# Clean up everything
-cleanup_demo: delete_all_producers
-	@echo "🧹 Demo cleanup complete!"
 
 	
