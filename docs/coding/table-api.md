@@ -1,17 +1,53 @@
 # Table API
 
 ???- info "Update"
-    Created 10/2024 - Updated 11/03/24.
+    Created 10/2024 - Updated 11/03/24. Reorganize in improve documentation 10/2025
 
 ## Concepts
 
 The [TableAPI](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/overview/) serves as the lower-level API for executing Flink SQL, allowing for stream processing implementations in Java and Python. The Table API encapsulates a stream or a physical table, enabling developers to implement streaming processing by programming against these tables.
 
+[See the main concepts](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/common/) and APIs. The structure of a program looks mostly the same:
+
+1. Create a TableEnvironment for batch or streaming execution
+    ```java
+    import org.apache.flink.table.api.EnvironmentSettings;
+    import org.apache.flink.table.api.TableEnvironment;
+
+    EnvironmentSettings settings = EnvironmentSettings
+        .newInstance()
+        .inStreamingMode()
+        //.inBatchMode()
+        .build();
+
+    TableEnvironment tEnv = TableEnvironment.create(settings);
+    ```
+1. Create one or more source table(s)
+1. Create one or more sink Tables(s) or use the print sink
+1. Create processing logic using SQL string or Table API functions
+
+Summary of important concepts:
+
+* The main function is a Flink client, that will compiles the code into a dataflow graph and submots to the JobManager.
+* A TableEnvironment maintains a map of catalogs of tables 
+* Tables can be either virtual (VIEWS) or regular TABLES which describe external data.
+* Tables may be temporary (tied to the lifecycle of a single Flink session), or permanent ( visible across multiple Flink sessions and clusters).
+* Temportary table may shadow a permanent table.
+* Tables are always registered with a 3-part identifier consisting of catalog, database, and table name.
+* TableSink is a [generic interface to to write](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/common/#emit-a-table) results to. A batch Table can only be written to a `BatchTableSink`, while a streaming Table requires either an `AppendStreamTableSink`, a `RetractStreamTableSink`, or an `UpsertStreamTableSink`.
+* A pipeline can be explained with `TablePipeline.explain()` and executed invoking `TablePipeline.execute()`.
+* Recall that High-Availability in Application Mode is only supported for single-execute() applications.
+
+It is important to note that Table API and SQL queries can be easily integrated with and embedded into DataStream programs.
+
+
+### Packaging
+
+### Confluent Specifics
+
 In Confluent Manager for Flink deployment, only Flink Application mode is supported. A **Flink Application** is any user's program that spawns one or multiple Flink jobs from its `main()` method. The execution of these jobs can happen in a local JVM (LocalEnvironment) or on a remote setup of clusters with multiple machines ([kubernetes](./k8s-deploy.md)).
 
 In the context of **Confluent Cloud**, the Table API program acts as a client-side library for interacting with the Flink engine hosted in the cloud. It enables the submission of  `Statements` and retrieval of `StatementResults`. The provided Confluent plugin integrates specific components for configuring the TableEnvironment, eliminating the need for a local Flink cluster. By including the `confluent-flink-table-api-java-plugin` dependency, Flink's internal components—such as CatalogStore, Catalog, Planner, Executor, and configuration, are managed by the plugin and fully integrated with Confluent Cloud.
-
-While, for Confluent Platform or Open Source Flink, we need Kafka SQL connector and configure kafka as a source or sink. See [integration with Kafka]().
 
 ## Getting Started
 

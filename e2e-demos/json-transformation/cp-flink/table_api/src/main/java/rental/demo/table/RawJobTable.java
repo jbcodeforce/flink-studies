@@ -1,0 +1,51 @@
+package rental.demo.table;
+
+public class RawJobTable {
+    public static final String CREATE_RAW_JOB_TABLE = String.join("\n",
+        "CREATE TABLE raw_jobs (",
+        "    job_id BIGINT,",
+        "    job_type STRING,",
+        "    job_status STRING,",
+        "    rate_service_provider STRING,",
+        "    total_paid DECIMAL(10,2),",
+        "    job_date_start TIMESTAMP(3),",
+        "    job_completed_date TIMESTAMP(3),",
+        "    job_entered_date TIMESTAMP(3),",
+        "    job_last_modified_date TIMESTAMP(3),",
+        "    service_provider_name STRING,",
+        "    WATERMARK FOR job_last_modified_date AS job_last_modified_date - INTERVAL '5' SECOND",
+        ") WITH (",
+        "    'connector' = 'kafka',",
+        "    'topic' = 'raw-jobs',",
+        "    'properties.bootstrap.servers' = 'kafka:9092',",
+        "    'properties.group.id' = 'raw-jobs-consumer-group',",
+        "    'scan.startup.mode' = 'earliest-offset',",
+        "    'format' = 'json',",
+        "    'json.fail-on-missing-field' = 'false',",
+        "    'json.ignore-parse-errors' = 'true'",
+        ");"
+    );
+
+    public static final String CREATE_JOB_DETAILS_TABLE = String.join("\n",
+        "CREATE TABLE job_details (",
+        "    job_id BIGINT,",
+        "    job_type STRING,",
+        "    job_status STRING,",
+        "    rate_service_provider STRING,",
+        "    total_paid DECIMAL(10,2),",
+        "    job_date_start TIMESTAMP(3),",
+        "    job_completed_date TIMESTAMP(3),",
+        "    job_entered_date TIMESTAMP(3),",
+        "    job_last_modified_date TIMESTAMP(3),",
+        "    service_provider_name STRING,",
+        "    processing_time TIMESTAMP(3),",
+        "    PRIMARY KEY (job_id) NOT ENFORCED",
+        ") WITH (",
+        "    'connector' = 'upsert-kafka',",
+        "    'topic' = 'job-details',",
+        "    'properties.bootstrap.servers' = 'kafka:9092',",
+        "    'key.format' = 'json',",
+        "    'value.format' = 'json'",
+        ");"
+    );
+}

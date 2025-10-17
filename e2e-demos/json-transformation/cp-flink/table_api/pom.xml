@@ -4,8 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.confluent.flink.examples.table</groupId>
-    <artifactId>table-api</artifactId>
+    <groupId>rental-demo</groupId>
+    <artifactId>json-transformation-table-api</artifactId>
     <version>1.0.0</version>
 
     <properties>
@@ -13,7 +13,7 @@
         <confluent-plugin.version>1.20-42</confluent-plugin.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <log4j.version>2.17.1</log4j.version>
+        <log4j.version>2.20.0</log4j.version>
     </properties>
   <repositories>
         <repository>
@@ -52,6 +52,7 @@
             <artifactId>confluent-flink-table-api-java-plugin</artifactId>
             <version>${confluent-plugin.version}</version>
         </dependency>
+                
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-table-api-java-bridge</artifactId>
@@ -65,6 +66,21 @@
             <version>${flink.version}</version>
             <scope>provided</scope>
         </dependency>
+        
+        <!-- Kafka connector -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-connector-kafka</artifactId>
+            <version>3.0.2-1.18</version>
+        </dependency>
+
+        <!-- JSON format -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-json</artifactId>
+            <version>${flink.version}</version>
+        </dependency>
+
         <!-- Add logging framework, to produce console output when running in the IDE. -->
         <!-- These dependencies are excluded from the application JAR by default. -->
         <dependency>
@@ -127,7 +143,7 @@
                                         implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>io.confluent.flink.examples.table.Example_00_HelloWorld</mainClass>
+                                    <mainClass>rental.demo.table.RawJobProcessing</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

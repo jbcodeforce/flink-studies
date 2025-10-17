@@ -13,6 +13,7 @@ BLUE := \033[0;34m
 GREEN := \033[0;32m
 YELLOW := \033[1;33m
 RED := \033[0;31m
+WHITE := \033[0;37m
 NC := \033[0m
 
 # ---------------------- Common functions ----------------------
@@ -25,7 +26,7 @@ ensure_ns = \
 	fi
 
 # --------- Build targets ---------
-.PHONY: help build-all deploy-all status-all
+.PHONY: help build_all deploy_all status_all
 
 help: ## Show this help message
 	@echo "$(BLUE)Json Transformation Demo - Build & Deploy$(NC)"
@@ -45,6 +46,8 @@ build_all: ## Build the demonstation components
 	kubectl apply -f k8s/rental.yaml
 	kubectl apply -f k8s/kafka_client_cm.yaml
 	cd producer && make build 
+	make create_all_topics
+	make create_all_schemas
 
 
 deploy_all: ## Deploy the demonstation components
@@ -54,12 +57,24 @@ deploy_all: ## Deploy the demonstation components
 
 
 status_all: ## Validate the demo
+	@echo "--------------------------------"
 	@echo "$(BLUE)Validating demo...$(NC)"
+	@echo "--------------------------------"
 	cd producer && make status
+	make status_all_topics
+	make status_all_schemas
+	@echo "✅ Demo status check complete!"
 
 tear_down_demo: ## Tear down the demo
 	@echo "$(BLUE)Tearing down demo...$(NC)"
 	cd producer && make undeploy
+	make delete_all_schemas
+	make delete_all_cms
+	make delete_all_topics
+
+open_cp_console: ## Open Confluent Control Center console
+	@echo "$(BLUE)Opening Confluent Control Center on http://localhost:9021 ...$(NC)"
+	@open -a "Google Chrome" http://localhost:9021
 
 # ------ PRIVATE TARGETS ------
 # --------- Service exposure ---------
@@ -73,15 +88,9 @@ expose-services:
 
 
 
-open_cp_console: 
-	@echo "$(BLUE)Opening Confluent Control Center on http://localhost:9021 ...$(NC)"
-	@open -a "Google Chrome" http://localhost:9021
-
-
-
 
 # Complete setup for demo
-setup_demo: create_topics create_cms create_schemas deploy_all_producers
+setup_demo:
 	@echo "✅ Demo setup complete!"
 	@echo "📋 Next steps:"
 	@echo "  🌐 Web Interface: http://localhost:30080"
@@ -90,17 +99,83 @@ setup_demo: create_topics create_cms create_schemas deploy_all_producers
 	@echo "  📚 API Docs: http://localhost:30080/docs"
 	@echo "  🔍 Health Check: 'make test_api_health_nodeport'"
 
-# Clean up everything
-cleanup_demo: delete_all_producers
-	@echo "🧹 Demo cleanup complete!"
+
+
+# ---- topics -----
+create_all_topics:
+	@echo "Creating all topics...in namespace $(CFNT_NS)"
+	@kubectl apply -f k8s/topics/raw_orders_topic.yaml -n $(CFNT_NS)
+	@kubectl apply -f k8s/topics/order_simple_topic.yaml -n $(CFNT_NS)
+	@kubectl apply -f k8s/topics/order_details_topic.yaml -n $(CFNT_NS)
+
+status_all_topics:
+	@echo "--------------------------------"
+	@echo "$(WHITE)Checking all topics...$(NC)"
+	@echo "--------------------------------"
+	@kubectl get KafkaTopics -n $(CFNT_NS)
+
+delete_all_topics:
+	@kubectl delete -f k8s/topics/raw_orders_topic.yaml -n $(CFNT_NS)
+	@kubectl delete -f k8s/topics/order_simple_topic.yaml -n $(CFNT_NS)
+	@kubectl delete -f k8s/topics/order_details_topic.yaml -n $(CFNT_NS)
+
+# ---- Schemas with ConfigMaps
+status_all_schemas:
+	@echo "--------------------------------"
+	@echo "$(WHITE)Checking all ConfigMaps and schemas...in namespace $(CFNT_NS)$(NC)"
+	@echo "--------------------------------"
+	@echo "$(WHITE)ConfigMaps:$(NC)"
+	@kubectl get ConfigMap -n $(CFNT_NS)
+	@echo "--------------------------------"
+	@echo "$(WHITE)Schemas:$(NC)"
+	@kubectl get schema -n $(CFNT_NS)
+	@echo "--------------------------------"
+
 
 # ----- orders -----
 create_raw_orders_cm:
-	@echo "Creating raw-orders ConfigMap from schema file..."
+	@echo "$(YELLOW)Creating raw-orders ConfigMap from schema file...$(NC)"
 	@kubectl create configmap raw-orders-value \
-		--from-file=schema=schemas/raw-orders-schema.json \
+		--from-file=schema=schemas/raw_orders_schema.json \
 		-n $(CFNT_NS) \
 		--dry-run=client -o yaml | kubectl apply -f -
 
+
 delete_raw_orders_cm:
-	@kubectl delete -f k8s/raw_orders_cm.yaml -n $(CFNT_NS)
+	@kubectl delete -f k8s/schemas/raw_orders_cm.yaml -n $(CFNT_NS)
+
+create_order_details_cm:
+	@echo "$(YELLOW)Creating order-details ConfigMap from schema file...$(NC)"
+	@kubectl create configmap order-details-value \
+		--from-file=schema=schemas/order_details_schema.json \
+		-n $(CFNT_NS) \
+		--dry-run=client -o yaml | kubectl apply -f -
+
+delete_order_details_cm:
+	@kubectl delete -f k8s/schemas/order_details_cm.yaml -n $(CFNT_NS)
+
+## ---- jobs -----
+create_raw_jobs_cm:
+	@echo "$(YELLOW)Creating raw-jobs ConfigMap from schema file...$(NC)"
+	@kubectl create configmap raw-jobs-value \
+		--from-file=schema=schemas/raw-jobs-schema.json \
+		-n $(CFNT_NS) \
+		--dry-run=client -o yaml | kubectl apply -f -
+
+delete_raw_jobs_cm:
+	@kubectl delete -f k8s/schemas/raw_jobs_cm.yaml -n $(CFNT_NS)
+
+create_all_schemas: create_raw_orders_cm create_order_details_cm create_raw_jobs_cm
+	@echo "$(YELLOW)Creating all schemas...$(NC)"
+	@kubectl apply -f k8s/schemas/raw-orders-schema.yaml -n $(CFNT_NS)
+	@kubectl apply -f k8s/schemas/raw-jobs-schema.yaml -n $(CFNT_NS)
+	@kubectl apply -f k8s/schemas/order-details-schema.yaml -n $(CFNT_NS)
+
+delete_all_schemas:
+	@kubectl delete -f k8s/schemas/raw-orders-schema.yaml -n $(CFNT_NS)
+	@kubectl delete -f k8s/schemas/raw-jobs-schema.yaml -n $(CFNT_NS)
+	@kubectl delete -f k8s/schemas/order-details-schema.yaml -n $(CFNT_NS)
+	
+delete_all_cms: delete_raw_jobs_cm delete_raw_orders_cm delete_order_details_cm
+
+

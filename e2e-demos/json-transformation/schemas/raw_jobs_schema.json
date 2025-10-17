@@ -1,11 +1,4 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: raw-jobs-value
-  namespace: confluent
-data:
-  schema: |
-    {
+{
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://example.com/raw-jobs-schema.json",
     "title": "Job Schema",
@@ -54,7 +47,7 @@ data:
       },
       "service_provider_name": {
         "type": "string",
-        "description": "Job last modification date"
+        "description": "Service provider name"
       }
     },
     "required": [
@@ -64,4 +57,4 @@ data:
       "service_provider_name"
     ],
     "additionalProperties": false
-    }
+}

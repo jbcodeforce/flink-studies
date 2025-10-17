@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: raw-jobs-value
+  namespace: confluent
+data:
+  # The schema will be loaded from the file using kubectl create configmap
+  schema: ""

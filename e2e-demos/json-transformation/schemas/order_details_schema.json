@@ -1,11 +1,4 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: order-details-value
-  namespace: confluent
-data:
-  schema: |
-    {
+{
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://example.com/order-details-schema.json",
     "title": "OrderDetails Schema",
