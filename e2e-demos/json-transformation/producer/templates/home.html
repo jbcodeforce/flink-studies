@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="page-header">
-    <h1 class="page-title">🚀 Order or Jobs Producer Control Panel</h1>
+    <h1 class="page-title">Orders or Jobs Producer Control Panel</h1>
     <p class="page-subtitle">Create and manage Kafka record production jobs</p>
 </div>
 
@@ -165,16 +165,13 @@
                 countGroup.style.display = 'block';
             }
             
-            // Update topic suggestions
+            // Update topic field based on message type
             const topicInput = document.getElementById('topic');
             if (this.value === 'order') {
-                topicInput.placeholder = 'e.g., raw-orders';
-                if (!topicInput.value) topicInput.value = 'raw-orders';
+                topicInput.value = 'raw-orders';
             } else if (this.value === 'job') {
-                topicInput.placeholder = 'e.g., raw-jobs';
-                if (!topicInput.value) topicInput.value = 'raw-jobs';
+                topicInput.value = 'raw-jobs';
             } else if (this.value === 'custom') {
-                topicInput.placeholder = 'e.g., events, custom-topic';
                 topicInput.value = '';
             }
         });

@@ -2,7 +2,7 @@
     "apiVersion": "cmf.confluent.io/v1",
     "kind": "KafkaCatalog",
     "metadata": {
-      "name": "payments-catalog"
+      "name": "rental"
     },
     "spec": {
       "srInstance": {
@@ -12,7 +12,7 @@
       },
       "kafkaClusters": [
         {
-          "databaseName": "rentaldb", 
+          "databaseName": "kafka-cluster", 
           "connectionConfig": {
             "bootstrap.servers": "kafka.confluent.svc.cluster.local:9071"
           }

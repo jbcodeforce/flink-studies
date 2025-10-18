@@ -7,6 +7,7 @@ CMF_URL=http://localhost:8084
 SR_URL=http://localhost:8081
 ENV_NAME=dev-env
 APP_NAME=json-xform
+POOL_NAME=rental-pool
 
 # Colors for output
 BLUE := \033[0;34m
@@ -48,7 +49,8 @@ build_all: ## Build the demonstation components
 	cd producer && make build 
 	make create_all_topics
 	make create_all_schemas
-
+	make create_compute_pool
+	cd cp-flink && make build
 
 deploy_all: ## Deploy the demonstation components
 	@echo "$(BLUE)Deploying demo...$(NC)"
@@ -63,6 +65,7 @@ status_all: ## Validate the demo
 	cd producer && make status
 	make status_all_topics
 	make status_all_schemas
+	make status_compute_pool
 	@echo "✅ Demo status check complete!"
 
 tear_down_demo: ## Tear down the demo
@@ -72,22 +75,24 @@ tear_down_demo: ## Tear down the demo
 	make delete_all_cms
 	make delete_all_topics
 
+expose_services: ## Expose all the services needed for the demo
+	@echo "$(BLUE)Exposing services...$(NC)"
+	cd cp-flink && make port_forward_cp_console
+	cd cp-flink && make port_forward_cmf
+	cd cp-flink && make port_forward_schema_registry
+	cd cp-flink && make port_forward_minio_console
+	cd cp-flink && make port_forward_kafka_bootstrap
+
 open_cp_console: ## Open Confluent Control Center console
 	@echo "$(BLUE)Opening Confluent Control Center on http://localhost:9021 ...$(NC)"
 	@open -a "Google Chrome" http://localhost:9021
 
 # ------ PRIVATE TARGETS ------
 # --------- Service exposure ---------
-expose-services: 
-	@echo "$(BLUE)Exposing services...$(NC)"
-	cd cp-flink && make port_forward_cp_console
-	cd cp-flink && make port_forward_cmf
-	cd cp-flink && make port_forward_schema-registry
-	cd cp-flink && make port_forward_minio-console
-	cd cp-flink && make port_forward_kafka_bootstrap
 
 
-
+stop_port_forwards:
+	cd cp-flink && make stop_port_forwards
 
 # Complete setup for demo
 setup_demo:
@@ -100,12 +105,22 @@ setup_demo:
 	@echo "  🔍 Health Check: 'make test_api_health_nodeport'"
 
 
+create_compute_pool:
+	@echo "$(YELLOW)Creating compute pool...$(NC)"
+	confluent flink compute-pool create k8s/compute_pool.yaml --environment $(ENV_NAME) --url $(CMF_URL)
 
+delete_compute_pool:
+	@echo "$(YELLOW)Deleting compute pool...$(NC)"
+	confluent flink compute-pool delete $(POOL_NAME) --environment $(ENV_NAME) --url $(CMF_URL)
+
+status_compute_pool:
+	@echo "$(YELLOW)Checking compute pool...$(NC)"
+	confluent flink compute-pool list --environment $(ENV_NAME) --url $(CMF_URL)
 # ---- topics -----
 create_all_topics:
 	@echo "Creating all topics...in namespace $(CFNT_NS)"
 	@kubectl apply -f k8s/topics/raw_orders_topic.yaml -n $(CFNT_NS)
-	@kubectl apply -f k8s/topics/order_simple_topic.yaml -n $(CFNT_NS)
+	@kubectl apply -f k8s/topics/raw_jobs_topic.yaml -n $(CFNT_NS)
 	@kubectl apply -f k8s/topics/order_details_topic.yaml -n $(CFNT_NS)
 
 status_all_topics:
@@ -116,7 +131,7 @@ status_all_topics:
 
 delete_all_topics:
 	@kubectl delete -f k8s/topics/raw_orders_topic.yaml -n $(CFNT_NS)
-	@kubectl delete -f k8s/topics/order_simple_topic.yaml -n $(CFNT_NS)
+	@kubectl delete -f k8s/topics/raw_jobs_topic.yaml -n $(CFNT_NS)
 	@kubectl delete -f k8s/topics/order_details_topic.yaml -n $(CFNT_NS)
 
 # ---- Schemas with ConfigMaps

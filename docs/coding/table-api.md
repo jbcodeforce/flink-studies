@@ -43,28 +43,70 @@ It is important to note that Table API and SQL queries can be easily integrated 
 
 ### Packaging
 
+TBD
+
 ### Confluent Specifics
 
 In Confluent Manager for Flink deployment, only Flink Application mode is supported. A **Flink Application** is any user's program that spawns one or multiple Flink jobs from its `main()` method. The execution of these jobs can happen in a local JVM (LocalEnvironment) or on a remote setup of clusters with multiple machines ([kubernetes](./k8s-deploy.md)).
 
-In the context of **Confluent Cloud**, the Table API program acts as a client-side library for interacting with the Flink engine hosted in the cloud. It enables the submission of  `Statements` and retrieval of `StatementResults`. The provided Confluent plugin integrates specific components for configuring the TableEnvironment, eliminating the need for a local Flink cluster. By including the `confluent-flink-table-api-java-plugin` dependency, Flink's internal components—such as CatalogStore, Catalog, Planner, Executor, and configuration, are managed by the plugin and fully integrated with Confluent Cloud.
+In the context of **Confluent Cloud**, the Table API program acts as a client-side library for interacting with the Flink engine hosted in the cloud. It enables the submission of  `Statements` and retrieval of `StatementResults`. The provided Confluent plugin integrates specific components for configuring the TableEnvironment, eliminating the need for a local Flink cluster. By including the `confluent-flink-table-api-java-plugin` dependency, Flink's internal components—such as CatalogStore, Catalog, Planner, Executor, and configuration, are managed by the plugin and fully integrated with Confluent Cloud. This integration is via the REST API, so Confluent Table API plugin is an higher emcapsulation of the CC REST API. 
 
 ## Getting Started
 
 The development approach includes at least the following steps:
 
-1. Create a maven project and add the flink table api, and Kafka client dependencies (see an example of [pom.xml](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale/flink-app/pom.xml)) as it is important to do not repackage existing product jars, so use `provided` dependencies. For ^^Confluent Cloud for Flink deployment^^ see the [pom.xml in flink-java/table-api](https://github.com/jbcodeforce/flink-studies/tree/master/code/table-api/pom.xml) folder.
+1. Create a maven project with a command like:
+    ```sh
+    mvn archetype:generate -DgroupId=j9r.flink -DartifactId=my-app -DarchetypeArtifactId=maven-archetype-quickstart -DarchetypeVersion=1.5 -DinteractiveMode=false
+    ```
+
+1. Add the flink table api, and Kafka client dependencies:
+
+    === "**Open Source Libraries**"
+        ```xml
+        <groupId>org.apache.flink</groupId>
+
+        <artifactId>flink-java</artifactId>
+        <artifactId>flink-clients</artifactId>
+        <artifactId>flink-table-api-java</artifactId>
+        <artifactId>flink-table-common</artifactId>
+        <artifactId>flink-table-api-java-bridge</artifactId>
+        <artifactId>flink-table-runtime</artifactId>
+        <artifactId>flink-connector-kafka</artifactId>
+        <artifactId>flink-connector-base</artifactId>
+        <!-- Depending of the serialization needs -->
+        <artifactId>flink-json</artifactId>
+        <artifactId>flink-avro</artifactId>
+        <!-- when using schema registry -->
+        <artifactId>flink-avro-confluent-registry</artifactId>
+        ```
+        (see an example of [pom.xml](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale/flink-app/pom.xml)).  Use `provided` dependencies to get the Flink jars from the deployed product. 
+
+    === "**Confluent Cloud for Flink**"
+        ```xml
+         <dependency>
+            <groupId>io.confluent.flink</groupId>
+            <artifactId>confluent-flink-table-api-java-plugin</artifactId>
+            <version>${confluent-plugin.version}</version>
+        </dependency>
+        ```
+        For ^^Confluent Cloud for Flink deployment^^ see the [pom.xml in table-api/ccf-table-api](https://github.com/jbcodeforce/flink-studies/blob/master/code/table-api/ccf-table-api/pom.xml) folder.
+
+    === "**Confluent Platform for Flink**"
+        ```
+        ```
+
+
 1. Implement and unit test the flow. See best practices for [code structure](#code-structure).
 1. Depending of the target Flink runtime, there will be different steps: 
 
-    For **Confluent Platform for Flink**:
+    === "For **Confluent Platform for Flink**:"
+        1. Define a FlinkApplication CR
+        1. Package the jar, and build a docker image using Confluent Platform for Flink base image with a copy of the app jar. (See example of [Dockerfile](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale/flink-app/Dockerfile))
+        1. Deploy to Kubernetes using the Flink kubernetes operator
+        1. Monitor with the web ui.
 
-    1. Define a FlinkApplication CR
-    1. Package the jar, and build a docker image using Confluent Platform for Flink base image with a copy of the app jar. (See example of [Dockerfile](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale/flink-app/Dockerfile))
-    1. Deploy to Kubernetes using the Flink kubernetes operator
-    1. Monitor with the web ui.
-
-    For **Confluent Cloud for Flink**:
+    === "For **Confluent Cloud for Flink**:"
 
     1. Add the  `io.confluent.flink.confluent-flink-table-api-java-plugin` into the maven dependencies and use the following Environment settings: 
 
@@ -165,34 +207,36 @@ The important classes are:
 * [Table](https://nightlies.apache.org/flink/flink-docs-release-1.20/api/java/org/apache/flink/table/api/Table.html)
 * [Row](https://nightlies.apache.org/flink/flink-docs-release-1.20/api/java/org/apache/flink/types/Row.html)
 * [Expressions](https://nightlies.apache.org/flink/flink-docs-release-1.20/api/java/org/apache/flink/table/api/Expressions.html) contains static methods for referencing table columns, creating literals, and building more complex Expression chains. See below.
+* [Confluent Table API Tutorial](//github.com/confluentinc/flink-table-api-java-examples.git)
 
 ### Code structure
 
-Clearly separate the creation of source, and workflow in different methods and outside of the main.
+Clearly separate the creation of sources, sinks, workflow in different methods. References those methods in the main().
 
 ### Create some test data
 
-Use one of the TableEnvironment fromValues() methods, below is an example on a collection.
+Use one of the TableEnvironment fromValues() methods,
 
-```java
- env.fromValues("Paul", "Jerome", "Peter", "Robert")
-                .as("name")
-                .filter($("name").like("%e%"))
-                .execute()
-                .print();
-```
-
-```java
-import org.apache.flink.table.api.DataTypes;
-Table customers = env.fromValues(
-                        DataTypes.ROW(
-                                DataTypes.FIELD("customer_id", DataTypes.INT()),
-                                DataTypes.FIELD("name", DataTypes.STRING()),
-                                DataTypes.FIELD("email", DataTypes.STRING())),
-                        row(3160, "Bob", "bob@corp.com"),
-                        row(3107, "Alice", "alice.smith@example.org"),
-                        row(3248, "Robert", "robert@someinc.com"));
-```
+=== "From collection"
+    ```java
+    env.fromValues("Paul", "Jerome", "Peter", "Robert")
+                    .as("name")
+                    .filter($("name").like("%e%"))
+                    .execute()
+                    .print();
+    ```
+=== "With Schema and list of row"
+    ```java
+    import org.apache.flink.table.api.DataTypes;
+    Table customers = env.fromValues(
+                            DataTypes.ROW(
+                                    DataTypes.FIELD("customer_id", DataTypes.INT()),
+                                    DataTypes.FIELD("name", DataTypes.STRING()),
+                                    DataTypes.FIELD("email", DataTypes.STRING())),
+                            row(3160, "Bob", "bob@corp.com"),
+                            row(3107, "Alice", "alice.smith@example.org"),
+                            row(3248, "Robert", "robert@someinc.com"));
+    ```
 
 ### Joining two tables
 

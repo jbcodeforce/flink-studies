@@ -30,7 +30,7 @@ class Order(BaseModel):
     OrderId: int = 0
     Status: str = Field(default="NEW", description="Record status")
     Equipment: Optional[List[Equipment]]
-    TotalPaid: Optional[int] = Field(None, description="total paid")
+    TotalPaid: Optional[float] = Field(None, description="total paid")
     Type: Optional[str]=Field(None, description="type")
     Coverage: Optional[str]=Field(None, description="coverage")
     Itinerary: Optional[Itinerary]
@@ -48,8 +48,8 @@ class Job(BaseModel):
     order_id: int = 0
     job_type: Optional[str]
     job_status: Optional[str]
-    rate_service_provider: Optional[str]
-    total_paid: Optional[str]
+    rate_service_provider: Optional[float]
+    total_paid: Optional[float]
     job_date_start: Optional[str]
     job_completed_date: Optional[str]
     job_entered_date: Optional[str]
@@ -73,11 +73,11 @@ def generate_job_record() -> tuple[str, Job]:
     key = random.randint(100, 1000)
     return key, Job(
         job_id=key,
-        order_id=random.randint(1000, 10010),
+        order_id=random.randint(1000, 1110),
         job_type=random.choice(types),
         job_status=random.choice(statuses),
-        rate_service_provider=f"{random.randint(10,150)}.0000",
-        total_paid=f"{random.randint(10,150)}.0000",
+        rate_service_provider=random.randint(10,150),
+        total_paid=random.randint(10,350),
         job_date_start=f"{datetime.now().strftime('%Y-%m-%d')}",
         job_completed_date=f"{datetime.now().strftime('%Y-%m-%d')}",
         job_entered_date=f"{datetime.now().strftime('%Y-%m-%d')}",
@@ -96,7 +96,7 @@ def generate_moving_help_equipment() -> Equipment:
     moving_help_type= ['MOVING_BLANKETS', 'MOVING_BOXES', 'MOVING_PAPER', 'MOVING_OTHER']
     return Equipment(
         ModelCode=random.choice(moving_help_type),
-        Rate=f"{random.randrange(9.95,19.95)}"
+        Rate=f"{random.uniform(9.95, 19.95):.2f}"
     )
 
 
@@ -108,13 +108,14 @@ def generate_order_record() -> Order:
     order_type = ['InTown', 'OutOfTown', 'OneWay']
     equipments = [generate_truck_equipment(), generate_moving_help_equipment()]
     itinerary = {'PickupDate': '2020-09-21T18:14:08.000Z', 'DropoffDate': '2020-09-21T20:47:42.000Z', 'PickupLocation': '41260', 'DropoffLocation': '41260'}
-    key = random.randint(1000, 10010)
+    key = random.randint(1000, 1110)
     o= Order(
         OrderId=key,
         Status=random.choice(statuses),
         Type=random.choice(types),
         Coverage=random.choice(coverage),
         Equipment=equipments,
+        TotalPaid=float(random.randint(500,2000)),
         Itinerary=itinerary,
         Payment=random.choice(payment),
         OrderType=random.choice(order_type)

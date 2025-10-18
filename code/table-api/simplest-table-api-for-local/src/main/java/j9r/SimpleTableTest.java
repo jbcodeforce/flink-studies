@@ -14,10 +14,7 @@ public class SimpleTableTest {
 
     public static void main(String[] args) throws Exception {
         
-        // 2. Create local environment with web UI
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment(config);
-        
-        // 3. Create a StreamTableEnvironment
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env);
 
         // 4. Create a Table from in-memory values
@@ -41,13 +38,9 @@ public class SimpleTableTest {
 
         // 6. Convert Table back to DataStream and print
         System.out.println("Executing Flink Table API job...");
-        System.out.println("Web UI will be available at http://localhost:8081");
         tableEnv.toDataStream(resultTable, Row.class).print();
 
         // 7. Execute the job and keep it running
         env.execute("Simple Table API Example");
-
-        // 8. Keep the program running to maintain the web UI
-        Thread.sleep(Long.MAX_VALUE);
     }
 }

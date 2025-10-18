@@ -1,6 +1,6 @@
 # Flink SQL 
 
-???- Info "Updates"
+???+ Info "Updates"
     Created 10/24, Updated 12/20/24
     Revised 12/06/24
 
@@ -18,7 +18,7 @@ Use one of the following approaches:
 * Use Confluent Cloud Flink console to write SQL Statements in a Workspace, and run them directly from there: statements may run on a compute pool and may run forever.
 * Use Confluent cli connected to a compute pool defined in a **Confluent Cloud** environment. (To create a new environment using Terraform see [this note](terraform.md))
 
-???- tip "Local SQL client"
+???+ tip "Local SQL client"
     The SQL Client aims to provide an easy way to write, debug, and submit table programs to a Flink cluster without a single line of code in any programming language. To interact with Flink using the SQL client, open a bash in the running container, or in the flink bin folder:
 
     ```sh
@@ -33,7 +33,7 @@ Use one of the following approaches:
     ```
 
 
-???- example  "SQL client with Confluent Cloud cli"
+???+ example  "SQL client with Confluent Cloud cli"
     [See quick start note](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-shell.html) which is summarized as:
 
     * Connect to Confluent Cloud with CLI, then get environment and compute pool identifiers
@@ -52,7 +52,7 @@ Use one of the following approaches:
 
     * Write SQL statements, results are visible in the active session.
 
-???- info "Run SQL in Kubernetes application" 
+???+ info "Run SQL in Kubernetes application" 
     Write SQL statements and test them with Java SQL runner. The Class is in [flink-studies/code/flink-java/sql-runner](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-java/sql-runner) folder. Then package the java app and sql script into a docker image then use a FlinkDeployment  descriptor; (see [this git doc](https://github.com/apache/flink-kubernetes-operator/tree/main/examples/flink-sql-runner-example)).
 
 [See the Flink SQL CLI commands documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sqlclient/).
@@ -75,7 +75,7 @@ See [the flink-sql/00-basic-sql folder](https://github.com/jbcodeforce/flink-stu
     DESCRIBE EXTENDED table_name;
     ```
 
-???- info "Understand a type of attribute or get table structure with metadata"
+???+ info "Understand a type of attribute or get table structure with metadata"
     ```sql
     show create table 'tablename';
     -- for a specific attribute
@@ -84,7 +84,7 @@ See [the flink-sql/00-basic-sql folder](https://github.com/jbcodeforce/flink-stu
 
     Flink SQL planner performs type checking. Assessing type of inferred table is helpful specially around timestamp. See [Data type mapping documentation.](https://docs.confluent.io/cloud/current/flink/reference/serialization.html)
 
-???- info "Understand the physical execution plan for a SQL query"
+???+ info "Understand the physical execution plan for a SQL query"
     See the [explain keyword](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/explain/) or [Confluent Flink documentation](https://docs.confluent.io/cloud/current/flink/reference/statements/explain.html) for the output explanations.
 
     ```sql
@@ -106,7 +106,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
  
 ### Table creation how-tos
 
-???- tip "Primary key and partition by considerations"
+???+ tip "Primary key and partition by considerations"
     * Primary key can have one or more columns, all of them should be not null, and only being `NOT ENFORCED`
     * The primary key declaration, partitions the table implicitly by the key column(s)
     * Flink uses the primary key for state management and deduplication with upsert, if the sink connector supports it. While the partition key is what determines which Kafka partition a message will be written to. This is a Kafka-level concept.
@@ -127,7 +127,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
     CREATE TABLE humans (hid INT PRIMARY KEY NOT ENFORCED, race STRING, gender INT) DISTRIBUTED BY (hid) INTO 2 BUCKETS;
     ```
 
-???- tip "Create a table with csv file as persistence - Flink OSS"
+???+ tip "Create a table with csv file as persistence - Flink OSS"
     We need to use the file system connector.
 
     ```sql
@@ -142,7 +142,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
     );
     ```
 
-???- info "CREATE TABLE in Confluent Cloud for Flink"
+???+ info "CREATE TABLE in Confluent Cloud for Flink"
     The table creation creates topic and -key, -value schemas in the Schema Registry in the same environment as the compute pool in which the query is run. The `connector` is automatically set to `confluent`. 
     The non null and nullable columns are translate as the following avro fields:
     ```avro
@@ -179,7 +179,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
     ```
 
 
-???- question "How to consume from a Kafka topic to a SQL table? -- Flink OSS"
+???+ question "How to consume from a Kafka topic to a SQL table? -- Flink OSS"
     On Confluent Cloud for flink, there are already tables created for each topic. For local Flink we need to create table with column definitions that maps to attributes of the record. The `From` right operand proposes the list of topic/table for the catalog and database selected. For Flink OSS or Confluent Platform for Flink the `WITH` statement helps to specify the source topic.
 
     ```sql
@@ -223,7 +223,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
 
  
 
-???- question "How to load data from a csv file using filesystem connector using SQL - Flink OSS"
+???+ question "How to load data from a csv file using filesystem connector using SQL - Flink OSS"
     Enter the following statement in a SQL client session:
 
     ```sql
@@ -260,7 +260,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
     [See complete example in the readme](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/00-basic-sql)
 
 
-???- question "How to add a metadata field in a table?"
+???+ question "How to add a metadata field in a table?"
     [Use ALTER TABLE](https://docs.confluent.io/cloud/current/flink/reference/statements/alter-table.html)
     
     ```sql
@@ -268,7 +268,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
     ```
 
 
-???- tip "Create a table as another table by inserting all records (CTAS create table as select)"
+???+ tip "Create a table as another table by inserting all records (CTAS create table as select)"
     [CREATE TABLE AS SELECT](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-as-select-ctas) is used to create table and insert values in the same statement. It derives the physical column data types and names (from aliased columns), the changelog.mode (from involved tables, operations, and upsert keys), and the primary key.
     
     By using a primary key:
@@ -280,7 +280,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
     as select id, first_name, last_name, email from shoe_customers;
     ```
 
-???- example "Combine deduplication with create table as select"
+???+ example "Combine deduplication with create table as select"
     Attention the '`' is important. Ordering with DESC means takes the earliest record
     
     ```sql
@@ -328,13 +328,13 @@ A table registered with the CREATE TABLE statement can be used as a table source
     ```
     This will only work in customized Flink client with the jar from Flink faker.
 
-???- info "Generate data with DataGen for Flink OSS"
+???+ info "Generate data with DataGen for Flink OSS"
     [Use DataGen to do in-memory data generation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/connectors/table/datagen/)
 
-???- question "How to generate test data to Confluent Cloud Flink?"
+???+ question "How to generate test data to Confluent Cloud Flink?"
     Use Kafka Connector with DataGen. Those connector exists with a lot of different pre-defined model. Also it is possible to define custom Avro schema and then use predicates to generate data. There is a [Produce sample data quick start tutorial from the Confluent Cloud home page](https://docs.confluent.io/cloud/current/connectors/cc-datagen-source.html). See also [this readme](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/01-confluent-kafka-local-flink).
 
-???- question "How to transfer the source timestamp to another table"
+???+ question "How to transfer the source timestamp to another table"
     As $rowtime is the timestamp of the record in Kafka, it may be interesting to keep the source timestamp to the downstream topic.
 
     ```sql
@@ -356,7 +356,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
     from  `src_table`;
     ```
 
-???- question "Dealing with late event"
+???+ question "Dealing with late event"
     Any streams mapped to a table have records arriving more-or-less in order, according to the `$rowtime`, and the watermarks let the Flink SQL runtime know how much buffering of the incoming stream is needed to iron out any out-of-order-ness before emitting the sorted output stream.
 
     We need to  specify the watermark strategy: for example within 30 second of the event time:
@@ -371,7 +371,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
 
     On CCF the watermark is on the `$rowtime` by default.
 
-???- question "How to change system watermark?"
+???+ question "How to change system watermark?"
 
     ```sql
     ALTER TABLE table_name MODIFY WATERMARK FOR $rowtime AS $rowtime - INTERVAL '1' SECOND;
@@ -381,7 +381,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
 
     This can be used when doing enrichment join on reference table. We do not want to wait for watermark arriving on the reference table, so set the watermark of this reference table to the max INT using `ALTER TABLE table_name SET `$rowtime` TO_TIMESTAMP(,0)`
 
-???- question "Create a table with topic as one day persistence"
+???+ question "Create a table with topic as one day persistence"
     See the [WITH options](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#with-options).
 
     ```sql
@@ -399,7 +399,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
     ```
     `distributed by hash(order_id)` and `into 1 buckets` specify that the table is backed by a Kafka topic with 1 partitions, and the order_id field will be used as the partition key. 
 
-???- tip "Table with Kafka Topic metadata"
+???+ tip "Table with Kafka Topic metadata"
     The headers and timestamp are the only options not read-only, all are VIRTUAL. Virtual columns are by default excluded from a SELECT * similar to the system column like `$rowtime`. 
 
     ```sql
@@ -430,7 +430,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
     GROUP BY window_time, window_end, window_start
     ``` 
 
-???- question "How to support nested rows?"
+???+ question "How to support nested rows?"
     Avro, Protobuf or Json schemas are very often hierarchical per design. It is possible to use CAST to name a column within a sub-schema:
     ```sql
     -- DDL
@@ -595,7 +595,7 @@ This is important to recall that a select applies to a stream of record so the r
 select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 ```
 
-???- question "How to filter out records?"
+???+ question "How to filter out records?"
 
     using the [WHERE clause](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/select/)
 
@@ -611,7 +611,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     Recall that this results produces a dynamic table.
 
-???- question "How to combine records from multiple tables (UNION)?"
+???+ question "How to combine records from multiple tables (UNION)?"
     When the two tables has the same number of columns of the same type, then we can combine them:
 
     ```sql
@@ -623,7 +623,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     [See product documentation on Union](https://docs.confluent.io/cloud/current/flink/reference/queries/set-logic.html#flink-sql-set-logic-union). Remember that UNION will apply distinct, and avoid duplicate, while UNION ALL will generate duplicates. 
 
 
-???- info "OVER aggregations"
+???+ info "OVER aggregations"
     [OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) compute an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY does, but produces one result for every input row. This is helpful when we need to act on each input row, but consider some time interval. A classical example is to get the number of orders in the last 10 seconds:
 
     ```sql
@@ -685,7 +685,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
         (total_orders_ten_secs <= 5 AND total_orders_ten_secs_lag > 5);
     ```
 
-???- question "How to access element of an array of rows?"
+???+ question "How to access element of an array of rows?"
     The table is created as:
     ```sql
      CREATE TABLE my_table (
@@ -706,7 +706,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
         UNNEST(t.nested_data) AS unnested_row;
     ```
 
-???- question "How to Aggregate a field into an ARRAY?"
+???+ question "How to Aggregate a field into an ARRAY?"
     Let start by a simple array indexing (the index is between 1 to n_element). Below, the values array creates test data into a memory table aliased a `T` with a column `array_field`:
 
     ```sql
@@ -730,7 +730,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     CROSS JOIN UNNEST(v.urls) AS u(url)
     ```
 
-???- question "How to expand a column being an array of fields into new row?"
+???+ question "How to expand a column being an array of fields into new row?"
 
     The table order has n product ids in the product_ids column. The following will create one row per element in product_ids.
 
@@ -743,7 +743,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     cross join unnest(product_ids) as ids(product_id)
     ```
 
-???- info "Navigate a hierarchical structure in a table"
+???+ info "Navigate a hierarchical structure in a table"
     The unique table has node and ancestors representation. An example will be to represent a hierarchy of nodes persisted in a unique table. Suppose the graph represents a Procedure at the highest level, then an Operation, then a Phase and a Phase Step at the level 4. In the Procedures table we can have rows like:
     
     ```csv
@@ -790,7 +790,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     ```
 
 
-???- question "How to transform a field representing epoch to a timestamp?"
+???+ question "How to transform a field representing epoch to a timestamp?"
     
     epoch is a BIGINT.
     
@@ -798,7 +798,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
      TO_TIMESTAMP(FROM_UNIXTIME(click_ts_epoch)) as click_ts
     ```
 
-???- question "How to change a date string to a timestamp?"
+???+ question "How to change a date string to a timestamp?"
 
     ```sql
     TO_TIMESTAMP('2024-11-20 12:34:568Z'),
@@ -810,7 +810,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     See all the [date and time functions](https://docs.confluent.io/cloud/current/flink/reference/functions/datetime-functions.html).
 
-???- question "How to compare a date field with current system time?"
+???+ question "How to compare a date field with current system time?"
 
     ```sql
     WHEN TIMESTAMPDIFF(day, event.event_launch_date, now()) > 120 THEN ...
@@ -819,7 +819,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     The table used as target to this processing, if new records are added to it, then needs to be append log, as if it is upsert then the now() time is not determenistic for each row to process.
 
 
-???- question "How to mask a field?"
+???+ question "How to mask a field?"
     Create a new table from the existing one, and then use REGEXP_REPLACE to mask an existing attribute
 
     ```sql
@@ -827,7 +827,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     INSERT INTO users_msk SELECT ..., REGEXP_REPLACE(credit_card,'(\w)','*') as credit_card FROM users;
     ```
 
-???- question "How to filter row that has column content not matching a regular expression?"
+???+ question "How to filter row that has column content not matching a regular expression?"
 
     Use [REGEX](https://docs.confluent.io/cloud/current/flink/reference/functions/string-functions.html#flink-sql-regexp-function)
 
@@ -847,7 +847,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     WHERE keep_row = TRUE;
     ```
 
-???- info "How to search for hot key?"
+???+ info "How to search for hot key?"
     ```sql
     SELECT 
         id, 
@@ -898,7 +898,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     WHERE ks.record_count > ds.mean_count 
     ```
 
-???- question "What are the different SQL execution modes?"
+???+ question "What are the different SQL execution modes?"
 
     Using previous table it is possible to count the elements in the table using:
 
@@ -924,7 +924,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     ![](./images/changelog-exec-mode.png)
 
-???- question "How to access json data from a string column being a json object?"
+???+ question "How to access json data from a string column being a json object?"
     
     Use json_query function in the select.
 
@@ -936,7 +936,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 
 
-???- question "How to transform a json array column (named data) into an array to then generate n rows?"
+???+ question "How to transform a json array column (named data) into an array to then generate n rows?"
     Returning an array from a json string:
     ```sql
     json_query(`data`, '$' RETURNING ARRAY<STRING>) as anewcolumn
@@ -951,7 +951,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     UNNEST returns a new row for each element in the array
     [See multiset expansion doc](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/joins/#array-multiset-and-map-expansion)
 
-???- question "How to implement the equivalent of SQL explode?"
+???+ question "How to implement the equivalent of SQL explode?"
     SQL EXPLODE creates a row for each element in the array or map, and ignore null or empty values in array.
     ```sql
     SELECT explode(col1) from values (array(10,20)), (null)
@@ -962,7 +962,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     select map_entries(map_from_arrays())
     ```
 
-???- question "How to use conditional functions?"
+???+ question "How to use conditional functions?"
     [Flink has built-in conditional functions](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#conditional-functions) (See also [Confluent support](https://docs.confluent.io/cloud/current/flink/reference/functions/conditional-functions.html)) and specially the CASE WHEN:
 
     ```sql
@@ -977,7 +977,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
         END;
     ```
 
-???- question "When and how to use custom watermark?"
+???+ question "When and how to use custom watermark?"
     Developer should use their own [watermark strategy](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#watermark-clause) when there are not a lot of records per topic/partition, there is a need for a large watermark delay, and need to use another timestamp. 
     The default watermark strategy in SOUCE_WATERMARK(), a watermark defined by the source. The common strategy used is the `maximim-out-of-orderness` to allow messages arriving later to be part of the window, to ensure more accurate results, as a tradeoff of latency. It can be defined using:
 
@@ -987,7 +987,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     The minimum out-of-orderness is 50ms and can be set up to 7 days. See [Confluent documentation.](https://docs.confluent.io/cloud/current/flink/reference/functions/datetime-functions.html#flink-sql-source-watermark-function) 
     
-???- question "Deduplication example"
+???+ question "Deduplication example"
 
     ```sql
     SELECT ip_address, url, TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) as click_timestamp
@@ -1002,7 +1002,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     [See this example](https://docs.confluent.io/cloud/current/flink/how-to-guides/deduplicate-rows.html#flink-sql-deduplicate-topic-action).
 
-???- question "How to manage late message to be sent to a DLQ?"
+???+ question "How to manage late message to be sent to a DLQ?"
     First create a DLQ table like late_orders based on the order table:
     
     ```sql
@@ -1039,7 +1039,7 @@ Here is a list of important tutorials on Joins:
 * [Confluent temporal join](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html#temporal-joins)
 * [Window Join Queries in Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/flink/reference/queries/window-join.html)
 
-???- info "Inner knowledge on temporal join"
+???+ info "Inner knowledge on temporal join"
     Event-time temporal joins are used to join two or more tables based on a **common** event time (in one of the record table or the kafka record: `$rowtime` system column). With an event-time attribute, the operator can retrieve the value of a key as it was at some point in the past. The right-side, versioned table, stores all versions, identified by time, since the last watermark.
 
     The temporal Flink sql looks like:
@@ -1053,7 +1053,7 @@ Here is a list of important tutorials on Joins:
 
     When enriching a particular `table1`, an event-time temporal join waits until the watermark on the table2 stream reaches the timestamp of that `table1` row, because only then is it reasonable to be confident that the result of the join is being produced with complete knowledge of the relevant `table2` data. This table2 record can be old as the watermark on that table being late.
 
-???- info "How to join two tables on a key within a time window using event column as timestamp and store results in a target table?"
+???+ info "How to join two tables on a key within a time window using event column as timestamp and store results in a target table?"
     Full example:
 
     ```sql
@@ -1073,7 +1073,7 @@ Here is a list of important tutorials on Joins:
     end
     ```
 
-???- warning "Join on 1x1 relationship"
+???+ warning "Join on 1x1 relationship"
     In current Flink SQL it is not possible to *efficiently* join elements from two tables when we know the relation is 1 to 1: one transaction to one account, one shipment to one order. As soon as there is a match, normally we want to emit the result and clear the state. This is possible to do so with the DataStream API, not SQL.
 
 ### Windowing / Table Value Functions
@@ -1082,7 +1082,7 @@ Here is a list of important tutorials on Joins:
 
 * The TUMBLE function assigns each element to a window of specified window size. Tumbling windows have a fixed size and do not overlap.
 
-???- question "Count the number of different product type per 10 minutes (TUMBLE window)"
+???+ question "Count the number of different product type per 10 minutes (TUMBLE window)"
     [Aggregate a Stream in a Tumbling Window documentation.](https://docs.confluent.io/cloud/current/flink/how-to-guides/aggregate-tumbling-window.html). 
     The following query counts the number of different product types arriving from the event stream by interval of 10 minutes.
 
@@ -1119,7 +1119,7 @@ Here is a list of important tutorials on Joins:
 
 
 
-???- question "Aggregation over a window"
+???+ question "Aggregation over a window"
     Windows over approach is to end with the current row, and stretches backwards through the history of the stream for a specific interval, either measured in time, or by some number of rows.
     For example counting the umber of flight_schedule events of the same key over the last 100 events:
 
@@ -1134,7 +1134,7 @@ Here is a list of important tutorials on Joins:
 
     The results are updated for every input row. The partition is by flight_id. Order by $rowtime is necessary.
 
-???- question "Find the number of elements in x minutes intervals advanced by 5 minutes? (HOP)"
+???+ question "Find the number of elements in x minutes intervals advanced by 5 minutes? (HOP)"
     [Confluent documentation on window integration.](https://docs.confluent.io/cloud/current/flink/reference/queries/window-tvf.html). For **HOP** wuindow, there is the slide parameter to control how frequently a hopping window is started:
 
     ```sql
@@ -1146,7 +1146,7 @@ Here is a list of important tutorials on Joins:
         GROUP BY window_start, window_end;
     ```
 
-???- question "How to compute the accumulate price over time in a day (CUMULATE)"
+???+ question "How to compute the accumulate price over time in a day (CUMULATE)"
     Needs to use the cumulate window, which adds up records to the window until max size, but emits results at each window steps. 
     The is image summarizes well the behavior:
     ![](https://docs.confluent.io/cloud/current/_images/flink-cumulating-windows.png)
@@ -1160,7 +1160,7 @@ Here is a list of important tutorials on Joins:
 
 ### Row pattern recognition
 
-???- question "Find the longest period of time for which the average price of a stock did not go below a value"
+???+ question "Find the longest period of time for which the average price of a stock did not go below a value"
     Create a Datagen to publish StockTicker to a Kafka topic.
     [See product documentation on CEP pattern with SQL](https://nightlies.apache.org/flink/flink-docs-release-1.15/docs/dev/table/sql/queries/match_recognize/)
     
@@ -1192,7 +1192,7 @@ Here is a list of important tutorials on Joins:
 
 Each topic is automatically mapped to a table with some metadata fields added, like the watermark in the form of `$rowtime` field, which is mapped to the Kafka record timestamp. To see it, run `describe extended table_name;` With watermarking. arriving event records will be ingested roughly in order with  respect to the `$rowtime` time attribute field.
 
-???- question "Mapping from Kafka record timestamp and table $rowtime"
+???+ question "Mapping from Kafka record timestamp and table $rowtime"
     The Kafka record timestamp is automatically mapped to the `$rowtime` attribute, which is a read only field. Using this field we can order the record by arrival time:
 
     ```sql
@@ -1202,7 +1202,7 @@ Each topic is automatically mapped to a table with some metadata fields added, l
     ```
 
 
-???- question "How to run Confluent Cloud for Flink?"
+???+ question "How to run Confluent Cloud for Flink?"
     See [the note](../techno/ccloud-flink.md), but can be summarized as: 1/ create a stream processing compute pool in the same environment and region as the Kafka cluster, 2/ use Console or CLI (flink shell) to interact with topics.
 
     ![](../techno/diagrams/ccloud-flink.drawio.png)
@@ -1211,14 +1211,14 @@ Each topic is automatically mapped to a table with some metadata fields added, l
     confluent flink quickstart --name my-flink-sql --max-cfu 10 --region us-west-2 --cloud aws
     ```
 
-???- question "Running Confluent Cloud Kafka with local Flink"
+???+ question "Running Confluent Cloud Kafka with local Flink"
     The goal is to demonstrate how to get a cluster created in an existing Confluent Cloud environment and then send message via FlinkFaker using local table to Kafka topic:
     
     ![](./diagrams/flaker-to-kafka.drawio.png)
 
     The [scripts and readme](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/01-confluent-kafka-local-flink) .
 
-???- question "Reading from a topic specific offsets"
+???+ question "Reading from a topic specific offsets"
     ```sql
     ALTER TABLE table_name SET (
         'scan.startup.mode' = 'specific-offsets',
@@ -1228,7 +1228,7 @@ Each topic is automatically mapped to a table with some metadata fields added, l
     SELECT * FROM table_name;
     ```
 
-???- question "create a long running SQL with cli"
+???+ question "create a long running SQL with cli"
     Get or create a service account.
     
     ```sh
@@ -1241,7 +1241,7 @@ Each topic is automatically mapped to a table with some metadata fields added, l
     confluent flink statement create my-statement --sql "SELECT * FROM my-topic;" --compute-pool <compute_pool_id> --service-account sa-123456 --database my-cluster
     ```
 
-???- question "Assess the current flink statement running in Confluent Cloud"
+???+ question "Assess the current flink statement running in Confluent Cloud"
     To assess which jobs are still running, which jobs failed, and which stopped, we can use the user interface, go to the Flink console > . Or the `confluent` CLI:
 
     ```sh
@@ -1252,7 +1252,7 @@ Each topic is automatically mapped to a table with some metadata fields added, l
 
 ### From batch to real-time
 
-???- info "How to support Type 2 slowly changing dimension (SCD) table?"
+???+ info "How to support Type 2 slowly changing dimension (SCD) table?"
     Type 2 SCDs are designed to maintain a complete history of all changes to dimension data. When a change occurs, a new row is inserted into the table, representing the updated record, while the original record remains untouched. Each record in the table is typically assigned a unique identifier (often a surrogate key) to distinguish between different versions of the same dimension member. 
 
 ## User Defined Function

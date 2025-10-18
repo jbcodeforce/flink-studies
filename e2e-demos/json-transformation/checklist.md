@@ -4,6 +4,11 @@ This checklist outlines the missing implementation steps to complete the demonst
 
 ## Core Features
 
-* [ ] Add creation of the target output topic, schema and CM for OrderDetails
-* [ ] Add transformation between raw-order to order-details
+* [ ] build target to work
+* [ ] Be able to deploy flink app
+* [ ] transform raw_job to job detail
+* [ ] xform raw order to order details
+* [ ] join job and orders to order details
+* [x] Add creation of the target output topic, schema and CM for OrderDetails
+
 

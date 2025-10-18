@@ -11,3 +11,4 @@ spec:
   partitionCount: 1
   configs:
     cleanup.policy: "delete"
+    retention.ms: "86400000" # 24 hours

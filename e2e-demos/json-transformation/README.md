@@ -129,7 +129,6 @@ The components involved in this demonstration are depicted in the following figu
 
 ---
 
-
 ## Demonstration
 
 ### Prerequisites
@@ -137,6 +136,10 @@ The components involved in this demonstration are depicted in the following figu
 * We assume a Kubernetes clsuter is up and running with the Confluent Platform and Confluent Manager for Flink deployed. Use at least version 8.0.x. See [deployments readme and Makefiles](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s) for platform deployments.
 * Clone this repository and work in the `flink-studies/e2e-demos/json-transformation` folder.
 * The project uses `make` tool
+* Look at the available demonstration targets:
+    ```
+    make help
+    ```
 
 ### Build and Deploy the components
 
@@ -149,7 +152,7 @@ metadata:
     component: <specific_name>
 ```
 
-* build and deploy all
+* Build and deploy all
   ```sh
   make build_all
   make deploy_all
@@ -157,13 +160,24 @@ metadata:
 
 *Remarks* all the components can be built individually using the Makefile under each component folder.
 
+* Verify all components run successfully
+  ```sh
+  make status all 
+  ```
+
 ### Demonstration from the user interface
 
 The demonstration user interface includes the form and controls to drive the demonstration, the scripts is inside the Demo Description section
 
 ![](./docs/demo-ui.png)
 
-### Create input data in the two raw topics
+1. Create input data in the raw order topics: 
+  **Select Message Type**
+  * 📦 Order Records: E-commerce order data
+  ![](./docs/orders_created.png)
+
+  In CP Console too:
+  ![](./docs/raw_orders_in_topic.png)
 
 
 
@@ -194,9 +208,11 @@ The demonstration user interface includes the form and controls to drive the dem
 
 ### Project structure
 
+The approach is to keep component in separate folder, with makefile to build, deploy, get the status of the running pods, and undeploy. Each with its own k8s manifests.
+
 | Folder | Content |
 | --- | --- |
-| **k8s** | Makefile and common kubernetes elements of the demonstration |
+| **k8s** | Makefile and common kubernetes elements of the demonstrations. Common to all components, like namespace and config map |
 | **cp-flink** | Flink statemens as Table API code |
 | **docs** | Some diagrams |
 | **Producer** | Web App and CLI to produce demonstration records | 
@@ -256,10 +272,27 @@ The following figure illustrates the different deployment model:
 | `KAFKA_SASL_MECHANISM` | `PLAIN` | SASL mechanism |
 | `KAFKA_CERT` | _(empty)_ | SSL certificate path |
 
+Those environment variables are defined in `k8s/kafka_client_cm.yaml`.
 
 ### The Flink SQL processing
 
-Defining JSON objects as sink, involves defining the value format, and the table structure. As we want json, the settings is:
+For Confluent Manager for Flink, the SQL feature is in preview (as of 10/2025). The concepts are the same as in Confluent Cloud for Flink with Environment, and Compute Pools. The manifests are in [deployment/k8s/cp-flink](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cp-flink/flink-dev-env.yaml).
+
+Recall the relationship between those elements are illustrated in the figure:
+
+![](https://github.com/jbcodeforce/flink-studies/blob/master/docs/coding/diagrams/cmf-cr.drawio.png)
+
+The approach is:
+1. Be sure to be unlogged of confluent cloud session when using the confluent cli:
+    ```sh
+    confluent login
+    confluent logout
+    ```
+1. Be sure port forward to CMF REST api is set up: `make expose-services`
+1. Create the environment with: `kubectl apply -f ../../deployment/k8s/cp-flink/flink-dev-env.yaml`
+1. `export ENV_NAME=dev-env`  and `export CMF_URL=http://localhost:8084`
+1. Create the compute pool with: `confluent flink compute-pool create k8s/compute_pool.yaml --environment $(ENV_NAME) --url $(CMF_URL) `
+Defining JSON objects as sink, involves defining the value format, and the table structure. As we want json, the setting is:
 
 ```sql
     'value.format' = 'json-registry',
@@ -496,17 +529,33 @@ The `cp-flink` folder in this `e2e-demos/json-transformation` project, includes 
 
 * [Interactive SQL Shell](https://docs.confluent.io/platform/current/flink/jobs/sql-statements/use-interactive-shell.html)
 * [Current limitations](https://docs.confluent.io/platform/current/flink/jobs/sql-statements/features-support.html#limitations)
-* 
 
-### To do
 
-* [x] Define schema using config map, schema and topics manifests. 
-* [x] Write producer of raw-orders and raw-orders.
-* [x] Use k8s job deployment to deploy to k8s with config map to set some env-variable.
-* [ ] Define sql to change json schema for the orders
+## Troubleshouting
 
-### Issues to fix
+* The flinkApplication status: make status from cp-flink folder
+* Look at the log of the CMF pod:
+  ```sh
+  # get the pod id
+  kubeclt logs confluent-manager-for-apache-flink-75b97474c9-6k92v -n confluent
+  ```
 
-* [ ] Confluent Console connection error with port forwarding
+### Multiple planner factory
 
-## CCF Setup
+Error: "Multiple factories for identifier 'default' that implement 'org.apache.flink.table.delegation.ExecutorFactory' 
+   found in the classpath. Ambiguous factory classes are: io.confluent.flink.plugin.internal.ConfluentExecutorFactory"
+
+**Reason:** This typically happens when both the Confluent Flink Table API plugin and the default Flink planner are included as dependencies,
+
+**Solution:**: Be sure to do not have the CC FLink plugin in the pom.xml, something like:
+  ```xml
+        <dependency>
+            <groupId>io.confluent.flink</groupId>
+            <artifactId>confluent-flink-table-api-java-plugin</artifactId>
+            <version>${confluent-plugin.version}</version>
+        </dependency>
+  ```
+
+### Invalid table name: raw-orders
+
+Most likely the name of the table should include the catalog and database name. One way to verify this is to use the SQL shell.

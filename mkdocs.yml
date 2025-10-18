@@ -17,6 +17,7 @@ nav:
     - First Java Apps: coding/firstapp.md
     - UDFs for SQL: coding/udf_sql.md
     - Kubernetes Deployment: coding/k8s-deploy.md
+    - Manage CC Flink projects: https://jbcodeforce.github.io/shift_left_utils/
     - DataStreams: coding/datastream.md
     - Flink Cookbook: architecture/cookbook.md
     - Table API: coding/table-api.md

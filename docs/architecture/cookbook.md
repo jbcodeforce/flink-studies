@@ -6,19 +6,28 @@
 
 There is a [Confluent cookbook for best practices](https://github.com/confluentinc/flink-cookbook) to run Flink into production. The content of this page is to get a summary of those practices, enhanced from other customers' engagements. It also references hands-on exercises within this repository. 
 
-All the examples can be run inside an IDE or in a terminal console, they are on Flink 1.19.1 and Java 11. Use [sdkman](https://sdkman.io/) to manage different java version. 
+Examples may be run inside from Terminal or using Kubernetes cluster locally, they are on Flink 1.20.1 or Flink 2.1. Use Java 11 or 17, see [sdkman](https://sdkman.io/) to manage different java version. 
 
 ## Understand the Flink UI
 
-The Flink Web UI is described [in Confluent article](https://developer.confluent.io/courses/apache-flink/web-ui-exercise/), [Apache Flink doc for Web UI](), and link to the important [execution plan understanding with EXPLAIN](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/sql/explain/).
+The Flink Web UI helps to debug misbehaving jobs. 
 
-Web UI offers the following important features:
+The Flink Web UI is  well described [in Confluent David Anderson's article](https://developer.confluent.io/courses/apache-flink/web-ui-exercise/), The [Apache Flink doc for Web UI](), and link to the important [execution plan understanding with EXPLAIN](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/sql/explain/).
 
+With OSS the Web UI is accessible when the `start_cluster.sh` is started. Local URL is [http://localhost:8081](http://localhost:8081). The Web UI offers the following important features:
+
+* Navigating to get the running Jobs, the view is updated periodically. The job graph, which matches the EXPLAIN output, presents the tasks running one or more opators of the DAG.
+* Task metrics are **backpressure, busyness, and data skew**.
+    * **backpressure:** percentage of time that the subtask was unable to send output downstream because the downstream subtask had fallen behind, and (temporarily) couldn't receive any more records.
+    * 
 * Examining the history of checkpoints
 * monitoring for any potential backpressure
 * analyzing watermarks
-* task metrics
+
 * retrieving the job logs
+
+In Concluent Cloud the Query Profiler has the same capability then the Flink UI and accessible at the Statement View level:
+![](){ }
 
 ## Classical deployment pattern
 
