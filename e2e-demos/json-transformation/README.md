@@ -1,6 +1,8 @@
 # Order and Jobs processing with Confluent Platform Flink
 
-This is a simple demo using Confluent Platform with Flink, or Confluent Cloud for Flink and Kafka to demonstrate a json schema mapping, a join and an aggregation with Flink SQL queries. The example is about a fictitious mover truck rental company, in 2190.
+## Overview
+
+This is a simple demo using Confluent Platform with Flink, or Confluent Cloud for Flink and Kafka to demonstrate a json schema mapping, a join and an aggregation with Flink SQL queries. The example is about a fictitious mover truck rental company, in 2190. This demonstration covers all the components to create and deploy for a Flink application consuming from 2 Kafka topics and generating records to one topic.
 
 The processing logic, we need to implement, has the following basic data pipeline architecture:
 
@@ -129,7 +131,7 @@ The components involved in this demonstration are depicted in the following figu
 
 ---
 
-## Demonstration
+## Demonstration Script
 
 ### Prerequisites
 
@@ -165,6 +167,16 @@ metadata:
   make status all 
   ```
 
+* Start the Demo Web App:
+  ```sh
+  make open_demo_web_page
+  ```
+
+* [optional] Start the CP Console browser. It can be accessed via the Demo console too.
+  ```sh
+  make open_cp_console
+  ```
+
 ### Demonstration from the user interface
 
 The demonstration user interface includes the form and controls to drive the demonstration, the scripts is inside the Demo Description section
@@ -173,13 +185,18 @@ The demonstration user interface includes the form and controls to drive the dem
 
 1. Create input data in the raw order topics: 
   **Select Message Type**
-  * 📦 Order Records: E-commerce order data
+  📦 Order Records: E-commerce order data
   ![](./docs/orders_created.png)
 
-  In CP Console too:
+
+1. Validate orders records are in topic using the CP Console too:
   ![](./docs/raw_orders_in_topic.png)
 
+1. Same for jobs, with "💼 Job Records: Job posting data"
+  ![](./docs/jobs_created.png)
 
+1. In the CP Console, raw-job topic, messages should be present (be sure to select from beginning).
+  ![](./docs/raw_jobs_in_topic.png)
 
 ### 🌐 Web Interface Usage
 
@@ -201,7 +218,10 @@ The demonstration user interface includes the form and controls to drive the dem
 
 ### Flink SQL processing
 
-* The first transformation script is to 
+* Verify the application is running with: 
+
+### Validating Results
+
 
 ---
 ## Code explanation
@@ -533,7 +553,8 @@ The `cp-flink` folder in this `e2e-demos/json-transformation` project, includes 
 
 ## Troubleshouting
 
-* The flinkApplication status: make status from cp-flink folder
+* The flinkApplication status: `make status` from the `cp-flink` folder
+* Access the Flink Web UI: `make flink_ui`
 * Look at the log of the CMF pod:
   ```sh
   # get the pod id
@@ -559,3 +580,11 @@ Error: "Multiple factories for identifier 'default' that implement 'org.apache.f
 ### Invalid table name: raw-orders
 
 Most likely the name of the table should include the catalog and database name. One way to verify this is to use the SQL shell.
+
+### Could not delete environment
+
+Need to remove compute pools and Flink statements. The scripts `delete_statements.sh` use the confluent cli to remove all statements.
+
+### KafkaCatalog not found
+
+Do not use kubectl to create Kafka Catalog but confluent cli.

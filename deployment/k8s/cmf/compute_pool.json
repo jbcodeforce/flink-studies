@@ -3,7 +3,7 @@
     "kind": "ComputePool",
     "metadata": {
       "name": "pool1",
-      "namespace": "flink"
+      "namespace": "confluent"
     },
     "spec": {
       "type": "DEDICATED",
@@ -12,7 +12,7 @@
         "image": "confluentinc/cp-flink-sql:1.19-cp2",
         "flinkConfiguration": {
           "pipeline.operator-chaining.enabled": "false",
-          "execution.checkpointing.interval": "10s",
+          "execution.checkpointing.interval": "30s",
           "taskmanager.numberOfTaskSlots": "4"
         },
         "taskManager": {

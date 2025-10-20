@@ -1,0 +1,26 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Debug RentalEventsProcessing",
+            "request": "launch",
+            "mainClass": "rental.demo.table.RentalEventsProcessing",
+            "projectName": "rental-dsp",
+            "env": {
+                "KAFKA_BOOTSTRAP_SERVERS": "localhost:9092",
+                "CONSUMER_GROUP": "raw-jobs-consumer-debug",
+                "RAW_JOBS_TOPIC": "raw-jobs",
+                "RAW_ORDERS_TOPIC": "raw-orders",
+                "ORDER_DETAILS_TOPIC": "order-details",
+                "CATALOG_NAME": "rental",
+                "CATALOG_DATABASE_NAME": "rentaldb"
+            },
+            "vmArgs": "-Dlog4j.configurationFile=log4j2.properties",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false
+        }
+    ],
+    "compounds": []
+}

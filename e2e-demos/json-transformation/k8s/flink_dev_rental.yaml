@@ -1,14 +1,14 @@
 apiVersion: platform.confluent.io/v1beta1
 kind: FlinkEnvironment
 metadata:
-  name: dev-env
+  name: dev-rental
   namespace: confluent
 spec:
-  kubernetesNamespace: confluent # can be a different namespace.
+  kubernetesNamespace: rental
   flinkApplicationDefaults: 
     metadata:
       labels:
-        env: dev-env
+        env: dev-rental
     spec:
       flinkConfiguration:
         taskmanager.numberOfTaskSlots: '1'
@@ -29,8 +29,6 @@ spec:
         s3.access-key: '${S3_ACCESS_KEY}'
         s3.secret-key: '${S3_SECRET_KEY}'
       podTemplate:
-        apiVersion: v1
-        kind: Pod
         metadata:
           name: flink-pod-template
         spec:

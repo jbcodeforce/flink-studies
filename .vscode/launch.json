@@ -6,11 +6,24 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Main",
+            "name": "Debug RentalEventsProcessing",
             "request": "launch",
-            "mainClass": "io.confluent.flink.examples.table.Main",
-            "projectName": "table-api"
-        },
+            "mainClass": "rental.demo.table.RentalEventsProcessing",
+            "projectName": "rental-dsp",
+            "env": {
+                "KAFKA_BOOTSTRAP_SERVERS": "localhost:9092",
+                "CONSUMER_GROUP": "raw-jobs-consumer-debug",
+                "RAW_JOBS_TOPIC": "raw-jobs",
+                "RAW_ORDERS_TOPIC": "raw-orders",
+                "ORDER_DETAILS_TOPIC": "order-details",
+                "CATALOG_NAME": "rental",
+                "CATALOG_DATABASE_NAME": "rentaldb"
+            },
+            "vmArgs": "-Dlog4j.configurationFile=log4j2.properties",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false
+        }
         {
             "name": "Python: Current File",
             "type": "python",
@@ -18,34 +31,6 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true
-        },
-        {
-            "type": "java",
-            "name": "Launch PersonFiltering",
-            "request": "launch",
-            "mainClass": "jbcodeforce.p1.PersonFiltering",
-            "projectName": "my-flink"
-        },
-        {
-            "type": "java",
-            "name": "Launch TelemetryAggregate",
-            "request": "launch",
-            "mainClass": "jbcodeforce.kafka.TelemetryAggregate",
-            "projectName": "my-flink"
-        },
-        {
-            "type": "java",
-            "name": "Launch SaleDataServer",
-            "request": "launch",
-            "mainClass": "jbcodeforce.sale.SaleDataServer",
-            "projectName": "my-flink"
-        },
-        {
-            "type": "java",
-            "name": "Launch SaleDataServer",
-            "request": "launch",
-            "mainClass": "jbcodeforce.SaleDataServer",
-            "projectName": "my-flink"
         },
         {
             "type": "java",
@@ -98,64 +83,10 @@
         },
         {
             "type": "java",
-            "name": "Debug (Launch)-LongRidesExercise<long-ride-alerts>",
-            "request": "launch",
-            "mainClass": "org.apache.flink.training.exercises.longrides.LongRidesExercise",
-            "projectName": "long-ride-alerts"
-        },
-        {
-            "type": "java",
-            "name": "Debug (Launch)-LongRidesSolution<long-ride-alerts>",
-            "request": "launch",
-            "mainClass": "org.apache.flink.training.solutions.longrides.LongRidesSolution",
-            "projectName": "long-ride-alerts"
-        },
-        {
-            "type": "java",
-            "name": "Debug (Launch)-WordCountMain<my-flink>",
-            "request": "launch",
-            "mainClass": "jbcodeforce.p1.WordCountMain",
-            "projectName": "my-flink",
-            "args": [
-                "--input",
-                "./my-flink/data/wc.txt",
-                "--ouput",
-                "count.csv"
-            ]
-        },
-        {
-            "type": "java",
             "name": "Debug (Launch)-RideCleansingExercise<ride-cleansing>",
             "request": "launch",
             "mainClass": "org.apache.flink.training.exercises.ridecleansing.RideCleansingExercise",
             "projectName": "ride-cleansing"
-        },
-        {
-            "type": "java",
-            "name": "Debug (Launch)-RideCleansingSolution<ride-cleansing>",
-            "request": "launch",
-            "mainClass": "org.apache.flink.training.solutions.ridecleansing.RideCleansingSolution",
-            "projectName": "ride-cleansing"
-        },
-        {
-            "type": "java",
-            "name": "Debug (Launch)-RidesAndFaresExercise<rides-and-fares>",
-            "request": "launch",
-            "mainClass": "org.apache.flink.training.exercises.ridesandfares.RidesAndFaresExercise",
-            "projectName": "rides-and-fares"
-        },
-        {
-            "type": "java",
-            "name": "Debug (Launch)-RidesAndFaresSolution<rides-and-fares>",
-            "request": "launch",
-            "mainClass": "org.apache.flink.training.solutions.ridesandfares.RidesAndFaresSolution",
-            "projectName": "rides-and-fares"
-        },
-        {
-            "type": "java",
-            "name": "Debug (Launch)-MavenWrapperDownloader",
-            "request": "launch",
-            "mainClass": "MavenWrapperDownloader"
         }
     ]
 }

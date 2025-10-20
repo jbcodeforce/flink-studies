@@ -1,9 +1,10 @@
 CFNT_NS=confluent
 FLCK_NS=confluent
+CMF_VERSION=~2.0.3
 CERT_MGR_VERSION=v1.18.1
 FLINK_OPERATOR_VERSION=1.11.0
 CMF_URL=http://localhost:8084
-ENV_NAME=dev
+ENV_NAME=dev-env
 
 # For Confluent Platform see Makefile in cfk folder
 
@@ -16,38 +17,12 @@ ensure_ns = \
 			echo "$1 exists";\
 	fi
 
-
-# ---------------------- Colima ----------------------
-start_colima:
-	@colima start --cpu 8 --memory 24 --kubernetes
-
-stop_colima:
-	@colima stop
-
-set_docker_context:
-	@docker context use colima
-
 # ------- Common elements to install -------------
-prepare: create_ns  deploy_minio verify_minio 
+prepare: create_ns  update_helm_confluent_repo install_cmf
 
 create_ns:
 	$(call ensure_ns, $(FLCK_NS))
 
-# ---------------------- Minio ----------------------
-deploy_minio:
-	@kubectl apply -f../MinIO/minio-dev.yaml 
-
-deploy_minio_secret:
-	@kubectl apply -f minio-credentials-secret.yaml
-
-port_forward_minio_console:
-	@kubectl port-forward pod/minio 9000 9090 -n minio-dev
-
-verify_minio:
-	@kubectl get pods -n minio-dev
-
-verify_minio_secret:
-	@kubectl get secret minio-s3-credentials -n el-demo
 
 # ---------------------- Custom Flink Image with S3 Support ----------------------
 DOCKER_REGISTRY?=jbcodeforce
@@ -73,25 +48,19 @@ update_helm_confluent_repo:
 	@helm repo update
 
 # ---------------------- Confluent Manager for Flink ----------------------
-install_cmf: prepare update_helm_confluent_repo install_flink_kubernetes_operator deploy_cmf deploy_cmf_rest_class deploy_minio_secret deploy_flink_env
+install_cmf: install_flink_kubernetes_operator deploy_cmf deploy_cmf_rest_class port_forward_cmf create_flink_env
 
 install_flink_kubernetes_operator:
 	@helm upgrade --install cp-flink-kubernetes-operator --version "~1.120.0"  confluentinc/flink-kubernetes-operator --set watchNamespace="{flink, confluent, el-demo}" -n $(FLCK_NS)
 
 deploy_cmf:
-	@helm upgrade --install cmf --version "~2.0.2"  confluentinc/confluent-manager-for-apache-flink --namespace $(FLCK_NS) --set cmf.sql.production=false --set cmf.sql.examples-catalog.enabled=true 
+	@helm upgrade --install cmf --version $(CMF_VERSION)  confluentinc/confluent-manager-for-apache-flink --namespace $(FLCK_NS) --set cmf.sql.production=false --set cmf.sql.examples-catalog.enabled=true 
 
 deploy_cmf_rest_class:
 	@kubectl apply -f cmf-rest-class.yaml
 
 verify_cmf_rest_class:
 	@kubectl get cmfrestclasses -n $(FLCK_NS)
-
-deploy_flink_env:
-	@kubectl apply -f flink-dev-env.yaml
-
-verify_flink_env:
-	@kubectl get flinkenvironments -n $(FLCK_NS)
 
 use_flink_ns:
 	@kubectl config set-context --current --namespace=$(FLCK_NS)
@@ -136,3 +105,4 @@ undeploy_flink_demo_app:
 port_forward_flink_console:
 	@confluent flink application web-ui-forward basic-example --environment $(ENV_NAME) --port 8090 --url $(CMF_URL)
 
+status: verify_cmf verify_cmf_rest_class 

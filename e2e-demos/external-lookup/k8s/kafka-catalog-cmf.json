@@ -12,7 +12,7 @@
       },
       "kafkaClusters": [
         {
-          "databaseName": "rentaldb", 
+          "databaseName": "paymentsdb", 
           "connectionConfig": {
             "bootstrap.servers": "kafka.confluent.svc.cluster.local:9071"
           }

@@ -2,7 +2,7 @@ package rental.demo.table;
 
 public class EventModels {
     public static final String CREATE_RAW_JOB_TABLE = String.join("\n",
-        "CREATE TABLE raw_jobs (",
+        "CREATE TABLE `%s`.`%s`.`%s` (",
         "    job_id BIGINT,",
         "    job_type STRING,",
         "    job_status STRING,",
@@ -27,7 +27,7 @@ public class EventModels {
 
     
     public static final String CREATE_RAW_ORDER_TABLE = String.join("\n",
-        "CREATE TABLE raw_orders (",
+        "CREATE TABLE `%s`.`%s`.`%s` (",
         "    OrderId BIGINT,",
         "    Status STRING,",
         "    Equipment ARRAY<ROW<",
@@ -59,7 +59,7 @@ public class EventModels {
         ");"
     );
     public static final String CREATE_ORDER_DETAILS_TABLE = String.join("\n",
-        "CREATE TABLE order_details (", 
+        "CREATE TABLE `%s`.`%s`.`%s` (", 
         "    OrderId BIGINT NOT NULL PRIMARY KEY NOT ENFORCED,",
         "    EquipmentRentalDetails ARRAY<ROW<",
         "        OrderId BIGINT,",

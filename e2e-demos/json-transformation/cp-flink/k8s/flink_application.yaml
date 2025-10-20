@@ -1,14 +1,9 @@
-apiVersion:  platform.confluent.io/v1beta1
+apiVersion:   cmf.confluent.io/v1
 kind: FlinkApplication
 metadata:
   name: rental-dsp
-  namespace: rental
 spec:
-  cmfRestClassRef:
-     name: default   
-     namespace: confluent
   image: rental-dsp:latest
-  flinkEnvironment: dev-env
   flinkVersion: v1_19
   flinkConfiguration:
       taskmanager.numberOfTaskSlots: "1"
@@ -30,7 +25,6 @@ spec:
     resource:
       memory: 1024m
       cpu: 1
-
   job:
     jarURI: local:///opt/flink/usrlib/rental-dsp-1.0.0.jar
     entryClass: rental.demo.table.RentalEventsProcessing

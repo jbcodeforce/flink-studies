@@ -4,8 +4,8 @@ import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.TableResult;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static org.apache.flink.table.api.Expressions.$;
@@ -26,6 +26,8 @@ public class RentalEventsProcessing {
         String jobTopic = System.getenv().getOrDefault("RAW_JOBS_TOPIC", "raw-jobs");
         String orderTopic = System.getenv().getOrDefault("RAW_ORDERS_TOPIC", "raw-orders");
         String orderDetailsTopic = System.getenv().getOrDefault("ORDER_DETAILS_TOPIC", "order-details");
+        String catalogName = System.getenv().getOrDefault("CATALOG_NAME", "rental");
+        String catalogDatabaseName = System.getenv().getOrDefault("CATALOG_DATABASE_NAME", "rentaldb");
     
         LOG.info("Starting Raw Job Processing Job");
         LOG.info("Kafka Bootstrap Servers: {}", kafkaBootstrapServers);
@@ -40,10 +42,11 @@ public class RentalEventsProcessing {
             .inStreamingMode()
             .build();
         StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env, settings);
-        env.enableCheckpointing(30000); // checkpoint every 30 seconds
-       
-        createSourceTable(tableEnv, orderTopic, kafkaBootstrapServers, consumerGroup);
-        createSourceTable(tableEnv, jobTopic, kafkaBootstrapServers, consumerGroup);
+        tableEnv.useCatalog(catalogName);
+        tableEnv.useDatabase(catalogDatabaseName);
+
+        createSourceTable(tableEnv, catalogName, catalogDatabaseName, orderTopic, kafkaBootstrapServers, consumerGroup);
+        createSourceTable(tableEnv, catalogName, catalogDatabaseName, jobTopic, kafkaBootstrapServers, consumerGroup);
 
         // Create destination table for deduplicated products
        //  createSinkTable(tableEnv, outputTopic, kafkaBootstrapServers);
@@ -54,21 +57,37 @@ public class RentalEventsProcessing {
      /**
      * Creates the source table reading from Kafka products topic
      */
-    private static void createSourceTable(StreamTableEnvironment tableEnv, 
-                                        String inputTopic, 
+    public static void createSourceTable(StreamTableEnvironment tableEnv, 
+                                        String catalogName,
+                                        String catalogDatabaseName,
+                                        String tableName, 
                                         String kafkaBootstrapServers,
                                         String consumerGroup) {
+        // Input validation
+        if (tableEnv == null) {
+            throw new NullPointerException("Table environment cannot be null");
+        }
+        if (tableName == null) {
+            throw new NullPointerException("Table name cannot be null");
+        }
+        if (kafkaBootstrapServers == null || kafkaBootstrapServers.trim().isEmpty()) {
+            throw new IllegalArgumentException("Kafka bootstrap servers cannot be null or empty");
+        }
+        if (consumerGroup == null || consumerGroup.trim().isEmpty()) {
+            throw new IllegalArgumentException("Consumer group cannot be null or empty");
+        }
         String sourceTableDDL = "";
-        if (inputTopic.equals("raw_jobs")) {
+        if (tableName.equals("raw_jobs")) {
             sourceTableDDL = EventModels.CREATE_RAW_JOB_TABLE;
-        } else if (inputTopic.equals("raw_orders")) {
+        } else if (tableName.equals("raw_orders")) {
             sourceTableDDL = EventModels.CREATE_RAW_ORDER_TABLE;
         } else {
-            throw new IllegalArgumentException("Invalid table name: " + inputTopic);
+            throw new IllegalArgumentException("Invalid table name: " + tableName);
         }
-        sourceTableDDL = String.format(sourceTableDDL, inputTopic, kafkaBootstrapServers, consumerGroup);
+        sourceTableDDL = String.format(sourceTableDDL, catalogName, catalogDatabaseName, tableName, tableName,kafkaBootstrapServers, consumerGroup);
         
         LOG.info("Creating source table: {}", sourceTableDDL);
+        System.out.println(sourceTableDDL);
         tableEnv.executeSql(sourceTableDDL);
                                     
     }

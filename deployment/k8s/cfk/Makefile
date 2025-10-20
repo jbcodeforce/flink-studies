@@ -1,9 +1,16 @@
 CFNT_NS=confluent
 CERT_MGR_VERSION=v1.18.1
-DEMO_NS=el-demo
-FLCK_NS=confluent
 
 
+# ---------------------- Confluent Platform  --------------------------------
+# Colors for output
+BLUE := \033[0;34m
+GREEN := \033[0;32m
+YELLOW := \033[1;33m
+RED := \033[0;31m
+WHITE := \033[0;37m
+NC := \033[0m
+BOLD := \033[1m
 # ---------------------- Common functions ----------------------
 ensure_ns = \
 	@kubectl get ns $1 >/dev/null 2>&1; \
@@ -13,65 +20,72 @@ ensure_ns = \
 			echo "$1 exists";\
 	fi
 
+.PHONY: help deploy status
 
-# ---------------------- Colima ----------------------
-start_colima:
-	@colima start --cpu 8 --memory 24 --kubernetes
-
-stop_colima:
-	@colima stop
-
-set_docker_context:
-	@docker context use colima
+help: ## Show this help message
+	@echo "$(BLUE)Json Transformation Demo - Build & Deploy$(NC)"
+	@echo ""
+	@echo "$(BLUE)Available targets:$(NC)"
+	@awk 'BEGIN {FS = ":.*##"; printf ""} /^[a-zA-Z_-]+:.*?##/ { printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 # ------- Common elements to install -------------
-prepare: create_ns deploy_cert_manager verify_cert_manager
+deploy: create_ns update_helm_confluent_repo  deploy_cp_cfk verify_cp_cfk deploy_cp_cluster ## Deploy the Confluent Platform.
+
+use_confluent_ns: ## Use the confluent namespace	
+	@kubectl config set-context --current --namespace=$(CFNT_NS)
+	@echo "$(GREEN) Using namespace: $(CFNT_NS)$(NC)"
+
+status: use_confluent_ns verify_cp_cfk verify_kraft verify_kafka verify_controlcenter verify_schemaregistry	## Get deployment status.
+
+undeploy: delete_cp_cluster ## Undeploy the Confluent Platform.
+
+port_forward_cp_console: ## Port forward the Confluent Platform console.
+	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/controlcenter-ng 9021:9021"'
+
 
 create_ns:
 	$(call ensure_ns, $(CFNT_NS))
 
-
-deploy_cert_manager:
-	@kubectl get deployments cert-manager  -n cert-manager > /dev/null 2>&1;\
-	if [ $$? -ne 0 ]; then \
-		kubectl create -f https://github.com/jetstack/cert-manager/releases/download/$(CERT_MGR_VERSION)/cert-manager.yaml; \
-	else \
-		echo "cert manager already deployed"; \
-		kubectl get pods -n cert-manager; \
-	fi
-
-verify_cert_manager:
-	@kubectl get pods -n cert-manager
-
-
-	
-# ---------------------- Confluent Platform  --------------------------------
-install_cp: update_helm_confluent_repo deploy_cert_manager create_ns deploy_cp_cfk verify_cp_cfk deploy_cp_cluster port_forward_cp_console
-
 update_helm_confluent_repo:
 	@helm repo add confluentinc https://packages.confluent.io/helm
 	@helm repo update
+	@echo "$(GREEN) Updated Helm Confluent repository$(NC)"
 
 deploy_cp_cfk: 
 	@helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes --set namespaced=false --set kRaftEnabled=true  --set namespaceList="{$(CFNT_NS),$(FLCK_NS),$(DEMO_NS)}" --set enableCMFDay2Ops=true -n $(CFNT_NS)
-
-verify_cp_cfk:
-	@kubectl get pods -n $(CFNT_NS)
+	@echo "$(GREEN) Deployed Confluent Platform CFK$(NC)"
 
 deploy_cp_cluster:
 	@kubectl apply -f ../cfk/basic-kraft-cluster.yaml -n $(CFNT_NS)
-
-use_cp_ns:
-	@kubectl config set-context --current --namespace=$(CFNT_NS)
-
-port_forward_cp_console:
-	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/controlcenter-ng 9021:9021"'
+	@echo "$(GREEN) Deployed Confluent Platform Kafka Cluster$(NC)"
 
 delete_cp_cluster:
 	@kubectl delete -f ../cfk/basic-kraft-cluster.yaml -n $(CFNT_NS)
+	@echo "$(GREEN) Deleted Confluent Platform Kafka Cluster$(NC)"
 
-uninstall_cp_cluster:
+uninstall_cp_cfk:
 	@helm uninstall confluent-operator -n $(CFNT_NS)
+	@echo "$(GREEN) Uninstalled Confluent Platform CFK$(NC)"
 
 
+verify_cp_cfk:
+	@echo "----------------------------------------"
+	@kubectl get pods -n $(CFNT_NS)
+	@echo "----------------------------------------"
+
+verify_kraft:
+	@kubectl describe KRaftController kraftcontroller  -n $(CFNT_NS)
+	@echo "----------------------------------------"k
+
+verify_kafka:
+	@kubectl describe Kafka kafka -n $(CFNT_NS)
+	@echo "----------------------------------------"
+
+verify_controlcenter:
+	@kubectl describe ControlCenter controlcenter-ng -n $(CFNT_NS)
+	@echo "----------------------------------------"
+
+verify_schemaregistry:
+	@kubectl describe SchemaRegistry schemaregistry -n $(CFNT_NS)
+	@echo "----------------------------------------"
 

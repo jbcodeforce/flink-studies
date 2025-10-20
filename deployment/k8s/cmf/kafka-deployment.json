@@ -34,22 +34,22 @@
 
         "spec": {
             "initContainers": [
-    {
-      "name": "mc",
-      "image": "minio/mc",
-      "volumeMounts": [
-        {
-          "mountPath": "/opt/flink/downloads",
-          "name": "downloads"
-        }
-      ],
-      "command": [
-        "/bin/sh",
-        "-c",
-        "mc alias set dev-minio http://minio-service.minio-dev.svc.cluster.local:9000 minioadmin minioadmin && mc cp dev-minio/flink/kafka-reader-writer-1.0-SNAPSHOT.jar /opt/flink/downloads/flink-examples-streaming.jar"
-      ]
-    }
-  ]
+              {
+                "name": "mc",
+                "image": "minio/mc",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/opt/flink/downloads",
+                    "name": "downloads"
+                  }
+                ],
+                "command": [
+                  "/bin/sh",
+                  "-c",
+                  "mc alias set dev-minio http://minio-service.minio-dev.svc.cluster.local:9000 minioadmin minioadmin && mc cp dev-minio/flink/kafka-reader-writer-1.0-SNAPSHOT.jar /opt/flink/downloads/flink-examples-streaming.jar"
+                ]
+              }
+            ]
         }
       },
       "resource": {

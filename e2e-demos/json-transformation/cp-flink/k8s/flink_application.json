@@ -1,0 +1,45 @@
+{
+    "apiVersion": "cmf.confluent.io/v1",
+    "kind": "FlinkApplication",
+    "metadata": {
+        "name": "rental-dsp"
+    },
+    "spec": {
+        "flinkConfiguration": {
+            "metrics.reporter.prom.factory.class": "org.apache.flink.metrics.prometheus.PrometheusReporterFactory",
+            "metrics.reporter.prom.port": "9249-9250",
+            "taskmanager.numberOfTaskSlots": "1",
+            "s3.endpoint": "http://minio.minio-dev.svc.cluster.local:9000",
+            "s3.path.style.access": "true",
+            "s3.connection.ssl.enabled": "false",
+            "s3.access-key": "minioadmin",
+            "s3.secret-key": "minioadmin",
+            "state.checkpoints.dir": "s3://flink/stateful-flink/checkpoints",
+            "state.savepoints.dir": "s3://flink/stateful-flink/savepoints",
+            "state.checkpoints.interval": "10000",
+            "state.checkpoints.timeout": "600000"
+        },
+        "flinkVersion": "v1_19",
+        "image": "confluentinc/cp-flink:1.19.1-cp2",
+        "job": {
+            "jarURI": "local:///opt/flink/usrlib/rental-dsp-1.0.0.jar",
+            "entryClass": "rental.demo.table.RentalEventsProcessing",
+            "parallelism": 1,
+            "state": "running",
+            "upgradeMode": "stateless"
+        },
+        "jobManager": {
+            "resource": {
+                "cpu": 1,
+                "memory": "1024m"
+            }
+        },
+        "serviceAccount": "flink",
+        "taskManager": {
+            "resource": {
+                "cpu": 1,
+                "memory": "1024m"
+            }
+        }
+    }
+}

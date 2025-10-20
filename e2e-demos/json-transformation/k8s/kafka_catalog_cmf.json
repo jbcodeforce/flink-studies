@@ -12,10 +12,11 @@
       },
       "kafkaClusters": [
         {
-          "databaseName": "kafka-cluster", 
+          "databaseName": "rentaldb", 
           "connectionConfig": {
-            "bootstrap.servers": "kafka.confluent.svc.cluster.local:9071"
-          }
+            "bootstrap.servers": "kafka.confluent.svc.cluster.local:9092"
+          },
+           "connectionSecretId": "kafka-1-secret-id"
         }
       ]
     }

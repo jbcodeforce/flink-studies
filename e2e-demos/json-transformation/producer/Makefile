@@ -16,13 +16,17 @@ DEMO_NS = rental
 
 .PHONY: help build deploy status
 
+# GOALS: 
+# Build the Web app Docker image and deploy it to Kubernetes
+# Check the status of the application
+# Undeploy the application
+# ------ Public commands ------
 help: ## Display this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 build: ## Build the Docker image
-	@echo "🚀 Building Orders Producer Docker Image"
+	@echo "📦 Building Orders Producer Docker Image"
 	@echo "Image: ${IMAGE_NAME}:${IMAGE_TAG}"
-	@echo "📦 Building Docker image..."
 	docker build -t "${IMAGE_NAME}:${IMAGE_TAG}" .
 	@if [ -n "$(REGISTRY)" ]; then \
 		echo "🏷️  Tagging for registry: ${REGISTRY}"; \
@@ -32,8 +36,7 @@ build: ## Build the Docker image
 	@echo ""
 	@echo "🎯 Next steps:"
 	@echo "  Deploy to K8s:     make deploy"
-	@echo "  Expose the application: make deploy"
-	@echo "  Open the web browser: make open"
+	@echo "  Open the web browser: make open_web_ui_nodeport"
 	@echo ""
 
 
@@ -63,6 +66,7 @@ undeploy: ## Undeploy demonstration
 	kubectl delete -f $(K8S_DEPLOY_POD)
 	kubectl delete -f $(K8S_DEPLOY_SVC)
 
+# ------ Private commands ------
 # Access via NodePort (direct localhost access)
 open_web_ui_nodeport:
 	@echo "🌐 Opening web interface via NodePort..."
@@ -75,7 +79,6 @@ open_swagger_nodeport:
 open_redoc_nodeport:
 	@echo "📖 Opening ReDoc via NodePort..."
 	@open http://localhost:30080/redoc
-
 
 
 port_forward_producer_api:

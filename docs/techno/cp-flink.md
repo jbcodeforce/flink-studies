@@ -40,6 +40,8 @@ Be sure to have [confluent cli.](https://docs.confluent.io/confluent-cli/current
 * **Compute pool** represents resources to run Task manager and Job manager. Each Flink SQL statement is associated with exactly one Compute Pool. [See example of pool definition](https://docs.confluent.io/platform/current/flink/configure/compute-pools.html) and in [cmf folder](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cmf)
 * **SQL catalog** to group database concept for Flink SQL table queries. It references a Schema Registry instance and one or more Kafka clusters.
 
+* [See Product FAQs](https://docs.confluent.io/platform/current/flink/faq.html)
+
 ## Product Set Up
 
 * [See my dedicated chapter for Confluent Plaform Kubernetes deployment](../coding/k8s-deploy.md/#confluent-manager-for-apache-flink).
