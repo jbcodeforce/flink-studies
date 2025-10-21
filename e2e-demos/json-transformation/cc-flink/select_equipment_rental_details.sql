@@ -29,4 +29,4 @@ SELECT
         OrderType,
         CAST(AssociatedContractId AS BIGINT) as AssociatedContractId
     ) as EquipmentRentalDetail
-FROM raw_orders;
+FROM `raw-orders`;

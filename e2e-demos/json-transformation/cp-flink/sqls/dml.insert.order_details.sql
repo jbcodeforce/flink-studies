@@ -1,5 +1,7 @@
-insert into `order-details`(OrderId, EquipmentRentalDetails, MovingHelpDetails)
-SELECT
+
+insert into `order-details`
+/*+ OPTIONS('properties.transaction.timeout.ms'='300000') */
+with ungrouped as (SELECT
   o.OrderId,
   ARRAY[
     row(
@@ -14,9 +16,8 @@ SELECT
       CAST(o.AssociatedContractId as BIGINT)
     )
   ] as EquipmentRentalDetails,
-  ARRAY[ 
-      ROW(
-        j.job_id, 
+    ROW(
+        j.job_id,
         j.job_type,
         j.job_status,
         j.rate_service_provider,
@@ -26,5 +27,12 @@ SELECT
        j.job_entered_date,
       j.job_last_modified_date,
       j.service_provider_name)
-    ] as MovingHelpDetails
-from `raw-orders` o join `raw-jobs` j on j.order_id = o.OrderId
+     as MovingHelpDetail
+from `raw-orders` o join `raw-jobs` j on j.order_id = o.OrderId)
+
+select
+  OrderId,
+  EquipmentRentalDetails,
+  collect(MovingHelpDetail) as MovingHelpDetails
+from ungrouped
+group by OrderId, EquipmentRentalDetails;

@@ -1,0 +1,30 @@
+Query schema: [
+    OrderId: BIGINT NOT NULL, 
+    EquipmentRentalDetails: 
+        ARRAY<
+            ROW<`EXPR$0` BIGINT NOT NULL, 
+                `EXPR$1` STRING NOT NULL, 
+                `EXPR$2` ARRAY<
+                        ROW<`ModelCode` STRING NOT NULL, `Rate` STRING NOT NULL> NOT NULL> NOT NULL, 
+                `EXPR$3` DOUBLE NOT NULL, 
+                `EXPR$4` STRING NOT NULL, 
+                `EXPR$5` ROW<>, 
+                `EXPR$6` ROW<`DropoffDate` STRING NOT NULL, 
+                            `DropoffLocation` STRING NOT NULL, 
+                            `PickupDate` STRING NOT NULL, 
+                            `PickupLocation` STRING NOT NULL> NOT NULL, 
+                `EXPR$7` STRING NOT NULL, 
+                `EXPR$8` BIGINT> NOT NULL> NOT NULL, 
+        MovingHelpDetails: 
+            MULTISET<
+                    ROW<`EXPR$0` DOUBLE NOT NULL, 
+                        `EXPR$1` STRING NOT NULL, 
+                        `EXPR$2` STRING NOT NULL, 
+                        `EXPR$3` STRING, 
+                        `EXPR$4` DOUBLE, 
+                        `EXPR$5` STRING, 
+                        `EXPR$6` STRING, `
+                        EXPR$7` STRING, `EXPR$8` STRING, `EXPR$9` STRING NOT NULL> NOT NULL> NOT NULL]
+Sink schema:  [
+    key: BYTES,
+    MovingHelpDetails: ARRAY<ROW<`job_completed_date` STRING, `job_date_start` STRING, `job_entered_date` STRING, `job_id` BIGINT, `job_last_modified_date` STRING, `job_status` STRING, `job_type` STRING, `rate_service_provider` STRING, `service_provider_name` STRING, `total_paid` DOUBLE>>, OrderDetails: ROW<`EquipmentRentalDetails` ARRAY<ROW<`AssociatedContractId` BIGINT, `Coverage` STRING, `Equipment` ARRAY<ROW<`ModelCode` STRING, `Rate` STRING>>, `Itinerary` ROW<`DropoffDate` STRING, `DropoffLocation` STRING, `PickupDate` STRING, `PickupLocation` STRING>, `OrderId` BIGINT, `OrderType` STRING, `Status` STRING, `TotalPaid` DOUBLE, `Type` STRING>>>]

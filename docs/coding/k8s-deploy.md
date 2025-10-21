@@ -160,7 +160,7 @@ Confluent Managed for Flink manages Flink application mode only and is using its
 <caption>Confluent Manager for Flink - Custom Resources Definitions</capture>
 </figure>
 
-* An [FlinkEnvironment](https://docs.confluent.io/operator/current/co-manage-flink.html#create-a-af-environment) may define FlinkConfigurations cross applications. See [one example in deployment/k8s/cmf](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cmf/flink-dev-env.yaml). 
+* An [FlinkEnvironment](https://docs.confluent.io/operator/current/co-manage-flink.html#create-a-af-environment) define access control to flink resources and may define FlinkConfigurations cross applications. Environment level has precedence over Flink configuration for individual Flink applications. See [one example in deployment/k8s/cmf](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cmf/flink-dev-env.yaml). 
   ```yaml
   apiVersion: platform.confluent.io/v1beta1
   kind: FlinkEnvironment
@@ -203,7 +203,7 @@ Confluent Managed for Flink manages Flink application mode only and is using its
 
   Some important elements to consider are: 
   
-  * `kubernetesNamespace` is the namespace where the Flink deployment(s) will be deployed. So one environment establishes foundations for those Flink applications. It can define default Flink configuration for all applications and add common labels, like specifying the environment name they run in. `FlinkApplication` is referencing back the Flink Environment which is not what Flink OSS Application does. The last piece is the cmfRestClassRef to reference the Kubernetes object/resource used to define access point to the CMF REST api.
+  * `kubernetesNamespace` is the namespace where the Flink deployment(s) will be deployed. So one environment establishes foundations for those Flink applications. It can define default Flink configuration for all applications and add common labels, like specifying the environment name they run in. `FlinkApplication` is referencing back the Flink Environment which is not what Flink OSS Application does. The last piece is the `cmfRestClassRef` to reference the Kubernetes object/resource used to define access point to the CMF REST api.
 
 * `CMFRestClass` defines the client configuration to access CMF Rest APIs. This resource is referenced by other CFK resources (ex FlinkEnvironment, FlinkApplication) to access CMF Rest APIs. In a more advance configuration, this CR defines security like the authentication mechanism and mTLS to access the REST api.
   ```yaml
@@ -469,8 +469,6 @@ podTemplate can include nodeAffinity to allocate taskManager to different node c
 * [Apache Flink Native Kubernetes deployment.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/native_Kubernetes/)
 * [A Confluent Platform demonstration git repo: confluentinc/confluent-demo](https://github.com/confluentinc/confluent-demo)
 
-
-
 ---
 * Next steps is to upload jar files for the different applications to deploy, or data sets for SQL table. See [application section](#flink-application-deployment).
 
@@ -640,19 +638,19 @@ There two types of Flink application: the java packaging or the SQL client with 
 
 ### Flink SQL processing
 
-There are multiple choices to run Flink SQL: using the SQL client, or package the SQL scripts in a docker container with the [java SQL runner](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-java/sql-runner) executing the SQL statements from a file, or finally use the Table API. The application deployment is Java based even if SQL scripts are used for stream processing.
+There are multiple choices to run Flink SQL: using the SQL client, or package the SQL scripts in a docker container with the [java SQL runner](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-java/sql-runner) executing the SQL statements from a file, or use the Table API. The application deployment is Java based even if SQL scripts are used for stream processing.
 
 With Apache Flink OSS, Flink Session Cluster is the most suitable deployment mode for the SQL Client. This is a long-running Flink cluster (JobManager and TaskManagers) on which you can submit multiple jobs to. The sql client is a long-running, interactive application that submits jobs to an existing cluster.
 
-For Confluent For Flink and the recommended approach for OSS Apache Flink is to use a Flink Application, which per design, is one Job manager with multiple Task managers.
+For Confluent Manager For Flink the recommended approach is to use a Flink Application, which per design, is one Job manager with multiple Task managers or use the Flink SQL Shell.
 
 #### Confluent Manager for Flink
 
-In **Confluent Manager for Flink** the method is to create an **Environment** and **Compute pool** to run the SQL statements in a pool. Those concepts and components are the same as the Confluent Cloud for Flink.
+As seen previously in **Confluent Manager for Flink** the method is to create an **Environment** and **Compute pool** to run the SQL statements in a pool. Those concepts and components are the same as the Confluent Cloud for Flink.
 
 * Be sure that the port-forward to the svc/cmf-service is active.
 
-* Define an environment: Environment is used for isolation and share configuration between Flink applications. It can include settings of a common observability configuration, or checkpoint storage destination for all Flink clusters (applications) in an environment.
+* Define an environment: 
   ```sh
   export CONFLUENT_CMF_URL=http://localhost:8084
   # be sure to not be connected to confluent cloud, if not do:
@@ -660,12 +658,12 @@ In **Confluent Manager for Flink** the method is to create an **Environment** an
   # Look at current environment
   confluent flink environment  list
   # Create new env
-  confluent flink environment create test --Kubernetes-namespace flink
-  # or
+  confluent flink environment create dev --kubernetes-namespace el-demo
+  # or under deployment/k8s/cmf
   make create_flink_env
   ```
 
-* The other way to define an environment is to use the FlinkEnvironment CR. An example can is defined [here](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/flink-env.yaml) and see [the product documentation for the CRD details.](https://docs.confluent.io/operator/current/co-manage-flink.html#create-a-af-environment)
+
 * Define a compute pool (verify current [docker image tag](https://hub.docker.com/r/confluentinc/cp-flink-sql/tags)) and see the [compute_pool.json](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cmf/compute_pool.json)
   ```sh
   make create_compute_pool
@@ -684,7 +682,7 @@ In **Confluent Manager for Flink** the method is to create an **Environment** an
 
 * Use the confluent cli to start a Flink  SQL shell
   ```sh
-  confluent --environment env1 --compute-pool pool1 flink shell --url http://localhost:8084
+  confluent --environment dev --compute-pool pool1 flink shell --url http://localhost:8084
   ```
 
 

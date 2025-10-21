@@ -1,5 +1,5 @@
 -- Insert sample data into raw_jobs table
-INSERT INTO raw_jobs (
+INSERT INTO `raw-jobs` (
     order_id,
     job_id,
     job_type,

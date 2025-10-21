@@ -1,4 +1,4 @@
-INSERT INTO order_details
+INSERT INTO `order-details`
 SELECT
     999999 as OrderId,  -- Using a dummy order ID
     ARRAY[CAST(NULL AS ROW(

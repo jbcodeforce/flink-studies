@@ -42,8 +42,8 @@ public class RentalEventsProcessing {
             .inStreamingMode()
             .build();
         StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env, settings);
-        tableEnv.useCatalog(catalogName);
-        tableEnv.useDatabase(catalogDatabaseName);
+        //tableEnv.useCatalog(catalogName);
+        //tableEnv.useDatabase(catalogDatabaseName);
 
         createSourceTable(tableEnv, catalogName, catalogDatabaseName, orderTopic, kafkaBootstrapServers, consumerGroup);
         createSourceTable(tableEnv, catalogName, catalogDatabaseName, jobTopic, kafkaBootstrapServers, consumerGroup);

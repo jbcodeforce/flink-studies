@@ -1,169 +1,168 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://example.com/order-details-schema.json",
-    "title": "OrderDetails Schema",
-    "description": "Schema for OrderDetails data with nested EquipmentRentalDetails and MovingHelpDetails",
-    "type": "object",
-    "properties": {
-      "OrderDetails": {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Order Details Schema",
+  "description": "JSON Schema for order_details table containing equipment rental and moving help details",
+  "required": ["OrderId"],
+  "properties": {
+    "OrderId": {
+      "type": "integer",
+      "description": "Primary key for the order"
+    },
+    "EquipmentRentalDetails": {
+      "type": "array",
+      "items": {
         "type": "object",
-        "description": "Main order details container",
+        "required": [
+          "OrderId",
+          "Status",
+          "Equipment",
+          "TotalPaid",
+          "Type",
+          "Coverage",
+          "Itinerary",
+          "OrderType",
+          "AssociatedContractId"
+        ],
         "properties": {
-          "EquipmentRentalDetails": {
+          "OrderId": {
+            "type": "integer",
+            "description": "Order ID for the equipment rental"
+          },
+          "Status": {
+            "type": "string",
+            "description": "Status of the equipment rental order"
+          },
+          "Equipment": {
             "type": "array",
-            "description": "Array of equipment rental detail records",
             "items": {
               "type": "object",
+              "required": ["ModelCode", "Rate"],
               "properties": {
-                "OrderId": {
-                  "type": "integer",
-                  "description": "Unique identifier for the order"
-                },
-                "Status": {
+                "ModelCode": {
                   "type": "string",
-                  "description": "Current status of the order",
-                  "enum": ["Return", "Active", "Completed", "Cancelled", "Pending"]
+                  "description": "Model code of the equipment"
                 },
-                "Equipment": {
-                  "type": "array",
-                  "description": "List of equipment associated with the order",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "ModelCode": {
-                        "type": "string",
-                        "description": "Model code of the equipment"
-                      },
-                      "Rate": {
-                        "type": "string",
-                        "description": "Rate for the equipment (stored as string)"
-                      }
-                    },
-                    "required": ["ModelCode", "Rate"],
-                    "additionalProperties": false
-                  }
-                },
-                "TotalPaid": {
-                  "type": "number",
-                  "minimum": 0,
-                  "description": "Total amount paid for the order"
-                },
-                "Type": {
+                "Rate": {
                   "type": "string",
-                  "description": "Type of order",
-                  "enum": ["InTown", "OutOfTown", "OneWay"]
-                },
-                "Coverage": {
-                  "type": "string",
-                  "description": "Coverage information as string"
-                },
-                "Itinerary": {
-                  "type": "object",
-                  "description": "Travel itinerary details",
-                  "properties": {
-                    "PickupDate": {
-                      "type": "string",
-                      "description": "Pickup date and time as string"
-                    },
-                    "DropoffDate": {
-                      "type": "string",
-                      "description": "Dropoff date and time as string"
-                    },
-                    "PickupLocation": {
-                      "type": "string",
-                      "description": "Pickup location identifier"
-                    },
-                    "DropoffLocation": {
-                      "type": "string",
-                      "description": "Dropoff location identifier"
-                    }
-                  },
-                  "required": ["PickupDate", "DropoffDate", "PickupLocation", "DropoffLocation"],
-                  "additionalProperties": false
-                },
-                "OrderType": {
-                  "type": "string",
-                  "description": "Category or type of the order",
-                  "enum": ["Umove", "Rental", "Transport"]
-                },
-                "AssociatedContractId": {
-                  "type": "integer",
-                  "description": "ID of associated contract"
+                  "description": "Rate for the equipment rental"
                 }
-              },
-              "required": [
-                "OrderId",
-                "Status",
-                "Equipment",
-                "TotalPaid",
-                "Type",
-                "Coverage",
-                "Itinerary",
-                "OrderType",
-                "AssociatedContractId"
-              ],
-              "additionalProperties": false
-            }
-          }
-        },
-        "required": ["EquipmentRentalDetails"],
-        "additionalProperties": false
-      },
-      "MovingHelpDetails": {
-        "type": "array",
-        "description": "Additional moving help details as array of jobs",
-        "items": {
-          "type": "object",
-          "properties": {
-            "job_id": {
-              "type": "integer",
-              "description": "Unique identifier for the job"
-            },
-            "job_type": {
-              "type": "string",
-              "description": "Current type of the job",
-              "enum": ["LoadUnload", "LoadOnly", "UnloadOnly"]
-            },
-            "job_status": {
-              "type": "string",
-              "description": "Current status of the job",
-              "enum": ["Completed", "New", "Cancelled"]
-            },
-            "rate_service_provider": {
-              "type": "string",
-              "description": "rate_service_provider for the job"
-            },
-            "total_paid": {
-              "type": "number",
-              "minimum": 0,
-              "description": "Total amount paid for the order"
-            },
-            "job_date_start": {
-              "type": "string",
-              "description": "Start date of the job"
-            },
-            "job_completed_date": {
-              "type": "string",
-              "description": "Job completion date"
-            },
-            "job_entered_date": {
-              "type": "string",
-              "description": "Job entered date"
-            },
-            "job_last_modified_date": {
-              "type": "string",
-              "description": "Job last modification date"
-            },
-            "service_provider_name": {
-              "type": "string",
-              "description": "Job last modification date"
+              }
             }
           },
-          "required": ["job_id", "job_type", "job_status", "rate_service_provider", "total_paid", "job_date_start", "job_completed_date", "job_entered_date", "job_last_modified_date", "service_provider_name"],
-          "additionalProperties": false
+          "TotalPaid": {
+            "type": "number",
+            "description": "Total amount paid for the equipment rental",
+            "multipleOf": 0.01
+          },
+          "Type": {
+            "type": "string",
+            "description": "Type of the rental"
+          },
+          "Coverage": {
+            "type": "string",
+            "description": "Coverage type for the rental"
+          },
+          "Itinerary": {
+            "type": "object",
+            "required": [
+              "PickupDate",
+              "DropoffDate",
+              "PickupLocation",
+              "DropoffLocation"
+            ],
+            "properties": {
+              "PickupDate": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Date and time for equipment pickup"
+              },
+              "DropoffDate": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Date and time for equipment dropoff"
+              },
+              "PickupLocation": {
+                "type": "string",
+                "description": "Location for equipment pickup"
+              },
+              "DropoffLocation": {
+                "type": "string",
+                "description": "Location for equipment dropoff"
+              }
+            }
+          },
+          "OrderType": {
+            "type": "string",
+            "description": "Type of the order"
+          },
+          "AssociatedContractId": {
+            "type": "integer",
+            "description": "Associated contract ID for the rental"
+          }
         }
       }
     },
-    "required": ["OrderDetails"],
-    "additionalProperties": false
+    "MovingHelpDetails": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "job_id",
+          "job_type",
+          "job_status",
+          "rate_service_provider",
+          "total_paid",
+          "job_date_start",
+          "job_completed_date",
+          "job_entered_date",
+          "job_last_modified_date",
+          "service_provider_name"
+        ],
+        "properties": {
+          "job_id": {
+            "type": "integer",
+            "description": "Unique identifier for the moving help job"
+          },
+          "job_type": {
+            "type": "string",
+            "description": "Type of moving help job"
+          },
+          "job_status": {
+            "type": "string",
+            "description": "Current status of the job"
+          },
+          "rate_service_provider": {
+            "type": "string",
+            "description": "Rate for the service provider"
+          },
+          "total_paid": {
+            "type": "number",
+            "description": "Total amount paid for the moving help service",
+            "multipleOf": 0.01
+          },
+          "job_date_start": {
+            "type": "string",
+            "description": "Start date of the job"
+          },
+          "job_completed_date": {
+            "type": "string",
+            "description": "Date when the job was completed"
+          },
+          "job_entered_date": {
+            "type": "string",
+            "description": "Date when the job was entered into the system"
+          },
+          "job_last_modified_date": {
+            "type": "string",
+            "description": "Date when the job was last modified"
+          },
+          "service_provider_name": {
+            "type": "string",
+            "description": "Name of the service provider"
+          }
+        }
+      }
     }
+  }
+}

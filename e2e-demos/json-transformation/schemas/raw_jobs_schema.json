@@ -10,6 +10,11 @@
         "minimum": 1,
         "description": "Unique identifier for the job"
       },
+      "order_id": {
+        "type": "number",
+        "minimum": 1,
+        "description": "Unique identifier for the job"
+      },
       "job_type": {
         "type": "string",
         "description": "Current type of the job",
@@ -52,6 +57,7 @@
     },
     "required": [
       "job_id",
+      "order_id",
       "job_type",
       "job_status",
       "service_provider_name"

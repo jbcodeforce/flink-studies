@@ -1,4 +1,4 @@
-create table order_details (
+create table `order-details` (
    OrderId BIGINT NOT NULL PRIMARY KEY not enforced,
    EquipmentRentalDetails ARRAY<ROW<
       OrderId BIGINT,

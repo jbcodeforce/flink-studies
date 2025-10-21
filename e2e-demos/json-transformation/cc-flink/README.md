@@ -62,7 +62,7 @@ The OrderDetails is a json with EquipmentRentalDetails, an array of EquipmentRen
             j.job_last_modified_date,
             j.service_provider_name)
             ] as MovingHelpDetails
-        from raw_orders o join raw_jobs j on j.order_id = o.OrderId
+        from `raw-orders` o join raw_jobs j on j.order_id = o.OrderId
     ```
 
 1. Group by and collect the jobdetail in an array: see the [dml.insert.order_details.sql](./dml.insert.order_details.sql)

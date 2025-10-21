@@ -1,5 +1,5 @@
 -- Query to extract equipment total paid and create EquipmentRentalDetails from raw_orders
-insert into `order-details`
+insert into order_details
 SELECT
     OrderId,
         ARRAY[
@@ -32,4 +32,4 @@ SELECT
       job_last_modified_date STRING,
       service_provider_name STRING
     ))]  as MovingHelpDetails
-FROM `raw-orders`
+FROM raw_orders

@@ -139,7 +139,7 @@ delete_environment:
 
 create_compute_pool:
 	@echo "$(YELLOW)Creating compute pool...$(NC)"
-	confluent flink compute-pool create k8s/compute_pool.yaml --environment $(ENV_NAME) --url $(CMF_URL)
+	confluent flink compute-pool create k8s/compute-pool-cmf.json --environment $(ENV_NAME) --url $(CMF_URL)
 
 delete_compute_pool:
 	@echo "$(YELLOW)Deleting compute pool...$(NC)"
@@ -176,6 +176,8 @@ delete_catalog:
 	@confluent flink catalog delete rental --url $(CMF_URL) --force
 	@echo "$(GREEN)Catalog deleted successfully$(NC)"
 
+list_kafka_catalogs:
+	@confluent flink catalog list --url $(CMF_URL)
 
 # ---- topics -----
 create_all_topics:

@@ -2,7 +2,6 @@ apiVersion: platform.confluent.io/v1beta1
 kind: FlinkEnvironment
 metadata:
   name: dev-rental
-  namespace: confluent
 spec:
   kubernetesNamespace: rental
   flinkApplicationDefaults: 

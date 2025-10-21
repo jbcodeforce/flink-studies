@@ -1,4 +1,4 @@
-create table raw_jobs (
+create table `raw-jobs` (
     job_id BIGINT,
     order_id BIGINT,
     job_type STRING,

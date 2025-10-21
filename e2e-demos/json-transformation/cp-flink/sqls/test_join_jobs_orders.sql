@@ -1,4 +1,6 @@
+
 insert into `order-details`(OrderId, EquipmentRentalDetails, MovingHelpDetails)
+/*+ OPTIONS('properties.transaction.timeout.ms'='300000') */
 SELECT
   o.OrderId,
   ARRAY[
@@ -27,4 +29,4 @@ SELECT
       j.job_last_modified_date,
       j.service_provider_name)
     ] as MovingHelpDetails
-from `raw-orders` o join `raw-jobs` j on j.order_id = o.OrderId
+from `raw-orders` o join `raw-jobs` j on j.order_id = o.OrderId;

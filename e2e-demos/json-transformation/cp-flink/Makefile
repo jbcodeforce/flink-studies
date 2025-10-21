@@ -4,7 +4,7 @@ MINIO_NS=minio-dev
 CMF_URL=http://localhost:8084
 DEMO_NS=rental
 FLINK_ENV=dev-rental
-FLINK_COMPUTE_POOL=rental-pool
+FLINK_COMPUTE_POOL=demos-pool
 FLINK_APP_NAME=rental-dsp
 
 BLUE := \033[0;34m
@@ -28,7 +28,7 @@ help: ## Show this help message
 
 build: ## Build the Flink application
 	@echo "$(YELLOW)Building Flink application...$(NC)"
-	cd table_api && mvn package
+	cd table_api && mvn package -DskipTests
 	cd table_api && docker build -t $(FLINK_APP_NAME):latest .
 
 deploy: ## Deploy the Flink application

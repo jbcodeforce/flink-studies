@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Starting statement deletion..."
-
+export 
 # Store the list in a variable first
 statements=$(confluent flink statement list --url http://localhost:8084 --environment dev-rental)
 echo "Raw statements:"

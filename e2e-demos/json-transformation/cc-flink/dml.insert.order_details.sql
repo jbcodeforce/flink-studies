@@ -1,4 +1,4 @@
-insert into order_details
+insert into `order-details`
 with ungrouped as (SELECT
   o.OrderId,
   ARRAY[

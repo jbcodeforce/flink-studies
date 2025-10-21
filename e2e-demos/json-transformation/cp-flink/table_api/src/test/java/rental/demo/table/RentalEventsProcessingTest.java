@@ -62,8 +62,8 @@ public class RentalEventsProcessingTest {
             }
             
             // Use the test catalog and database
-            tableEnv.useCatalog(CATALOG_NAME);
-            tableEnv.useDatabase(DATABASE_NAME);
+            //tableEnv.useCatalog(CATALOG_NAME);
+            //tableEnv.useDatabase(DATABASE_NAME);
         } catch (DatabaseAlreadyExistException e) {
             // Database already exists, which is fine for our tests
             logger.info("Database already exists: " + DATABASE_NAME);

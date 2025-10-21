@@ -1,4 +1,4 @@
-create table raw_orders (
+create table `raw-orders` (
     OrderId BIGINT,
     Status STRING,
     Equipment ARRAY<ROW<ModelCode STRING, Rate STRING

@@ -67,6 +67,7 @@ The jobs are related to a move `order`, so the join key is the `OrderId`.
   ```json
   {
       "OrderDetails": {
+         "OrderId": 396404719,
         "EquipmentRentalDetails": [
           {
             "OrderId": 396404719,
@@ -96,7 +97,7 @@ The jobs are related to a move `order`, so the join key is the `OrderId`.
   }
   ```
 
-* The second real-time processing is doing a join with the job raw_topic, to enrich the `OrderDetails.MovingHelpDetails` with the jobs information:
+* The second real-time processing is doing a join with the `raw_jobs` topic, to enrich the `OrderDetails.MovingHelpDetails` with the jobs information:
   ```json
       "MovingHelpDetails": [
         {
@@ -145,14 +146,14 @@ The components involved in this demonstration are depicted in the following figu
 
 ### Build and Deploy the components
 
-All the kubernetes elements are deployed under the `rental` namespace, and will have the following metadata:
-```yaml
-metadata:
-  labels:
-    name: rental-demo
-    app: json-xform
-    component: <specific_name>
-```
+* All the kubernetes elements are deployed under the `rental` namespace, and will have the following metadata:
+  ```yaml
+  metadata:
+    labels:
+      name: rental-demo
+      app: json-xform
+      component: <specific_name>
+  ```
 
 * Build and deploy all
   ```sh
@@ -164,7 +165,7 @@ metadata:
 
 * Verify all components run successfully
   ```sh
-  make status all 
+  make status_all 
   ```
 
 * Start the Demo Web App:
@@ -201,7 +202,7 @@ The demonstration user interface includes the form and controls to drive the dem
 ### 🌐 Web Interface Usage
 
 * **Step 1: Select Message Type**
-  * 📦 Order Records: E-commerce order data
+  * 📦 Order Records: Truck Rental portal order data
   * 💼 Job Records: Job posting data
   * 🛠️ Custom JSON: Your own JSON payload
 
@@ -218,7 +219,12 @@ The demonstration user interface includes the form and controls to drive the dem
 
 ### Flink SQL processing
 
-* Verify the application is running with: 
+There are multiple approaches for the implementation. The easiest one is to tune the SQL with the Flink SQL shell. 
+
+```sh
+cd cp-flink
+make start
+```
 
 ### Validating Results
 

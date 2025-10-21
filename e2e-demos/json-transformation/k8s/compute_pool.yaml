@@ -2,7 +2,6 @@ apiVersion: cmf.confluent.io/v1
 kind: ComputePool
 metadata:
   name: rental-pool
-  namespace: confluent
 spec:
   type: DEDICATED
   clusterSpec:
