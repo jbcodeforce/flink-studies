@@ -15,8 +15,14 @@
     padding: 0;
 }
   
+.md-tabs__content {
+    color: blue; /* Or any valid CSS color value */
+    font-size: 1.25rem;
+}
+
+
 .md-header__button.md-logo img, .md-header__button.md-logo svg {
-    height: 3.0rem;
+    height: 4.0rem;
     width: 3.0rem;
 }
   

@@ -13,7 +13,7 @@
 
 Apache Flink has defined a Kubernetes Operator (FKO) to deploy and manage custom resources for Flink deployments. Confluent Platform Manager for Flink (CMF) is also deployed on Kubernetes with its own operator, leveraging the FKO. Also as part of the Confluent Platform it is integrated with Confluent Kubernetes Operator (CKO).
 
-We assume reader has good understanding and knowledge of Kubernetes, and kubectl.
+We assume reader has good [understanding and knowledge of Kubernetes](https://kubernetes.io/docs/tutorials/), and kubectl.
 
 Let start to review the Apache Flink Kubernetes Operator concepts.
 
@@ -111,7 +111,7 @@ CMF integrates with FKO to support Flink native custom resources. The following 
 <figcaption>Figure 5: CFK, CMF and CKO</figcaption>
 </figure>
 
-* Flink Environments can be created with Manifests or using the Confluent CLI. The metadata is persisted in an embedded database. The 'Environment' concept is to group multiple Flink applications together. This is an isolation layer for RBAC, and to define Flink Configuration cross compute pools and applications deployed within an environment. Flink Configuration may include common observability and checkpointing storage (HDFS or S3) definitions. [See one definition of FlinkEnvironment](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cp-flink/flink-dev-env.yaml).
+* Flink Environments can be created with Manifests or using the Confluent CLI. The metadata is persisted in an embedded database. The 'Environment' concept is to group multiple Flink applications together. This is an isolation layer for RBAC, and to define Flink Configuration cross compute pools and applications deployed within an environment. Flink Configuration may include common observability and checkpointing storage (HDFS or S3) definitions. [See one definition of FlinkEnvironment](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cmf/flink-dev-env.yaml).
 * a REST API supports all the external integration to the operator. **Confluent Control Center** and  the `confluent` cli are using this end point.
 * CMF manages FlinkDeployment resources internally
 * **Confluent For Kubernetes** is the Confluent operator to manage Kafka resources, but it supports the deployment of FlinkEnvironment and an "adapted" FlinkApplication (to reference an Environment) so kubectl command can access this operator for confluent platform CRs ( `apiVersion: platform.confluent.io/v1beta1`).
@@ -160,7 +160,7 @@ Confluent Managed for Flink manages Flink application mode only and is using its
 <caption>Confluent Manager for Flink - Custom Resources Definitions</capture>
 </figure>
 
-* An [FlinkEnvironment](https://docs.confluent.io/operator/current/co-manage-flink.html#create-a-af-environment) may define FlinkConfigurations cross applications. See [one example in deployment/k8s/cp-flink](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cp-flink/flink-dev-env.yaml). 
+* An [FlinkEnvironment](https://docs.confluent.io/operator/current/co-manage-flink.html#create-a-af-environment) may define FlinkConfigurations cross applications. See [one example in deployment/k8s/cmf](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cmf/flink-dev-env.yaml). 
   ```yaml
   apiVersion: platform.confluent.io/v1beta1
   kind: FlinkEnvironment
@@ -228,60 +228,170 @@ The configuration flexibility:
 * Compute pool configuration can apply to all SQL statements executed within the compute pool
 * Flink Application has its own configuration, knowing that an application can be done with DataStream, or TableAPI.
 
-### Durable Storage
+## Installation
 
-Durable storage is used to store consistent checkpoints of the Flink state. Review [the state management](../concepts/index.md#state-management) section in the concept chapter. The checkpoints are saved to object storage [compatible with S3](https://docs.confluent.io/platform/current/flink/how-to-guides/checkpoint-s3.html), or HDFS protocol. The FlinkConfiguration can be set at the Application, ComputePool or Environment level.
+The Components to install for each deployment approach:
 
-Two important elements to confifure: 
-1. the environment variable ENABLE_BUILT_IN_PLUGINS
-1. The `state.checkpoints.dir` to the location of S3 bucket.
+=== "Confluent Platform"
+    In the context of a Confluent Platform deployment, the components to install are represented in the following figure from bottom to higher layer:
 
-The following is a configuration using minio and the presto S3FileSystem which is a specific implementation (created by Presto) of the file system interface within Apache Flink. (See the [S3FileSystemFactory class](https://nightlies.apache.org/flink/flink-docs-master/api/java/org/apache/flink/fs/s3presto/S3FileSystemFactory.html)). 
+    ![](./diagrams/cp_comp_to_deploy.drawio.png)
 
-```json
-"flinkConfiguration": {
-        "pipeline.operator-chaining.enabled": "false",
-        "execution.checkpointing.interval": "10s",
-        "taskmanager.numberOfTaskSlots": "4",
-        "fs.s3.impl": "org.apache.flink.fs.s3presto.S3FileSystem",
-        "presto.s3.endpoint": "http://minio.minio-dev.svc.cluster.local:9000",
-        "presto.s3.path.style.access": "true",
-        "presto.s3.connection.ssl.enabled": "false",
-        "presto.s3.access-key": "admin",
-        "presto.s3.secret-key": "admin123",
-        "state.checkpoints.dir": "s3://flink/stateful-flink/checkpoints",
-        "state.savepoints.dir": "s3://flink/stateful-flink/savepoints",
-        "state.checkpoints.interval": "10000",
-        "state.checkpoints.timeout": "600000"
-  
-      },
-```
+=== "Open Source Approach"
+    For an equivalent open source the components are:
 
-For Minio settings:
+    ![](./diagrams/oss_comp_to_deploy.drawio.png)
 
-```yaml
-  s3.endpoint: http://minio.minio-dev.svc.cluster.local:9000
-  s3.path.style.access: "true"
-  s3.connection.ssl.enabled: "false"
-  s3.access-key: minioadmin
-  s3.secret-key: minioadmin
-  state.checkpoints.dir: s3://flink/stateful-flink/checkpoints
-  state.savepoints.dir: s3://flink/stateful-flink/savepoints
-  state.checkpoints.interval: "10000"
-  state.checkpoints.timeout: "600000"
-```
+### Prerequisites
 
-TO BE CONTINUED
+Any Kubernetes deployment should include the following pre-requisites:
 
-A RWX, shared PersistentVolumeClaim (PVC) for the Flink JobManagers and TaskManagers provides persistence for stateful checkpoint and savepoint of Flink jobs. 
+* [kubectl](https://Kubernetes.io/docs/tasks/tools/) 
+* A Kubernetes cluster. [Colima](https://github.com/abiosoft/colima) for local Kubernetes. See start colima with [deployment/k8s/start_colima.sh](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/start_colima.sh) or `make start_colima` under deployment/k8s folder.
+* Be sure to have helm cli installed: ([see installation instructions](https://helm.sh/docs/intro/install/))
+  ```sh
+  # for mac
+  brew install helm
+  # or 
+  brew upgrade helm
+  # for WSL2 - ubuntu
+  sudo apt-get install helm
+  ```
 
-<figure markdown=span>
-![4](./diagrams/storage.drawio.png)
-</figure>
+* Install [Confluent CLI](https://docs.confluent.io/confluent-cli/current/install.html#install-confluent-cli) or update existing CLI with: 
+  ```sh
+  confluent update
+  ```
 
-A flow is a packaged as a jar, so developers need to define a docker image with the Flink API and any connector jars. Example of [Dockerfile](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale/flink-app/Dockerfile) and [FlinkApplication manifest](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale/k8s/cmf_app_deployment.yaml).
+#### Colima playground
 
-Also one solution includes using MinIO to persist application jars.
+See the [Colima installation instructions.](https://github.com/abiosoft/colima?tab=readme-ov-file#installation)
+
+* Start a Kubernetes cluster, using one of the following options:
+  ```sh
+  colima start --Kubernetes
+  # or under deployment/k8s folder
+  ./start_colima.sh
+  # or using make under deployment/k8s
+  make start_colima
+  ```
+
+### External Components
+
+The certificate manager and minio operator may be deploy in one command under `deployment/k8s`: 
+  ```sh
+  make deploy
+  ```
+
+#### Certificate manager 
+
+
+* [See certificate manager current releases](https://github.com/cert-manager/cert-manager/releases), and update the CERT_MGR_VERSION=v1.18.1 in the [Makefile](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/Makefile), then run the command:
+  ```sh
+  make deploy_cert_manager
+  ```
+
+* Which is doing:
+  ```sh
+  kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.18.1/cert-manager.yaml
+  ```
+
+* Verify deployment with
+  ```sh
+    kubeclt get pods -n cert-manager
+    # or
+    make verify_cert_manager
+    ```
+    
+#### Using MinIO
+
+MinIO is an object storage solution that provides an Amazon Web Services S3-compatible API and supports all core S3 features, on k8s. It may be used for Flink checkpoint and snapshot persistenace, or when deploying application jar file to Flink, as a file storage.
+
+* First be sure to have [the MinIO CLI](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) installed. 
+    ```sh
+    brew install minio/stable/mc
+    # or to upgrade to a new version
+    brew upgrade minio/stable/mc
+    # Verify installation
+    mc --help
+    ``` 
+
+    [mc cli command summary](https://min.io/docs/minio/linux/reference/minio-mc.html)
+
+* Deploy Minio operator under `minio-dev` namespace, using `Make
+    ```sh
+    make deploy_minio
+    make verify_minio
+    ```
+
+* Access MinIO S3 API and Console
+    ```sh
+    kubectl port-forward pod/minio 9000 9090 -n minio-dev
+    # or
+    make port_forward_minio_console
+    ```
+
+* Log in to the Console with the credentials `minioadmin | minioadmin`
+* Setup a minio client with credential saved to  $HOME/.mc/config.json
+    ```sh
+    mc alias set dev-minio http://localhost:9000 minioadmin minioadmin
+    # make a bucket
+    mc mb dev-minio/flink
+    ```
+
+### CFK installation
+
+[See this Makefile](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cfk/Makefile) and [Readme](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cfk/README.md)
+
+[See the Confluent Platform product installation documentation](https://docs.confluent.io/operator/current/overview.html) for details. We can summarize as: 
+
+* The deployment leverages Kubernetes native API to configure, deploy, and manage Kafka cluster, Connect workers, Schema Registry, Confluent Control Center, Confluent REST Proxy and application resources such as topics.
+* The following diagram illustrates those components in one namespace.
+    <figure markdown="span">
+    ![](./diagrams/cp-comps-k8s.drawio.png)
+    <caption>Confluent Platform Components - k8s deployment</caption>
+    </figure>
+
+* Under the [deployment/k8s/cfk](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cfk) folder, run `make deploy` which will do the following operations:
+    * Create a namespace for Confluent products deployment. By default, it deploys Confluent Platform in the namespaced deployment, and it manages Confluent Platform components in this namespace . 
+    * Add Confluent Platform **Helm** repositories
+    * Deploy Confluent Kafka Broker using one Kraft controller, one to three brokers, the new Confluent Center Console, with REST api and Schema Registry.
+        ```sh
+              NAME                                  READY   STATUS      RESTARTS          AGE
+        confluent-operator-764dbdf6f9-6f7gx   1/1     Running     158 (5h41m ago)   89d
+        controlcenter-ng-0                    3/3     Running     13 (5h41m ago)    32d
+        kafka-0                               1/1     Running     4 (5h41m ago)     32d
+        kraftcontroller-0                     1/1     Running     4 (5h41m ago)     32d
+        schemaregistry-0                      1/1     Running     7 (5h41m ago)     32d
+        ```
+    * The console may be accessed via port-forwarding:
+        ```sh
+        kubectl -n confluent port-forward svc/controlcenter-ng 9021:9021 
+        chrome localhost:9021
+        ```
+
+        ![](./images/cp-console.png)
+
+* See [Confluent Platform releases information.](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
+
+
+### [Confluent Manager for Flink (CMF)](https://docs.confluent.io/operator/current/co-deploy-cp.html#co-deploy-cp)
+
+Updated 10.18.2025: For CFK version 2.0.3 and CP v8.0.2
+
+[See the Makefile under deployment/k8s/cmf](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cmf/Makefile) which includes a set of targets to simplify the deployment. [See Confluent Manager for Flink product documentation](https://docs.confluent.io/platform/current/flink/get-started/get-started-application.html#step-1-install-cmf-long) for deeper information. The following steps are a summary of what should be done.
+
+
+* Install Confluent Manager for Flink operator, under `deployment/k8s/cmf`
+  ```sh
+  make help
+  make deploy
+  make status
+  ```
+
+See [deploy application section for SQL or Java app deployment](#flink-application-deployment)
+
+---
 
 ### HA configuration
 
@@ -359,191 +469,71 @@ podTemplate can include nodeAffinity to allocate taskManager to different node c
 * [Apache Flink Native Kubernetes deployment.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/native_Kubernetes/)
 * [A Confluent Platform demonstration git repo: confluentinc/confluent-demo](https://github.com/confluentinc/confluent-demo)
 
-## Deployment 
-### Prerequisites
 
-Any Flink on Kubernetes deployment should include the following pre-requisites:
 
-* [kubectl](https://Kubernetes.io/docs/tasks/tools/) 
-* A Kubernetes cluster. [Colima](https://github.com/abiosoft/colima) for local Kubernetes. See start colima with [deployment/k8s/start_colima.sh](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/start_colima.sh) or `make start_colima` under cp-flink folder.
-* Be sure to have helm cli installed: ([see installation instructions](https://helm.sh/docs/intro/install/))
-  ```sh
-  # for mac
-  brew install helm
-  # or 
-  brew upgrade helm
-  # for WSL2 - ubuntu
-  sudo apt-get install helm
-  ```
-
-**Two Options to run Flink on Kubernetes**: 
-
-1. [Confluent Manager for Apache Flink](#confluent-manager-for-apache-flink) 
-1. [Apache Flink Open Source](#deploy-apache-flink-Kubernetes-operator)
-
-Once the platform is up and running [see the different application deployment patterns](#flink-application-deployment).
-
-### Colima playground
-
-[Colima installation instructions.](https://github.com/abiosoft/colima?tab=readme-ov-file#installation)
-
-* Start a Kubernetes cluster, for colima do one of the following option:
-  ```sh
-  colima start --Kubernetes
-  # or under deployment/k8s folder
-  ./start_colima.sh
-  # with make under deployment/k8s
-  make start_colima
-  ```
-
-* Install Certification manager [See current releases](https://github.com/cert-manager/cert-manager/releases):
-  ```sh
-  make deploy_cert_manager
-  ```
-  Which is doing:
-  ```sh
-  kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.18.1/cert-manager.yaml
-  # verify
-  kubeclt get pods -n cert-manager
-  # or
-  make verify_cert_manager
-  ```
-
-### Using MinIO
-
-MinIO is an object storage solution that provides an Amazon Web Services S3-compatible API and supports all core S3 features, on k8s. It may be used when deploying application jar file to Flink.
-
-* First be sure [the MinIO CLI](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) is installed. 
-    ```sh
-    brew install minio/stable/mc
-    # or to upgrade to a new version
-    brew upgrade minio/stable/mc
-    # Verify installation
-    mc --help
-    ``` 
-
-    [mc cli command summary](https://min.io/docs/minio/linux/reference/minio-mc.html)
-
-* Config Minio under `minio-dev` namespace
-    ```sh
-    # under deployment/k8s/MinIO
-    kubectl apply -f minio-dev.yaml
-    kubectl get pods -n minio-dev
-    # same as doing
-    make deploy_minio
-    make verify_minio
-    ```
-
-* Access MinIO S3 API and Console
-    ```sh
-    kubectl port-forward pod/minio 9000 9090 -n minio-dev
-    # or
-    make port_forward_minio_console
-    ```
-
-* Log in to the Console with the credentials `minioadmin | minioadmin`
-* Setup a minio client with credential saved to  $HOME/.mc/config.json
-    ```sh
-    mc alias set dev-minio http://localhost:9000 minioadmin minioadmin
-    # make a bucket
-    mc mb dev-minio/flink
-    ```
-
+---
 * Next steps is to upload jar files for the different applications to deploy, or data sets for SQL table. See [application section](#flink-application-deployment).
-
-### [Confluent Manager](https://docs.confluent.io/operator/current/co-deploy-cp.html#co-deploy-cp) for Apache Flink
-
-Updated 07.01.2025: For CFK version 3.0.0 and CP v8.0.0
-
-[See the Makefile under deployment/k8s/cp-flink](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cp-flink) which includes a set of targets to simplify the deployment. [See Confluent Manager for Apache Flink product documentation](https://docs.confluent.io/platform/current/flink/get-started/get-started-application.html#step-1-install-cmf-long) for deeper information. The following steps are a summary of what should be done.
-
-* Install [Confluent CLI](https://docs.confluent.io/confluent-cli/current/install.html#install-confluent-cli) or update existing CLI with: 
-  ```sh
-  confluent update
-  ```
-* Install [Confluent plugin for kubectl](https://docs.confluent.io/operator/current/co-deploy-cfk.html#co-install-plugin)
-  ```sh
-  sudo tar -xvf kubectl-plugin/kubectl-confluent-darwin-arm64.tar.gz -C /usr/local/bin/
-  ```
-
-#### Install Confluent Platform for Kafka
-
-[Confluent Platform product installation documentation](https://docs.confluent.io/operator/current/overview.html) at the highest level, the deployment leverages Kubernetes native API to configure, deploy, and manage Kafka cluster, Connect workers, Schema Registry, Confluent Control Center, Confluent REST Proxy and application resources such as topics.
-
-<figure markdown="span">
-![](./diagrams/cp-comps-k8s.drawio.png)
-<caption>Confluent Platform Components - k8s deployment</caption>
-</figure>
-
-* Under the [deployment/k8s/cfk](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cfk), using make, run `make install_cp` which will do the following operations:
-    * Create a namespace for Confluent products deployment. By default, it deploys Confluent Platform in the namespaced deployment, and it manages Confluent Platform components in this namespace . 
-    * Add Confluent Platform **Helm** repositories
-        ```sh
-        helm repo add confluentinc https://packages.confluent.io/helm
-        # Verify help repo entries exist
-        helm repo list
-        # try to update repo content
-        helm repo update
-        helm upgrade --install confluent-operator confluentinc/confluent-for-Kubernetes
-        ```
-    *  Deploy Confluent Kafka Broker using one Kraft controller, one to three brokers, the new Confluent Console, with REST api and Schema Registry.
-        ```sh
-              NAME                                  READY   STATUS      RESTARTS          AGE
-        confluent-operator-764dbdf6f9-6f7gx   1/1     Running     158 (5h41m ago)   89d
-        controlcenter-ng-0                    3/3     Running     13 (5h41m ago)    32d
-        kafka-0                               1/1     Running     4 (5h41m ago)     32d
-        kraftcontroller-0                     1/1     Running     4 (5h41m ago)     32d
-        schemaregistry-0                      1/1     Running     7 (5h41m ago)     32d
-        ```
-    * The console may be accessed via port-forwarding:
-        ```sh
-        kubectl -n confluent port-forward svc/controlcenter-ng 9021:9021 
-        chrome localhost:9021
-        ```
-
-        ![](./images/cp-console.png)
-
-* See [Confluent Platform releases information.](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
-
-
-#### Install Confluent Manager for Flink
-
-The Makefile is under [deployment/k8s/cp-flink](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cp-flink), and the deployment is done via:
-```sh
-make install_cmf
-```
-
-Which is executing the following operations:
-* Create Flink namespace, install minio, and update the helm repository
-* Install the Flink Kubernetes Operator
-  ```sh
-  make install_flink_Kubernetes_operator
-  # which does:
-  helm upgrade --install cp-flink-Kubernetes-operator --version "~1.120.0"  confluentinc/flink-Kubernetes-operator --set watchNamespace="{flink, confluent}"
-  ```
-
-* Install Confluent Manager for Apache Flink (The `cmf.sql.production=false` setting initializing the CMF database without encryption.)
-  ```sh
-  make deploy_cmf
-  # same as:
-  helm upgrade --install cmf --version "~2.0.0" confluentinc/confluent-manager-for-apache-flink --namespace flink --set cmf.sql.production=false
-  ```
-
-* Open port forwarding to CMF so the confluent cli can access the REST API, this is mandatory to deploy job
-  ```sh
-  make port_forward_cmf
-  # which is the same as:
-  kubectl port-forward svc/cmf-service 8084:80 -n flink
-  ```
-
-See [deploy application section for SQL or Java app deployment](#flink-application-deployment)
-
 
 ---
 
 TO UPDATE 
 
-### Apache Flink OSS 
+#### Durable Storage
+
+Durable storage is used to store consistent checkpoints of the Flink state. Review [the state management](../concepts/index.md#state-management) section in the concept chapter. The checkpoints are saved to object storage [compatible with S3](https://docs.confluent.io/platform/current/flink/how-to-guides/checkpoint-s3.html), or HDFS protocol. The FlinkConfiguration can be set at the Application, ComputePool or Environment level.
+
+Two important elements to configure: 
+1. the environment variable ENABLE_BUILT_IN_PLUGINS
+1. The `state.checkpoints.dir` to the location of S3 bucket.
+
+The following is a configuration using minio and the presto S3FileSystem which is a specific implementation (created by Presto) of the file system interface within Apache Flink. (See the [S3FileSystemFactory class](https://nightlies.apache.org/flink/flink-docs-master/api/java/org/apache/flink/fs/s3presto/S3FileSystemFactory.html)). 
+
+```json
+"flinkConfiguration": {
+        "pipeline.operator-chaining.enabled": "false",
+        "execution.checkpointing.interval": "10s",
+        "taskmanager.numberOfTaskSlots": "4",
+        "fs.s3.impl": "org.apache.flink.fs.s3presto.S3FileSystem",
+        "presto.s3.endpoint": "http://minio.minio-dev.svc.cluster.local:9000",
+        "presto.s3.path.style.access": "true",
+        "presto.s3.connection.ssl.enabled": "false",
+        "presto.s3.access-key": "admin",
+        "presto.s3.secret-key": "admin123",
+        "state.checkpoints.dir": "s3://flink/stateful-flink/checkpoints",
+        "state.savepoints.dir": "s3://flink/stateful-flink/savepoints",
+        "state.checkpoints.interval": "10000",
+        "state.checkpoints.timeout": "600000"
+  
+      },
+```
+
+For Minio settings:
+
+```yaml
+  s3.endpoint: http://minio.minio-dev.svc.cluster.local:9000
+  s3.path.style.access: "true"
+  s3.connection.ssl.enabled: "false"
+  s3.access-key: minioadmin
+  s3.secret-key: minioadmin
+  state.checkpoints.dir: s3://flink/stateful-flink/checkpoints
+  state.savepoints.dir: s3://flink/stateful-flink/savepoints
+  state.checkpoints.interval: "10000"
+  state.checkpoints.timeout: "600000"
+```
+
+TO BE CONTINUED
+
+A RWX, shared PersistentVolumeClaim (PVC) for the Flink JobManagers and TaskManagers provides persistence for stateful checkpoint and savepoint of Flink jobs. 
+
+<figure markdown=span>
+![4](./diagrams/storage.drawio.png)
+</figure>
+
+A flow is a packaged as a jar, so developers need to define a docker image with the Flink API and any connector jars. Example of [Dockerfile](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale/flink-app/Dockerfile) and [FlinkApplication manifest](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale/k8s/cmf_app_deployment.yaml).
+
+Also one solution includes using MinIO to persist application jars.
+
+## Apache Flink OSS 
 
 * Add the Apache Flink **Helm** repositories: 
     ```sh

@@ -1,5 +1,5 @@
-insert into order_details(OrderId, EquipmentRentalDetails,MovingHelpDetails)
-SELECT
+insert into order_details
+with ungrouped as (SELECT
   o.OrderId,
   ARRAY[
     row(
@@ -13,10 +13,9 @@ SELECT
       o.OrderType,
       CAST(o.AssociatedContractId as BIGINT)
     )
-  ],
-  ARRAY[ 
-      ROW(
-        j.job_id, 
+  ] as EquipmentRentalDetails,
+    ROW(
+        j.job_id,
         j.job_type,
         j.job_status,
         j.rate_service_provider,
@@ -26,5 +25,12 @@ SELECT
        j.job_entered_date,
       j.job_last_modified_date,
       j.service_provider_name)
-    ] 
-from raw_orders o join raw_jobs j on j.order_id = o.OrderId
+     as MovingHelpDetail
+from raw_orders o join raw_jobs j on j.order_id = o.OrderId)
+
+select
+  OrderId,
+  EquipmentRentalDetails,
+  collect(MovingHelpDetail) as MovingHelpDetails
+from ungrouped
+group by OrderId, EquipmentRentalDetails;

@@ -48,6 +48,7 @@ start_flink_shell: ## Start Flink Shell connected to CP Flink Environment
 # ---------------------- Flink ----------------------
 use_flink_ns:
 	@kubectl config set-context --current --namespace=$(FLCK_NS)
+	@echo "$(YELLOW)Using Flink namespace: $(FLCK_NS)$(NC)"
 
 list_compute_pools:
 	@confluent flink compute-pool list --environment $(FLINK_ENV) --url $(CMF_URL)
@@ -81,6 +82,7 @@ stop_port_forwards:
 # ----- Flink Application -----
 use_demo_ns:
 	@kubectl config set-context --current --namespace=$(DEMO_NS)
+	echo "$(GREEN)Using Flink namespace: $(FLCK_NS)$(NC)"
 
 
 

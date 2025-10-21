@@ -18,7 +18,7 @@ create table order_details (
       >,
       OrderType STRING,
       AssociatedContractId BIGINT>>,
-  MovingHelpDetails ARRAY<ROW<
+  MovingHelpDetails MULTISET<ROW<
     job_id BIGINT,
     job_type STRING,
     job_status STRING,
@@ -33,7 +33,7 @@ create table order_details (
   ) distributed by hash(OrderId) into 1 buckets WITH ( 
    'value.avro-registry.schema-context' = '.dev',
    'kafka.retention.time' = '0',
-    'changelog.mode' = 'append',
+    'changelog.mode' = 'upsert',
    'scan.bounded.mode' = 'unbounded',
    'scan.startup.mode' = 'earliest-offset',
    'value.fields-include' = 'all',

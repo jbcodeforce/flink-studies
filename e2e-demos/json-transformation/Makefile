@@ -50,9 +50,9 @@ use_confluent_ns: ## Use the confluent namespace
 build_all: ## Build the demonstation components
 	@echo "$(BLUE)Building demo...$(NC)"
 	kubectl apply -f k8s/rental.yaml
-	kubectl apply -f k8s/flink_dev_rental.yaml
 	kubectl apply -f k8s/kafka_client_cm.yaml -n $(CFNT_NS)
 	kubectl apply -f k8s/kafka_client_cm.yaml -n $(DEMO_NS)
+	kubectl apply -f k8s/rbac.yaml -n $(DEMO_NS)
 	make create_all_topics
 	make create_all_schemas
 	make create_environment
@@ -86,7 +86,7 @@ status_all: ## Validate the demo
 	confluent flink catalog list --url $(CMF_URL)
 	@echo "----------------------------------------"
 	@echo "$(WHITE)$(BOLD)Checking Flink compute pool...$(NC)"
-	confluent flink compute-pool list --environment $(FLINK_ENV) --url $(CMF_URL)
+	confluent flink compute-pool list --environment $(ENV_NAME) --url $(CMF_URL)
 	@echo "----------------------------------------"
 	@echo "✅ Demo status check complete!"
 

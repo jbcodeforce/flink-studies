@@ -1,4 +1,4 @@
-# Flink on k8s with the operator (Open-source or Confluent Platform)
+# Confluent Manager for Flink
 
 This folder includes different deployment manifests for Confluent Manager for Flink. The approach is to encapsulate some of the kubectl commands using `make` targets. The code and/or instructions here are NOT intended for production usage.
 

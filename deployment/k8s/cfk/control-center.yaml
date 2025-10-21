@@ -1,0 +1,40 @@
+apiVersion: platform.confluent.io/v1beta1
+kind: ControlCenter
+metadata:
+  name: controlcenter-ng
+  namespace: confluent
+spec:
+  replicas: 1
+  image:
+    application: confluentinc/cp-enterprise-control-center-next-gen:2.2.0
+    init: confluentinc/confluent-init-container:3.0.0
+  dataVolumeCapacity: 10Gi
+  dependencies:
+    prometheusClient:
+      url: http://controlcenter-ng.confluent.svc.cluster.local:9090
+    alertManagerClient:
+      url: http://controlcenter-ng.confluent.svc.cluster.local:9093
+    schemaRegistry:
+      url: http://schemaregistry.confluent.svc.cluster.local:8081
+    kafka:
+      bootstrapEndpoint: kafka.confluent.svc.cluster.local:9071
+  services:
+    prometheus:
+       image: confluentinc/cp-enterprise-prometheus:2.2.0
+       pvc:
+         dataVolumeCapacity: 10Gi
+    alertmanager:
+       image: confluentinc/cp-enterprise-alertmanager:2.2.0
+  configOverrides:
+    server:
+      - confluent.controlcenter.cmf.enable=True
+      - confluent.controlcenter.cmf.url=http://cmf-service:80
+      - confluent.controlcenter.replication.factor=1
+      - confluent.controlcenter.monitoring.interceptor.topic.partitions=1
+      - confluent.controlcenter.internal.topics.partitions=1
+      - confluent.metrics.topic.replication=1
+      - confluent.controlcenter.internal.topics.replication=1
+      - confluent.controlcenter.command.topic.replication=1
+      - confluent.controlcenter.command.topic.min.isr=1
+      - confluent.controlcenter.monitoring.interceptor.topic.replication=1
+      - confluent.controlcenter.monitoring.interceptor.topic.min.isr=1

@@ -20,7 +20,7 @@
             "state.checkpoints.timeout": "600000"
         },
         "flinkVersion": "v1_19",
-        "image": "confluentinc/cp-flink:1.19.1-cp2",
+        "image": "rental-dsp:latest",
         "job": {
             "jarURI": "local:///opt/flink/usrlib/rental-dsp-1.0.0.jar",
             "entryClass": "rental.demo.table.RentalEventsProcessing",
@@ -34,7 +34,7 @@
                 "memory": "1024m"
             }
         },
-        "serviceAccount": "flink",
+        "serviceAccount": "flink-sa",
         "taskManager": {
             "resource": {
                 "cpu": 1,

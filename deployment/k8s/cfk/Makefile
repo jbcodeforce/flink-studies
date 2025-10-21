@@ -1,6 +1,5 @@
 CFNT_NS=confluent
-CERT_MGR_VERSION=v1.18.1
-
+DEMO_NS=el-demo,rental
 
 # ---------------------- Confluent Platform  --------------------------------
 # Colors for output
@@ -23,13 +22,13 @@ ensure_ns = \
 .PHONY: help deploy status
 
 help: ## Show this help message
-	@echo "$(BLUE)Json Transformation Demo - Build & Deploy$(NC)"
+	@echo "$(BLUE)Confluent Platform CFK Deployment Makefile$(NC)"
 	@echo ""
 	@echo "$(BLUE)Available targets:$(NC)"
 	@awk 'BEGIN {FS = ":.*##"; printf ""} /^[a-zA-Z_-]+:.*?##/ { printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 # ------- Common elements to install -------------
-deploy: create_ns update_helm_confluent_repo  deploy_cp_cfk verify_cp_cfk deploy_cp_cluster ## Deploy the Confluent Platform.
+deploy: create_ns update_helm_confluent_repo upgrade_crds  deploy_cp_cfk verify_cp_cfk deploy_cp_cluster ## Deploy the Confluent Platform.
 
 use_confluent_ns: ## Use the confluent namespace	
 	@kubectl config set-context --current --namespace=$(CFNT_NS)
@@ -37,30 +36,43 @@ use_confluent_ns: ## Use the confluent namespace
 
 status: use_confluent_ns verify_cp_cfk verify_kraft verify_kafka verify_controlcenter verify_schemaregistry	## Get deployment status.
 
-undeploy: delete_cp_cluster ## Undeploy the Confluent Platform.
+
+undeploy: delete_cp_cluster uninstall_cp_cfk ## Undeploy the Confluent Platform.
 
 port_forward_cp_console: ## Port forward the Confluent Platform console.
 	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/controlcenter-ng 9021:9021"'
 
-
+# ---- private commands ------------
 create_ns:
 	$(call ensure_ns, $(CFNT_NS))
 
 update_helm_confluent_repo:
-	@helm repo add confluentinc https://packages.confluent.io/helm
+	@helm repo add confluentinc https://packages.confluent.io/helm --force-update
 	@helm repo update
 	@echo "$(GREEN) Updated Helm Confluent repository$(NC)"
+
+upgrade_crds:
+	helm show crds confluentinc/confluent-for-kubernetes | kubectl apply --server-side=true -f -
+	@echo "$(GREEN) Upgraded Confluent Platform CRDs$(NC)"
 
 deploy_cp_cfk: 
 	@helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes --set namespaced=false --set kRaftEnabled=true  --set namespaceList="{$(CFNT_NS),$(FLCK_NS),$(DEMO_NS)}" --set enableCMFDay2Ops=true -n $(CFNT_NS)
 	@echo "$(GREEN) Deployed Confluent Platform CFK$(NC)"
 
 deploy_cp_cluster:
-	@kubectl apply -f ../cfk/basic-kraft-cluster.yaml -n $(CFNT_NS)
+	@kubectl apply -f ../cfk/kafka-cluster.yaml -n $(CFNT_NS)
+	@kubectl apply -f ../cfk/schemaregistry.yaml -n $(CFNT_NS)
+	@kubectl apply -f ../cfk/kraft-controller.yaml -n $(CFNT_NS)
+	@kubectl apply -f ../cfk/control-center.yaml -n $(CFNT_NS)
+
+	
 	@echo "$(GREEN) Deployed Confluent Platform Kafka Cluster$(NC)"
 
 delete_cp_cluster:
-	@kubectl delete -f ../cfk/basic-kraft-cluster.yaml -n $(CFNT_NS)
+	@kubectl delete -f ../cfk/schema-registry.yaml -n $(CFNT_NS)
+	@kubectl delete -f ../cfk/control-center.yaml -n $(CFNT_NS)
+	@kubectl delete -f ../cfk/kafka-cluster.yaml -n $(CFNT_NS)
+	@kubectl delete -f ../cfk/kraft-controller.yaml -n $(CFNT_NS)
 	@echo "$(GREEN) Deleted Confluent Platform Kafka Cluster$(NC)"
 
 uninstall_cp_cfk:

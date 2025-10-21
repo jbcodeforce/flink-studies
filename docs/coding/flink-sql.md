@@ -686,7 +686,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     ```
 
 ???+ question "How to access element of an array of rows?"
-    The table is created as:
+    The table has a column that is an array of rows. 
     ```sql
      CREATE TABLE my_table (
         key_col INT,
@@ -694,7 +694,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     ) WITH (...)
     ```
 
-    To create one record per row use CROSS JOIN UNNEST:
+    To create one record per row, so exploding the array, use CROSS JOIN UNNEST:
     ```sql
      SELECT
         t.key_col,
@@ -702,12 +702,12 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
         unnested_row.name
     FROM
         my_table AS t
-    CROSS JOIN
-        UNNEST(t.nested_data) AS unnested_row;
+    CROSS JOIN UNNEST(t.nested_data) AS unnested_row;
     ```
+    So each row in the nested_data arrary will be row in the output table with the matching key_col.
 
 ???+ question "How to Aggregate a field into an ARRAY?"
-    Let start by a simple array indexing (the index is between 1 to n_element). Below, the values array creates test data into a memory table aliased a `T` with a column `array_field`:
+    Let start by a simple array indexing (the index is between 1 to n_element). Below, the `values array` creates test data into a memory table aliased a `T` with a column named `array_field`:
 
     ```sql
     SELECT array_field[4] FROM ((VALUES ARRAY[5,4,3,2,1])) AS T(array_field)
@@ -730,21 +730,9 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     CROSS JOIN UNNEST(v.urls) AS u(url)
     ```
 
-???+ question "How to expand a column being an array of fields into new row?"
-
-    The table order has n product ids in the product_ids column. The following will create one row per element in product_ids.
-
-    ```sql
-    select 
-        order_id,
-        customer_id,
-        product_id
-    from orders
-    cross join unnest(product_ids) as ids(product_id)
-    ```
 
 ???+ info "Navigate a hierarchical structure in a table"
-    The unique table has node and ancestors representation. An example will be to represent a hierarchy of nodes persisted in a unique table. Suppose the graph represents a Procedure at the highest level, then an Operation, then a Phase and a Phase Step at the level 4. In the Procedures table we can have rows like:
+    The unique table has node and ancestors representation. Suppose the graph represents a Procedure at the highest level, then an Operation, then a Phase and a Phase Step at the level 4. In the Procedures table we can have rows like:
     
     ```csv
     id, parent_ids, depth, information
@@ -765,7 +753,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     'id_5', 'id_1', 'id_2', 'id_3', 'id_5', 'phase_step 2'
     ```
     
-    if the depth is 3 all ids are populated, if 0 only the top level is.
+    if the depth is 3, then the response should have all ids populated, if 0 only the top level is returned.
     
     ```sql
     with `procedures` as (
@@ -847,56 +835,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     WHERE keep_row = TRUE;
     ```
 
-???+ info "How to search for hot key?"
-    ```sql
-    SELECT 
-        id, 
-        tenant_id, 
-        count(*) as record_count,
-    FROM table_name 
-    GROUP BY id, tenant_id
-    ```
 
-    A more advanced statistical query ( TO BE TESTED)
-    ```sql
-    WITH key_stats AS (
-        SELECT 
-            id,
-            tenant_id,
-            count(*) as record_count
-        FROM src_aqem_tag_tag 
-        GROUP BY id, tenant_id
-    ),
-    distribution_stats AS (
-        SELECT 
-            AVG(record_count) as mean_count,
-            STDDEV(record_count) as stddev_count,
-            PERCENTILE_APPROX(record_count, 0.75) as q3,
-            PERCENTILE_APPROX(record_count, 0.95) as p95,
-            PERCENTILE_APPROX(record_count, 0.99) as p99
-        FROM key_stats
-    )
-    SELECT 
-        ks.*,
-        ds.mean_count,
-        ds.stddev_count,
-        -- Z-score calculation for outlier detection
-        CASE 
-            WHEN ds.stddev_count > 0 
-            THEN (ks.record_count - ds.mean_count) / ds.stddev_count
-            ELSE 0
-        END as z_score,
-        -- Hot key classification
-        CASE 
-            WHEN ks.record_count > ds.p99 THEN 'EXTREME_HOT'
-            WHEN ks.record_count > ds.p95 THEN 'VERY_HOT'
-            WHEN ks.record_count > ds.q3 * 1.5 THEN 'HOT'
-            ELSE 'NORMAL'
-        END as hot_key_category
-    FROM key_stats ks
-    CROSS JOIN distribution_stats ds
-    WHERE ks.record_count > ds.mean_count 
-    ```
 
 ???+ question "What are the different SQL execution modes?"
 
@@ -1270,9 +1209,58 @@ For developer the steps are:
 
 ## Troubleshooting SQL statement running slow
 
-### Metric to consider
+???+ info "How to search for hot key?"
+    ```sql
+    SELECT 
+        id, 
+        tenant_id, 
+        count(*) as record_count,
+    FROM table_name 
+    GROUP BY id, tenant_id
+    ```
 
-### Query Profiler / Flink UI
+    A more advanced statistical query ( TO BE TESTED)
+    ```sql
+    WITH key_stats AS (
+        SELECT 
+            id,
+            tenant_id,
+            count(*) as record_count
+        FROM src_aqem_tag_tag 
+        GROUP BY id, tenant_id
+    ),
+    distribution_stats AS (
+        SELECT 
+            AVG(record_count) as mean_count,
+            STDDEV(record_count) as stddev_count,
+            PERCENTILE_APPROX(record_count, 0.75) as q3,
+            PERCENTILE_APPROX(record_count, 0.95) as p95,
+            PERCENTILE_APPROX(record_count, 0.99) as p99
+        FROM key_stats
+    )
+    SELECT 
+        ks.*,
+        ds.mean_count,
+        ds.stddev_count,
+        -- Z-score calculation for outlier detection
+        CASE 
+            WHEN ds.stddev_count > 0 
+            THEN (ks.record_count - ds.mean_count) / ds.stddev_count
+            ELSE 0
+        END as z_score,
+        -- Hot key classification
+        CASE 
+            WHEN ks.record_count > ds.p99 THEN 'EXTREME_HOT'
+            WHEN ks.record_count > ds.p95 THEN 'VERY_HOT'
+            WHEN ks.record_count > ds.q3 * 1.5 THEN 'HOT'
+            ELSE 'NORMAL'
+        END as hot_key_category
+    FROM key_stats ks
+    CROSS JOIN distribution_stats ds
+    WHERE ks.record_count > ds.mean_count 
+    ```
+
+### Metric to consider
 
 ### Explain statement
 

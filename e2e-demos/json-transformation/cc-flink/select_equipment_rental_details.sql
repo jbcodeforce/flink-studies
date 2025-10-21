@@ -1,5 +1,5 @@
 -- Select query to preview equipment rental details extraction from raw_orders
-SELECT 
+SELECT
     OrderId,
     Status,
     Equipment,
@@ -29,8 +29,4 @@ SELECT
         OrderType,
         CAST(AssociatedContractId AS BIGINT) as AssociatedContractId
     ) as EquipmentRentalDetail
-FROM raw_orders
-WHERE Equipment IS NOT NULL 
-  AND CARDINALITY(Equipment) > 0
-  AND TotalPaid > 0;
-
+FROM raw_orders;

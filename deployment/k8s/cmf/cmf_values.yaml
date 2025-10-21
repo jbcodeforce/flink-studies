@@ -1,0 +1,11 @@
+rbac: false
+
+serviceAccount:
+  create: false
+  name: flink-sa
+
+cmf:
+  sql:
+    production: true
+    examples-catalog:
+      enabled: true

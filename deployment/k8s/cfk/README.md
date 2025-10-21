@@ -7,6 +7,7 @@ This guide provides the shell commands equivalent to the Makefile targets for de
 Using the Makefile the commands can be summarized as:
 
 ```sh
+make help
 make deploy
 make status
 make undeploy
