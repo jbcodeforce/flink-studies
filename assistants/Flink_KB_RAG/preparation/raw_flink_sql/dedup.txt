@@ -1,4 +1,5 @@
 # Deduplication Queries in Confluent Cloud for Apache Flink
+
 Confluent Cloud for Apache Flink® enables removing duplicate rows over a set of columns in a Flink SQL table.
 
 ## Syntax
