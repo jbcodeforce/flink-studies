@@ -356,6 +356,10 @@ A table registered with the CREATE TABLE statement can be used as a table source
     from  `src_table`;
     ```
 
+???+ info "Views over Tables"
+    Recall [views](https://docs.confluent.io/cloud/current/flink/reference/statements/create-view.html), are read-only, and have no insert operation and are used to encapsulate complex queries and reference them like regular tables. It acts as a virtual table that refers to the result of the specified statement expression.
+    Views and tables share the same namespace in Flink. [See array of row view example](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-sql/03-nested-row/vw.array_of_rows.sql).
+
 ???+ question "Dealing with late event"
     Any streams mapped to a table have records arriving more-or-less in order, according to the `$rowtime`, and the watermarks let the Flink SQL runtime know how much buffering of the incoming stream is needed to iron out any out-of-order-ness before emitting the sorted output stream.
 

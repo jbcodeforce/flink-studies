@@ -4,7 +4,7 @@ This folder includes 2 examples, one for mock of health care json to json transf
 
 ## Pre-requisites
 
-* Create a Confluent cloud environment using quickstart
+* Create a Confluent Cloud environment using quickstart
 
 ```sh
 confluent flink quickstart --name jb-demo --max-cfu 10 --region us-west-2 --cloud aws
@@ -18,7 +18,7 @@ confluent flink shell --compute-pool $CPOOL --environment $CENV
 
 ## Access user information from nested schemas
 
-1. Create a mockup of nested schema with the `vw.nested_user.sql` file
+1. Create a mockup of nested schema with the `vw.nested_user.sql` file. 
 
     ```sql
     create view nested_user_clicks as
@@ -36,6 +36,8 @@ confluent flink shell --compute-pool $CPOOL --environment $CENV
     ```sh
     confluent flink statement create $statement_name --sql "$sql_statement_file_as_string" --database $DB_NAME --compute-pool $CPOOL_ID --wait 
     ```
+    
+    Recall [views](https://docs.confluent.io/cloud/current/flink/reference/statements/create-view.html), are read-only, and have no insert operation and are used to encapsulate complex queries and reference them like regular tables. It acts as a virtual table that refers to the result of the specified statement expression.
 
 1. Access the nested schema in the SELECT (see `dml.nested_user.sql`)
     

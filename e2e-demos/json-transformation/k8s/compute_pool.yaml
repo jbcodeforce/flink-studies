@@ -2,6 +2,10 @@ apiVersion: cmf.confluent.io/v1
 kind: ComputePool
 metadata:
   name: rental-pool
+  labels:
+    name: rental-demo
+    app: json-xform
+    component: compute-pool
 spec:
   type: DEDICATED
   clusterSpec:

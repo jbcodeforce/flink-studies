@@ -7,7 +7,7 @@ CMF_URL=http://localhost:8084
 SR_URL=http://localhost:8081
 ENV_NAME=dev-rental
 APP_NAME=json-xform
-POOL_NAME=rental-pool
+POOL_NAME=demos-pool
 
 # Colors for output
 BLUE := \033[0;34m
@@ -58,14 +58,14 @@ build_all: ## Build the demonstation components
 	make create_environment
 	make create_compute_pool
 	make create_catalog
-	cd producer && make build 
-	cd cp-flink && make build
+	cd src/demo-app && make build 
+	cd src/cp-flink && make build
 
 deploy_all: ## Deploy the demonstation components
 	@echo "$(BLUE)Deploying demo...$(NC)"
-	cd producer && make deploy
+	cd src/demo-app && make deploy
 	@echo "Producer App Web Page should be visible at http://localhost:30080"
-	cd cp-flink && make deploy
+	cd src/cp-flink && make deploy
 	make message
 
 
@@ -73,11 +73,11 @@ status_all: ## Validate the demo
 	@echo "--------------------------------"
 	@echo "$(BLUE)Validating demo...$(NC)"
 	@echo "--------------------------------"
-	cd producer && make status
+	cd src/demo-app && make status
 	make status_all_topics
 	make status_all_schemas
 	make status_compute_pool
-	cd cp-flink && make status
+	cd src/cp-flink && make status
 	@echo "$(WHITE) $(BOLD)Checking Flink environment...$(NC)"
 	confluent flink environment list --url $(CMF_URL)
 	@echo "----------------------------------------"
@@ -90,21 +90,36 @@ status_all: ## Validate the demo
 	@echo "----------------------------------------"
 	@echo "✅ Demo status check complete!"
 
-tear_down_demo: ## Tear down the demo
+undeploy_all: ## Tear down the demo
 	@echo "$(BLUE)Tearing down demo...$(NC)"
-	cd producer && make undeploy
+	cd src/demo-app && make undeploy
+	cd src/cp-flink && make undeploy
 	make delete_all_schemas
 	make delete_all_cms
 	make delete_all_topics
-	cd cp-flink && make undeploy
+	make delete_compute_pool
+	make delete_catalog
+	make delete_secret
+	make delete_secret_mapping
+	make delete_environment
+	make delete_ns
 
 expose_services: ## Expose all the services needed for the demo
 	@echo "$(BLUE)Exposing services...$(NC)"
-	cd cp-flink && make port_forward_cp_console
-	cd cp-flink && make port_forward_cmf
-	cd cp-flink && make port_forward_schema_registry
-	cd cp-flink && make port_forward_minio_console
-	cd cp-flink && make port_forward_kafka_bootstrap
+	make port_forward_cp_console
+	cd src/cp-flink && make port_forward_cmf
+	make port_forward_schema_registry
+	make port_forward_minio_console
+	# cd src/cp-flink && make port_forward_kafka_bootstrap
+
+port_forward_cp_console: ## Port forward the Confluent Platform console.
+	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/controlcenter-ng 9021:9021"'  -e 'tell application "Terminal" to set custom title of selected tab of the front window to "C3"'
+
+port_forward_schema_registry: ## Port forward the Schema Registry
+	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/schemaregistry 8081:8081"' -e 'tell application "Terminal" to set custom title of selected tab of the front window to "Schemma Registry"'
+
+port_forward_minio_console:
+	@osascript -e 'tell app "Terminal" to do script "kubectl port-forward pod/minio 9090 9090 -n $(MINIO_NS)"' -e 'tell application "Terminal" to set custom title of selected tab of the front window to "Minio"'
 
 open_cp_console: ## Open Confluent Control Center console
 	@echo "$(BLUE)Opening Confluent Control Center on http://localhost:9021 ...$(NC)"
@@ -114,10 +129,31 @@ open_demo_web_page: ## Open the demo web page
 	@echo "$(BLUE)Opening demo web page on http://localhost:30080 ...$(NC)"
 	@open -a "Google Chrome" http://localhost:30080
 
+open_minio_console: ## Open Minio console
+	@echo "$(BLUE)Opening demo web page on http://localhost:9090 ...$(NC)"
+	@open -a "Google Chrome" http://localhost:9090/browser
+
 # ------ PRIVATE TARGETS ------
 
 stop_port_forwards:
-	cd cp-flink && make stop_port_forwards
+	@echo "Stopping all port forwards..."
+	@pkill -f "kubectl.*port-forward" || true
+	@echo "All port forwards stopped"
+	@echo "Closing specific Terminal windows..."
+	@osascript -e 'tell application "Terminal"' \
+		-e 'set windowTitles to {"Minio", "C3", "CMF REST API", "Schema Registry", "Kafka Bootstrap"}' \
+		-e 'if number of windows > 0 then' \
+		-e '  repeat with w in windows' \
+		-e '    try' \
+		-e '      set winTitle to custom title of w' \
+		-e '      if winTitle is in windowTitles then' \
+		-e '        close w' \
+		-e '      end if' \
+		-e '    end try' \
+		-e '  end repeat' \
+		-e 'end if' \
+		-e 'end tell'
+	@echo "Port forward Terminal windows closed"
 
 # Complete setup for demo
 message:
@@ -142,8 +178,15 @@ create_compute_pool:
 	confluent flink compute-pool create k8s/compute-pool-cmf.json --environment $(ENV_NAME) --url $(CMF_URL)
 
 delete_compute_pool:
-	@echo "$(YELLOW)Deleting compute pool...$(NC)"
-	confluent flink compute-pool delete $(POOL_NAME) --environment $(ENV_NAME) --url $(CMF_URL)
+	@if confluent flink compute-pool list --url $(CMF_URL) --environment $(FLINK_ENV) | grep -q "$(POOL_NAME)"; then \
+		echo "$(GREEN)Compute pool '$(POOL_NAME)' found. Deleting...$(NC)"; \
+		confluent flink compute-pool delete $(POOL_NAME) --environment $(FLINK_ENV) --url $(CMF_URL) --force; \
+		echo "$(GREEN)Compute pool deleted successfully.$(NC)"; \
+	else \
+		echo "$(YELLOW)Compute pool '$(POOL_NAME)' not found. Nothing to undeploy.$(NC)"; \
+	fi
+
+
 
 status_compute_pool:
 	@echo "$(YELLOW)Checking compute pool...$(NC)"
@@ -155,7 +198,7 @@ create_secret:
 
 delete_secret:
 	@echo "$(YELLOW)Deleting secrets...$(NC)"
-	@curl -v -X DELETE $(CMF_URL)/cmf/api/v1/secrets/kafka-1-secret
+	@curl -v -X DELETE $(CMF_URL)/cmf/api/v1/secrets/kafka-1-secret --ignore-not-found=true
 
 map_secret:
 	@echo "$(YELLOW)Mapping secrets...$(NC)"
@@ -173,7 +216,7 @@ create_catalog:
 	fi
 	
 delete_catalog:
-	@confluent flink catalog delete rental --url $(CMF_URL) --force
+	@confluent flink catalog delete rental --url $(CMF_URL) --force --ignore-not-found=true
 	@echo "$(GREEN)Catalog deleted successfully$(NC)"
 
 list_kafka_catalogs:
@@ -193,9 +236,9 @@ status_all_topics:
 	@kubectl get KafkaTopics -n $(CFNT_NS)
 
 delete_all_topics:
-	@kubectl delete -f k8s/topics/raw_orders_topic.yaml -n $(CFNT_NS)
-	@kubectl delete -f k8s/topics/raw_jobs_topic.yaml -n $(CFNT_NS)
-	@kubectl delete -f k8s/topics/order_details_topic.yaml -n $(CFNT_NS)
+	@kubectl delete -f k8s/topics/raw_orders_topic.yaml -n $(CFNT_NS) --ignore-not-found=true
+	@kubectl delete -f k8s/topics/raw_jobs_topic.yaml -n $(CFNT_NS) --ignore-not-found=true
+	@kubectl delete -f k8s/topics/order_details_topic.yaml -n $(CFNT_NS) --ignore-not-found=true
 
 # ---- Schemas with ConfigMaps
 status_all_schemas:
@@ -214,46 +257,53 @@ status_all_schemas:
 create_raw_orders_cm:
 	@echo "$(YELLOW)Creating raw-orders ConfigMap from schema file...$(NC)"
 	@kubectl create configmap raw-orders-value \
-		--from-file=schema=schemas/raw_orders_schema.json \
+		--from-file=schema=src/schemas/raw_orders_schema.json \
 		-n $(CFNT_NS) \
 		--dry-run=client -o yaml | kubectl apply -f -
 
 
 delete_raw_orders_cm:
-	@kubectl delete -f k8s/schemas/raw_orders_cm.yaml -n $(CFNT_NS)
+	@kubectl delete -f k8s/schemas/raw_orders_cm.yaml -n $(CFNT_NS) --ignore-not-found=true
 
 create_order_details_cm:
 	@echo "$(YELLOW)Creating order-details ConfigMap from schema file...$(NC)"
 	@kubectl create configmap order-details-value \
-		--from-file=schema=schemas/order_details_schema.json \
+		--from-file=schema=src/schemas/order_details_schema.json \
 		-n $(CFNT_NS) \
 		--dry-run=client -o yaml | kubectl apply -f -
 
 delete_order_details_cm:
-	@kubectl delete -f k8s/schemas/order_details_cm.yaml -n $(CFNT_NS)
+	@kubectl delete -f k8s/schemas/order_details_cm.yaml -n $(CFNT_NS) --ignore-not-found=true
 
 ## ---- jobs -----
 create_raw_jobs_cm:
 	@echo "$(YELLOW)Creating raw-jobs ConfigMap from schema file...$(NC)"
 	@kubectl create configmap raw-jobs-value \
-		--from-file=schema=schemas/raw_jobs_schema.json \
+		--from-file=schema=src/schemas/raw_jobs_schema.json \
 		-n $(CFNT_NS) \
 		--dry-run=client -o yaml | kubectl apply -f -
 
 delete_raw_jobs_cm:
-	@kubectl delete -f k8s/schemas/raw_jobs_cm.yaml -n $(CFNT_NS)
+	@kubectl delete -f k8s/schemas/raw_jobs_cm.yaml -n $(CFNT_NS) --ignore-not-found=true
 
 create_all_schemas: create_raw_orders_cm create_order_details_cm create_raw_jobs_cm
-	@echo "$(YELLOW)Creating all schemas...$(NC)"
+	@echo "$(YELLOW)Creating all schemas definitions in the Schema Registry...$(NC)"
 	@kubectl apply -f k8s/schemas/raw_orders_schema.yaml -n $(CFNT_NS)
 	@kubectl apply -f k8s/schemas/raw_jobs_schema.yaml -n $(CFNT_NS)
 	@kubectl apply -f k8s/schemas/order_details_schema.yaml -n $(CFNT_NS)
 
 delete_all_schemas:
-	@kubectl delete -f k8s/schemas/raw_orders_schema.yaml -n $(CFNT_NS)
-	@kubectl delete -f k8s/schemas/raw_jobs_schema.yaml -n $(CFNT_NS)
-	@kubectl delete -f k8s/schemas/order_details_schema.yaml -n $(CFNT_NS)
+	@kubectl delete -f k8s/schemas/raw_orders_schema.yaml -n $(CFNT_NS) --ignore-not-found=true
+	@kubectl delete -f k8s/schemas/raw_jobs_schema.yaml -n $(CFNT_NS) --ignore-not-found=true
+	@kubectl delete -f k8s/schemas/order_details_schema.yaml -n $(CFNT_NS) --ignore-not-found=true
+	@echo "$(YELLOW)Permanently deleting subjects from Schema Registry...$(NC)"
+	@curl -X DELETE "$(SR_URL)/subjects/raw-orders-value?permanent=true" 2>/dev/null || true
+	@curl -X DELETE "$(SR_URL)/subjects/raw-jobs-value?permanent=true" 2>/dev/null || true
+	@curl -X DELETE "$(SR_URL)/subjects/order-details-value?permanent=true" 2>/dev/null || true
+	@echo "$(GREEN)Schema subjects permanently deleted$(NC)"
 	
 delete_all_cms: delete_raw_jobs_cm delete_raw_orders_cm delete_order_details_cm
 
 
+delete_ns:
+	@kubectl delete ns $(DEMO_NS)

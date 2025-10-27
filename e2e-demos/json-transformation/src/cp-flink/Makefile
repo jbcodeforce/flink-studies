@@ -43,20 +43,28 @@ status: ## Check the status of the Flink application
 start_flink_shell: ## Start Flink Shell connected to CP Flink Environment
 	@osascript -e 'tell app "Terminal" to do script "confluent flink shell --environment $(FLINK_ENV) --compute-pool $(FLINK_COMPUTE_POOL) --url $(CMF_URL);"' -e 'tell application "Terminal" to set custom title of selected tab of the front window to "Flink Shell"'
 
+undeploy: ## Undeploy the Flink application
+	@echo "$(YELLOW)Checking for Flink application...$(NC)"
+	@if confluent flink application list --url $(CMF_URL) --environment $(FLINK_ENV) | grep -q "$(FLINK_APP_NAME)"; then \
+		echo "$(GREEN)Application '$(FLINK_APP_NAME)' found. Deleting...$(NC)"; \
+		confluent flink application delete $(FLINK_APP_NAME) --environment $(FLINK_ENV) --url $(CMF_URL) --force; \
+		echo "$(GREEN)Application deleted successfully.$(NC)"; \
+	else \
+		echo "$(YELLOW)Application '$(FLINK_APP_NAME)' not found. Nothing to undeploy.$(NC)"; \
+	fi
 
-
-# ---------------------- Flink ----------------------
-use_flink_ns:
+use_flink_ns: ## Use the Flink Operator namespace
 	@kubectl config set-context --current --namespace=$(FLCK_NS)
 	@echo "$(YELLOW)Using Flink namespace: $(FLCK_NS)$(NC)"
 
-list_compute_pools:
+list_compute_pools: ## List the compute pools
 	@confluent flink compute-pool list --environment $(FLINK_ENV) --url $(CMF_URL)
+
+# ---------------------- Flink ----------------------
+
 
 port_forward_cmf:
 	@osascript -e 'tell app "Terminal" to do script "kubectl port-forward svc/cmf-service 8084:80 -n $(FLCK_NS)"' -e 'tell application "Terminal" to set custom title of selected tab of the front window to "CMF REST API"'
-
-
 
 
 stop_port_forwards:
@@ -90,6 +98,3 @@ flink_ui:
 	@echo "$(YELLOW)Opening Flink UI...$(NC)"
 	confluent flink application web-ui-forward $(FLINK_APP_NAME) --environment $(FLINK_ENV) --url $(CMF_URL)
 
-undeploy:
-	@echo "$(YELLOW)Deploying Flink application...$(NC)"
-	confluent flink application delete $(FLINK_APP_NAME) --environment $(FLINK_ENV) --url $(CMF_URL) --force	

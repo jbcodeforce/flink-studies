@@ -63,8 +63,8 @@ status: ## Display information about the application
 
 undeploy: ## Undeploy demonstration
 	@echo "$(BLUE)Undeploying from Kubernetes...$(NC)"
-	kubectl delete -f $(K8S_DEPLOY_POD)
-	kubectl delete -f $(K8S_DEPLOY_SVC)
+	kubectl delete -f $(K8S_DEPLOY_POD) --ignore-not-found=true
+	kubectl delete -f $(K8S_DEPLOY_SVC) --ignore-not-found=true
 
 # ------ Private commands ------
 # Access via NodePort (direct localhost access)

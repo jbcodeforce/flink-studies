@@ -42,6 +42,9 @@ undeploy: delete_cp_cluster uninstall_cp_cfk ## Undeploy the Confluent Platform.
 port_forward_cp_console: ## Port forward the Confluent Platform console.
 	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/controlcenter-ng 9021:9021"'
 
+port_forward_schema_registry: ## Port forward the Schema Registry
+	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/schemaregistry 8081:8081"' -e 'tell application "Terminal" to set custom title of selected tab of the front window to "Schemma Registry"'
+
 # ---- private commands ------------
 create_ns:
 	$(call ensure_ns, $(CFNT_NS))
@@ -60,19 +63,19 @@ deploy_cp_cfk:
 	@echo "$(GREEN) Deployed Confluent Platform CFK$(NC)"
 
 deploy_cp_cluster:
-	@kubectl apply -f ../cfk/kafka-cluster.yaml -n $(CFNT_NS)
-	@kubectl apply -f ../cfk/schemaregistry.yaml -n $(CFNT_NS)
-	@kubectl apply -f ../cfk/kraft-controller.yaml -n $(CFNT_NS)
-	@kubectl apply -f ../cfk/control-center.yaml -n $(CFNT_NS)
+	@kubectl apply -f kafka-cluster.yaml -n $(CFNT_NS)
+	@kubectl apply -f schemaregistry.yaml -n $(CFNT_NS)
+	@kubectl apply -f kraft-controller.yaml -n $(CFNT_NS)
+	@kubectl apply -f control-center.yaml -n $(CFNT_NS)
 
 	
 	@echo "$(GREEN) Deployed Confluent Platform Kafka Cluster$(NC)"
 
 delete_cp_cluster:
-	@kubectl delete -f ../cfk/schema-registry.yaml -n $(CFNT_NS)
-	@kubectl delete -f ../cfk/control-center.yaml -n $(CFNT_NS)
-	@kubectl delete -f ../cfk/kafka-cluster.yaml -n $(CFNT_NS)
-	@kubectl delete -f ../cfk/kraft-controller.yaml -n $(CFNT_NS)
+	@kubectl delete -f schema-registry.yaml -n $(CFNT_NS)
+	@kubectl delete -f control-center.yaml -n $(CFNT_NS)
+	@kubectl delete -f kafka-cluster.yaml -n $(CFNT_NS)
+	@kubectl delete -f kraft-controller.yaml -n $(CFNT_NS)
 	@echo "$(GREEN) Deleted Confluent Platform Kafka Cluster$(NC)"
 
 uninstall_cp_cfk:

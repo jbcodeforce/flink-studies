@@ -8,7 +8,7 @@ The processing logic, we need to implement, has the following basic data pipelin
 
   ![](./docs/dsp.drawio.png)
 
-The input are 
+The input are:
 * Industrial vehicle rental events within `orders` kafka topic, 
 * Human Job demand, which in the context of a Mover, a move demand, helping to move furniture,..
 
@@ -123,12 +123,12 @@ The components involved in this demonstration are depicted in the following figu
 
 ![](./docs/components.drawio.png)
 
-* Confluent Platform with Kafka Brokers, Schema registry and Kafka Connectors cluster
-* Different topics to persist events
-* Confluent Manager for Flink to manage Flink Environments, Compute Pools, Applications
+* Confluent Platform with Kafka Brokers, Schema registry and Kafka Connectors cluster (not in this demo)
+* Different topics to persist events: raw-orders, raw-jobs, and order-details topics
+* Confluent Manager for Flink to manage Flink Environments, Compute Pools, Flink Applications
 * Schema Registry for schema governance
-* Flink Applications in the form of TableAPI application with SQL scripts
-* WebApp to support the demonstation
+* Flink Applications in the form of TableAPI application with SQL scripts or SQL statements created with Flink SQL shell.
+* WebApp to support the demonstation and to produce the different event types.
 
 ---
 
@@ -136,8 +136,8 @@ The components involved in this demonstration are depicted in the following figu
 
 ### Prerequisites
 
-* We assume a Kubernetes clsuter is up and running with the Confluent Platform and Confluent Manager for Flink deployed. Use at least version 8.0.x. See [deployments readme and Makefiles](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s) for platform deployments.
 * Clone this repository and work in the `flink-studies/e2e-demos/json-transformation` folder.
+* We assume a Kubernetes cluster is up and running with the Confluent Platform and Confluent Manager for Flink deployed. Use at least version 8.0.x. See [deployments readme and Makefiles](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s) for the platform deployment.
 * The project uses `make` tool
 * Look at the available demonstration targets:
     ```
@@ -146,7 +146,7 @@ The components involved in this demonstration are depicted in the following figu
 
 ### Build and Deploy the components
 
-* All the kubernetes elements are deployed under the `rental` namespace, and will have the following metadata:
+* All the demonstration components are deployed under the `rental` namespace, and will have the following metadata:
   ```yaml
   metadata:
     labels:
@@ -212,19 +212,48 @@ The demonstration user interface includes the form and controls to drive the dem
   * Custom JSON: Rich editor for custom payloads
 
 * **Step 3: Monitor Progress**
-  * Real-time job status updates
+  * Real-time record producer job status updates
   * Automatic polling for completion
   * Success/error notifications
-  * Job history tracking
+  * Producer job history tracking
 
 ### Flink SQL processing
 
-There are multiple approaches for the implementation. The easiest one is to tune the SQL with the Flink SQL shell. 
+There are multiple approaches for the implementation. The easiest one is to tune the SQL with the Flink SQL shell. For production the approach is to use a jar packaging with the java code which may use DataStream or TableAPI.
+
+#### Flink SQL Shell
+
+During query development the shell is the most efficient to write the complex query incrementally. Ensure the cmf service is exposed via a port forward, using `make expose_services` in this folder.
 
 ```sh
 cd cp-flink
-make start
+make start_flink_shell
 ```
+
+Within the shell verify catalog access and set the database to use:
+```sql
+show catalogs;
+use catalog rental;
+use rentaldb;
+show tables;
+```
+
+1. Verify content for the tables we need to join
+  ```sql
+  select * from `raw-jobs`;
+  select * from `raw-orders`;
+  ```
+
+1. Implement the json transformation
+  ```sql
+  ```
+
+???+ info "Other useful commands"
+  The following commands should be available soon in CP Flink:
+  ```sql
+  show create table `raw-jobs`;
+  explain select .... -- your query
+  ```
 
 ### Validating Results
 
@@ -594,3 +623,5 @@ Need to remove compute pools and Flink statements. The scripts `delete_statement
 ### KafkaCatalog not found
 
 Do not use kubectl to create Kafka Catalog but confluent cli.
+
+### C3 console cannot connect to Confluent Manager for Apache Flink.

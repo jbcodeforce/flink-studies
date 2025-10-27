@@ -1,0 +1,44 @@
+services:
+  ollama:
+    image: ollama/ollama
+    hostname: ollama
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - /Users/jerome/.ollama:/root/.ollama
+    restart: unless-stopped
+  surrealdb:
+    image: surrealdb/surrealdb:v2
+    hostname: surrealdb
+    container_name: surrealdb
+    volumes:
+      - ./note-book/surreal_data:/mydata
+    environment:
+      - SURREAL_EXPERIMENTAL_GRAPHQL=true
+    ports:
+      - "8000:8000"
+    command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
+    pull_policy: always
+    user: root
+    restart: always
+  open_notebook:
+    image: lfnovo/open_notebook:v1-latest
+    hostname: open_notebook
+    container_name: open_notebook
+    ports:
+      - "8502:8502"  # Next.js Frontend
+      - "5055:5055"  # REST API
+    env_file:
+      - ./.env
+    volumes:
+      - ./note-book/notebook_data:/app/data          # Application data
+      - ./note-book/surreal_data:/mydata      # SurrealDB data
+    # Single container includes all services: SurrealDB, API, Worker, and Next.js Frontend
+    # Access:
+    # - Next.js UI: http://localhost:8502
+    # - REST API: http://localhost:5055
+    # - API Documentation: http://localhost:5055/docs
+    restart: always
+    depends_on:
+      - surrealdb

@@ -280,6 +280,8 @@ Within an environment, there is one schema registry. We can have multiple Kafka 
 
 ## Monitoring and troubleshouting
 
+### Statement monitoring
+
 Once the Flink SQL statement runs, Data Engineers may use the Console, (Environment > Flink > Flink page > Flink statements) to assess the list of statements and their state of processing. 
 
 ![](./images/statement_list.png)
@@ -324,6 +326,10 @@ And with the `Query profiler`, which represents the same content as the Flink co
 
 * [Flink monitoring statement product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html)
 * [Docker compose, Prometheus setup and Grafana Dashboard for Confluent Cloud for Flink reporting.](https://github.com/confluentinc/confluent-cloud-flink-workshop/tree/master/flink-monitoring)
+
+### Conpute pool monitoring
+
+[Grafana integration](https://docs.confluent.io/cloud/current/monitoring/third-party-integration.html#troubleshoot-grafana)
 
 ## Role Base Access Control
 
