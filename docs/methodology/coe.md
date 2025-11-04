@@ -1,8 +1,9 @@
-# Center of Excellence for Stream Processing Esdtablishment
+# Center of Excellence for Stream Processing Establishment
 
 CoE is a centralized team or a virtual organization whose mission is to establish and disseminate best practices, provide expert consultation, and accelerate the adoption and successful, standardized deployment for real-time stream processing applications.
 
 ## Goals
+
 Data Streaming CoE needs to address architecture, high availability, DR, security, multi-tenancy, streaming applications deployment best practices, business transformation with streaming capabilities. 
 
 In particular the following items need to be addresses and built:
@@ -18,6 +19,9 @@ In particular the following items need to be addresses and built:
 1. **Project plan references:** to highlight what are the development and deployment high level activities for a streaming project. 
 1. **Community development:** to define the communications, collaboration, and engagement strategies to increase awareness and adoption of stream processing. 
 
+## User Roles
+
+There will be light modification of roles when using a managed services, versus managing the platform.
 
 ##  Enablement
 ### Enablement for Flink Data Engineers

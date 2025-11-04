@@ -6,11 +6,10 @@ This directory contains a **Flink Table API implementation** of the product dedu
 
 The Flink Table API version provides the same deduplication functionality as the SQL version, but with these advantages:
 
-- **Standalone Application**: Packaged as a self-contained JAR that can be deployed independently
-- **Production Ready**: Includes proper configuration, logging, and error handling
-- **Kubernetes Native**: Designed for deployment on Kubernetes with Confluent Platform for Flink
-- **Configurable**: Supports runtime configuration via command line arguments
-- **Scalable**: Can be scaled horizontally by adjusting parallelism
+- Packaged as a self-contained JAR that can be deployed independently
+- Deployment on Kubernetes with Confluent Platform for Flink
+- Supports runtime configuration via command line arguments or environment variables
+- Can be scaled horizontally by adjusting parallelism
 
 ## Architecture
 
@@ -43,7 +42,7 @@ flink-table-api/
 
 ### Prerequisites
 
-- **Java 11+**: Required for Flink 1.18
+- **Java 17**: Flink 1.20.3
 - **Maven 3.6+**: For building the Java application
 - **Docker**: For creating container images
 - **kubectl**: For Kubernetes deployment

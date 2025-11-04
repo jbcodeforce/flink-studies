@@ -234,9 +234,9 @@ In this section, I address streaming architecture only, integrated with Kafka, m
 ![](./images/simple_arch.drawio.png)
 </figure>
 
-Once a Flink query is deployed and run 'foreever', how to change it? to fix issue or adapt to schema changes. 
+Once a Flink query is deployed and run 'forever', how to change it? to fix issue or adapt to schema changes. 
 
-By principles any Flink DAG code is immutable, so statement needs to be stopped and a new version started! This is not as simple as this as there will be impact to any consumers of the created data, specially in Kafka topic or in non-idempotent consumers. 
+By principles any Flink DAG code is immutable, so statement needs to be stopped and a new version started! This is not as simple as this, as there will be impact to any consumers of the created data, specially in Kafka topic or in non-idempotent consumers. 
 
 The Flink SQL statements has limited parts that are mutables. See the [Confluent Cloud product documentation for details](https://docs.confluent.io/cloud/current/flink/concepts/schema-statement-evolution.html).  In Confluent Cloud the principal name and compute pool metadata are mutable when stopping and resuming the statement. Developers may stop and resume a statement using Console, CLI, API or even Terraform scripts.
 
@@ -249,15 +249,20 @@ confluent flink statement stop $1 --cloud $(CLOUD) --region $(REGION)
 confluent flink statement resume $1 --cloud $(CLOUD) --region $(REGION) 
 ```
 
-When a SQL statement is started, it reads the source tables from the beginning (or any specified offset) and the operators, defined in the statement, build their internal state. Source operators use the latest schema version for key and value at the time of deployment. There is a snapshot of the different dependency configuration saved for the statement: the reference to the dependants tables, user-defined functions... Any modifications to these objects are not propagated to running statement.
+When a SQL statement is started, it reads the source tables from the beginning (or any specified offset) and the operators, defined in the statement, build their internal state. 
+
+Source operators use the latest schema version for key and value at the time of deployment. There is a snapshot of the different dependency configuration saved for the statement: the reference to the dependants tables, user-defined functions... Any modifications to these objects are not propagated to running statement, which means that:
+
+* A change to the schema of the source topic is not picked up by the running statement that reference the topic.
+* Same applies to other objects in the catalog like watermark, UDF etc.
 
 First let review the schema definition evolution best practices for Flink processing.
 
 ### Schema compatibility
 
-The CDC component may create schema automatically reflecting the source table. [See Debezium documentation about schema evolution](https://debezium.io/documentation/reference/stable/connectors/mysql.html)
+Flink works best when consuming topics with FULL_TRANSITIVE compatibility mode, which allows addition or deletion of fields with default values only. Fields added are ignored by the running Flink Statement
 
-CC Flink works best when consuming topics with FULL_TRANSITIVE compatibility mode. The following table lists the schema compatibility types, with the Flink impacts:
+The following table lists the schema compatibility types, with the Flink impacts:
 
 | Compatibility type | Change allowed | Flink impact |
 | --- | --- | --- |
@@ -271,25 +276,48 @@ CC Flink works best when consuming topics with FULL_TRANSITIVE compatibility mod
 
 With FULL_TRANSITIVE, old data can be read with the new schema, and new data can also be read between the schemas X, X-1, and X-2. Which means in a pipeline, downstream Flink statements can read newly created schema, and will be able to replay messages from a previous schemas. Therefore, you can upgrade the producers and consumers independently.
 
-Optional means, we can define fields with default values. Added fields are ignored by running statements.
 
 Confluent Schema Registry supports Avro, Json or Protobuf, but Avro was designed to support schema evolution, so this is the preferred approach.
 
-Assuming the goal is to cover FULL_TRANSITIVE, it means added column will have default value. Developers may only delete optional columns. During the migration, all current source tables coming as outcome of the Debezium process are not deletable. If a NOT NULL constraint is added to a column, older records with no value will violate the constraint. To handle such situation, there is a way to configure CDC connector (Debezium) to use the `envelop structure` which uses `key, before, after, _ts_ms, op` structure. This will result in a standard schema for Flink tables, which allows the source table to evolve by adding / dropping both NULL & NON NULL COLUMNS. 
+### Handling Changes with CDC
+The CDC component may create schema automatically reflecting the source table. [See Debezium documentation about schema evolution](https://debezium.io/documentation/reference/stable/connectors/mysql.html)
+
+Developers may only delete optional columns. During the migration, all current source tables coming as outcome of the Debezium process are not deletable. If a NOT NULL constraint is added to a column, older records with no value will violate the constraint. To handle such situation, there is a way to configure CDC connector (Debezium) to use the `envelop structure` which uses `key, before, after, _ts_ms, op` structure. This will result in a standard schema for Flink tables, which allows the source table to evolve by adding / dropping both NULL & NON NULL COLUMNS. 
+
 The Debezium Envelope pattern offers the most flexibility for upstream Schema Evolution without impacting downstream Flink Statements.
 
 * Adding Columns do not break the connectors or the RUNNING DML Statements
-* Dropping Column needs co-ordination between teams to ensure the columns that are part of Running DML statements are not Dropped.
+* Dropping Column needs coordination between teams to ensure the columns that are part of Running DML statements are not Dropped.
 
-???- danger "Key schema evolution"
+???+ danger "Key schema evolution"
     It is discouraged from any changes to the key schema in order to do not adversely affect partitioning for the new topic/ table.
 
-???- info "Updating schema in schema registry"
-    Adding a field directly in the avro-schema with default value, will be visible in the next command like: `show create table <table_name>`, as tables in flink are virtuals, and the Confluent Cloud schema definition comes from the Schema Registry. The RUNNING Flink DML is not aware of the new added column. Even STOP & RESUME of the Flink DML is not going to pick the new column neither. Only new statement will see the new schema consuming from the beginning or from specific offsets. For column drop, Debezium connector will drop the new column and register a schema version for the topic (if the alteration resulted in a schema that doesnt match with previous versions). Same as above runnning statements will go degraded mode.
+???+ warning "Updating schema in schema registry"
+    Adding a field directly in the avro-schema with default value, will be visible in the next command like: `show create table <table_name>`, as tables in flink are virtuals, and the Confluent Cloud schema definition comes from the Schema Registry. The RUNNING Flink DML is not aware of the new added column. Even STOP & RESUME of the Flink DML is not going to pick the new column neither. Only new deployed statement will see the new schema consuming from the beginning or from specific offsets. For column drop, Debezium connector will drop the new column and register a schema version for the topic (if the alteration resulted in a schema that doesnt match with previous versions). Same as above runnning statements will go degraded mode.
+
+???+ warning "Migrate a NULL column to NOT NULL with retro update of rows with a default value"
+    Most likely such operation eill result in a connector failure as you are adding a NOT NULL column without a default value, even if you retro updated all the rows. 
+    If you have control of the change do the following
+    ```sql
+    UPDATE Customers set zipcode=0;
+    ALTER TABLE Customers alter column zipcode INT NOT NULL CONSTRAINT add_zip DEFAULT 0;
+    ```
     
+    If the upstream has already updated without default valuechange the compatibility mode to NONE for the connector to recover and then:
+    ```sql
+    ALTER TABLE Customers ADD CONSTRAINT add_zip DEFAULT 0;
+    ```
+
+???+ info "Drop a NULL column"
+    ```sql
+    ALTER TABLE Customers DROP CONSTRAINT add_zip;
+    ALTER TABLE Customers DROP COLUMN zipcode
+    ```
+    Running Flink DML is not aware of the dropped `zipcode` column. User may STOP & RESUME the Flink DML with no impact. But the statement will go to DEGRADED mode if the dropped column is part of the SELECT statement. For new deployment, user may update the statement to remove the dropped column and start from the beginning or specific offsets.
+
 ### Statement evolution
 
-The general strategy for query evolution is to replace the existing statement and the corresponding tables it maintains with a new statement and new tables. The process is described in [this product chapter](https://docs.confluent.io/cloud/current/flink/concepts/schema-statement-evolution.html#query-evolution) and should be viewed within two folds depending of stateless or statefule statements. The initial state of the process involves a pipeline of Flink SQL statements and consumers processing Kafka records from various topics. We assume that the blue records are processed end-to-end, and the upgrade process begins at a specific point, from where all green records to be processed. The migration should start with the Flink statement that needs modification and proceed step by step to the statement creating the sink.
+The general strategy for query evolution is to replace the existing statement and the corresponding tables it maintains with a new statement and new tables. The process is described in [this product chapter](https://docs.confluent.io/cloud/current/flink/concepts/schema-statement-evolution.html#query-evolution) and should be viewed within two folds depending of stateless or statefulness of the statement. The initial state of the process involves a pipeline of Flink SQL statements and consumers processing Kafka records from various topics. We assume that the blue records are processed end-to-end, and the upgrade process begins at a specific point, from where all green records to be processed. The migration should start with the Flink statement that needs modification and proceed step by step to the statement creating the sink.
 
 For ^^stateless statement evolution^^ the figure below illustrates the process:
 

@@ -26,6 +26,7 @@ public class RentalEventsProcessing {
         String jobTopic = System.getenv().getOrDefault("RAW_JOBS_TOPIC", "raw-jobs");
         String orderTopic = System.getenv().getOrDefault("RAW_ORDERS_TOPIC", "raw-orders");
         String orderDetailsTopic = System.getenv().getOrDefault("ORDER_DETAILS_TOPIC", "order-details");
+        
         String catalogName = System.getenv().getOrDefault("CATALOG_NAME", "rental");
         String catalogDatabaseName = System.getenv().getOrDefault("CATALOG_DATABASE_NAME", "rentaldb");
     
@@ -42,6 +43,10 @@ public class RentalEventsProcessing {
             .inStreamingMode()
             .build();
         StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env, settings);
+        if (tableEnv == null) {
+            throw new NullPointerException("Table environment cannot be null");
+        }
+        // following not yet supported
         //tableEnv.useCatalog(catalogName);
         //tableEnv.useDatabase(catalogDatabaseName);
 
@@ -49,7 +54,7 @@ public class RentalEventsProcessing {
         createSourceTable(tableEnv, catalogName, catalogDatabaseName, jobTopic, kafkaBootstrapServers, consumerGroup);
 
         // Create destination table for deduplicated products
-       //  createSinkTable(tableEnv, outputTopic, kafkaBootstrapServers);
+        createSinkTable(tableEnv, catalogName, catalogDatabaseName, outputTopic, kafkaBootstrapServers);
    
         tableEnv.from(orderTopic).select(withAllColumns()).execute().print();
     }
@@ -64,9 +69,7 @@ public class RentalEventsProcessing {
                                         String kafkaBootstrapServers,
                                         String consumerGroup) {
         // Input validation
-        if (tableEnv == null) {
-            throw new NullPointerException("Table environment cannot be null");
-        }
+  
         if (tableName == null) {
             throw new NullPointerException("Table name cannot be null");
         }
@@ -84,11 +87,30 @@ public class RentalEventsProcessing {
         } else {
             throw new IllegalArgumentException("Invalid table name: " + tableName);
         }
-        sourceTableDDL = String.format(sourceTableDDL, catalogName, catalogDatabaseName, tableName, tableName,kafkaBootstrapServers, consumerGroup);
+        sourceTableDDL = String.format(sourceTableDDL, catalogName, catalogDatabaseName, tableName, tableName, kafkaBootstrapServers, consumerGroup);
         
         LOG.info("Creating source table: {}", sourceTableDDL);
         System.out.println(sourceTableDDL);
         tableEnv.executeSql(sourceTableDDL);
                                     
+    }
+
+    public static void createSinkTable(StreamTableEnvironment tableEnv, 
+                                        String catalogName,
+                                        String catalogDatabaseName,
+                                        String tableName, 
+                                        String kafkaBootstrapServers) {
+    
+        String sinkTableDDL = "";
+        if (table_name == "order-details") {
+            sinkTableDDL = EventModels.CREATE_ORDER_DETAILS_TABLE;
+        } else {
+            throw new IllegalArgumentException("Invalid table name: " + tableName);
+        }
+                                    
+        sinkTableDDL = String.format(sinkTableDDL, catalogName, catalogDatabaseName, tableName, tableName, kafkaBootstrapServers);
+        LOG.info("Creating sink table: {}", sinkTableDDL);
+        System.out.println(sinkTableDDL);
+        tableEnv.executeSql(sinkTableDDL);
     }
 } // end of class

@@ -6,7 +6,7 @@ This folder includes a set of sqls to demonstrate the impact of using different 
 * [Flink SQL Secrets: Mastering the Art of Changelog Event Out-of-Orderness](https://www.ververica.com/blog/flink-sql-secrets-mastering-the-art-of-changelog-event-out-of-orderness)
 * [Summary of those articles in this repo](https://jbcodeforce.github.io/flink-studies/coding/flink-sql/#changelog-mode)
 
-Those examples are for Confluent Cloud and Flink SQL can be deployed using Confluent CLI.
+Those examples are for Confluent Cloud Flink SQL, and can be deployed using Confluent CLI.
 
 The demonstration architecture is the following:
 
@@ -349,3 +349,8 @@ So the `enriched_orders` needs to be upsert or retract. With this we got the sam
 ## Append with primary key to enriched append is not possible
 
 For the same reason as above an append mode for a changelog does not support consuming update and delete changes which is produced by a Join.
+
+
+## Other interesting articles
+
+* [Robin Moffatt's Exploring Joins and Changelogs in Flink SQL](https://rmoff.net/2025/05/20/exploring-joins-and-changelogs-in-flink-sql/)

@@ -63,12 +63,10 @@ deploy_cp_cfk:
 	@echo "$(GREEN) Deployed Confluent Platform CFK$(NC)"
 
 deploy_cp_cluster:
-	@kubectl apply -f kafka-cluster.yaml -n $(CFNT_NS)
-	@kubectl apply -f schemaregistry.yaml -n $(CFNT_NS)
-	@kubectl apply -f kraft-controller.yaml -n $(CFNT_NS)
 	@kubectl apply -f control-center.yaml -n $(CFNT_NS)
-
-	
+	@kubectl apply -f kafka-cluster.yaml -n $(CFNT_NS)
+	@kubectl apply -f kraft-controller.yaml -n $(CFNT_NS)
+	@kubectl apply -f schema-registry.yaml -n $(CFNT_NS)
 	@echo "$(GREEN) Deployed Confluent Platform Kafka Cluster$(NC)"
 
 delete_cp_cluster:

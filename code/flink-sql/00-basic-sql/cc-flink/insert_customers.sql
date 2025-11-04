@@ -1,0 +1,22 @@
+INSERT INTO customers VALUES
+  ('CUST001', 'John', 'Smith', 'john.smith@email.com', '555-0101', DATE '1985-03-15', 'M', TIMESTAMP '2024-01-15 10:23:45.123', 'Premium', 'Email', '123 Oak Street', 'New York', 'NY', '10001', 'USA'),
+  ('CUST002', 'Emma', 'Johnson', 'emma.j@email.com', '555-0102', DATE '1990-07-22', 'F', TIMESTAMP '2024-01-20 14:12:33.456', 'Standard', 'Mobile', '456 Maple Ave', 'Los Angeles', 'CA', '90001', 'USA'),
+  ('CUST003', 'Michael', 'Williams', 'mwilliams@email.com', '555-0103', DATE '1978-11-03', 'M', TIMESTAMP '2024-02-01 09:45:12.789', 'Premium', 'Web', '789 Pine Road', 'Chicago', 'IL', '60601', 'USA'),
+  ('CUST004', 'Sophia', 'Brown', 'sophia.brown@email.com', '555-0104', DATE '1995-05-18', 'F', TIMESTAMP '2024-02-10 16:30:22.234', 'Standard', 'Email', '321 Elm Street', 'Houston', 'TX', '77001', 'USA'),
+  ('CUST005', 'James', 'Davis', 'james.davis@email.com', '555-0105', DATE '1982-09-27', 'M', TIMESTAMP '2024-02-15 11:15:45.567', 'Gold', 'Phone', '654 Birch Lane', 'Phoenix', 'AZ', '85001', 'USA'),
+  ('CUST006', 'Olivia', 'Garcia', 'olivia.garcia@email.com', '555-0106', DATE '1988-12-08', 'F', TIMESTAMP '2024-03-01 13:22:18.890', 'Premium', 'Mobile', '987 Cedar Drive', 'Philadelphia', 'PA', '19101', 'USA'),
+  ('CUST007', 'William', 'Martinez', 'w.martinez@email.com', '555-0107', DATE '1975-04-14', 'M', TIMESTAMP '2024-03-05 08:55:33.123', 'Gold', 'Email', '147 Spruce Court', 'San Antonio', 'TX', '78201', 'USA'),
+  ('CUST008', 'Ava', 'Rodriguez', 'ava.r@email.com', '555-0108', DATE '1992-08-30', 'F', TIMESTAMP '2024-03-12 15:44:27.456', 'Standard', 'Web', '258 Willow Way', 'San Diego', 'CA', '92101', 'USA'),
+  ('CUST009', 'Robert', 'Wilson', 'robert.wilson@email.com', '555-0109', DATE '1980-01-25', 'M', TIMESTAMP '2024-03-20 10:18:55.789', 'Premium', 'Mobile', '369 Ash Boulevard', 'Dallas', 'TX', '75201', 'USA'),
+  ('CUST010', 'Isabella', 'Anderson', 'isabella.a@email.com', '555-0110', DATE '1993-06-11', 'F', TIMESTAMP '2024-04-01 12:33:42.234', 'Standard', 'Email', '741 Poplar Street', 'San Jose', 'CA', '95101', 'USA'),
+  ('CUST011', 'David', 'Thomas', 'david.thomas@email.com', '555-0111', DATE '1987-10-19', 'M', TIMESTAMP '2024-04-08 09:27:15.567', 'Gold', 'Phone', '852 Hickory Avenue', 'Austin', 'TX', '73301', 'USA'),
+  ('CUST012', 'Mia', 'Taylor', 'mia.taylor@email.com', '555-0112', DATE '1991-02-28', 'F', TIMESTAMP '2024-04-15 14:51:38.890', 'Premium', 'Web', '963 Magnolia Road', 'Jacksonville', 'FL', '32099', 'USA'),
+  ('CUST013', 'Richard', 'Moore', 'r.moore@email.com', '555-0113', DATE '1976-07-07', 'M', TIMESTAMP '2024-05-01 11:42:21.123', 'Standard', 'Mobile', '159 Dogwood Lane', 'Fort Worth', 'TX', '76101', 'USA'),
+  ('CUST014', 'Charlotte', 'Jackson', 'charlotte.j@email.com', '555-0114', DATE '1989-11-16', 'F', TIMESTAMP '2024-05-10 16:05:44.456', 'Gold', 'Email', '357 Sycamore Circle', 'Columbus', 'OH', '43085', 'USA'),
+  ('CUST015', 'Joseph', 'Martin', 'joseph.martin@email.com', '555-0115', DATE '1984-03-09', 'M', TIMESTAMP '2024-05-18 08:38:29.789', 'Premium', 'Phone', '486 Redwood Drive', 'San Francisco', 'CA', '94101', 'USA'),
+  ('CUST016', 'Amelia', 'Lee', 'amelia.lee@email.com', '555-0116', DATE '1994-09-23', 'F', TIMESTAMP '2024-06-01 13:29:17.234', 'Standard', 'Web', '597 Cypress Street', 'Charlotte', 'NC', '28201', 'USA'),
+  ('CUST017', 'Thomas', 'Perez', 'thomas.perez@email.com', '555-0117', DATE '1979-12-31', 'M', TIMESTAMP '2024-06-10 10:52:33.567', 'Gold', 'Mobile', '618 Fir Avenue', 'Seattle', 'WA', '98101', 'USA'),
+  ('CUST018', 'Harper', 'White', 'harper.white@email.com', '555-0118', DATE '1996-05-05', 'F', TIMESTAMP '2024-06-20 15:17:48.890', 'Premium', 'Email', '729 Beech Road', 'Denver', 'CO', '80201', 'USA'),
+  ('CUST019', 'Christopher', 'Harris', 'c.harris@email.com', '555-0119', DATE '1981-08-12', 'M', TIMESTAMP '2024-07-01 09:24:56.123', 'Standard', 'Phone', '831 Walnut Court', 'Boston', 'MA', '02101', 'USA'),
+  ('CUST020', 'Evelyn', 'Clark', 'evelyn.clark@email.com', '555-0120', DATE '1986-04-20', 'F', TIMESTAMP '2024-07-15 14:45:31.456', 'Gold', 'Web', '942 Chestnut Way', 'Nashville', 'TN', '37201', 'USA');
+

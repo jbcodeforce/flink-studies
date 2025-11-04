@@ -6,8 +6,8 @@ metadata:
 spec:
   replicas: 1
   image:
-    application: confluentinc/cp-enterprise-control-center-next-gen:2.2.0
-    init: confluentinc/confluent-init-container:3.0.0
+    application: confluentinc/cp-enterprise-control-center-next-gen:2.3.0
+    init: confluentinc/confluent-init-container:3.1.0
   dataVolumeCapacity: 10Gi
   dependencies:
     prometheusClient:

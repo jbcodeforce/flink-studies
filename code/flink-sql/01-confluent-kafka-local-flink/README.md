@@ -17,7 +17,7 @@ Use the Docker image based on Kafka Connect with the [kafka-connect-datagen](htt
 curl -X POST -H "Content-Type: application/json" --data @datagen-config/shoe-products.json http://localhost:8083/connectors
 ```
 
-## Local Flink execution 
+## Local Flink binary execution 
 
 Start one Flink **Job manager** and **Task manager**, using the `docker-compose.yaml` in this folder of this project. The docker file mounts the root folder in `/home`, so content of the data will be in `/home/data` 
 

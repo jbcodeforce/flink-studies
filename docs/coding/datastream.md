@@ -2,10 +2,14 @@
 
 This chapter is a set of links to existing examples for Flink DataStream.
 
+* Organized around user-defined function
+
 ## Datastream deeper dive
 
-* [Open source documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream/overview/) with [the API](https://nightlies.apache.org/flink/flink-docs-master/api/java/).
+
+* [Datastream open source documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream/overview/) with [the API](https://nightlies.apache.org/flink/flink-docs-master/api/java/).
 * [Confluent Flink Cookbook](https://github.com/confluentinc/flink-cookbook), is a set of recipes around Flink using DataStream. Once clone, load one of the folder as a java project in IDE.
+* [DataStream v2](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream-v2/overview/)
 
 ## Data set basic apps
 

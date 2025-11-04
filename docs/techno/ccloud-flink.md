@@ -159,13 +159,13 @@ confluent flink shell --compute-pool $COMPUTE_POOL_ID --environment $ENV_ID
 
 ### Using the Flink editor in Confluent Cloud
 
-Nothing special to mention, except that users need to recall that once the job is started, they cannot modify it:they need to stop before any future edition. Restarting may mean reprocess from the earliest records. It is recommended to persist the Flink statement in a git repository and manage the deployment using Confluent CLI or [shift_left CLI tool](https://jbcodeforce.github.io/shift_left_utils/blue_green_deploy/).
+Nothing special to mention, except that users need to recall that once the job is started, they cannot modify it:they need to stop before any future edition. Restarting may mean reprocess from the earliest records. It is recommended to persist the Flink statement in a git repository and manage the deployment using Confluent CLI or the [shift_left CLI tool](https://jbcodeforce.github.io/shift_left_utils/blue_green_deploy/).
 
 ## Using the Flink Table API
 
 Confluent Cloud for Flink [supports the Table API, in Java](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-java-table-api.html) or [Python](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-python-table-api.html).
 
-The Table API is on top of the SQL engine, and so program runs on an external systems, but uses an specific Flink environment for Confluent Cloud to submit the DAG to the remote engine. The program declares the data flow, submit it to the remote job manager.  
+The Table API code is a client SDK to send SQL statement to the job manager and is interpreted by the SQL engine, and so the code runs on an external systems, but uses an specific Flink environment for Confluent Cloud to submit the DAG to the remote engine.
 
 When running TableAPI with Confluent Cloud for Flink, there are some specifics code to have:
 
@@ -279,6 +279,10 @@ When multiple statements are in the same compute pool, new statement will not ge
 Within an environment, there is one schema registry. We can have multiple Kafka clusters per region and multiple Flink compute pools per region. Any tables created in both region with the same name will have the value and key schemas shared in the central schema registry. The SQL Metastore, Flink compute pools and Kafka clusters are regional. 
 
 ## Monitoring and troubleshouting
+
+[The metrics API documentation.](https://docs.confluent.io/cloud/current/monitoring/metrics-api.html)
+
+You must create an API key to authenticate your requests to the Metrics API.
 
 ### Statement monitoring
 
@@ -423,6 +427,10 @@ To consider:
 * Is Hive load/unload function supported? The Flink OSS has this load/unload Hive functions capability, but all those Hive functions are already available in CC Flink.
 * How to add Jar? ADD and REMOVE JAR are meant for testing purposes in OSS Flink. For UDFs, Jars can be uploaded via Confluent Console, CLI, REST API or Terraform.
 * How to manage Catalog and Database? In Confluent Cloud Catalog is a Confluent Environment so no direct management from Flink session. Database is a Kafka cluster so the same logic applies.
+
+## VScode extension
+
+[VScode extension](https://github.com/confluentinc/vscode) to manage Confluent Cloud or Platform resources. 
 
 ## Deeper dive
 

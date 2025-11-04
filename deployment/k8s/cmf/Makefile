@@ -1,6 +1,6 @@
 CFNT_NS=confluent
 FLCK_NS=confluent
-CMF_VERSION=~2.0.3
+CMF_VERSION=~2.1.0
 CMF_URL=http://localhost:8084
 ENV_NAME=dev-env
 
@@ -77,14 +77,17 @@ verify_cmf:
 
 verify_flink_env:
 	@echo "----------------------------------------"
-	curl -H "Content-type: application/yaml"  l$(CMF_URL)/cmf/api/v1/environments/ | jq .
+	curl -H "Content-type: application/yaml"  $(CMF_URL)/cmf/api/v1/environments/ | jq .
 	@echo "$(GREEN) Flink environments verified$(NC)"
 
 port_forward_cmf:
 	@osascript -e 'tell app "Terminal" to do script "kubectl port-forward svc/cmf-service 8084:80 -n $(FLCK_NS)"' -e 'tell application "Terminal" to set current settings of front window to settings set "Grass"'
 
 create_flink_env:
-	@confluent flink environment create $(ENV_NAME) --url $(CMF_URL) --kubernetes-namespace $(FLCK_NS)
+	@confluent flink environment list --url $(CMF_URL) 2>/dev/null | grep -q "$(ENV_NAME)" && \
+		echo "$(YELLOW)Environment $(ENV_NAME) already exists$(NC)" || \
+		(confluent flink environment create $(ENV_NAME) --url $(CMF_URL) --kubernetes-namespace $(FLCK_NS) && \
+		echo "$(GREEN)Environment $(ENV_NAME) created$(NC)")
 
 
 create_compute_pool:
@@ -114,7 +117,7 @@ create_env_secret_mapping:
 
 # ----------- Application ----------------------
 deploy_flink_demo_app:
-	@confluent flink application create ../cmf/flinkapplication.json --environment $(ENV_NAME) --url $(CMF_URL)
+	@confluent flink application create ../flink-app-smoke-test/flinkapplication.json --environment $(ENV_NAME) --url $(CMF_URL)
 
 undeploy_flink_demo_app:
 	@confluent flink application delete basic-example --environment $(ENV_NAME) --url $(CMF_URL)

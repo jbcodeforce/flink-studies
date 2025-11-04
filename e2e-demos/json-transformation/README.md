@@ -1,4 +1,4 @@
-# Order and Jobs processing with Confluent Platform Flink
+# Json transformation with Confluent Platform Flink
 
 ## Overview
 
@@ -146,7 +146,7 @@ The components involved in this demonstration are depicted in the following figu
 
 ### Build and Deploy the components
 
-* All the demonstration components are deployed under the `rental` namespace, and will have the following metadata:
+* All the demonstration components are deployed under the `rental` namespace in Kubernetes, and will have the following metadata:
   ```yaml
   metadata:
     labels:
@@ -155,13 +155,13 @@ The components involved in this demonstration are depicted in the following figu
       component: <specific_name>
   ```
 
-* Build and deploy all
+* Build and deploy all, from this `json-transformation` folder
   ```sh
   make build_all
   make deploy_all
   ```
 
-*Remarks* all the components can be built individually using the Makefile under each component folder.
+*Remarks* all the components can be built individually using the Makefile under each component folder under `src`.
 
 * Verify all components run successfully
   ```sh
@@ -244,7 +244,7 @@ show tables;
   select * from `raw-orders`;
   ```
 
-1. Implement the json transformation
+1. Implement the json transformation, first order to order detail mapping:
   ```sql
   ```
 
@@ -263,28 +263,24 @@ show tables;
 
 ### Project structure
 
-The approach is to keep component in separate folder, with makefile to build, deploy, get the status of the running pods, and undeploy. Each with its own k8s manifests.
+The approach is to keep component in separate folder under `src`, with makefile to build, deploy, get the status of the running pods. Each with its own k8s manifests.
 
 | Folder | Content |
 | --- | --- |
 | **k8s** | Makefile and common kubernetes elements of the demonstrations. Common to all components, like namespace and config map |
-| **cp-flink** | Flink statemens as Table API code |
+| **src/cp-flink** | Flink statemens as Table API code or pure SQLs |
 | **docs** | Some diagrams |
-| **Producer** | Web App and CLI to produce demonstration records | 
-| **schemas** | Json schema definitions to be deployed by schema registry |
-| **cc-flink** | Equivalents Flink SQL for Confluent Cloud Flink |
+| **src/Producer** | Web App and CLI to produce demonstration records to the  `raw-orders` and `raw-jobs` | 
+| **src/schemas** | Json schema definitions to be deployed by schema registry |
+| **src/cc-flink** | Equivalent Flink SQLs for Confluent Cloud Flink - Start earlier to  code SQL logic. see the [README.md](./src/cc-flink/README.md) for instructions|
 
-The `cp-flink` folder includes the configuration to create schemas and topics for the raw input data: `jobs` and `orders` and the OrderDetails topic and schema. When deploying to Kubernetes, the topic and schema are defined as config maps. The following diagram illustrates the relationships with those k8s elements:
+The `k8s` folder includes the configuration to create schemas and topics for the raw input data: `jobs` and `orders` and the `order-details` topic and schema. When deploying to Kubernetes, the topic and schema are defined as config maps. The following diagram illustrates the relationships with those k8s elements:
 
 ![](./docs/k8s_cp_elements.drawio.png)
 
 The dark blue represents application specific elements, while the light blue elements represent reusable, cross applications, components.
 
-The makefile under the cp-flink folder, helps to deploy those elements to the Confluent Platform.
-
-The Kafka order and job records producer code is under [producer folder](./producer/).
-
-The `cc-flink` folder includes the SQLs to run the demonstration within Confluent Cloud for Flink (see the [README.md](./cc-flink/README.md) for instructions).
+The makefile under this folder, helps to deploy those elements to the Confluent Platform.
 
 ### Producer Features
 
@@ -293,9 +289,9 @@ The `cc-flink` folder includes the SQLs to run the demonstration within Confluen
 - Command-line interface for easy testing and automation
 - Built-in callback handling for message delivery confirmation
 - Include a FastAPI Application (api_server.py) which supports the following REST API:
-  * POST /produce: Produce predefined record types (job/order), with configurable count
-  * POST /produce/custom: Produce custom JSON payloads
-  * Health Checks: Dependency verification and service status
+    * POST /produce: Produce predefined record types (job/order), with configurable count
+    * POST /produce/custom: Produce custom JSON payloads
+    * Health Checks: Dependency verification and service status
 
 * Background Processing: Asynchronous job execution using FastAPI BackgroundTasks
 
@@ -331,14 +327,14 @@ Those environment variables are defined in `k8s/kafka_client_cm.yaml`.
 
 ### The Flink SQL processing
 
-For Confluent Manager for Flink, the SQL feature is in preview (as of 10/2025). The concepts are the same as in Confluent Cloud for Flink with Environment, and Compute Pools. The manifests are in [deployment/k8s/cp-flink](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cp-flink/flink-dev-env.yaml).
+For Confluent Manager for Flink, the SQL feature is in preview (as of 07/2025). The concepts are the same as in Confluent Cloud for Flink with Environment, and Compute Pools. The manifests are in [deployment/k8s/cp-flink](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cp-flink/flink-dev-env.yaml).
 
 Recall the relationship between those elements are illustrated in the figure:
 
 ![](https://github.com/jbcodeforce/flink-studies/blob/master/docs/coding/diagrams/cmf-cr.drawio.png)
 
-The approach is:
-1. Be sure to be unlogged of confluent cloud session when using the confluent cli:
+The approach:
+1. Be sure to be unlogged of confluent cloud session when using the confluent cli to the platform:
     ```sh
     confluent login
     confluent logout

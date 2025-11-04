@@ -6,10 +6,10 @@ metadata:
 spec:
   dataVolumeCapacity: 2G
   image:
-    application: confluentinc/cp-server:8.0.0
-    init: confluentinc/confluent-init-container:3.0.0
+    application: confluentinc/cp-server:8.1.0
+    init: confluentinc/confluent-init-container:3.1.0
   replicas: 1
-  clusterID: cp-demo
+  clusterID: cp-demo-kafka-cluster1
   dependencies:
     metricsClient:
       url: http://controlcenter-ng.confluent.svc.cluster.local:9090

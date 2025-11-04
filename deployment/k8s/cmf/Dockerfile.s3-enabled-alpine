@@ -2,7 +2,7 @@
 # For Confluent Platform Flink deployments with S3 checkpointing
 
 # Use Confluent Flink image as base
-FROM confluentinc/cp-flink:1.20.2-cp1-java17
+FROM confluentinc/cp-flink:2.1.0-cp1-java21
 
 USER root
 
@@ -10,7 +10,7 @@ USER root
 RUN mkdir -p /opt/flink/plugins/s3-fs-hadoop
 
 # Flink version for plugin compatibility
-ARG FLINK_VERSION=1.20.2
+ARG FLINK_VERSION=2.1.0
 
 # Download flink-s3-fs-hadoop plugin
 # This single JAR provides all S3A support including:

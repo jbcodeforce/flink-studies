@@ -1,5 +1,5 @@
 # Use the official Flink image as base
-FROM flink:1.19.2-scala_2.12-java17
+FROM flink:1.20.3-scala_2.12-java17
 
 # Set working directory
 WORKDIR /opt/flink
