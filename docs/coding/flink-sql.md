@@ -115,7 +115,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
     * If the destination topic doesn't define partitioning key, then CC Flink SQL will write the records in whatever partitioning that was used at the end of the query. if last operation in the query is `GROUP BY foo` or `JOIN ON A.foo = B.foo`, then output records would be partitioned on `foo` values, and they wouldn't be re-partitioned before writing them into Kafka. The `foo` partitioning is preserved. 
     * If you have parallel queries like without any data shuffling, like `INSERT INTO Table_A SELECT * FROM Table_B`, then any skew from Table_B would be repeated in Table_A. Otherwise, if partitioning key is defined (like `DISTRIBUTED BY HASH(metric) `), any writes into that topic would be shuffled by that new key.
     * In case of key skew, add more fields in the distribution to partition not just in one key. That would allow Flink to read data in more parallel fashion, improving the problem with readings from Kafka's bottleneck of 18MBs/connection (partition)
-    * An interesting metric, 5 partitions feeds 1 CFU. 
+    * An interesting metric for Confluent Cloud Flink, 5 partitions feeds 1 CFU. CFU has constraint on memory and cpu.
     * The performance bottleneck will be actually records serialization and deserialisation, avro is slower than protobuf.
 
     ```sql
@@ -140,42 +140,6 @@ A table registered with the CREATE TABLE statement can be used as a table source
         'connector' = 'filesystem',
         'path' = '/tmp/users'
     );
-    ```
-
-???+ info "CREATE TABLE in Confluent Cloud for Flink"
-    The table creation creates topic and -key, -value schemas in the Schema Registry in the same environment as the compute pool in which the query is run. The `connector` is automatically set to `confluent`. 
-    The non null and nullable columns are translate as the following avro fields:
-    ```avro
-      "fields": [
-            {
-            "name": "customer_id",
-            "type": "string"
-            },
-            {
-            "default": null,
-            "name": "first_name",
-            "type": [
-                "null",
-                "string"
-            ]
-            }
-      ]
-    ```
-
-    DATE as:
-
-    ```avro
-    {
-      "default": null,
-      "name": "registration_date",
-      "type": [
-        "null",
-        {
-          "logicalType": "local-timestamp-millis",
-          "type": "long"
-        }
-      ]
-    }
     ```
 
 
@@ -280,33 +244,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
     as select id, first_name, last_name, email from shoe_customers;
     ```
 
-???+ example "Combine deduplication with create table as select"
-    Attention the '`' is important. Ordering with DESC means takes the earliest record
-    
-    ```sql
-    CREATE TABLE tenant_dedup (
-	    PRIMARY KEY (`tenantId`) NOT ENFORCED
-    ) DISTRIBUTED BY HASH(`tenantId`) into 1 buckets 
-        WITH (
-            'changelog.mode' = 'upsert',
-            'value.fields-include' = 'all'
-        ) AS SELECT 
-        `tenantId`,
-        `hostname`,
-        `ts`
-        FROM (
-            SELECT
-            *,
-            ROW_NUMBER() OVER (
-                PARTITION BY `tenantId`
-                ORDER
-                BY $rowtime DESC
-            ) AS row_num
-            FROM tenants
-        ) WHERE row_num = 1;
-    ```
-
-??? - question "How to generate data using Flink Faker? (Flink OSS)"
+???+ question "How to generate data using Flink Faker? (Flink OSS)"
     Create at table with records generated with [Flink faker](https://github.com/knaufk/flink-faker) connector using the [DataFaker expressions.](https://github.com/datafaker-net/datafaker). Valid only on OSS Flink or Confluent platform for Flink.
 
     ```sql
@@ -329,7 +267,7 @@ A table registered with the CREATE TABLE statement can be used as a table source
     This will only work in customized Flink client with the jar from Flink faker.
 
 ???+ info "Generate data with DataGen for Flink OSS"
-    [Use DataGen to do in-memory data generation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/connectors/table/datagen/)
+    [Use DataGen to do in-memory data generation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/connectors/table/datagen/) and the [new feature in product how to guide documentation](https://docs.confluent.io/cloud/current/flink/how-to-guides/custom-sample-data.html#flink-sql-custom-sample-data).
 
 ???+ question "How to generate test data to Confluent Cloud Flink?"
     Use Kafka Connector with DataGen. Those connector exists with a lot of different pre-defined model. Also it is possible to define custom Avro schema and then use predicates to generate data. There is a [Produce sample data quick start tutorial from the Confluent Cloud home page](https://docs.confluent.io/cloud/current/connectors/cc-datagen-source.html). See also [this readme](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/01-confluent-kafka-local-flink).
@@ -434,45 +372,13 @@ A table registered with the CREATE TABLE statement can be used as a table source
     GROUP BY window_time, window_end, window_start
     ``` 
 
-???+ question "How to support nested rows?"
-    Avro, Protobuf or Json schemas are very often hierarchical per design. It is possible to use CAST to name a column within a sub-schema:
-    ```sql
-    -- DDL
-    create table t (
-        StatesTable ROW< states ARRAY<ROW<name STRING, city STRING, lg DOUBLE, lat DOUBLE>>>,
-        creationDate STRING
-    )
-
-    insert into t(StatesTable,creationDate)
-    values( 
-        (
-        ARRAY[  row('California', 'San Francisco', -122.4194, 37.7749),
-            row('New York', 'New York City', -74.0060, 40.7128),
-            row('Texas', 'Austin', -97.7431, 30.2672)
-        ]
-        ), 
-        '2020-10-10'
-    )
-    ```
-
-    ```sql
-    -- example of defining attribute from the idx element of an array from a nested json schema:
-      CAST(StatesTable.states[3] AS DECIMAL(10, 4)) AS longitude,
-      CAST(StatesTable.states[4] AS DECIMAL(10, 4)) AS latitude,
-    ```
-
-    See also the [CROSS JOIN UNNEST](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/joins/#array-expansion) keywords.
-
-    See also running demo in [flink-sql/03-nested-row](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/03-nested-row)
-
-
 ### Changelog mode
 
 In traditional DB, changelog, or transaction log, records all modification operations in the database. Flink SQL also generates changelog data: changelogs that contain only INSERT-type events is an **append** streams, with UPDATE events it is an **update** stream.
 
-Some operations (stateful ones) in Flink such as group aggregation and deduplication can produce update events. With retract mode, an update event is split into delete and insert events.
+Some operations (stateful ones) in Flink such as group aggregation and deduplication can produce update events. With retract mode, an update event is splitted into delete and insert events.
 
-The **append mode** is the simplest mode where records are only added to the result stream, never updated or retracted. Like a write-once data. With append mode, it is possible to create a table with a primary key, and inserting duplicate records with the same key, will be insert events. 
+The **append mode** is the simplest mode where records are only added to the result stream, never updated or retracted. Like a write-once data. With append mode, it is possible to create a table with a primary key, and inserting duplicate records with the same key, will be I events. 
 
 ```sql
 create table if not exists orders (
@@ -486,7 +392,7 @@ create table if not exists orders (
     );
 ```
 
-The outcome includes records in topics that are insert records:
+The outcome includes records in topics that are insert, immutable records:
 
 <figure markdown="span">
 ![1](./images/append-mode-table.png){ width=800 }
@@ -499,14 +405,76 @@ while running the following statement, in a session job, returns the last record
 SELECT * FROM `orders` LIMIT 10;
 ```
 
-For **retract mode**, Flink emits pairs of retraction and addition records. When updating a value, it first sends a retraction of the old record (negative record) followed by the addition of the new record (positive record). It means, a fact can be undone, and the combination of +X and -X are related and must be partitioned together. With retract mode a consumer outside of Flink need to interpret the header. 
+For **retract mode**, Flink emits pairs of retraction (-U) and addition (+U) records. When updating a value, it first sends a retraction of the old record (negative record) followed by the addition of the new record (positive record). It means, a fact can be undone, and the combination of +U and -U are related and must be partitioned together. With retract mode a consumer outside of Flink needs to interpret the Kafka header to implement the good semantic. 
 
-Any stateful aggregation, group by, joins, over, match_recognize ... enforces using a key and so upsert or retract changelog mode.
+Any stateful aggregation like group by, joins, over, match_recognize ... enforces using a key and so using upsert or retract changelog mode.
 
-
-[See this code examples](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/05-append-log) for the different changelog mode study.
+[See this lab](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/05-append-log) for the different changelog mode study.
 
 Also be sure to get the key as part of the values, using the `'value.fields-include' = 'all'` option, if not it will not be possible to group by the key.
+
+#### Non-Deterministic Functions with Upsert/Retract Tables
+
+When working with upsert or retract changelog modes, Flink requires deterministic computations to correctly process update messages (`UB`/`UA`/`D` operations). Using non-deterministic functions can cause deployment failures.
+
+**Common Error Message:**
+
+```sh
+generated by non-deterministic function: CURRENT_DATE ) $f10(generated by non-deterministic function: CURRENT_DATE ) can not satisfy 
+the determinism requirement for correctly processing update message('UB'/'UA'/'D' in changelogMode, not 'I' only), this usually happens 
+when input node has no upsertKey(upsertKeys=[{}]) or current node outputs non-deterministic update messages. 
+Please consider removing these non-deterministic columns or making them deterministic by using deterministic functions.
+```
+- **Non-deterministic functions** like `CURRENT_DATE`, `CURRENT_TIMESTAMP`, `NOW()`, `LOCALTIME`, `LOCALTIMESTAMP` return different values each time they're evaluated.
+- With **upsert/retract changelog modes**, Flink may need to reprocess the same logical record multiple times (for updates, retractions). If the computation produces different results on reprocessing, the changelog stream becomes inconsistent. This breaks the determinism requirement needed for correct stateful operations.
+
+Replace processing time functions with **event time attributes** like `$rowtime` or explicit event time columns.
+
+As an example:
+```sql
+SELECT 
+  customer_id,
+  COUNT(CASE WHEN TIMESTAMPDIFF(DAY, transaction_date, CURRENT_DATE) <= 90 
+        THEN 1 END) as transactions_last_90d,
+  COUNT(CASE WHEN TIMESTAMPDIFF(DAY, transaction_date, CURRENT_DATE) <= 30 
+        THEN 1 END) as transactions_last_30d
+FROM upsert_transactions
+GROUP BY customer_id;
+```
+
+may better work if using the event time:
+```sql
+SELECT 
+  customer_id,
+  COUNT(CASE WHEN TIMESTAMPDIFF(DAY, transaction_date, 
+        DATE($rowtime)) <= 90 THEN 1 END) as transactions_last_90d,
+  COUNT(CASE WHEN TIMESTAMPDIFF(DAY, transaction_date, 
+        DATE($rowtime)) <= 30 THEN 1 END) as transactions_last_30d
+FROM upsert_transactions
+GROUP BY customer_id;
+```
+
+**Best Practices:**
+
+1. **Always use event time** for time-based calculations in streaming pipelines
+2. **Extract `$rowtime`** early in your pipeline if you need date comparisons:
+   ```sql
+   -- In intermediate table
+   SELECT 
+     *,
+     DATE($rowtime) as processing_date
+   FROM source_table;
+   ```
+
+**When Processing Time Is Actually Needed:**
+
+In rare cases where you genuinely need processing time (e.g., for monitoring, debugging), ensure your table uses **append-only mode** (`changelog.mode = 'append'`), not upsert/retract mode.
+
+**Related Considerations:**
+
+- This error only occurs with stateful operations (GROUP BY, JOIN, etc.) that produce upsert/retract streams
+- Append-only tables (no primary key, append changelog) can safely use non-deterministic functions
+- Event time provides better correctness for streaming analytics and supports late data handling
 
 #### Applying to a Medallion Architecture
 
@@ -527,24 +495,7 @@ The current approach can be used for Flink pipeline processing:
 * [Resolving: Primary key differs from derived upsert key](https://docs.confluent.io/cloud/current/flink/how-to-guides/resolve-common-query-problems.html#primary-key-differs-from-derived-upsert-key)
 
 
-### SinkUpsertMaterializer
-
-When operating in upsert mode and processing two update events, a potential issue arises. If input operators for two tables in upsert mode are followed by a join and then a sink operator, update events might arrive at the sink out of order. If the downstream operator's implementation doesn't account for this out-of-order delivery, it can lead to incorrect results.
-
-Flink typically determines the ordering of update history based on the primary key (or upsert keys) through a global analysis in the Flink planner. However, a mismatch can occur between the upsert keys of the join output and the primary key of the sink table. The `SinkUpsertMaterializer` operator addresses this mapping discrepancy.
-
-This operator maintains a complete list of RowData in its state to correctly process any deletion events originating from the source table. However, this approach can lead to a significant state size, resulting in increased state access I/O overhead and reduced job throughput. Also the output value for each primary key is always the last (tail) element in the maintained list. It is generally advisable to avoid using `SinkUpsertMaterializer` whenever possible. 
-
-Consider a scenario where 1 million records need to be processed across a small set of 1,000 keys. In this case, `SinkUpsertMaterializer` would need to store a potentially long list, averaging approximately 1,000 records per key. 
-
-To mitigate the usage of `SinkUpsertMaterializer`:
-
-* Ensure that the partition keys used for deduplication, group aggregation, etc., are identical to the sink table's primary keys.
-* `SinkUpsertMaterializer` is unnecessary if retractions are generated using the same key as the sink table's primary key. If a large number of records are processed but most are subsequently retracted, SinkUpsertMaterializer can significantly reduce its state size.
-* Utilize Time-To-Live (TTL) to limit the state size based on time.
-* A higher number of distinct values per primary key directly increases the state size of the SinkUpsertMaterializer.
-
-### Confluent Cloud Flink table creation
+### Confluent Cloud Flink table creation specific
 
 [See the product documentation](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-statement-in-af-long) with some specificities, like source and sink tables are mapped to Kafka Topics. The `$rowtime` TIMESTAMP_LTZ(3) NOT NULL is provided as a system column.
 
@@ -587,6 +538,44 @@ The statement above also creates a metadata column for writing a Kafka message t
 ```
 
 
+???+ info "CREATE TABLE in Confluent Cloud for Flink"
+    The table creation creates topic and -key, -value schemas in the Schema Registry in the same environment as the compute pool in which the query is run. The `connector` is automatically set to `confluent`. 
+    The non null and nullable columns are translate as the following avro fields:
+    ```avro
+      "fields": [
+            {
+            "name": "customer_id",
+            "type": "string"
+            },
+            {
+            "default": null,
+            "name": "first_name",
+            "type": [
+                "null",
+                "string"
+            ]
+            }
+      ]
+    ```
+
+    DATE as:
+
+    ```avro
+    {
+      "default": null,
+      "name": "registration_date",
+      "type": [
+        "null",
+        {
+          "logicalType": "local-timestamp-millis",
+          "type": "long"
+        }
+      ]
+    }
+    ```
+
+
+
 ## DML statements
 
 Data modification language, is used to define statements which modify the data and don’t change the metadata.
@@ -627,67 +616,51 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     [See product documentation on Union](https://docs.confluent.io/cloud/current/flink/reference/queries/set-logic.html#flink-sql-set-logic-union). Remember that UNION will apply distinct, and avoid duplicate, while UNION ALL will generate duplicates. 
 
 
-???+ info "OVER aggregations"
-    [OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) compute an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY does, but produces one result for every input row. This is helpful when we need to act on each input row, but consider some time interval. A classical example is to get the number of orders in the last 10 seconds:
+???+ question "Deduplication example"
 
     ```sql
-    SELECT 
-        order_id,
-        customer_id,
-        `$rowtime`,
-        SUM(price) OVER w AS total_price_ten_secs, 
-        COUNT(*) OVER w AS total_orders_ten_secs
-    FROM `examples`.`marketplace`.`orders`
-    WINDOW w AS (
-        PARTITION BY customer_id
-        ORDER BY `$rowtime`
-        RANGE BETWEEN INTERVAL '10' SECONDS PRECEDING AND CURRENT ROW
+    SELECT ip_address, url, TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) as click_timestamp
+    FROM (
+        SELECT *,
+        ROW_NUMBER() OVER ( PARTITION BY ip_address ORDER BY TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) DESC) as rownum FROM clicks
+        )
+    WHERE rownum = 1;
+    ```
+
+    [See this example](https://docs.confluent.io/cloud/current/flink/how-to-guides/deduplicate-rows.html#flink-sql-deduplicate-topic-action).
+
+
+???+ question "How to support nested rows, DDL and inserts?"
+    Avro, Protobuf or Json schemas are very often hierarchical per design. ROW and ARRAY are the object to nest elements
+    ```sql
+    -- DDL
+    create table t (
+        StatesTable ROW< states ARRAY<ROW<name STRING, city STRING, lg DOUBLE, lat DOUBLE>>>,
+        creationDate STRING
+    )
+
+    insert into t(StatesTable,creationDate)
+    values( 
+        (
+        ARRAY[ row('California', 'San Francisco', -122.4194, 37.7749),
+            row('New York', 'New York City', -74.0060, 40.7128),
+            row('Texas', 'Austin', -97.7431, 30.2672)
+        ]
+        ), 
+        '2020-10-10'
     )
     ```
 
-    To get the order exceeding some limits for the first time and then when the computed aggregates go below other limits. [LAG]()
-
     ```sql
-    -- compute the total price and # of orders for a period of 10s for each customer
-    WITH orders_ten_secs AS ( 
-    SELECT 
-        order_id,
-        customer_id,
-        `$rowtime`,
-        SUM(price) OVER w AS total_price_ten_secs, 
-        COUNT(*) OVER w AS total_orders_ten_secs
-    FROM `examples`.`marketplace`.`orders`
-    WINDOW w AS (
-        PARTITION BY customer_id
-        ORDER BY `$rowtime`
-        RANGE BETWEEN INTERVAL '10' SECONDS PRECEDING AND CURRENT ROW
-        )
-    ),
-    -- get previous orders and current order per customer
-    orders_ten_secs_with_lag AS (
-    SELECT 
-        *,
-        LAG(total_price_ten_secs, 1) OVER w AS total_price_ten_secs_lag, 
-        LAG(total_orders_ten_secs, 1) OVER w AS total_orders_ten_secs_lag
-    FROM orders_ten_secs
-    WINDOW w AS (
-        PARTITION BY customer_id
-        ORDER BY `$rowtime`
-        )
-    -- Filter orders when the order price and number of orders were above some limits for previous or current order aggregates
-    )
-    SELECT customer_id, 'BLOCK' AS action, `$rowtime` AS updated_at 
-    FROM orders_ten_secs_with_lag 
-    WHERE 
-        (total_price_ten_secs > 300 AND total_price_ten_secs_lag <= 300) OR
-        (total_orders_ten_secs > 5 AND total_orders_ten_secs_lag <= 5)
-    UNION ALL 
-    SELECT customer_id, 'UNBLOCK' AS action, `$rowtime` AS updated_at 
-    FROM orders_ten_secs_with_lag 
-    WHERE 
-        (total_price_ten_secs <= 300 AND total_price_ten_secs_lag > 300) OR
-        (total_orders_ten_secs <= 5 AND total_orders_ten_secs_lag > 5);
+    -- example of defining attribute from the idx element of an array from a nested json schema:
+      CAST(StatesTable.states[3] AS DECIMAL(10, 4)) AS longitude,
+      CAST(StatesTable.states[4] AS DECIMAL(10, 4)) AS latitude,
     ```
+
+    See also the [CROSS JOIN UNNEST](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/joins/#array-expansion) keywords.
+
+    See also running demo in [flink-sql/03-nested-row](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/03-nested-row)
+
 
 ???+ question "How to access element of an array of rows?"
     The table has a column that is an array of rows. 
@@ -710,29 +683,6 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     ```
     So each row in the nested_data arrary will be row in the output table with the matching key_col.
 
-???+ question "How to Aggregate a field into an ARRAY?"
-    Let start by a simple array indexing (the index is between 1 to n_element). Below, the `values array` creates test data into a memory table aliased a `T` with a column named `array_field`:
-
-    ```sql
-    SELECT array_field[4] FROM ((VALUES ARRAY[5,4,3,2,1])) AS T(array_field)
-    ```
-
-    The following code, is creating a view with an [array of aggregates](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions), which in this case, is concatenating the urls over a 1 minute tumble window.
-
-    ```sql
-    CREATE VIEW visited_pages_per_minute AS 
-    SELECT 
-    window_time,
-    user_id, 
-    ARRAY_AGG(url) AS urls
-    FROM TABLE(TUMBLE(TABLE examples.marketplace.clicks, DESCRIPTOR(`$rowtime`), INTERVAL '1' MINUTE))
-    GROUP BY window_start, window_end, window_time, user_id;
-    -- once the view is created
-    SELECT * from visited_pages_per_minute;
-    -- it is possible to expand an array into multiple rows
-    SELECT v.window_time, v.user_id, u.url FROM visited_pages_per_minute AS v
-    CROSS JOIN UNNEST(v.urls) AS u(url)
-    ```
 
 
 ???+ info "Navigate a hierarchical structure in a table"
@@ -810,6 +760,11 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     The table used as target to this processing, if new records are added to it, then needs to be append log, as if it is upsert then the now() time is not determenistic for each row to process.
 
+???+ question "How to extract the number of DAY, from a date field and now?"
+    The only diff is on timestamp. So need to first to cast the DATE column to a ts, and then use CURRENT_DATE and the DAY dimension. [See the supported dimensions (SECOND, MINUTE, HOUR, DAY, MONTH, or YEAR)](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#temporal-functions)
+    ```sql
+     TIMESTAMPDIFF(DAY, CAST(created_date AS TIMESTAMP(3)), CURRENT_DATE) as days_since_launch,
+    ```
 
 ???+ question "How to mask a field?"
     Create a new table from the existing one, and then use REGEXP_REPLACE to mask an existing attribute
@@ -838,6 +793,97 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     FROM filtered_data
     WHERE keep_row = TRUE;
     ```
+
+
+### Stateful aggregations
+
+???+ info "OVER aggregations"
+    [OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) compute an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY does, but produces one result for every input row. This is helpful when we need to act on each input row, but consider some time interval. A classical example is to get the number of orders in the last 10 seconds:
+
+    ```sql
+    SELECT 
+        order_id,
+        customer_id,
+        `$rowtime`,
+        SUM(price) OVER w AS total_price_ten_secs, 
+        COUNT(*) OVER w AS total_orders_ten_secs
+    FROM `examples`.`marketplace`.`orders`
+    WINDOW w AS (
+        PARTITION BY customer_id
+        ORDER BY `$rowtime`
+        RANGE BETWEEN INTERVAL '10' SECONDS PRECEDING AND CURRENT ROW
+    )
+    ```
+
+    To get the order exceeding some limits for the first time and then when the computed aggregates go below other limits. [LAG]()
+
+    ```sql
+    -- compute the total price and # of orders for a period of 10s for each customer
+    WITH orders_ten_secs AS ( 
+    SELECT 
+        order_id,
+        customer_id,
+        `$rowtime`,
+        SUM(price) OVER w AS total_price_ten_secs, 
+        COUNT(*) OVER w AS total_orders_ten_secs
+    FROM `examples`.`marketplace`.`orders`
+    WINDOW w AS (
+        PARTITION BY customer_id
+        ORDER BY `$rowtime`
+        RANGE BETWEEN INTERVAL '10' SECONDS PRECEDING AND CURRENT ROW
+        )
+    ),
+    -- get previous orders and current order per customer
+    orders_ten_secs_with_lag AS (
+    SELECT 
+        *,
+        LAG(total_price_ten_secs, 1) OVER w AS total_price_ten_secs_lag, 
+        LAG(total_orders_ten_secs, 1) OVER w AS total_orders_ten_secs_lag
+    FROM orders_ten_secs
+    WINDOW w AS (
+        PARTITION BY customer_id
+        ORDER BY `$rowtime`
+        )
+    -- Filter orders when the order price and number of orders were above some limits for previous or current order aggregates
+    )
+    SELECT customer_id, 'BLOCK' AS action, `$rowtime` AS updated_at 
+    FROM orders_ten_secs_with_lag 
+    WHERE 
+        (total_price_ten_secs > 300 AND total_price_ten_secs_lag <= 300) OR
+        (total_orders_ten_secs > 5 AND total_orders_ten_secs_lag <= 5)
+    UNION ALL 
+    SELECT customer_id, 'UNBLOCK' AS action, `$rowtime` AS updated_at 
+    FROM orders_ten_secs_with_lag 
+    WHERE 
+        (total_price_ten_secs <= 300 AND total_price_ten_secs_lag > 300) OR
+        (total_orders_ten_secs <= 5 AND total_orders_ten_secs_lag > 5);
+    ```
+
+
+???+ question "How to Aggregate a field into an ARRAY?"
+    Let start by a simple array indexing (the index is between 1 to n_element). Below, the `values array` creates test data into a memory table aliased a `T` with a column named `array_field`:
+
+    ```sql
+    SELECT array_field[4] FROM ((VALUES ARRAY[5,4,3,2,1])) AS T(array_field)
+    ```
+
+    The following code, is creating a view with an [array of aggregates](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions), which in this case, is concatenating the urls over a 1 minute tumble window.
+
+    ```sql
+    CREATE VIEW visited_pages_per_minute AS 
+    SELECT 
+    window_time,
+    user_id, 
+    ARRAY_AGG(url) AS urls
+    FROM TABLE(TUMBLE(TABLE examples.marketplace.clicks, DESCRIPTOR(`$rowtime`), INTERVAL '1' MINUTE))
+    GROUP BY window_start, window_end, window_time, user_id;
+    -- once the view is created
+    SELECT * from visited_pages_per_minute;
+    -- it is possible to expand an array into multiple rows
+    SELECT v.window_time, v.user_id, u.url FROM visited_pages_per_minute AS v
+    CROSS JOIN UNNEST(v.urls) AS u(url)
+    ```
+
 
 
 
@@ -929,21 +975,6 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     ```
 
     The minimum out-of-orderness is 50ms and can be set up to 7 days. See [Confluent documentation.](https://docs.confluent.io/cloud/current/flink/reference/functions/datetime-functions.html#flink-sql-source-watermark-function) 
-    
-???+ question "Deduplication example"
-
-    ```sql
-    SELECT ip_address, url, TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) as click_timestamp
-    FROM (
-        SELECT *,
-        ROW_NUMBER() OVER ( PARTITION BY ip_address ORDER BY TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) DESC) as rownum FROM clicks
-        )
-    WHERE rownum = 1;
-    ```
-
-  
-
-    [See this example](https://docs.confluent.io/cloud/current/flink/how-to-guides/deduplicate-rows.html#flink-sql-deduplicate-topic-action).
 
 ???+ question "How to manage late message to be sent to a DLQ?"
     First create a DLQ table like late_orders based on the order table:
@@ -1101,6 +1132,24 @@ Here is a list of important tutorials on Joins:
         GROUP BY window_start, window_end;
     ```
 
+### SinkUpsertMaterializer
+
+When operating in upsert mode and processing two update events, a potential issue arises. If input operators for two tables in upsert mode are followed by a join and then a sink operator, update events might arrive at the sink out of order. If the downstream operator's implementation doesn't account for this out-of-order delivery, it can lead to incorrect results.
+
+Flink typically determines the ordering of update history based on the primary key (or upsert keys) through a global analysis in the Flink planner. However, a mismatch can occur between the upsert keys of the join output and the primary key of the sink table. The `SinkUpsertMaterializer` operator addresses this mapping discrepancy.
+
+This operator maintains a complete list of RowData in its state to correctly process any deletion events originating from the source table. However, this approach can lead to a significant state size, resulting in increased state access I/O overhead and reduced job throughput. Also the output value for each primary key is always the last (tail) element in the maintained list. It is generally advisable to avoid using `SinkUpsertMaterializer` whenever possible. 
+
+Consider a scenario where 1 million records need to be processed across a small set of 1,000 keys. In this case, `SinkUpsertMaterializer` would need to store a potentially long list, averaging approximately 1,000 records per key. 
+
+To mitigate the usage of `SinkUpsertMaterializer`:
+
+* Ensure that the partition keys used for deduplication, group aggregation, etc., are identical to the sink table's primary keys.
+* `SinkUpsertMaterializer` is unnecessary if retractions are generated using the same key as the sink table's primary key. If a large number of records are processed but most are subsequently retracted, SinkUpsertMaterializer can significantly reduce its state size.
+* Utilize Time-To-Live (TTL) to limit the state size based on time.
+* A higher number of distinct values per primary key directly increases the state size of the SinkUpsertMaterializer.
+
+
 ### Row pattern recognition
 
 ???+ question "Find the longest period of time for which the average price of a stock did not go below a value"
@@ -1198,17 +1247,6 @@ Each topic is automatically mapped to a table with some metadata fields added, l
 ???+ info "How to support Type 2 slowly changing dimension (SCD) table?"
     Type 2 SCDs are designed to maintain a complete history of all changes to dimension data. When a change occurs, a new row is inserted into the table, representing the updated record, while the original record remains untouched. Each record in the table is typically assigned a unique identifier (often a surrogate key) to distinguish between different versions of the same dimension member. 
 
-## User Defined Function
-
-[Flink User Defined Function](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/udfs/) allows developers to upload custom logic, complex calculation, data manipulation (XML, custom AVRO), within a SQL or TableAPI queries. Developers can leverage existing libraries like Geospatial calculation, Math computation... 
-At the deployment level it can be considered as FaaS. Not optimized for cold start, it could be P90 at 25s. 
-
-For developer the steps are:
-
-1. Develop a functin to extends a `org.apache.flink.table.functions.ScalarFunction`
-1. Build a uber jar
-1. Register the UDF as a Flink artifact. On Confluent Cloud, artifacts are environment scoped.
-1. Configure SQL to use this function using: `CREATE FUNCTION fct_name as 'fully.qualified.classname' USING JAR 'confluent-artifact://....'
 
 
 ## Troubleshooting SQL statement running slow

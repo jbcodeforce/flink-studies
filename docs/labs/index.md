@@ -8,7 +8,9 @@ All the local demonstrations run on local Kubernetes, some on Confluent Cloud. M
 
 See the [e2e-demos](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos) folder for a set of available demos based on the Flink local deployment or using Confluent Cloud for Flink.
 
-* [ ] [Record deduplication](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/dedup-demo) using Flink SQL or Table API deployed on Confluent Platform
+Those demos are not finalized:
+
+* [ ] [Record deduplication](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/dedup-demo) using Flink SQL or Table API deployed on Confluent Platform for Flink
 * [ ] [Change Data Capture with Postgresql](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cdc-demo), CDC Debezium, Confluent Platformm v8.0+, Cloud Native for Postgresql Kuberneted Operator
 * [ ] [e-commerce sale](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale)
 * [ ] [Transform json records](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/json-transformation)
@@ -23,19 +25,20 @@ See the [e2e-demos](https://github.com/jbcodeforce/flink-studies/tree/master/e2e
 
 ## Public repositories with valuable demonstrations
 
-* [Shoes Store Labs](https://github.com/jbcodeforce/shoe-store)  to run demonstrations on Confluent Cloud. 
-* [Managing you Confluent Cloud Flink project at scale with a CLI](https://github.com/jbcodeforce/shift_left_utils)
+
+* [Managing your Confluent Cloud Flink project at scale with a CLI](https://github.com/jbcodeforce/shift_left_utils)
 * [Confluent Flink how to](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#)
 * [Confluent demonstration scene](https://github.com/confluentinc/demo-scene): a lot of Kafka, Connect, and ksqlDB demos
 * [Confluent developer SQL training](https://developer.confluent.io/courses/flink-sql/overview/)
 
-* [Demonstrate Flink SQL testing on Confluent Cloud](https://jbcodeforce.github.io/shift_left_utils/coding/test_harness/#usage-and-recipe)
-* [Demonstrations for Shift left project migration and for data as a product management.](https://github.com/jbcodeforce/flink_project_demos)
+* [Demonstrate Flink SQL test harness tool for Confluent Cloud Flink](https://jbcodeforce.github.io/shift_left_utils/coding/test_harness/#usage-and-recipe).
+* [Demonstrations for data as a product methodolgy, moving from Spark batch processing to Flink using shift_left utils.](https://github.com/jbcodeforce/flink_project_demos)
+* [Shoes Store Labs](https://github.com/jbcodeforce/shoe-store)  to run demonstrations on Confluent Cloud. 
 
 ## Interesting Blogs
 
 * [Building Streaming Data Pipelines, Part 1: Data Exploration With Tableflow](https://www.confluent.io/blog/building-streaming-data-pipelines-part-1/)
-* [Building Streaming Data Pipelines, Part 2: Data Processing and Enrichment With SQ](https://www.confluent.io/blog/streaming-etl-flink-tableflow/)
+* [Building Streaming Data Pipelines, Part 2: Data Processing and Enrichment With SQL](https://www.confluent.io/blog/streaming-etl-flink-tableflow/)
 
 ## Quick personal demo for Confluent Cloud for Flink
 
