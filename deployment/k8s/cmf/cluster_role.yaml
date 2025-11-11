@@ -1,0 +1,14 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: flink-event-reader
+rules:
+- apiGroups: [""] # "" indicates the core API group (v1)
+  resources: ["events"]
+  verbs: ["list", "watch"]
+- apiGroups: ["flink.apache.org"]
+  resources: ["flinkdeployments", "flinkdeployments/status", "flinkstatesnapshots"] # Needed to manage FlinkDeployments CRs
+  verbs: ["*"]
+- apiGroups: [""]
+  resources: ["services"] # Read-only permissions needed for the flink UI
+  verbs: ["get", "list", "watch"]

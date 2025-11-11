@@ -1,9 +1,10 @@
 CFNT_NS=confluent
 FLCK_NS=confluent
-CMF_VERSION=~2.1.0
+NS_LIST=$(FLCK_NS),el-demo,rental
+CMF_VERSION="~2.1.0"
 CMF_URL=http://localhost:8084
 ENV_NAME=dev-env
-
+FKO_VERSION="~1.130.0"
 # Colors for output
 BLUE := \033[0;34m
 GREEN := \033[0;32m
@@ -31,7 +32,7 @@ help:
 	@awk 'BEGIN {FS = ":.*##"; printf ""} /^[a-zA-Z_-]+:.*?##/ { printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 # ------- Common elements to install -------------
-deploy: create_ns  update_helm_confluent_repo deploy_cmf deploy_cmf_rest_class port_forward_cmf create_flink_env create_kafka_catalog ## Deploy the Confluent Manager for Flink.
+deploy: create_ns  update_helm_confluent_repo  install_upgrade_fko deploy_cmf deploy_cmf_rest_class port_forward_cmf create_flink_env create_kafka_catalog ## Deploy the Confluent Manager for Flink.
 
 
 status: verify_cmf verify_cmf_rest_class verify_flink_env list_kafka_catalogs ## Verify the Confluent Manager for Flink deployment.
@@ -45,19 +46,32 @@ use_flink_ns: ## Use the Flink namespace.
 	@kubectl config set-context --current --namespace=$(FLCK_NS)
 	@echo "$(GREEN) Using namespace: $(FLCK_NS)$(NC)"
 
+
+
+
 # ---- Private commands ------------
 create_ns:
 	$(call ensure_ns, $(FLCK_NS))
 	@echo "$(GREEN) Created namespace: $(FLCK_NS)$(NC)"
 
-
-# ---------------------- Confluent Platform  --------------------------------
+# ---------------------- Confluent Manager for Flink ----------------------
 update_helm_confluent_repo:
 	@helm repo add confluentinc https://packages.confluent.io/helm
 	@helm repo update
 
-# ---------------------- Confluent Manager for Flink ----------------------
+install_upgrade_fko:
+	@helm upgrade --install cp-flink-kubernetes-operator --version $(FKO_VERSION) \
+  confluentinc/flink-kubernetes-operator --set watchNamespaces="{$(NS_LIST)}"
+
+verify_fko:
+	@echo "$(BLUE)flink-kubernetes-operator version: $(NC)"
+	@kubectl get deployments flink-kubernetes-operator  -n $(FLCK_NS) -o jsonpath="{.metadata.labels.app\.kubernetes\.io/version}"
+	@echo ""
+	@echo "$(BLUE)----------------------------------------$(NC)"
+
 deploy_cmf:
+	@kubectl apply -f cluster_role.yaml
+	@kubectl apply -f flink_role.yaml
 	@helm upgrade --install cmf --version $(CMF_VERSION)  confluentinc/confluent-manager-for-apache-flink --namespace $(FLCK_NS)  --values cmf_values.yaml 
 
 deploy_cmf_rest_class:
@@ -81,6 +95,7 @@ verify_flink_env:
 	@echo "$(GREEN) Flink environments verified$(NC)"
 
 port_forward_cmf:
+	@kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=confluent-manager-for-apache-flink -n $(FLCK_NS) --timeout=120s
 	@osascript -e 'tell app "Terminal" to do script "kubectl port-forward svc/cmf-service 8084:80 -n $(FLCK_NS)"' -e 'tell application "Terminal" to set current settings of front window to settings set "Grass"'
 
 create_flink_env:

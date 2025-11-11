@@ -2,10 +2,10 @@ rbac: false
 
 serviceAccount:
   create: false
-  name: flink-sa
+  name: flink
 
 cmf:
   sql:
-    production: true
+    production: false
     examples-catalog:
       enabled: true

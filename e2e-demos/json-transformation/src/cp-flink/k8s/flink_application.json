@@ -34,7 +34,7 @@
                 "memory": "1024m"
             }
         },
-        "serviceAccount": "flink-sa",
+        "serviceAccount": "flink",
         "taskManager": {
             "resource": {
                 "cpu": 1,

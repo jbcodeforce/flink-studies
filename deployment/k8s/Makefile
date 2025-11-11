@@ -1,9 +1,9 @@
 
 MINIO_NS=minio-dev
-CERT_MGR_VERSION=v1.18.1
+CERT_MGR_VERSION=v1.18.2
 FLINK_OPERATOR_VERSION=1.11.0
 CMF_URL=http://localhost:8084
-ENV_NAME=dev
+CERT_MGR_NS=cert-manager
 
 # Colors for output
 BLUE := \033[0;34m
@@ -66,28 +66,36 @@ create_ns:
 	$(call ensure_ns, $(MINIO_NS))
 
 deploy_cert_manager:
-	@kubectl get deployments cert-manager  -n cert-manager > /dev/null 2>&1;\
+	@kubectl get deployments cert-manager  -n $(CERT_MGR_NS) > /dev/null 2>&1;\
 	if [ $$? -ne 0 ]; then \
 		kubectl create -f https://github.com/jetstack/cert-manager/releases/download/$(CERT_MGR_VERSION)/cert-manager.yaml; \
 	else \
 		echo "cert manager already deployed"; \
-		kubectl get pods -n cert-manager; \
+		kubectl get pods -n $(CERT_MGR_NS); \
 	fi
 
+upgrade_cert_manager:
+	@kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/$(CERT_MGR_VERSION)/cert-manager.yaml
+
 verify_cert_manager:
-	@kubectl get pods -n cert-manager
-	@echo "----------------------------------------"
+	@kubectl get pods -n $(CERT_MGR_NS)
+	@echo "$(BLUE)Cert manager version: $(NC)"
+	@kubectl get deployments cert-manager  -n $(CERT_MGR_NS) -o jsonpath="{.metadata.labels.app\.kubernetes\.io/version}"
+	@echo ""
+	@echo "$(BLUE)----------------------------------------$(NC)"
 
 
 
 # ---------------------- Minio ----------------------
 deploy_minio:
 	@kubectl apply -f ./MinIO/minio-dev.yaml 
-	@kubectl apply -f minio-credentials-secret.yaml
+	@kubectl apply -f./MinIO/minio-credentials-secret.yaml
 
 verify_minio:
 	@kubectl get pods -n $(MINIO_NS)
 	@echo "----------------------------------------"
+	@kubectl get pods  -l app.kubernetes.io/app=minio  -n $(MINIO_NS) -o jsonpath="{.items[0].metadata.labels.app\.kubernetes\.io/version}"
+	@echo ""
 
 undeploy_minio:
 	@kubectl delete -f ./MinIO/minio-dev.yaml

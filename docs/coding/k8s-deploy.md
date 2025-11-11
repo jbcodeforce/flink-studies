@@ -8,7 +8,7 @@
     * 07/25: Update for Confluent Platform v8
     * 09/29: Update to diagrams and doc structure.
     * 10/12: update to Minio and snapshot / checkpoint configuration
-    * 10/20: Reorganize content
+    * 10/20: Reorganize content - integrate new CMF 2.1.0
 
 
 Apache Flink has defined a Kubernetes Operator (FKO) to deploy and manage custom resources for Flink deployments. Confluent Platform Manager for Flink (CMF) is also deployed on Kubernetes with its own operator, leveraging the FKO. Also as part of the Confluent Platform it is integrated with Confluent Kubernetes Operator (CKO).
@@ -51,7 +51,7 @@ The deployments for [Confluent Platform](https://docs.confluent.io/operator/curr
 <figcaption>Figure 3: K8S deployment</figcaption>
 </figure>
 
-**CFK Operator** is the control plane for deploying and managing Confluent in your Kubernetes private cloud environment. It defines custom resource definitions to support Kafka based resources like topics, brokers, connectors. It also defines how to deploy Schema Registry.
+[**CFK Operator**](https://docs.confluent.io/operator/current/co-deploy-cfk.html) is the control plane for deploying and managing Confluent in your Kubernetes private cloud environment. It defines custom resource definitions to support Kafka based resources like topics, brokers, schema registry, connectors. It also defines how to deploy Schema Registry.
 
 Once you have a Kubernetes cluster the approach is to first deploy the CKO and then define Kafka resources using manifests:
 
@@ -87,7 +87,7 @@ A **Flink Application** is any user's program that spawns one or multiple Flink 
 
 The **Flink Kubernetes Operator** is looking at different `Flink Deployment`, so it can be isolated within its own namespace. When deploying the FKO it is important to **specify the namespaces to watch** for future deployments. The following command modify this list:
 ```sh
-helm upgrade --install cp-flink-Kubernetes-operator --version "~1.120.0"  confluentinc/flink-Kubernetes-operator --set watchNamespace="{flink, confluent, el-demo, rental}" -n flink
+helm upgrade --install cp-flink-Kubernetes-operator --version "~1.130.0"  confluentinc/flink-Kubernetes-operator --set watchNamespace="{flink, confluent, el-demo, rental}" -n flink
 ```
 
 It is important to delete the operator pod and let Kubernetes restarts the FKO pod with the new config.
@@ -117,6 +117,11 @@ CMF integrates with FKO to support Flink native custom resources. The following 
 * **Confluent For Kubernetes** is the Confluent operator to manage Kafka resources, but it supports the deployment of FlinkEnvironment and an "adapted" FlinkApplication (to reference an Environment) so kubectl command can access this operator for confluent platform CRs ( `apiVersion: platform.confluent.io/v1beta1`).
 
 It is still possible to do pure OSS FlinkDeployment CRs but this strongly not recommended to leverage the full power of Confluent Platform and get Confluent Support.
+
+???+ info "Versioning"
+    There is a Confluent [version and interoperability document](https://docs.confluent.io/platform/current/flink/installation/versions-interoperability.html) that should be updated at each release. But each time there is a new release you need to be sure to modify the references for:
+
+    * Confluent Platform (e.g. 8.1)
 
 Let review the Kubernetes custom resources for Flink.
 

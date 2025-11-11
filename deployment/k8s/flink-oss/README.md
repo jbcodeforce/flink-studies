@@ -2,14 +2,14 @@
 
 This folder includes different deployment manifests for Apache Flink OSS. The approach is to encapsulate some of the kubectl commands using `make` targets. 
 
-See the [Flink operator - open source](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/) for details.
+See the [Flink kubernetes operator - open source](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) for details.
 
 ## Pre-requisites
 
 * [See the pre-requisites note for CLIs installation and other general dependencies](https://github.com/jbcodeforce/flink-studies/coding/k8-deploy/#pre-requisites)
 
 * Access to a Kubernetes cluster: `make start_colima`
-* Update the CERT_MGR_VERSION=v1.18.1 and FLINK_OPERATOR_VERSION=1.11.0 in the Makefile. See [Certification Release version here](https://github.com/cert-manager/cert-manager/) (1.18.2 as of 09/2025) and [K9s operator tags](https://github.com/apache/flink-kubernetes-operator/tags)
+* Update the CERT_MGR_VERSION=v1.18.2 and FLINK_OPERATOR_VERSION=1.18.2 in the Makefile. See [Certification Release version here](https://github.com/cert-manager/cert-manager/) (1.18.2 as of 09/2025) and [K9s operator tags](https://github.com/apache/flink-kubernetes-operator/tags)
 * Install certification manager (only one time per k8s cluster):
 
 ```sh

@@ -28,7 +28,7 @@ help: ## Show this help message
 	@awk 'BEGIN {FS = ":.*##"; printf ""} /^[a-zA-Z_-]+:.*?##/ { printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 # ------- Common elements to install -------------
-deploy: create_ns update_helm_confluent_repo upgrade_crds  deploy_cp_cfk verify_cp_cfk deploy_cp_cluster ## Deploy the Confluent Platform.
+deploy: create_ns update_helm_confluent_repo upgrade_crds  deploy_cp_cfk verify_cp_cfk deploy_cp_cluster use_confluent_ns ## Deploy the Confluent Platform.
 
 use_confluent_ns: ## Use the confluent namespace	
 	@kubectl config set-context --current --namespace=$(CFNT_NS)

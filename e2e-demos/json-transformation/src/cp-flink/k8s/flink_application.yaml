@@ -16,7 +16,7 @@ spec:
       state.savepoints.dir: s3://flink/stateful-flink/savepoints
       state.checkpoints.interval: "10000"
       state.checkpoints.timeout: "600000"
-  serviceAccount: flink-sa
+  serviceAccount: flink
   jobManager:
     resource:
       memory: 1024m

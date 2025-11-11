@@ -2,9 +2,9 @@
 
 This folder includes different deployment manifests for Confluent Manager for Flink. The approach is to encapsulate some of the kubectl commands using `make` targets. The code and/or instructions here are NOT intended for production usage.
 
-See the [Flink operator - open source documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/) and the [Confluent platform for flink operator](https://docs.confluent.io/platform/current/flink/get-started.html) for details.
+See the [Flink Kubernets Operator - open source documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/) and the [Confluent platform for flink operator](https://docs.confluent.io/platform/current/flink/get-started.html) for details.
 
-Read also our analysis of Kubernetes deployment for Flink in [this chapter](https://github.com/jbcodeforce/flink-studies/coding/k8-deploy).
+Read also the analysis of Kubernetes deployment for Flink in [this chapter](https://github.com/jbcodeforce/flink-studies/coding/k8-deploy).
 
 
 ## Planning deployment
@@ -17,47 +17,30 @@ Read also our analysis of Kubernetes deployment for Flink in [this chapter](http
 
 * [See the pre-requisites note for CLIs installation and other general dependencies](https://github.com/jbcodeforce/flink-studies/coding/k8-deploy/#prerequisites)
 
-* Access to a Kubernetes cluster using Colima VM:
+* Access to a Kubernetes cluster using Colima VM (see k8s/Makefile):
     ```sh
     make start_colima
     ```
+* Verify certification manager and may upgrade it (see k8s/Makefile):
+* As most of the demonstration in this git repository use Kafka, Schema registry, and the Confluent Console, it is recommended to install Confluent Plaform. (see cfk/Makefile and readme.)
+* Create `flink` and `confluent` namespaces: `make create_ns` - 10/01/2025 To simplify the deployment, we use one namespace: `confluent`
 
-* The next steps are automated with one make command:
-    ```sh
-    make prepare
-    ```
-    But are doing the following steps:
 
-    * Install certification manager (only one time per k8s cluster): See [Release version here](https://github.com/cert-manager/cert-manager/), change in the Makefile the version number and the make commands:
-        ```sh
-        make deploy_cert_manager
-        # verify
-        make verify_cert_manager
-        kubeclt get pods -n cert-manager
-        ```
+## Deploy Confluent Platform and Confluent Manager for Flink
 
-    * Create `flink` and `confluent` namespaces: `make create_ns` - 10/01/2025 To simplify we merged both namespace into `confluent`
-    * Install Minio to persist jar or expose object storage in the K8S cluster. [See Minio quickstart](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart) and [the minio section in k8s deployment chapter.](https://jbcodeforce.github.io/flink-studies/coding/k8s-deploy/#using-minio-for-app-deployment)
-        ```sh
-        make deploy_minio
-        make verify_minio
-        ```
-    
-    * Deploy MinIO S3 credentials secret (for secure Flink checkpointing):
-        ```sh
-        make deploy_minio_secret
-        make verify_minio_secret
-        ```
-        
-        **Note:** For production, create secrets using kubectl instead of committing to git:
-        ```sh
-        kubectl create secret generic minio-s3-credentials \
-          --from-literal=s3.access-key=<your-access-key> \
-          --from-literal=s3.secret-key=<your-secret-key> \
-          --from-literal=s3.endpoint=http://minio.minio-dev.svc.cluster.local:9000 \
-          -n el-demo
-        ```
+See the steps as described in [Confluent Plafform product documentation](https://docs.confluent.io/operator/current/co-cfk-overview.html).
 
+See [upgrade instructions](https://docs.confluent.io/platform/current/flink/installation/upgrade-cmf.html)
+```sh
+make deploy
+# or as separate commands, specially when upgrading
+make update_helm_confluent_repo  
+make install_upgrade_fko 
+make deploy_cmf 
+make deploy_cmf_rest_class
+```
+
+By default, the chart creates a cluster role and service account that CMF can use to create and monitor Flink applications in all namespaces.
 
 ## Flink Checkpointing with MinIO
 
@@ -122,10 +105,6 @@ make port_forward_minio_console
 kubectl run -it --rm mc --image=minio/mc --restart=Never -- \
   sh -c "mc alias set minio http://minio.minio-dev:9000 minioadmin minioadmin && mc mb minio/flink"
 ```
-
-## Deploy Confluent Platform and Confluent Manager for Flink
-
-See the steps as described in [Confluent Plafform product documentation](https://docs.confluent.io/operator/current/co-cfk-overview.html).
 
 --- 
 TO BE MODIFIED

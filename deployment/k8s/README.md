@@ -1,6 +1,8 @@
 # Deploying a set of services to Kubernetes
 
-This folder contains Kubernetes deployment configurations for various components used in Flink development and operations with Open Source Flink or Confluent Plaform:
+This folder contains Kubernetes deployment configurations for various components used in Flink development and operations using Open Source Flink or Confluent Plaform (Kafka and Flink):
+
+The Makefile in this folder defines commands for Colima, minio, certificat manager. 
 
 ## Core Components
 
@@ -25,3 +27,29 @@ This folder contains Kubernetes deployment configurations for various components
 - `check_env.sh`: Environment validation script
 
 Each component directory contains its own README or documentation with specific setup instructions.
+
+## Starting from a brand new collima VM
+
+Here are the getting started:
+1. [Optional] Delete previous default VM: `colima delete default`
+1. Start a new default VM: `make start_colima` -> The created ns are `default, kube-node-lease, kube-public, kube-system`
+1. Deploy Certificat manager, minio and other: `make deploy`
+1. Deploy Confluent Platform. It will take few minutes to get all pods up and running
+    ```sh
+    cd cfk
+    make deploy
+    kubectl get pods -w
+    ```
+
+1. Deploy Confluent Manager for Flink. As the deployment of the operator implies to reference namespace where applications may be deployed, modify the Makefile to change the variable: NS_LIST
+    ```sh
+    # Create the needed namespace
+    kubectl create rental
+    kubectl create el-demo
+    # within cmf folder
+    make dpeloy
+    ```
+
+## Upgrading to new version
+
+### Open Source Flink
