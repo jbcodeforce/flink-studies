@@ -67,3 +67,12 @@ kubectl delete ns confluent  # Optional: only if you want to remove the namespac
 ```
 
 Note: Replace `confluent` with your desired namespace if you've configured a different one.
+
+## Upgrade to a new version
+
+[Verify the image tags in dockerhub](https://hub.docker.com/u/confluentinc) 
+
+* for [Confluent Operator](https://hub.docker.com/r/confluentinc/confluent-operator/tags)
+* [cp-server](https://hub.docker.com/r/confluentinc/cp-server/tags)
+* [cp-enterprise-control-center-next-gen](https://hub.docker.com/r/confluentinc/cp-enterprise-control-center-next-gen/tags) 
+* [confluent-init-container](https://hub.docker.com/r/confluentinc/confluent-init-container/tags)

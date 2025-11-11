@@ -29,8 +29,8 @@ from `raw_AssetSubTypeAsset` asta inner join `raw_AssetSubType` ast on asta.SubT
 )
 select 
     lt.AssetId as asset_id,  
-    ARRAY_AGG(DISTINCT lst.subtype_name) as subtypenames, 
-    ARRAY_AGG(DISTINCT lt.name) as names,
+    ARRAY_AGG(DISTINCT lst.subtype_name) as subtype_names, 
+    ARRAY_AGG(DISTINCT lt.name) as type_names,
     max(lst.ts_ltz) as type_ts  
 from latest_types lt left join latest_subtypes lst on lt.AssetId = lst.asset_id
 group by lt.AssetId

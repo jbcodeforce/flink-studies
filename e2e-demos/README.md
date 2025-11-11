@@ -1,14 +1,21 @@
 # A set of end-to-end demonstrations
 
-## Change Data Capture with Debezium to Kafka to Flink
+For each demonstrations it should be easy to deploy, have a readme to explain the goals, what will be learn, how to setup and how to validate the demonstration.
 
-## SQL Gateway to submit SQL jobs
+## CP-Flink Demonstrations
 
-## Ecommerce simple demo
+### Tracking
+| Name | Readme | Make | Demo Script | Status |
+|------|--------|------|--------|--------|
+| json-transform | Yes | | | |
 
-## Flink to Sink JDBC connector
+### Proof of concept for QLik CDC processing with Confluent Cloud Flink
 
-## Proof of concept for QLik CDC processing with Confluent Cloud Flink
+[Detailed Readme](./cdc-dedup-transform/)
 
-[Pure SQL Code and readme](./cdc_dedup_transform/)
+### Json Transformation
 
+* [Readme](./json-transformation/README.md)
+* [To Do](./json-transformation/checklist.md)
+
+## CC-flink Demonstrations

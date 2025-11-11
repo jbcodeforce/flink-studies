@@ -1,4 +1,4 @@
-FROM confluentinc/cp-flink:1.20.2-cp1-java17-arm64
+FROM confluentinc/cp-flink:2.1.0-cp1-java21
 
 # Create application directory
 USER root

@@ -2,23 +2,27 @@
 
 ## Overview
 
-This is a simple demo using Confluent Platform with Flink, or Confluent Cloud for Flink and Kafka to demonstrate a json schema mapping, a join and an aggregation with Flink SQL queries. The example is about a fictitious mover truck rental company, in 2190. This demonstration covers all the components to create and deploy for a Flink application consuming from 2 Kafka topics and generating records to one topic.
+This is a simple demo using Confluent Platform with Flink, or Confluent Cloud for Flink and Kafka to demonstrate a json schema mapping, with join and an aggregation using Flink SQL queries. 
+
+The example is about a fictitious mover truck rental company, in 2190. This demonstration covers all the components to create and deploy for a Flink application consuming records from 2 Kafka topics and generating records to one topic.
 
 The processing logic, we need to implement, has the following basic data pipeline architecture:
 
   ![](./docs/dsp.drawio.png)
 
 The input are:
+
 * Industrial vehicle rental events within `orders` kafka topic, 
 * Human Job demand, which in the context of a Mover, a move demand, helping to move furniture,..
 
-The jobs are related to a move `order`, so the join key is the `OrderId`.
+The jobs are related to a move `orders`, so the join key is the `OrderId`.
 
 ## Use Case
 
-* Truck rental orders continuously arrive to the `raw-contracts` kafka topic, while job demands are sent to `raw-jobs` topic. 
-    ![](./producer/static/mover-truck-2100.png)
-    *Image generated with Google Gemini*
+* Truck rental orders continuously arrive to the `raw-orders` kafka topic, while job demands are sent to `raw-jobs` topic. 
+
+![](./src/demo-app/static/mover-truck-2100.png)
+*Image generated with Google Gemini*
 
 * The raw-orders json payload looks like:
     ```json
@@ -45,11 +49,11 @@ The jobs are related to a move `order`, so the join key is the `OrderId`.
     }
     ```
 
-* The raw-job json is:
+* The raw-job json is: (order_id is used to join to orders)
   ```json
   {
     "job_id": 1234567,
-    "order_id": 123456,  -- used to join to order
+    "order_id": 123456, 
     "job_type": "LoadUnload",
     "job_status": "Completed",
     "rate_service_provider": "85.0000",
@@ -63,7 +67,7 @@ The jobs are related to a move `order`, so the join key is the `OrderId`.
   ```
 
 
-* The first transformation takes the raw source records and builds a JSON with nested structure: the `OrderDetails` which includes two main objects: the `EquipmentRentalDetails` and the `MovingHelpDetails`
+* The goal of the first transformation is to take the raw source records and to build a JSON with nested structure: the `OrderDetails` which includes two main objects: the `EquipmentRentalDetails` and the `MovingHelpDetails`:
   ```json
   {
       "OrderDetails": {
@@ -177,6 +181,14 @@ The components involved in this demonstration are depicted in the following figu
   ```sh
   make open_cp_console
   ```
+
+### Upgrade to a new CP Flink version
+
+* See [deployment/k8s/cfk](../../deployment/k8s/cfk/README.md) for Confluent Platform upgrade
+* See [deployment/k8s/cmf](../../deployment/k8s/cmf/README.md) for Confluent Manager for Flink upgrade
+* [Get the cp-flink tag version from dockerhub](https://hub.docker.com/r/confluentinc/cp-flink/tags) modify the version in [Dockerfile](./src/cp-flink/table_api/Dockerfile) and update the matching `flink.version` in the [pom.xml for the table api code](./src/cp-flink/table_api/pom.xml)
+* Modify flink sql image version in [compute-pool](./k8s/compute-pool-cmf.json)
+* Change the version number in the [flink_application](./src/cp-flink/k8s/flink_application.json) see [product documentation](https://docs.confluent.io/platform/current/flink/jobs/applications/create.html).
 
 ### Demonstration from the user interface
 
@@ -621,3 +633,4 @@ Need to remove compute pools and Flink statements. The scripts `delete_statement
 Do not use kubectl to create Kafka Catalog but confluent cli.
 
 ### C3 console cannot connect to Confluent Manager for Apache Flink.
+

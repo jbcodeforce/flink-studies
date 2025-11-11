@@ -9,10 +9,10 @@
     <version>1.0.0</version>
 
     <properties>
-        <flink.version>1.20.0</flink.version>
+        <flink.version>2.1.0-cp1</flink.version>
         <confluent-plugin.version>1.20-42</confluent-plugin.version>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <log4j.version>2.20.0</log4j.version>
         <junit.version>5.10.1</junit.version>
     </properties>
@@ -37,35 +37,34 @@
     <dependencies>
         <!-- Apache Flink dependencies -->
         <dependency>
-            <groupId>org.apache.flink</groupId>
+            <groupId>io.confluent.flink</groupId>
             <artifactId>flink-table-api-java</artifactId>
             <version>${flink.version}</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.flink/flink-java -->
         <dependency>
-            <groupId>org.apache.flink</groupId>
+            <groupId>io.confluent.flink</groupId>
             <artifactId>flink-java</artifactId>
             <version>${flink.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.flink</groupId>
+            <groupId>io.confluent.flink</groupId>
             <artifactId>flink-table-api-java-bridge</artifactId>
             <version>${flink.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.flink</groupId>
+            <groupId>io.confluent.flink</groupId>
             <artifactId>flink-clients</artifactId>
             <version>${flink.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.flink</groupId>
+            <groupId>io.confluent.flink</groupId>
             <artifactId>flink-streaming-java</artifactId>
             <version>${flink.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.flink</groupId>
+            <groupId>io.confluent.flink</groupId>
             <artifactId>flink-table-planner-loader</artifactId>
             <version>${flink.version}</version>
             <scope>provided</scope>
@@ -73,7 +72,7 @@
 
         <!-- Flink Table Runtime for tests -->
         <dependency>
-            <groupId>org.apache.flink</groupId>
+            <groupId>io.confluent.flink</groupId>
             <artifactId>flink-table-runtime</artifactId>
             <version>${flink.version}</version>
             <scope>test</scope>
@@ -81,14 +80,14 @@
         
         <!-- Kafka connector -->
         <dependency>
-            <groupId>org.apache.flink</groupId>
+            <groupId>io.confluent.flink</groupId>
             <artifactId>flink-connector-kafka</artifactId>
             <version>3.0.2-1.18</version>
         </dependency>
 
         <!-- JSON format -->
         <dependency>
-            <groupId>org.apache.flink</groupId>
+            <groupId>io.confluent.flink</groupId>
             <artifactId>flink-json</artifactId>
             <version>${flink.version}</version>
         </dependency>
