@@ -112,36 +112,32 @@
   </repositories>
   <dependencies>
     <dependency>
-      <groupId>org.apache.flink</groupId>
+      <groupId>io.confluent.flink</groupId>
       <artifactId>flink-clients</artifactId>
-      <version>1.20.0</version>
+      <version>2.1.0-cp1</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
-          <artifactId>flink-optimizer</artifactId>
-          <groupId>org.apache.flink</groupId>
-        </exclusion>
-        <exclusion>
           <artifactId>flink-datastream</artifactId>
-          <groupId>org.apache.flink</groupId>
+          <groupId>io.confluent.flink</groupId>
         </exclusion>
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.apache.flink</groupId>
+      <groupId>io.confluent.flink</groupId>
       <artifactId>flink-table-planner-loader</artifactId>
-      <version>1.20.0</version>
+      <version>2.1.0-cp1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.flink</groupId>
+      <groupId>io.confluent.flink</groupId>
       <artifactId>flink-table-runtime</artifactId>
-      <version>1.20.0</version>
+      <version>2.1.0-cp1</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
           <artifactId>flink-cep</artifactId>
-          <groupId>org.apache.flink</groupId>
+          <groupId>io.confluent.flink</groupId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -195,9 +191,9 @@
     </dependency>
   </dependencies>
   <properties>
-    <maven.compiler.source>17</maven.compiler.source>
-    <flink.version>1.20.0</flink.version>
-    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.source>21</maven.compiler.source>
+    <flink.version>2.1.0-cp1</flink.version>
+    <maven.compiler.target>21</maven.compiler.target>
     <confluent-plugin.version>1.20-42</confluent-plugin.version>
     <log4j.version>2.20.0</log4j.version>
     <junit.version>5.10.1</junit.version>

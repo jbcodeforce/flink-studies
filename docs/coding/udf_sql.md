@@ -1,17 +1,28 @@
 # User Defined Functions
 
-[User-defined functions (UDFs)](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/udfs/) are extension to SQL for frequently used logic and custom program and integration. It can be done in Java or PyFlink.
+[User-defined functions (UDFs)](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/udfs/) are extension to Flink SQL and Table API for frequently used logic and custom program and integration. It can be written in Java or PyFlink.
 
+If an operation cannot be expressed directly using Flink's standard SQL syntax or built-in functions (e.g., integrating a third-party library, implementing a proprietary business logic, or performing a complex machine learning inference), a UDF provides the necessary capability to execute that custom code within the stream or batch job
 
-UDF allows developers to upload custom logic, complex calculation, data manipulation (XML, custom AVRO), within a SQL or TableAPI queries. Developers can leverage existing libraries like Geospatial calculation, Math computation... 
+Developers can leverage existing libraries like Geospatial calculation, Math computation... 
+
+## Four Types of UDF
+
+| UDF Type | Description |Input to Output Mapping| Example Use Case|
+|----------|-------------|-----------------------|-----------------|
+| Scalar Function| Maps a set of scalar input values to a single, new scalar output value. | 1 row -> 1 row | Formatting a string, calculating an encryption key.|
+| Table Function  | Maps a set of scalar input values to one or more rows (a new table). | 1 row -> N rows | Splitting a single column into multiple rows.|
+| Aggregate Function| Maps the values of multiple input rows to a single scalar aggregate value.| N rows -> 1 row | Calculating a custom weighted average or variance.|
+| Table Aggregate Function | Maps the values of multiple input rows to multiple output rows. | N rows -> M rows | Calculating a running "top-N" list for each group. |
 
 For developer the steps are:
 
 1. Develop a functin to extends a `org.apache.flink.table.functions.ScalarFunction` or `TableFunction`
 1. Build a uber jar
+1. Deploy to Confluent Cloud or in the lib folder of CP Flink Application or in the lib OSS Flink.
 
 
-[See this repository as a set of reusable UDF](https://github.com/jbcodeforce/flink-udfs-catalog)
+[See this repository as a set of reusable UDFs](https://github.com/jbcodeforce/flink-udfs-catalog).
 
 See also the [Confluent documentation on UDF](https://docs.confluent.io/cloud/current/flink/how-to-guides/create-udf.html#flink-sql-create-udf) and a [Confluent git repo](https://github.com/confluentinc/flink-udf-java-examples) with a sample UDF.
 

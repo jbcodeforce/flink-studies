@@ -7,7 +7,7 @@ For each demonstrations it should be easy to deploy, have a readme to explain th
 ### Tracking
 | Name | Readme | Make | Demo Script | Status |
 |------|--------|------|--------|--------|
-| json-transform | Yes | | | |
+| json-transform | Yes | | | 
 
 ### Proof of concept for QLik CDC processing with Confluent Cloud Flink
 

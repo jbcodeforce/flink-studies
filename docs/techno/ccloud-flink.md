@@ -184,14 +184,27 @@ When running TableAPI with Confluent Cloud for Flink, there are some specifics c
 
 ## DLQ support
 
-By integrating Custom Deserialization Error Handling Strategies, data engineers can ensure that only valid, correctly processed messages move downstream, maintaining data quality and integrity. This feature reduces the risk of system crashes and downtime caused by unhandled exceptions, ensuring continuous data processing and availability.
+In production deployment, Flink statements may fail because of serialization errors due to one of the following reasons:
 
-All Flink tables have `error-handling.mode` as a table option, with the default being `fail`. 
+* Schema does not exists
+* There are one or more bad messages in the topic that are not compliant with the schema
+* Got some connection challenge to the schema registry
 
-* If desired, you can run an ALTER TABLE to change this to `ignore` or `log`.
+Dead Letter Queue is now supported via SQL configuration to the underlying Kafka connector. By integrating Custom Deserialization Error Handling Strategies, data engineers can ensure that only valid, correctly processed messages move downstream, maintaining data quality and integrity. This feature reduces the risk of system crashes and downtime caused by unhandled exceptions, ensuring continuous data processing and availability.
+
+In order to re-process the data, the Data engineer will have to write a specific SQL statement that reads from the DLQ. 
+    
+For certain queries (like stateful operations, such as joins) data engineers need to consider that reprocessing DLQ data at a later moment will result in incorrect results downstream, because of the order in how data is being processed. If correct results are required, the only solution will be to fully reprocess data from a topic without bad messages.
+
+All Flink tables have `error-handling.mode` as a table option, with the default being `fail`. [See product documentation.](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#flink-sql-create-table-with-error-handling-mode)
+
+* If desired, you can run an ALTER TABLE to change this to `ignore` or `log`. Those alteration should be done to topics created outside of CREATE table done with Flink SQL. The CDC output topics are good candidates for such modifications.
+
     ```sql
-    ALTER TABLE src_users_table SET ('error-handling.mode' = 'log');
+    ALTER TABLE raw_users_table SET ('error-handling.mode' = 'log');
     ```
+
+    The DLQ topic uses a specific generic DLQ schema, which includes information such as the key and value as bytes (since deserialization failed, there’s nothing else to represent), plus the schema ID that was being tried. It includes metadata like error message and the statement ID that triggers the error. 
 
 * or add this config to the created table:
     ```

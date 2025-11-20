@@ -134,6 +134,29 @@ The components involved in this demonstration are depicted in the following figu
 * Flink Applications in the form of TableAPI application with SQL scripts or SQL statements created with Flink SQL shell.
 * WebApp to support the demonstation and to produce the different event types.
 
+### Explanations for Flink Environment, Compute pool...
+
+The Flink application(s), the Webapp are deployed under the `rental` namespace. The CMF, CFK, and FKO operators are deployed to the `confluent` namespace. To be able to deploy cross namespace multiple configurations need to be done
+
+* FKO needs to support `rental` namespace, this is done using the helm deployment. (Makefile deployment/k8s/ with target `install_upgrade_fko`)
+* The service account managing resources in the context of those operators (`flink` service account) needs to be able to  get resource `namespaces` in API group in the application namespace(`rental`). For that ensure 
+  ```yaml
+  kind: RoleBinding
+  apiVersion: rbac.authorization.k8s.io/v1
+  metadata:
+    namespace: rental
+    name: flink-confluent-cross-ns-rb
+  subjects:
+  - kind: ServiceAccount
+    namespace: confluent
+    name: flink
+  roleRef:
+    kind: Role
+    name: flink-sa-r
+    apiGroup: rbac.authorization.k8s.io
+  ```
+  which are defined in `k8s/rbac.yaml` 
+
 ---
 
 ## Demonstration Script
@@ -165,7 +188,7 @@ The components involved in this demonstration are depicted in the following figu
   make deploy_all
   ```
 
-*Remarks* all the components can be built individually using the Makefile under each component folder under `src`.
+*Remarks* all the components can be built individually using the Makefile under each component folder under `src`. Therefore in each folder a call to `make build` and a `make deploy` will build the component, the docker image, and then deploy to k8s.
 
 * Verify all components run successfully
   ```sh
@@ -231,7 +254,7 @@ The demonstration user interface includes the form and controls to drive the dem
 
 ### Flink SQL processing
 
-There are multiple approaches for the implementation. The easiest one is to tune the SQL with the Flink SQL shell. For production the approach is to use a jar packaging with the java code which may use DataStream or TableAPI.
+There are multiple approaches for the implementation. The easiest one is to tune the SQL queries with the Flink SQL shell. For production, the approach is to use a jar packaging with the Java code which may use DataStream or TableAPI.
 
 #### Flink SQL Shell
 
@@ -256,9 +279,7 @@ show tables;
   select * from `raw-orders`;
   ```
 
-1. Implement the json transformation, first order to order detail mapping:
-  ```sql
-  ```
+1. Implement the json transformation, see [the dedicated section below](#flink-sql-processing)
 
 ???+ info "Other useful commands"
   The following commands should be available soon in CP Flink:
@@ -266,9 +287,6 @@ show tables;
   show create table `raw-jobs`;
   explain select .... -- your query
   ```
-
-### Validating Results
-
 
 ---
 ## Code explanation
@@ -339,7 +357,13 @@ Those environment variables are defined in `k8s/kafka_client_cm.yaml`.
 
 ### The Flink SQL processing
 
-For Confluent Manager for Flink, the SQL feature is in preview (as of 07/2025). The concepts are the same as in Confluent Cloud for Flink with Environment, and Compute Pools. The manifests are in [deployment/k8s/cp-flink](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cp-flink/flink-dev-env.yaml).
+For Confluent Manager for Flink, the SQL feature is in preview (as of 07/2025). The elements to defined for SQL processing are the same as in Confluent Cloud for Flink with Environment, Compute Pools, and Catalog. 
+
+The [k8s folder](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/k8s/) includes the following nanifests:
+
+| Manifest | Description | Deployment |
+| --- | --- | --- |
+|  | | |
 
 Recall the relationship between those elements are illustrated in the figure:
 
@@ -351,11 +375,19 @@ The approach:
     confluent login
     confluent logout
     ```
-1. Be sure port forward to CMF REST api is set up: `make expose-services`
-1. Create the environment with: `kubectl apply -f ../../deployment/k8s/cp-flink/flink-dev-env.yaml`
-1. `export ENV_NAME=dev-env`  and `export CMF_URL=http://localhost:8084`
-1. Create the compute pool with: `confluent flink compute-pool create k8s/compute_pool.yaml --environment $(ENV_NAME) --url $(CMF_URL) `
-Defining JSON objects as sink, involves defining the value format, and the table structure. As we want json, the setting is:
+1. Be sure port forward to CMF REST api is set up: `make expose-services` or specifically: `make port_forward_cmf`
+1. Create the environment with: `kubectl apply -f k8s/flink_dev_rental.yaml`
+1. Set env variables:
+    ```sh
+    export ENV_NAME=dev-rental
+    export CMF_URL=http://localhost:8084
+    ``` 
+1. Create the compute pool with: 
+    ```sh
+    confluent flink compute-pool create k8s/compute_pool.yaml --environment $(ENV_NAME) --url $(CMF_URL)
+    ```
+
+Defining JSON objects as sink, involves defining the value format properties for the tables created:
 
 ```sql
     'value.format' = 'json-registry',
@@ -436,8 +468,6 @@ and the results are as expected:
 #### raw_order mapping
 
 The OrderDetails is build in the ddl.order_details.sql
-
-
 
 ```sql
 create table order_details (

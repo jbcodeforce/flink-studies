@@ -167,7 +167,7 @@ message:
 
 # ---------------- Flink Environment ----------------
 create_environment:
-	@confluent flink environment create k8s/flink_dev_rental.yaml --url $(CMF_URL)
+	@confluent flink environment create dev-rental --url $(CMF_URL) --kubernetes-namespace $(DEMO_NS)
 
 delete_environment:
 	@confluent flink environment delete $(ENV_NAME) --url $(CMF_URL) --force

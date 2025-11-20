@@ -54,7 +54,7 @@ public class RentalEventsProcessing {
         createSourceTable(tableEnv, catalogName, catalogDatabaseName, jobTopic, kafkaBootstrapServers, consumerGroup);
 
         // Create destination table for deduplicated products
-        createSinkTable(tableEnv, catalogName, catalogDatabaseName, outputTopic, kafkaBootstrapServers);
+        createSinkTable(tableEnv, catalogName, catalogDatabaseName, orderDetailsTopic, kafkaBootstrapServers);
    
         tableEnv.from(orderTopic).select(withAllColumns()).execute().print();
     }
@@ -102,7 +102,7 @@ public class RentalEventsProcessing {
                                         String kafkaBootstrapServers) {
     
         String sinkTableDDL = "";
-        if (table_name == "order-details") {
+        if (tableName == "order-details") {
             sinkTableDDL = EventModels.CREATE_ORDER_DETAILS_TABLE;
         } else {
             throw new IllegalArgumentException("Invalid table name: " + tableName);

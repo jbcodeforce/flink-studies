@@ -88,6 +88,9 @@ verify_cmf:
 	@echo "$(GREEN) Services:$(NC)"
 	@kubectl get svc -n $(FLCK_NS) 
 	@echo "$(GREEN) Confluent Manager for Flink verified$(NC)"
+	@echo "$(GREEN) CMF values:$(NC)"
+	@helm get values cmf -n $(FLCK_NS) -o yaml
+	@echo "----------------------------------------"
 
 verify_flink_env:
 	@echo "----------------------------------------"

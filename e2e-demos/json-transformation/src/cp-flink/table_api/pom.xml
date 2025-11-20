@@ -35,7 +35,7 @@
     </repositories>
 
     <dependencies>
-        <!-- Apache Flink dependencies -->
+        <!-- https://packages.confluent.io/maven/io/confluent/flink -->
         <dependency>
             <groupId>io.confluent.flink</groupId>
             <artifactId>flink-table-api-java</artifactId>
@@ -44,7 +44,7 @@
         <dependency>
             <groupId>io.confluent.flink</groupId>
             <artifactId>flink-java</artifactId>
-            <version>${flink.version}</version>
+            <version>1.20.2-cp1</version>
         </dependency>
         <dependency>
             <groupId>io.confluent.flink</groupId>
@@ -82,7 +82,7 @@
         <dependency>
             <groupId>io.confluent.flink</groupId>
             <artifactId>flink-connector-kafka</artifactId>
-            <version>3.0.2-1.18</version>
+            <version>3.4.0-1.20-cp1</version>
         </dependency>
 
         <!-- JSON format -->

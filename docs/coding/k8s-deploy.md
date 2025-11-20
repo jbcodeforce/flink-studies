@@ -8,7 +8,7 @@
     * 07/25: Update for Confluent Platform v8
     * 09/29: Update to diagrams and doc structure.
     * 10/12: update to Minio and snapshot / checkpoint configuration
-    * 10/20: Reorganize content - integrate new CMF 2.1.0
+    * 11/16: Reorganize content - integrate new CMF 2.1.0, CP3.1
 
 
 Apache Flink has defined a Kubernetes Operator (FKO) to deploy and manage custom resources for Flink deployments. Confluent Platform Manager for Flink (CMF) is also deployed on Kubernetes with its own operator, leveraging the FKO. Also as part of the Confluent Platform it is integrated with Confluent Kubernetes Operator (CKO).
@@ -19,9 +19,9 @@ Let start to review the Apache Flink Kubernetes Operator concepts.
 
 ## Apache Flink Kubernetes Operator Concepts
 
-[Apache Flink Kubernetes Operator](https://nightlies.apache.org/flink/flink-Kubernetes-operator-docs-main/)(FKO) acts as a control plane to manage the complete deployment lifecycle of Apache Flink applications. This note summarizes how to use this operator. 
+[Apache Flink Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/)(FKO) acts as a control plane to manage the complete deployment lifecycle of Apache Flink applications. This note summarizes how to use this operator. 
 
-The [operator](https://nightlies.apache.org/flink/flink-Kubernetes-operator-docs-main/) takes care of submitting, savepointing, upgrading and generally managing Flink jobs using the built-in Flink Kubernetes integration. The operator fully automates the entire lifecycle of the job manager, the task managers, and the applications. A FlinkDeployment is a manifest to define what needs to be deployed, and then the FKO manages the deployment by using Kubernetes deployments, pods... It supports query on the custom resources it manages. 
+The [operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) takes care of submitting, savepointing, upgrading and generally managing Flink jobs using the built-in Flink Kubernetes integration. The operator fully automates the entire lifecycle of the job manager, the task managers, and the applications. A FlinkDeployment is a manifest to define what needs to be deployed, and then the FKO manages the deployment by using Kubernetes deployments, pods... It supports query on the custom resources it manages. 
 
 <figure markdown="span">
 ![1](./diagrams/fk-operator-hl.drawio.png)
@@ -252,7 +252,8 @@ The Components to install for each deployment approach:
 Any Kubernetes deployment should include the following pre-requisites:
 
 * [kubectl](https://Kubernetes.io/docs/tasks/tools/) 
-* A Kubernetes cluster. [Colima](https://github.com/abiosoft/colima) for local Kubernetes. See start colima with [deployment/k8s/start_colima.sh](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/start_colima.sh) or `make start_colima` under deployment/k8s folder.
+* A Kubernetes cluster. For local deployment use [Colima](https://github.com/abiosoft/colima) with Kubernetes enabled. See start colima with [deployment/k8s/start_colima.sh](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/start_colima.sh) or `make start_colima` under `deployment/k8s` folder. 
+    * [For production deployment the resource sizing for the two operator pods](https://docs.confluent.io/platform/current/flink/installation/helm.html#step-1-confirm-prerequisites).
 * Be sure to have helm cli installed: ([see installation instructions](https://helm.sh/docs/intro/install/))
   ```sh
   # for mac
@@ -268,6 +269,26 @@ Any Kubernetes deployment should include the following pre-requisites:
   confluent update
   ```
 
+* Install Confluent Platform. [See Confluent Platform deployment documentation.](https://docs.confluent.io/operator/current/co-plan.html#cp). The following table is a recap of what is needed to run CP Flink 
+
+| Product | Version | Local command |
+| --- | --- | --- |
+| Kubernetes | 1.26 - 1.34 | |
+| Confluent for kubernetes | 3.1 | under cfk, make deploy |
+| CP | 7.3.x - 8.1.x | |
+| CP FKO | .130.0 |under k8s/cmf folder,  make install_upgrade_fko |
+| CMF | 2.1.0 | under k8s/cmf folder,  make deploy_cmf | 
+
+* For private image repository [see this documentation](https://docs.confluent.io/operator/current/co-custom-registry.html#co-custom-registry).
+
+* Verify the CP components run
+  * Pods are running and healthy: `kubectl get pods -n confluent`
+  * Services are deployed: `kubectl get svcs -n confluent`
+  * Control Center is accessible and monitors Kafka and other components:
+    ```sql
+    make expose_services
+    ```
+  
 #### Colima playground
 
 See the [Colima installation instructions.](https://github.com/abiosoft/colima?tab=readme-ov-file#installation)
@@ -283,7 +304,7 @@ See the [Colima installation instructions.](https://github.com/abiosoft/colima?t
 
 ### External Components
 
-The certificate manager and minio operator may be deploy in one command under `deployment/k8s`: 
+The certificate manager and minio operator may be deployed in one command under `deployment/k8s`: 
   ```sh
   make deploy
   ```
