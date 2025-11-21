@@ -256,12 +256,59 @@ The demonstration user interface includes the form and controls to drive the dem
 
 There are multiple approaches for the implementation. The easiest one is to tune the SQL queries with the Flink SQL shell. For production, the approach is to use a jar packaging with the Java code which may use DataStream or TableAPI.
 
+For Confluent Manager for Flink, the SQL feature is in preview (as of 07/2025). The elements to defined for SQL processing are the same as in Confluent Cloud for Flink with Environment, Compute Pools, and Catalog. 
+
+The [k8s folder](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/k8s/) includes the following nanifests:
+
+| Manifest | Description | Deployment |
+| --- | --- | --- |
+| FlinkEnvironment - name: dev-rental| Environment to define common resources | `make create_environment` |
+| ComputePool - name: rental-pool | Compute pool to define configuration for app | `make create_compute_pool` |
+
+
+Recall the relationship between those elements are illustrated in the figure:
+
+![](https://github.com/jbcodeforce/flink-studies/blob/master/docs/coding/diagrams/cmf-cr.drawio.png)
+
+The approach:
+
+1. Be sure to be unlogged of confluent cloud session when using the confluent cli to the platform:
+    ```sh
+    confluent login
+    confluent logout
+    ```
+1. Be sure port forward to CMF REST api is set up: `make expose-services` or specifically: `make port_forward_cmf`
+
+The following steps should have been run with the previous execution of `make build_all`:
+1. Create the environment with: `make create_environment`
+1. Set env variables:
+    ```sh
+    export ENV_NAME=dev-rental
+    export CONFLUENT_CMF_URL=http://localhost:8084
+    ``` 
+1. Create the compute pool with: 
+    ```sh
+    make create_compute_pool
+    # same as 
+    confluent flink compute-pool create k8s/compute_pool.yaml --environment $ENV_NAME 
+    ```
+
+1. Create Kafka secret so flink can access kafka topic
+    ```sh
+    make create_secret
+    make 
+    ```
+1. Create SQL Catalog
+    ```sh
+    make create_catalog
+    ```
+
 #### Flink SQL Shell
 
 During query development the shell is the most efficient to write the complex query incrementally. Ensure the cmf service is exposed via a port forward, using `make expose_services` in this folder.
 
 ```sh
-cd cp-flink
+cd src/cp-flink
 make start_flink_shell
 ```
 
@@ -356,36 +403,6 @@ The following figure illustrates the different deployment model:
 Those environment variables are defined in `k8s/kafka_client_cm.yaml`.
 
 ### The Flink SQL processing
-
-For Confluent Manager for Flink, the SQL feature is in preview (as of 07/2025). The elements to defined for SQL processing are the same as in Confluent Cloud for Flink with Environment, Compute Pools, and Catalog. 
-
-The [k8s folder](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/k8s/) includes the following nanifests:
-
-| Manifest | Description | Deployment |
-| --- | --- | --- |
-|  | | |
-
-Recall the relationship between those elements are illustrated in the figure:
-
-![](https://github.com/jbcodeforce/flink-studies/blob/master/docs/coding/diagrams/cmf-cr.drawio.png)
-
-The approach:
-1. Be sure to be unlogged of confluent cloud session when using the confluent cli to the platform:
-    ```sh
-    confluent login
-    confluent logout
-    ```
-1. Be sure port forward to CMF REST api is set up: `make expose-services` or specifically: `make port_forward_cmf`
-1. Create the environment with: `kubectl apply -f k8s/flink_dev_rental.yaml`
-1. Set env variables:
-    ```sh
-    export ENV_NAME=dev-rental
-    export CMF_URL=http://localhost:8084
-    ``` 
-1. Create the compute pool with: 
-    ```sh
-    confluent flink compute-pool create k8s/compute_pool.yaml --environment $(ENV_NAME) --url $(CMF_URL)
-    ```
 
 Defining JSON objects as sink, involves defining the value format properties for the tables created:
 

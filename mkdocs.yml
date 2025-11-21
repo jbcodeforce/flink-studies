@@ -5,7 +5,7 @@ copyright: Copyright &copy; 2018 - 2025 Jerome Boyer
 nav:
   - Home: 
     - Introduction: index.md
-    - Key Concepts: concepts/index.md
+    - Flink Key Concepts: concepts/index.md
     - Getting started: coding/getting-started.md
     - Flink Architecture: architecture/index.md
     - Fit for purpose: architecture/fitforpurpose.md
@@ -15,7 +15,7 @@ nav:
     - Flink SQL concepts: architecture/flink-sql.md
     - Flink SQL coding: coding/flink-sql.md
     - First Java Apps: coding/firstapp.md
-    - UDFs for SQL: coding/udf_sql.md
+    - UDFs: coding/udf_sql.md
     - Kubernetes Deployment: coding/k8s-deploy.md
     - Manage CC Flink projects: https://jbcodeforce.github.io/shift_left_utils/
     - DataStreams: coding/datastream.md

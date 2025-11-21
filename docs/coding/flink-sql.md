@@ -499,7 +499,7 @@ The current approach can be used for Flink pipeline processing:
 
 ### Confluent Cloud Flink table creation specific
 
-[See the product documentation](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-statement-in-af-long) with some specificities, like source and sink tables are mapped to Kafka Topics. The `$rowtime` TIMESTAMP_LTZ(3) NOT NULL is provided as a system column.
+[See the product documentation](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-statement-in-af-long) with some specificities, like source and sink tables are directly mapped to Kafka Topics. The `$rowtime` TIMESTAMP_LTZ(3) NOT NULL is provided as a system column.
 
 * For each topic there is an inferred table created. The catalog is the Confluent environment and the Kafka cluster is the database. We can use the ALTER TABLE statement to evolve schemas for those inferred tables.
 
@@ -576,6 +576,7 @@ The statement above also creates a metadata column for writing a Kafka message t
     ```
 
 
+* [See SQL examples from product documentation.](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html)
 
 ## DML statements
 
@@ -816,7 +817,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     )
     ```
 
-    To get the order exceeding some limits for the first time and then when the computed aggregates go below other limits. [LAG]()
+    To get the order exceeding some limits for the first time and then when the computed aggregates go below other limits. [LAG](https://docs.confluent.io/cloud/current/flink/reference/functions/aggregate-functions.html#lag)
 
     ```sql
     -- compute the total price and # of orders for a period of 10s for each customer
@@ -873,19 +874,17 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     ```sql
     CREATE VIEW visited_pages_per_minute AS 
     SELECT 
-    window_time,
-    user_id, 
-    ARRAY_AGG(url) AS urls
+        window_time,
+        user_id, 
+        ARRAY_AGG(url) AS urls
     FROM TABLE(TUMBLE(TABLE examples.marketplace.clicks, DESCRIPTOR(`$rowtime`), INTERVAL '1' MINUTE))
     GROUP BY window_start, window_end, window_time, user_id;
     -- once the view is created
     SELECT * from visited_pages_per_minute;
-    -- it is possible to expand an array into multiple rows
+    -- it is possible to expand an array into multiple rows using cross join unnest
     SELECT v.window_time, v.user_id, u.url FROM visited_pages_per_minute AS v
     CROSS JOIN UNNEST(v.urls) AS u(url)
     ```
-
-
 
 
 ???+ question "What are the different SQL execution modes?"
@@ -977,8 +976,10 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     The minimum out-of-orderness is 50ms and can be set up to 7 days. See [Confluent documentation.](https://docs.confluent.io/cloud/current/flink/reference/functions/datetime-functions.html#flink-sql-source-watermark-function) 
 
-???+ question "How to manage late message to be sent to a DLQ?"
-    First create a DLQ table like late_orders based on the order table:
+### Statement Set
+
+???+ question "How to manage late message to be sent to a DLQ using Statement Set?"
+    First, create a DLQ table like `late_orders` based on the order table:
     
     ```sql
         create table late_orders
@@ -988,20 +989,25 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
         LIKE orders (EXCLUDING OPTIONS)
     ```
 
-    Groups the main stream processing and late arrival in a statement set:
+    Groups the main stream processing and the late arrival processing in a statement set:
 
     ```sql
     EXECUTE STATEMENT SET
     BEGIN
         INSERT INTO late_orders SELECT from orders WHERE `$rowtime` < CURRENT_WATERMARK(`$rowtime`);
         INSERT INTO order_counts -- the sink table
-        SELECT window_time, COUNT(*) as cnt
-        FROM TABLE(TUMBLE(TABLE orders DESCRIPTOR(`$rowtime`), INTERVAL '1' MINUTE))
-        GROUP BY window_start, window_end, window_time
+            SELECT window_time, COUNT(*) as cnt
+            FROM TABLE(TUMBLE(TABLE orders DESCRIPTOR(`$rowtime`), INTERVAL '1' MINUTE))
+            GROUP BY window_start, window_end, window_time
     END
     ```
 
-[The Flink built-in system functions.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/functions/systemfunctions/)
+    The benefit of bundling statements in a single set is to reduce the repeated read from the source for each Insert. A single read from the source is executed and shared with all downstream INSERTS.
+
+    Do not use Statement Setm when the sourcea are different for all statements within the Statement Sets. Take into account that wWithin the statement set if one statement fails, then all queries fail. The state is shared by all the statements within Statement set, so one stateful query can impact all other statements.
+
+
+
 
 ### Joins
 
@@ -1243,11 +1249,6 @@ Each topic is automatically mapped to a table with some metadata fields added, l
     confluent flink statement list --cloud aws --region us-west-2 --environment <your env-id> --compute-pool <your pool id>
     ```
 
-### From batch to real-time
-
-???+ info "How to support Type 2 slowly changing dimension (SCD) table?"
-    Type 2 SCDs are designed to maintain a complete history of all changes to dimension data. When a change occurs, a new row is inserted into the table, representing the updated record, while the original record remains untouched. Each record in the table is typically assigned a unique identifier (often a surrogate key) to distinguish between different versions of the same dimension member. 
-
 
 
 ## Troubleshooting SQL statement running slow
@@ -1305,5 +1306,7 @@ Each topic is automatically mapped to a table with some metadata fields added, l
 
 ### Metric to consider
 
-### Explain statement
+## Important links
+
+* [The Flink built-in system functions.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/functions/systemfunctions/)
 

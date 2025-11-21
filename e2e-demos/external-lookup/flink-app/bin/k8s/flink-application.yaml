@@ -1,0 +1,38 @@
+apiVersion:  platform.confluent.io/v1beta1
+kind: FlinkApplication
+metadata:
+  name: external-lookup
+  namespace: el-demo
+spec:
+  cmfRestClassRef:
+     name: default   
+     namespace: confluent
+  image: payment-claims-enrichment:latest
+  flinkEnvironment: dev-env
+  flinkVersion: v1_19
+  flinkConfiguration:
+      taskmanager.numberOfTaskSlots: "1"
+      s3.endpoint: http://minio.minio-dev.svc.cluster.local:9000
+      s3.path.style.access: "true"
+      s3.connection.ssl.enabled: "false"
+      s3.access-key: minioadmin
+      s3.secret-key: minioadmin
+      state.checkpoints.dir: s3://flink/stateful-flink/checkpoints
+      state.savepoints.dir: s3://flink/stateful-flink/savepoints
+      state.checkpoints.interval: "10000"
+      state.checkpoints.timeout: "600000"
+  serviceAccount: flink-sa
+  jobManager:
+    resource:
+      memory: 1024m
+      cpu: 1
+  taskManager:
+    resource:
+      memory: 1024m
+      cpu: 1
+  job:
+    jarURI: local:///opt/flink/usrlib/payment-claims-enrichment-1.0.0.jar
+    entryClass: com.example.PaymentClaimsEnrichment
+    state: running
+    parallelism: 1
+    upgradeMode: stateless

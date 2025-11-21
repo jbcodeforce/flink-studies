@@ -1,10 +1,10 @@
 # User Defined Functions
 
-[User-defined functions (UDFs)](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/udfs/) are extension to Flink SQL and Table API for frequently used logic and custom program and integration. It can be written in Java or PyFlink.
+[User-defined functions (UDFs)](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/udfs/) are extension to Flink SQL and Table API for frequently used logic and custom integration. It can be written in Java or PyFlink.
 
-If an operation cannot be expressed directly using Flink's standard SQL syntax or built-in functions (e.g., integrating a third-party library, implementing a proprietary business logic, or performing a complex machine learning inference), a UDF provides the necessary capability to execute that custom code within the stream or batch job
+If an operation cannot be expressed directly using Flink's standard SQL syntax or [built-in](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/functions/systemfunctions/) functions (e.g., integrating a third-party library, implementing a proprietary business logic, or performing a complex machine learning inference), a UDF provides the necessary capability to execute that custom code within the stream or batch job.
 
-Developers can leverage existing libraries like Geospatial calculation, Math computation... 
+Developers can leverage ny existing libraries like Geospatial calculation, Math computation, to implement the UDF.
 
 ## Four Types of UDF
 
@@ -15,27 +15,67 @@ Developers can leverage existing libraries like Geospatial calculation, Math com
 | Aggregate Function| Maps the values of multiple input rows to a single scalar aggregate value.| N rows -> 1 row | Calculating a custom weighted average or variance.|
 | Table Aggregate Function | Maps the values of multiple input rows to multiple output rows. | N rows -> M rows | Calculating a running "top-N" list for each group. |
 
+## Implementation approach
+
 For developer the steps are:
 
-1. Develop a functin to extends a `org.apache.flink.table.functions.ScalarFunction` or `TableFunction`
+1. Develop a Class to extends a `org.apache.flink.table.functions.ScalarFunction` or `org.apache.flink.table.functions.TableFunction`
+1. Implement one of the eval function
+1. Add constructor with empty parameters and more constructors if needed
+1. Prefer specifying the parameter types and function return type, specially for TableFunction
 1. Build a uber jar
-1. Deploy to Confluent Cloud or in the lib folder of CP Flink Application or in the lib OSS Flink.
+1. Deploy to Confluent Cloud or into the lib folder of CP Flink Application or into the lib folder of the OSS Flink distribution.
 
 
-[See this repository as a set of reusable UDFs](https://github.com/jbcodeforce/flink-udfs-catalog).
+[See this repository to get a set of reusable UDFs](https://github.com/jbcodeforce/flink-udfs-catalog) implemented as solution for generic problems asked by our customers.
 
-See also the [Confluent documentation on UDF](https://docs.confluent.io/cloud/current/flink/how-to-guides/create-udf.html#flink-sql-create-udf) and a [Confluent git repo](https://github.com/confluentinc/flink-udf-java-examples) with a sample UDF.
+See also the [Confluent documentation on UDF](https://docs.confluent.io/cloud/current/flink/how-to-guides/create-udf.html#flink-sql-create-udf) and a [Confluent git repo](https://github.com/confluentinc/flink-udf-java-examples) with some sample UDFs.
 
-## UDF Catalog
+### Extending base APIs
 
-This repository includes the following UDFs:
+#### Scalar function
 
-* [Geo Distance](https://github.com/jbcodeforce/flink-udfs-catalog/tree/main/geo_distance) using the Haversine formula to compute distance between two points on earth. It requires the latitude and longitude of the two points.
+Scalar function generates a unique value.
 
-## Deploying to Confluent Cloud
+[The product documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/udfs/#scalar-functions) has all the details.
+
+Use AsyncScalarFunction when interacting with external systems. Use thread pools, initialized in constructor, to manage connection multiplexing.
+
+
+#### Table function
+
+Table function returns an arbitrary number of rows (or structured types) as output. Single scalar value can be emitted and will be implicitly wrapped into a row by the runtime.
+
+```java
+import org.apache.flink.table.annotation.DataTypeHint;
+import org.apache.flink.table.annotation.FunctionHint;
+
+@FunctionHint(output = @DataTypeHint("ROW<word STRING, length INT>"))
+public static class SplitFunction extends TableFunction<Row> {
+
+    public void eval(String str) {...
+```
+
+[See details in the product documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/udfs/#table-functions).
+
+AsyncTableFunction should be used to generate n rows when integrating with external systems.
+
+The function is used with SQL,using the `LATERAL TABLE(<TableFunction>) with JOIN or LEFT JOIN` with an ON TRUE join condition.
+
+#### Aggregate Function
+
+Aggregate user defined function, maps scalar values of multiple rows to a new scalar value, using accumulator. The accumulator is an intermediate data structure that stores the aggregated values until a final aggregation result is computed. 
+
+See [code example]()
+
+The `accumulate()` method is called for each input row to update the accumulator.
+
+[For more detail, see the product documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/udfs/#aggregate-functions).
+
+### Deploying to Confluent Cloud
 
 * Get FlinkDeveloper RBAC to be able to manage workspaces and artifacts
-* Use the Confluent CLI to upload the jar file. Example from GEO_DISTANCE
+* Use the Confluent CLI to upload the jar file. Example from GEO_DISTANCE:
     ```sh
     confluent environment list
     # then in your environment

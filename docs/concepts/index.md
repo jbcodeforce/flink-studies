@@ -13,15 +13,18 @@
 ## Why Flink?
 
 Traditional data processing faces key challenges:
+
 - **Transactional Systems**: Monolithic applications with shared databases create scaling challenges
-- **Analytics Systems**: ETL pipelines create stale data and require massive storage and often duplicate data across systems.  ETLs extract data from a 
-transactional database, transform it into a common representation (including validation, normalization, encoding, deduplication, and schema transformation), and then load the new records into the target analytical database. These processes are run periodically in batches.
+- **Analytics Systems**: ETL pipelines create stale data and require massive storage and often duplicate data across systems.  ETLs extract data from a transactional database, transform it into a common representation (including validation, normalization, encoding, deduplication, and schema transformation), and then load the new records into the target analytical database. These processes are run periodically in batches.
 
 Flink enables **real-time stream processing** with three application patterns:
 
 1. **Event-Driven Applications**: Reactive systems using messaging
 2. **Data Pipelines**: Low-latency transformation and enrichment  
 3. **Real-Time Analytics**: Immediate computation and action on streaming data
+
+
+Flink Apps bring stateful processing to serverless. Developers write event handlers in Java (similar to serverless functions) but with annotations for state, timers, and multi-stream correlation. State is automatically partitioned, persisted, and restored. Event-time processing handles late-arriving data correctly. Exactly-once guarantees ensure critical business logic executes reliably. 
 
 ## Overview of Apache Flink
 
@@ -116,14 +119,14 @@ Flink keep state of its processing for Fault tolerance. State can grow over time
 
 We can dissociate different type of operations:
 
-**Stateless Operations** process each event independently without retaining information:
-- Basic operations: `INSERT`, `SELECT`, `WHERE`, `FROM` 
-- Scalar/table functions, projections, filters
+* **Stateless Operations** process each event independently without retaining information:
+    - Basic operations: `INSERT`, `SELECT`, `WHERE`, `FROM` 
+    - Scalar/table functions, projections, filters
 
-**Stateful Operations** maintain state across events for complex processing:
-- `JOIN` operations (except `CROSS JOIN UNNEST`)
-- `GROUP BY` aggregations (windowed/non-windowed)
-- `OVER` aggregations and `MATCH_RECOGNIZE` patterns
+* **Stateful Operations** maintain state across events for complex processing:
+    - `JOIN` operations (except `CROSS JOIN UNNEST`)
+    - `GROUP BY` aggregations (windowed/non-windowed)
+    - `OVER` aggregations and `MATCH_RECOGNIZE` patterns
 
 Flink ensures fault tolerance through [checkpoints and savepoints](../architecture/index.md#checkpointing) that persistently store application state.
 
@@ -342,6 +345,11 @@ The predefined evictors:
 * **DeltaEvictor** evicts elements based on the difference between the current and previous counts, useful for scenarios where you want to maintain a specific change threshold.
 * **TimeEvictor** removes elements based on time, allowing you to keep only the most recent elements within a given time frame.
 
+
+## From batch to real-time
+
+???+ info "How to support Type 2 slowly changing dimension (SCD) table?"
+    Type 2 SCDs are designed to maintain a complete history of all changes to dimension data. When a change occurs, a new row is inserted into the table, representing the updated record, while the original record remains untouched. Each record in the table is typically assigned a unique identifier (often a surrogate key) to distinguish between different versions of the same dimension member. 
 
 ## Source of knowledge
 

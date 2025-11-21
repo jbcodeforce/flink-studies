@@ -3,11 +3,11 @@ CFNT_NS=confluent
 FLCK_NS=confluent
 DEMO_NS=rental
 MINIO_NS=minio-dev
-CMF_URL=http://localhost:8084
+CONFLUENT_CMF_URL=http://localhost:8084
 SR_URL=http://localhost:8081
 ENV_NAME=dev-rental
 APP_NAME=json-xform
-POOL_NAME=demos-pool
+POOL_NAME=rental-pool
 
 # Colors for output
 BLUE := \033[0;34m
@@ -53,6 +53,8 @@ build_all: ## Build the demonstation components
 	kubectl apply -f k8s/kafka_client_cm.yaml -n $(CFNT_NS)
 	kubectl apply -f k8s/kafka_client_cm.yaml -n $(DEMO_NS)
 	kubectl apply -f k8s/rbac.yaml -n $(DEMO_NS)
+	make create_secret
+	make map_secret
 	make create_all_topics
 	make create_all_schemas
 	make create_environment
@@ -79,14 +81,14 @@ status_all: ## Validate the demo
 	make status_compute_pool
 	cd src/cp-flink && make status
 	@echo "$(WHITE) $(BOLD)Checking Flink environment...$(NC)"
-	confluent flink environment list --url $(CMF_URL)
+	confluent flink environment list --url $(CONFLUENT_CMF_URL)
 	@echo "----------------------------------------"
 	@echo "$(WHITE)$(BOLD)Checking Flink catalog...$(NC)"
 	@echo "----------------------------------------"
-	confluent flink catalog list --url $(CMF_URL)
+	confluent flink catalog list --url $(CONFLUENT_CMF_URL)
 	@echo "----------------------------------------"
 	@echo "$(WHITE)$(BOLD)Checking Flink compute pool...$(NC)"
-	confluent flink compute-pool list --environment $(ENV_NAME) --url $(CMF_URL)
+	confluent flink compute-pool list --environment $(ENV_NAME) --url $(CONFLUENT_CMF_URL)
 	@echo "----------------------------------------"
 	@echo "✅ Demo status check complete!"
 
@@ -167,20 +169,20 @@ message:
 
 # ---------------- Flink Environment ----------------
 create_environment:
-	@confluent flink environment create dev-rental --url $(CMF_URL) --kubernetes-namespace $(DEMO_NS)
+	@confluent flink environment create dev-rental --default k8s/flink_dev_rental.yaml --url $(CONFLUENT_CMF_URL) --kubernetes-namespace $(DEMO_NS)
 
 delete_environment:
-	@confluent flink environment delete $(ENV_NAME) --url $(CMF_URL) --force
+	@confluent flink environment delete $(ENV_NAME) --url $(CONFLUENT_CMF_URL) --force
 	@echo "$(GREEN)Environment deleted successfully$(NC)"
 
 create_compute_pool:
 	@echo "$(YELLOW)Creating compute pool...$(NC)"
-	confluent flink compute-pool create k8s/compute-pool-cmf.json --environment $(ENV_NAME) --url $(CMF_URL)
+	confluent flink compute-pool create k8s/compute_pool.yaml --environment $(ENV_NAME) --url $(CONFLUENT_CMF_URL)
 
 delete_compute_pool:
-	@if confluent flink compute-pool list --url $(CMF_URL) --environment $(FLINK_ENV) | grep -q "$(POOL_NAME)"; then \
+	@if confluent flink compute-pool list --url $(CONFLUENT_CMF_URL) --environment $(ENV_NAME) | grep -q "$(POOL_NAME)"; then \
 		echo "$(GREEN)Compute pool '$(POOL_NAME)' found. Deleting...$(NC)"; \
-		confluent flink compute-pool delete $(POOL_NAME) --environment $(FLINK_ENV) --url $(CMF_URL) --force; \
+		confluent flink compute-pool delete $(POOL_NAME) --environment $(ENV_NAME) --url $(CONFLUENT_CMF_URL) --force; \
 		echo "$(GREEN)Compute pool deleted successfully.$(NC)"; \
 	else \
 		echo "$(YELLOW)Compute pool '$(POOL_NAME)' not found. Nothing to undeploy.$(NC)"; \
@@ -190,37 +192,37 @@ delete_compute_pool:
 
 status_compute_pool:
 	@echo "$(YELLOW)Checking compute pool...$(NC)"
-	confluent flink compute-pool list --environment $(ENV_NAME) --url $(CMF_URL)
+	confluent flink compute-pool list --environment $(ENV_NAME) --url $(CONFLUENT_CMF_URL)
 
 create_secret:
 	@echo "$(YELLOW)Creating secrets...$(NC)"
-	@curl -X POST -H "Content-Type: application/json" -v -d @k8s/kafka_secrets.json $(CMF_URL)/cmf/api/v1/secrets
+	@curl -X POST -H "Content-Type: application/json" -v -d @k8s/kafka_secrets.json $(CONFLUENT_CMF_URL)/cmf/api/v1/secrets
 
 delete_secret:
 	@echo "$(YELLOW)Deleting secrets...$(NC)"
-	@curl -v -X DELETE $(CMF_URL)/cmf/api/v1/secrets/kafka-1-secret --ignore-not-found=true
+	@curl -v -X DELETE $(CONFLUENT_CMF_URL)/cmf/api/v1/secrets/kafka-1-secret --ignore-not-found=true
 
 map_secret:
 	@echo "$(YELLOW)Mapping secrets...$(NC)"
-	@curl -X POST -H "Content-Type: application/json" -v -d @k8s/kafka_secret_mapping.json $(CMF_URL)/cmf/api/v1/environments/$(ENV_NAME)/secret-mappings
+	@curl -X POST -H "Content-Type: application/json" -v -d @k8s/kafka_secret_mapping.json $(CONFLUENT_CMF_URL)/cmf/api/v1/environments/$(ENV_NAME)/secret-mappings
 
 delete_secret_mapping:
 	@echo "$(YELLOW)Deleting secret mapping...$(NC)"
-	@curl -v -X DELETE $(CMF_URL)/cmf/api/v1/environments/$(ENV_NAME)/secret-mappings/kafka-1-secret-id
+	@curl -v -X DELETE $(CONFLUENT_CMF_URL)/cmf/api/v1/environments/$(ENV_NAME)/secret-mappings/kafka-1-secret-id
 
 create_catalog:
-	@if ! `confluent flink catalog list --url $(CMF_URL) | grep -qw rental`; then \
-		confluent flink catalog create k8s/kafka_catalog_cmf.json --url $(CMF_URL) -o human\
+	@if ! `confluent flink catalog list --url $(CONFLUENT_CMF_URL) | grep -qw rental`; then \
+		confluent flink catalog create k8s/kafka_catalog_cmf.json --url $(CONFLUENT_CMF_URL) -o human \
 	else \
 		echo "$(YELLOW)Catalog 'rental' already exists; skipping creation.$(NC)"; \
 	fi
 	
 delete_catalog:
-	@confluent flink catalog delete rental --url $(CMF_URL) --force --ignore-not-found=true
+	@confluent flink catalog delete rental --url $(CONFLUENT_CMF_URL) --force --ignore-not-found=true
 	@echo "$(GREEN)Catalog deleted successfully$(NC)"
 
 list_kafka_catalogs:
-	@confluent flink catalog list --url $(CMF_URL)
+	@confluent flink catalog list --url $(CONFLUENT_CMF_URL)
 
 # ---- topics -----
 create_all_topics:

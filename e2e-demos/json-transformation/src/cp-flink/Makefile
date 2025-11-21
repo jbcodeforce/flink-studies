@@ -4,7 +4,7 @@ MINIO_NS=minio-dev
 CMF_URL=http://localhost:8084
 DEMO_NS=rental
 FLINK_ENV=dev-rental
-FLINK_COMPUTE_POOL=demos-pool
+FLINK_COMPUTE_POOL=rental-demo
 FLINK_APP_NAME=rental-dsp
 
 BLUE := \033[0;34m

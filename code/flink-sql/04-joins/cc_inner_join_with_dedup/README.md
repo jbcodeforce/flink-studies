@@ -1,12 +1,12 @@
 # A classical entity -> entityType management.
 
-This example runs on Confluent Cloud for Flink. 
+This example runs on Confluent Cloud for Flink. It represents a classical entity-> entityType navigation pattern.
 
-There are two main classes to define Asset and AssetType. The goal is to remove any duplicates and be sure to have the Asset -> AssertType joined.
+There are two main classes to define Asset and AssetType. The goal is to remove any duplicates and be sure to have the Asset -> AssertType joined to get flatten record of Asset.
 
 ## Demonstration
 
-1. Run `ddl.raw_AssetType.sql`: This declares the Type of asset is a unique id and a name of the asset. There is a watermark specified on the timestamp so we can take the record time stamp to do operation on time, like order by.
+1. Run `ddl.raw_AssetType.sql`: This declares the Type of Asset with a unique id and a name of the asset. There is a watermark specified on the timestamp so we can take the record timestamp to do operation on time, like ORDER BY.
     ```sql
     create table raw_AssetTypeAsset (
         AssetId string,
@@ -25,7 +25,7 @@ There are two main classes to define Asset and AssetType. The goal is to remove 
     );
     ```
 1. Do the same for `raw_AssetTypeAsset.sql`
-1. Insert data in both topic with duplicates records: `dml.insert_raw_assets.sql`
+1. Insert data in both topic with duplicates records by running: `dml.insert_raw_assets.sql`
 
 ### Build the deduplication logic
 
@@ -79,12 +79,13 @@ inner join deduped_AssetType on deduped_AssetTypeAsset.TypeId = deduped_AssetTyp
 
 ### Aggregating
 
-The same pattern can be applied to SubType and types, combined to group subtype and type name into arrays.
+The same pattern can be applied to SubType and Types, combined to group subtype and type name into arrays.
 
 ```sql
 latest_subtypes as (
   select asta.AssetId as asset_id, ast.name as subtype_name, asta.ts_ltz 
   from `raw_AssetSubTypeAsset` asta inner join `raw_AssetSubType` ast on asta.SubTypeId = ast.id
+  -- dedup logic ommitted
 )
 select 
     lt.AssetId as asset_id,  
@@ -95,10 +96,12 @@ from latest_types lt left join latest_subtypes lst on lt.AssetId = lst.asset_id
 group by lt.AssetId
 ```
 
-to make the sql simpler, the dedup logic for the subtype was removed.
+*To make the sql simpler, the dedup logic for the subtype was removed.*
+
 
 The results may look like:
 
 ![](./results.png)
 
 The left join creates rows with null values because there is no match on the right side of the joins.
+
