@@ -75,21 +75,19 @@ status_all: ## Validate the demo
 	@echo "--------------------------------"
 	@echo "$(BLUE)Validating demo...$(NC)"
 	@echo "--------------------------------"
-	cd src/demo-app && make status
+	confluent flink environment list --url $(CONFLUENT_CMF_URL)
 	make status_all_topics
 	make status_all_schemas
 	make status_compute_pool
-	cd src/cp-flink && make status
-	@echo "$(WHITE) $(BOLD)Checking Flink environment...$(NC)"
-	confluent flink environment list --url $(CONFLUENT_CMF_URL)
+	make list_kafka_catalogs
 	@echo "----------------------------------------"
 	@echo "$(WHITE)$(BOLD)Checking Flink catalog...$(NC)"
 	@echo "----------------------------------------"
 	confluent flink catalog list --url $(CONFLUENT_CMF_URL)
 	@echo "----------------------------------------"
-	@echo "$(WHITE)$(BOLD)Checking Flink compute pool...$(NC)"
-	confluent flink compute-pool list --environment $(ENV_NAME) --url $(CONFLUENT_CMF_URL)
-	@echo "----------------------------------------"
+	cd src/cp-flink && make status
+	@echo "$(WHITE) $(BOLD)Checking Flink environment...$(NC)"
+	cd src/demo-app && make status
 	@echo "✅ Demo status check complete!"
 
 undeploy_all: ## Tear down the demo
@@ -120,6 +118,16 @@ port_forward_cp_console: ## Port forward the Confluent Platform console.
 port_forward_schema_registry: ## Port forward the Schema Registry
 	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/schemaregistry 8081:8081"' -e 'tell application "Terminal" to set custom title of selected tab of the front window to "Schemma Registry"'
 
+verify_cmf: ## Verify CMF deployment
+	@echo "----------------------------------------"
+	@kubectl get pods -n $(FLCK_NS) | grep confluent-manager-for-apache-flink
+	@echo "$(GREEN) Services:$(NC)"
+	@kubectl get svc -n $(FLCK_NS) 
+	@echo "$(GREEN) Confluent Manager for Flink verified$(NC)"
+	@echo "$(GREEN) CMF values:$(NC)"
+	@helm get values cmf -n $(FLCK_NS) -o yaml
+	@echo "----------------------------------------"
+# ---
 port_forward_minio_console:
 	@osascript -e 'tell app "Terminal" to do script "kubectl port-forward pod/minio 9090 9090 -n $(MINIO_NS)"' -e 'tell application "Terminal" to set custom title of selected tab of the front window to "Minio"'
 
@@ -192,7 +200,7 @@ delete_compute_pool:
 
 status_compute_pool:
 	@echo "$(YELLOW)Checking compute pool...$(NC)"
-	confluent flink compute-pool list --environment $(ENV_NAME) --url $(CONFLUENT_CMF_URL)
+	confluent flink compute-pool describe $(POOL_NAME) --environment $(ENV_NAME) --url $(CONFLUENT_CMF_URL)
 
 create_secret:
 	@echo "$(YELLOW)Creating secrets...$(NC)"
@@ -212,7 +220,7 @@ delete_secret_mapping:
 
 create_catalog:
 	@if ! `confluent flink catalog list --url $(CONFLUENT_CMF_URL) | grep -qw rental`; then \
-		confluent flink catalog create k8s/kafka_catalog_cmf.json --url $(CONFLUENT_CMF_URL) -o human \
+		confluent flink catalog create k8s/kafka_catalog_cmf.json --url $(CONFLUENT_CMF_URL); \
 	else \
 		echo "$(YELLOW)Catalog 'rental' already exists; skipping creation.$(NC)"; \
 	fi

@@ -9,15 +9,6 @@
         "connectionConfig": {
           "schema.registry.url": "http://schemaregistry.confluent.svc.cluster.local:8081"
         }
-      },
-      "kafkaClusters": [
-        {
-          "databaseName": "rentaldb", 
-          "connectionConfig": {
-            "bootstrap.servers": "kafka.confluent.svc.cluster.local:9092"
-          },
-           "connectionSecretId": "kafka-1-secret-id"
-        }
-      ]
+      }
     }
   }

@@ -1,6 +1,6 @@
 # Flink SQL Puzzles
 
-This set of Flink SQLs presents some interesting puzzles:
+This set of Flink SQLs presents some interesting puzzles.
 
 ## Test environment
 To prepare the environment of the following puzzles use Flink binary or Kubernetes deployment.
@@ -8,7 +8,7 @@ To prepare the environment of the following puzzles use Flink binary or Kubernet
 
 ```sh
 # under deployment/product-tar
-export FLINK_HOME=$(pwd)/flink-1.20.1
+export FLINK_HOME=$(pwd)/flink-2.1.0
 export PATH=$PATH:$FLINK_HOME/bin
 $FLINK_HOME/bin/start-cluster.sh
 $FLINK_HOME/bin/sql-client.sh --library $FLINK_HOME/sql-lib
@@ -16,7 +16,7 @@ $FLINK_HOME/bin/sql-client.sh --library $FLINK_HOME/sql-lib
 
 ## Find the highest transaction amount every day
 
-Using the `e2e-demos/cdc-demo/datasets/transactions.csv` generate the highest transaction amount per day. 
+Using the `e2e-demos/cdc-demo/datasets/transactions.csv`, generate the highest transaction amount per day. 
 
 The approach: use the transaction_date as a timestamp to apply time tumble window logic.
 

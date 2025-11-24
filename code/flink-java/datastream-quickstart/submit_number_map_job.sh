@@ -1,0 +1,1 @@
+flink run -c org.myorg.quickstart.NumberMapJob ~/Documents/Code/flink-studies/code/flink-java/datastream-quickstart/target/datastream-quickstart-0.1.jar

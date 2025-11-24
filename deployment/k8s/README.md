@@ -47,7 +47,7 @@ Here are the getting started:
     kubectl create rental
     kubectl create el-demo
     # within cmf folder
-    make dpeloy
+    make deploy
     ```
 
 ## Upgrading to new version

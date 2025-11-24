@@ -1,0 +1,13 @@
+{
+    "apiVersion": "cmf.confluent.io/v1",
+    "kind": "KafkaDatabase",
+    "metadata": {
+      "name": "rentaldb"
+    },
+    "spec": {
+      "connectionConfig": {
+        "bootstrap.servers": "kafka.confluent.svc.cluster.local:9092"
+      },
+      "connectionSecretId": "kafka-1-secret-id"
+    }
+  }

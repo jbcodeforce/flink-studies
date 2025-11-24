@@ -12,7 +12,7 @@ The Database can be a simple postgresql or duckdb database. The processing is do
   ```
   make start_colima
   ```
-* Be sure to do not have an old confluent cloud session, if so do a `confluent login`, followed by `confluent logout`.
+* Be sure to do not have any old confluent cloud session open or saved, if so, do a `confluent login`, followed by `confluent logout`.
 * First time deployment to deploy services
   ```sh
   make prepare_demo

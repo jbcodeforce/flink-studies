@@ -136,10 +136,10 @@ The components involved in this demonstration are depicted in the following figu
 
 ### Explanations for Flink Environment, Compute pool...
 
-The Flink application(s), the Webapp are deployed under the `rental` namespace. The CMF, CFK, and FKO operators are deployed to the `confluent` namespace. To be able to deploy cross namespace multiple configurations need to be done
+The Flink application(s), and the record producer Webapp are deployed under the `rental` namespace. The CMF, CFK, and FKO operators are deployed within the `confluent` namespace. To be able to deploy cross namespace multiple configurations need to be done.
 
-* FKO needs to support `rental` namespace, this is done using the helm deployment. (Makefile deployment/k8s/ with target `install_upgrade_fko`)
-* The service account managing resources in the context of those operators (`flink` service account) needs to be able to  get resource `namespaces` in API group in the application namespace(`rental`). For that ensure 
+* FKO needs to support `rental` namespace, this is done using the helm deployment. (Makefile `deployment/k8s/` with target `install_upgrade_fko`)
+* The service account managing resources in the context of those operators (`flink` service account) needs to be able to  get resource `namespaces` in API group in the application namespace(`rental`). For that ensure the following role binding:
   ```yaml
   kind: RoleBinding
   apiVersion: rbac.authorization.k8s.io/v1
@@ -161,15 +161,27 @@ The Flink application(s), the Webapp are deployed under the `rental` namespace. 
 
 ## Demonstration Script
 
+The code and/or instructions are NOT intended for production usage.
+
 ### Prerequisites
 
 * Clone this repository and work in the `flink-studies/e2e-demos/json-transformation` folder.
-* We assume a Kubernetes cluster is up and running with the Confluent Platform and Confluent Manager for Flink deployed. Use at least version 8.0.x. See [deployments readme and Makefiles](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s) for the platform deployment.
+* We assume a Kubernetes cluster is up and running with the Confluent Platform and Confluent Manager for Flink deployed. Use at least version 8.1.x. See [deployments readme and Makefiles](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s) for the platform deployment.
 * The project uses `make` tool
 * Look at the available demonstration targets:
     ```
     make help
     ```
+
+### CMF Setup
+
+The Kubernetes deployment is done using Colima VM and Confluent Platform. [See the CP deployment readme](../../deployment/k8s/cp-flink/README.md) and use the makefile in `deployment/k8s/cp-flink` to start Colima, deploy Confluent Platform, with Confluent Manager for Flink and then verify Flink and Kafka are running. 
+
+* Make sure the CMF REST API is accessible on localhost:
+  ```sh
+  make verify_cmf
+  make port_forward_cmf
+  ```
 
 ### Build and Deploy the components
 
@@ -188,7 +200,7 @@ The Flink application(s), the Webapp are deployed under the `rental` namespace. 
   make deploy_all
   ```
 
-*Remarks* all the components can be built individually using the Makefile under each component folder under `src`. Therefore in each folder a call to `make build` and a `make deploy` will build the component, the docker image, and then deploy to k8s.
+*Remarks* all the components can be built individually using the Makefile under each component folder under `src`. Therefore in each folder a call to `make build` and a `make deploy` will build the component, the docker image, and then deploy to k8s under the `rental` namespace.
 
 * Verify all components run successfully
   ```sh
@@ -266,7 +278,7 @@ The [k8s folder](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-de
 | ComputePool - name: rental-pool | Compute pool to define configuration for app | `make create_compute_pool` |
 
 
-Recall the relationship between those elements are illustrated in the figure:
+Recall the relationship between those elements are illustrated in the figure below:
 
 ![](https://github.com/jbcodeforce/flink-studies/blob/master/docs/coding/diagrams/cmf-cr.drawio.png)
 
@@ -279,24 +291,51 @@ The approach:
     ```
 1. Be sure port forward to CMF REST api is set up: `make expose-services` or specifically: `make port_forward_cmf`
 
-The following steps should have been run with the previous execution of `make build_all`:
+The following steps should have been run with the previous execution of `make build_all`. In case of they may be executed sequentially to demonstrate deployment steps:
 1. Create the environment with: `make create_environment`
 1. Set env variables:
     ```sh
     export ENV_NAME=dev-rental
     export CONFLUENT_CMF_URL=http://localhost:8084
     ``` 
+1. List environment
+  ```sh
+  confluent flink environment list
+  # or using curl
+  curl -X GET $CONFLUENT_CMF_URL/cmf/api/v1/environments
+  ```
+1. View environment detail:
+  ```sh
+  confluent flink environment describe dev-rental
+  # or using curl
+  curl -X GET $CONFLUENT_CMF_URL/cmf/api/v1/environments/dev-rental
+  ```
+1. List existing compute pools in an environment
+  ```sh
+  confluent flink compute-pool list --environment $ENV_NAME
+  # using curl
+  curl -X GET $CONFLUENT_CMF_URL/cmf/api/v1/environments/dev-rental/compute-pools
+  ```
+
 1. Create the compute pool with: 
     ```sh
     make create_compute_pool
     # same as 
     confluent flink compute-pool create k8s/compute_pool.yaml --environment $ENV_NAME 
     ```
-
+1. Verify existing compute pools:
+  ```sh
+  confluent flink compute-pool list --environment $ENV_NAME
+  confluent flink compute-pool describe rental-pool  --environment $ENV_NAME
+  # using curl
+  curl -X GET $CONFLUENT_CMF_URL/cmf/api/v1/environments/dev-rental/compute-pools/rental-pool
+  ```
 1. Create Kafka secret so flink can access kafka topic
     ```sh
     make create_secret
-    make 
+    # using curl
+    curl -X POST -H "Content-Type: application/json" -v -d @k8s/kafka_secrets.json $(CONFLUENT_CMF_URL)/cmf/api/v1/secrets
+    make map_secret
     ```
 1. Create SQL Catalog
     ```sh
@@ -312,13 +351,14 @@ cd src/cp-flink
 make start_flink_shell
 ```
 
-Within the shell verify catalog access and set the database to use:
-```sql
-show catalogs;
-use catalog rental;
-use rentaldb;
-show tables;
-```
+* Within the shell verify catalog access and set the database to use:
+  ```sql
+  show catalogs;
+  use catalog rental;
+  use rentaldb;
+  show tables;
+  ```
+* `show tables;` should return the raw-orders and raw-jobs tables.
 
 1. Verify content for the tables we need to join
   ```sql
@@ -326,7 +366,7 @@ show tables;
   select * from `raw-orders`;
   ```
 
-1. Implement the json transformation, see [the dedicated section below](#flink-sql-processing)
+1. Implement the json transformation, filtering, joins... see [the dedicated section below](#the-flink-sql-processing)
 
 ???+ info "Other useful commands"
   The following commands should be available soon in CP Flink:
@@ -334,6 +374,13 @@ show tables;
   show create table `raw-jobs`;
   explain select .... -- your query
   ```
+
+### Clean up
+
+* Under the current folder.
+```sh
+make undeploy_all
+```
 
 ---
 ## Code explanation
@@ -404,7 +451,7 @@ Those environment variables are defined in `k8s/kafka_client_cm.yaml`.
 
 ### The Flink SQL processing
 
-Defining JSON objects as sink, involves defining the value format properties for the tables created:
+Defining JSON objects as sink, involves defining the `value.format` property for the tables created:
 
 ```sql
     'value.format' = 'json-registry',
@@ -583,57 +630,6 @@ FROM OrderDetails
 CROSS JOIN UNNEST(OrderDetails.EquipmentRentalDetails) AS t(rental_detail)
 CROSS JOIN UNNEST(rental_detail.Equipment) AS e(equipment_item);
 ```
-
----
-
-
-## CMF Setup
-
-The code and/or instructions are NOT intended for production usage. The Kubernetes deployment is done using Colima VM and Confluent Platform. [See the CP deployment readme](../../deployment/k8s/cp-flink/README.md) and use the makefile in `deployment/k8s/cp-flink` to start Colima, deploy Confluent Platform, with Managed Flink and then verify Flink and Kafka are running. 
-
-* Make sure the CMF REST API is accessible on localhost:
-```sh
-make verify_cp_cfk
-make verify_cmf
-make port_forward_cmf
-```
-
-The `cp-flink` folder in this `e2e-demos/json-transformation` project, includes a makefile to manage port-forwarding, create topics...
-
-* Define orders and jobs topic, json schema using config map and schema registry entry
-    ```sh
-    make create_topics
-    make create_cms
-    make create_schemas
-    ```
-
-* Validate we can see the catalog and table using Flink SQL shell
-    ```sh
-    make start_flink_shell
-    ```
-
-### Flink Shell common commands
-
-* Setting catalog and databases:
-  ```sh
-  show catalogs;
-  use catalog demo-cat;
-  show databases;
-  use cluster-1;
-  show tables;
-  ```
-
-* `show tables;` should return the raw-orders and raw-jobs tables.
-
-* Work on the job content:
-  ```sh
-  select * from `raw-jobs`;
-  ```
-
-* Work on the orders content:
-  ```sh
-  select * from `raw-orders`;
-  ```
 
 ### Confluent documentation and limitations
 

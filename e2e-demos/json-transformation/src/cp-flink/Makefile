@@ -1,10 +1,10 @@
 CFNT_NS=confluent
 FLCK_NS=confluent
 MINIO_NS=minio-dev
-CMF_URL=http://localhost:8084
+CONFLUENT_CMF_URL=http://localhost:8084
 DEMO_NS=rental
 FLINK_ENV=dev-rental
-FLINK_COMPUTE_POOL=rental-demo
+FLINK_COMPUTE_POOL=rental-pool
 FLINK_APP_NAME=rental-dsp
 
 BLUE := \033[0;34m
@@ -33,21 +33,21 @@ build: ## Build the Flink application
 
 deploy: ## Deploy the Flink application
 	# kubectl apply -f k8s/flink-application.yaml -n $(DEMO_NS)
-	confluent flink application create k8s/flink_application.json  --url $(CMF_URL) --environment $(FLINK_ENV)
+	confluent flink application create k8s/flink_application.json  --url $(CONFLUENT_CMF_URL) --environment $(FLINK_ENV)
 
 status: ## Check the status of the Flink application
 	@echo "$(WHITE)$(BOLD)Checking Flink application status...$(NC)"
-	confluent  flink application describe $(FLINK_APP_NAME) --environment $(FLINK_ENV) --url $(CMF_URL)
+	confluent  flink application describe $(FLINK_APP_NAME) --environment $(FLINK_ENV) --url $(CONFLUENT_CMF_URL)
 	@echo "----------------------------------------"
 
 start_flink_shell: ## Start Flink Shell connected to CP Flink Environment
-	@osascript -e 'tell app "Terminal" to do script "confluent flink shell --environment $(FLINK_ENV) --compute-pool $(FLINK_COMPUTE_POOL) --url $(CMF_URL);"' -e 'tell application "Terminal" to set custom title of selected tab of the front window to "Flink Shell"'
+	@osascript -e 'tell app "Terminal" to do script "confluent flink shell --environment $(FLINK_ENV) --compute-pool $(FLINK_COMPUTE_POOL) --url $(CONFLUENT_CMF_URL);"' -e 'tell application "Terminal" to set custom title of selected tab of the front window to "Flink Shell"'
 
 undeploy: ## Undeploy the Flink application
 	@echo "$(YELLOW)Checking for Flink application...$(NC)"
-	@if confluent flink application list --url $(CMF_URL) --environment $(FLINK_ENV) | grep -q "$(FLINK_APP_NAME)"; then \
+	@if confluent flink application list --url $(CONFLUENT_CMF_URL) --environment $(FLINK_ENV) | grep -q "$(FLINK_APP_NAME)"; then \
 		echo "$(GREEN)Application '$(FLINK_APP_NAME)' found. Deleting...$(NC)"; \
-		confluent flink application delete $(FLINK_APP_NAME) --environment $(FLINK_ENV) --url $(CMF_URL) --force; \
+		confluent flink application delete $(FLINK_APP_NAME) --environment $(FLINK_ENV) --url $(CONFLUENT_CMF_URL) --force; \
 		echo "$(GREEN)Application deleted successfully.$(NC)"; \
 	else \
 		echo "$(YELLOW)Application '$(FLINK_APP_NAME)' not found. Nothing to undeploy.$(NC)"; \
@@ -58,7 +58,7 @@ use_flink_ns: ## Use the Flink Operator namespace
 	@echo "$(YELLOW)Using Flink namespace: $(FLCK_NS)$(NC)"
 
 list_compute_pools: ## List the compute pools
-	@confluent flink compute-pool list --environment $(FLINK_ENV) --url $(CMF_URL)
+	@confluent flink compute-pool list --environment $(FLINK_ENV) --url $(CONFLUENT_CMF_URL)
 
 # ---------------------- Flink ----------------------
 
@@ -96,5 +96,5 @@ use_demo_ns:
 
 flink_ui:
 	@echo "$(YELLOW)Opening Flink UI...$(NC)"
-	confluent flink application web-ui-forward $(FLINK_APP_NAME) --environment $(FLINK_ENV) --url $(CMF_URL)
+	confluent flink application web-ui-forward $(FLINK_APP_NAME) --environment $(FLINK_ENV) --url $(CONFLUENT_CMF_URL)
 

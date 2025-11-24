@@ -1,16 +1,66 @@
 # DataStreams Programming guidances and examples
 
-This chapter is a set of links to existing examples for Flink DataStream.
+This chapter is a summary on how to use DataStream API, laborate from Apache Flink documentation, and other existing examples for Flink DataStream.
 
-* Organized around user-defined function
+## Key Concepts
+
+* A DataStream program is a regular Java program packaged in a JAR file. 
+* In application mode, the main() function runs in the Job manager which constructs a logical dataflow graph and executes the graph operators within task managers
+* In session mode, a cli submits the jar file to a Flink JobManager which does the same processing.
+* All programs get access to a Flink environment.
+    ```java
+    import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+    ...
+    final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+    env.setParallelism(2);
+    // define the topology...
+
+    env.execute("program name for UI ref");
+    ```
+* The datastream API is an abstraction to define topology of operators to be executed on the stream of events/records.
+* Use Datastream when strong control and customisation is needed. 
+* Programs are organized as a set of user functions. A function can be implemented as class, anonymous class, or lambda.
+* It is easy to go from DataStream to TableAPI. Therefore it is recommended to do windowed or interval joins with Table API.
+    ```Java
+    import org.apache.flink.table.api.Table;
+    import org.apache.flink.table.api.TableDescriptor;
+    import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
+   ...
+    final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+    StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env);
+    // Stream -> Table
+    DataStream<?> inStream1 = ...
+    Table appendOnlyTable = tableEnv.fromDataStream(inStream1)
+    // Table -> Stream
+    DataStream<T> appendOnlyStream = tableEnv.toDataStream(insertOnlyTable, T.class)
+    // using Row type
+    DataStream<Row> changelogStream = tableEnv.toChangelogStream(anyTable)
+    ```
+    
+### Best Practices
+
+* Isolate the business logic outside of the main, and use Flink unit test environment to validate the topology logic.
+* In production, run the main() method, to use the real sources and sinks
+* Clearly assess the type of tests to implement: unit test to validate individual operator. For integration tests, use bounded sources with controlled records, and sinks to collectors.
+* Use MiniClusterExtension for testing.
 
 ## Datastream deeper dive
 
-
 * [Datastream open source documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream/overview/) with [the API](https://nightlies.apache.org/flink/flink-docs-master/api/java/).
-* [Confluent Flink Cookbook](https://github.com/confluentinc/flink-cookbook), is a set of recipes around Flink using DataStream. Once clone, load one of the folder as a java project in IDE.
+* [Confluent Flink Cookbook](https://github.com/confluentinc/flink-cookbook), is a set of recipes around Flink using DataStream, TableAPI. Once cloned, load one of the folder as a java project in IDE, build and run unit tests. This repository includes tools to run a mini Flink cluster in Java directly.
 * [DataStream v2](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream-v2/overview/)
 
+## First programs
+
+* Start Apache Flink cluster from one of the product-tar folder.
+
+* [See code/flink-java/datastream-quickstart folder - class NumberMapJob.java](https://github.com/jbcodeforce/flink-studies/blob/master/flink-java/datastream-quickstart), then package and submit the job:
+    ```sh
+    mvn clean package
+    ```
+
+---
+ To rework
 ## Data set basic apps
 
 !!!- Error "Attention Scala and DataSet aPi do not exist anymore"

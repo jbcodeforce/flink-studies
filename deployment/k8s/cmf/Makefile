@@ -2,7 +2,7 @@ CFNT_NS=confluent
 FLCK_NS=confluent
 NS_LIST=$(FLCK_NS),el-demo,rental
 CMF_VERSION="~2.1.0"
-CMF_URL=http://localhost:8084
+CONFLUENT_CMF_URL=http://localhost:8084
 ENV_NAME=dev-env
 FKO_VERSION="~1.130.0"
 # Colors for output
@@ -36,9 +36,6 @@ deploy: create_ns  update_helm_confluent_repo  install_upgrade_fko deploy_cmf de
 
 
 status: verify_cmf verify_cmf_rest_class verify_flink_env list_kafka_catalogs ## Verify the Confluent Manager for Flink deployment.
-
-port_forward_flink_console: ## Port forward the Flink console.
-	@confluent flink application web-ui-forward basic-example --environment $(ENV_NAME) --port 8090 --url $(CMF_URL)
 
 undeploy:  delete_compute_pool delete_kafka_catalog delete_kafka_secret delete_env_secret_mapping ## Undeploy the Confluent Manager for Flink.
 
@@ -94,7 +91,7 @@ verify_cmf:
 
 verify_flink_env:
 	@echo "----------------------------------------"
-	curl -H "Content-type: application/yaml"  $(CMF_URL)/cmf/api/v1/environments/ | jq .
+	curl -H "Content-type: application/yaml"  $(CONFLUENT_CMF_URL)/cmf/api/v1/environments/ | jq .
 	@echo "$(GREEN) Flink environments verified$(NC)"
 
 port_forward_cmf:
@@ -102,43 +99,47 @@ port_forward_cmf:
 	@osascript -e 'tell app "Terminal" to do script "kubectl port-forward svc/cmf-service 8084:80 -n $(FLCK_NS)"' -e 'tell application "Terminal" to set current settings of front window to settings set "Grass"'
 
 create_flink_env:
-	@confluent flink environment list --url $(CMF_URL) 2>/dev/null | grep -q "$(ENV_NAME)" && \
+	@confluent flink environment list --url $(CONFLUENT_CMF_URL) 2>/dev/null | grep -q "$(ENV_NAME)" && \
 		echo "$(YELLOW)Environment $(ENV_NAME) already exists$(NC)" || \
-		(confluent flink environment create $(ENV_NAME) --url $(CMF_URL) --kubernetes-namespace $(FLCK_NS) && \
+		(confluent flink environment create $(ENV_NAME) --url $(CONFLUENT_CMF_URL) --kubernetes-namespace $(FLCK_NS) && \
 		echo "$(GREEN)Environment $(ENV_NAME) created$(NC)")
 
 
 create_compute_pool:
-	@confluent flink compute-pool create ../cmf/compute_pool.json --environment $(ENV_NAME) --url $(CMF_URL)
+	@confluent flink compute-pool create ../cmf/compute_pool.json --environment $(ENV_NAME) --url $(CONFLUENT_CMF_URL)
 
 list_compute_pools:
-	@confluent flink compute-pool list --environment $(ENV_NAME) --url $(CMF_URL)
+	@confluent flink compute-pool list --environment $(ENV_NAME) --url $(CONFLUENT_CMF_URL)
 
 delete_compute_pool:
-	@confluent flink compute-pool delete pool1 --environment $(ENV_NAME) --url $(CMF_URL)
+	@confluent flink compute-pool delete pool1 --environment $(ENV_NAME) --url $(CONFLUENT_CMF_URL)
 
 create_kafka_catalog:
-	@confluent flink catalog create ../cmf/kafka_catalog.json --url $(CMF_URL)
+	@confluent flink catalog create ../cmf/kafka_catalog.json --url $(CONFLUENT_CMF_URL)
 
 list_kafka_catalogs:
-	@confluent flink catalog list --url $(CMF_URL)
+	@confluent flink catalog list --url $(CONFLUENT_CMF_URL)
 	@echo "$(GREEN) Kafka catalogs verified$(NC)"
 
 delete_kafka_catalog:
-	@confluent flink catalog delete demo-cat --url $(CMF_URL)
+	@confluent flink catalog delete demo-cat --url $(CONFLUENT_CMF_URL)
 
 create_kafka_secret:
-	@curl -v -H "Content-Type: application/json" -X POST ${CMF_URL}/cmf/api/v1/secrets -d@../cmf/kafka_secret.json
+	@curl -v -H "Content-Type: application/json" -X POST ${CONFLUENT_CMF_URL}/cmf/api/v1/secrets -d@../cmf/kafka_secret.json
 
 create_env_secret_mapping:
-	@curl -v -H "Content-Type: application/json" -X POST ${CMF_URL}/cmf/api/v1/environments/$(ENV_NAME)/secret-mappings -d@../cmf/env_secret_mapping.json
+	@curl -v -H "Content-Type: application/json" -X POST ${CONFLUENT_CMF_URL}/cmf/api/v1/environments/$(ENV_NAME)/secret-mappings -d@../cmf/env_secret_mapping.json
 
 # ----------- Application ----------------------
 deploy_flink_demo_app:
-	@confluent flink application create ../flink-app-smoke-test/flinkapplication.json --environment $(ENV_NAME) --url $(CMF_URL)
+	@confluent flink application create ../flink-app-smoke-test/flinkapplication.json --environment $(ENV_NAME) --url $(CONFLUENT_CMF_URL)
 
 undeploy_flink_demo_app:
-	@confluent flink application delete basic-example --environment $(ENV_NAME) --url $(CMF_URL)
+	@confluent flink application delete basic-example --environment $(ENV_NAME) --url $(CONFLUENT_CMF_URL)
+
+
+port_forward_flink_ui_console: ## Port forward the Flink console.
+	@confluent flink application web-ui-forward basic-example --environment $(ENV_NAME) --port 8090 --url $(CONFLUENT_CMF_URL)
 
 
 # ---------------------- Custom Flink Image with S3 Support ----------------------
