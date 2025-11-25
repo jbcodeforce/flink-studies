@@ -9,9 +9,14 @@ NC='\033[0m' # No Color
 
 if ! command -v colima &> /dev/null; then
     echo "Colima is not installed"
-    exit 1
 else
     echo "Colima is installed"
+fi
+
+if ! command -v orb &> /dev/null; then
+    echo "Orb is not installed"
+else
+    echo "Orb is installed"
 fi
 
 if ! command -v docker &> /dev/null; then

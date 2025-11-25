@@ -12,3 +12,37 @@ rules:
 - apiGroups: [""]
   resources: ["services"] # Read-only permissions needed for the flink UI
   verbs: ["get", "list", "watch"]
+- apiGroups: ["flink.apache.org"]
+  resources: ["flinkdeployments", "flinkdeployments/status"]
+  verbs: ["*"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "deployments/finalizers"]
+  verbs: ["*"]
+- apiGroups: [""]
+  resources: ["pods", "endpoints", "persistentvolumeclaims",  "configmaps", "serviceaccounts", "secrets"]
+  verbs: ["get", "watch", "list", "create", "delete", "patch", "update"]
+- apiGroups: [""]
+  resources: ["nodes", "services", "namespaces", "events"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["extensions"]
+  resources: ["deployments", "deployments/scale", "replicasets"]
+  verbs: ["get", "watch", "list", "create", "delete", "patch", "update"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["roles", "rolebindings"]
+  verbs: ["create", "get", "list", "watch", "delete", "update", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: flink-sa-cr-binding
+  labels:
+    component: rbac
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: flink-event-reader
+subjects:
+  - kind: ServiceAccount
+    name: flink
+    namespace: confluent

@@ -1,7 +1,7 @@
 CFNT_NS=confluent
 FLCK_NS=confluent
 MINIO_NS=minio-dev
-CONFLUENT_CMF_URL=http://localhost:8084
+CONFLUENT_CMF_URL=http://cmf-service.confluent.svc.cluster.local
 DEMO_NS=rental
 FLINK_ENV=dev-rental
 FLINK_COMPUTE_POOL=rental-pool

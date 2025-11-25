@@ -38,7 +38,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: flink-sa-cr-binding
+  name: flink-sa-cr-bd
   labels:
     app: json-xform
     component: rbac

@@ -3,9 +3,10 @@ CFNT_NS=confluent
 FLCK_NS=confluent
 DEMO_NS=rental
 MINIO_NS=minio-dev
-CONFLUENT_CMF_URL=http://localhost:8084
-SR_URL=http://localhost:8081
+CONFLUENT_CMF_URL=http://cmf-service.confluent.svc.cluster.local
+SR_URL=http://schemaregistry.confluent.svc.cluster.local:8081
 ENV_NAME=dev-rental
+CATALOG_NAME=rental
 APP_NAME=json-xform
 POOL_NAME=rental-pool
 
@@ -53,19 +54,20 @@ build_all: ## Build the demonstation components
 	kubectl apply -f k8s/kafka_client_cm.yaml -n $(CFNT_NS)
 	kubectl apply -f k8s/kafka_client_cm.yaml -n $(DEMO_NS)
 	kubectl apply -f k8s/rbac.yaml -n $(DEMO_NS)
+	make create_environment
 	make create_secret
 	make map_secret
 	make create_all_topics
 	make create_all_schemas
-	make create_environment
 	make create_compute_pool
 	make create_catalog
-	cd src/demo-app && make build 
+	make create_database
+	cd src/producer && make build 
 	cd src/cp-flink && make build
 
 deploy_all: ## Deploy the demonstation components
 	@echo "$(BLUE)Deploying demo...$(NC)"
-	cd src/demo-app && make deploy
+	cd src/producer && make deploy
 	@echo "Producer App Web Page should be visible at http://localhost:30080"
 	cd src/cp-flink && make deploy
 	make message
@@ -104,19 +106,6 @@ undeploy_all: ## Tear down the demo
 	make delete_environment
 	make delete_ns
 
-expose_services: ## Expose all the services needed for the demo
-	@echo "$(BLUE)Exposing services...$(NC)"
-	make port_forward_cp_console
-	cd src/cp-flink && make port_forward_cmf
-	make port_forward_schema_registry
-	make port_forward_minio_console
-	# cd src/cp-flink && make port_forward_kafka_bootstrap
-
-port_forward_cp_console: ## Port forward the Confluent Platform console.
-	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/controlcenter-ng 9021:9021"'  -e 'tell application "Terminal" to set custom title of selected tab of the front window to "C3"'
-
-port_forward_schema_registry: ## Port forward the Schema Registry
-	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/schemaregistry 8081:8081"' -e 'tell application "Terminal" to set custom title of selected tab of the front window to "Schemma Registry"'
 
 verify_cmf: ## Verify CMF deployment
 	@echo "----------------------------------------"
@@ -128,20 +117,13 @@ verify_cmf: ## Verify CMF deployment
 	@helm get values cmf -n $(FLCK_NS) -o yaml
 	@echo "----------------------------------------"
 # ---
-port_forward_minio_console:
-	@osascript -e 'tell app "Terminal" to do script "kubectl port-forward pod/minio 9090 9090 -n $(MINIO_NS)"' -e 'tell application "Terminal" to set custom title of selected tab of the front window to "Minio"'
-
 open_cp_console: ## Open Confluent Control Center console
 	@echo "$(BLUE)Opening Confluent Control Center on http://localhost:9021 ...$(NC)"
-	@open -a "Google Chrome" http://localhost:9021
+	@open -a "Google Chrome" http://http://controlcenter-ng.confluent.svc.cluster.local/:9021
 
 open_demo_web_page: ## Open the demo web page
 	@echo "$(BLUE)Opening demo web page on http://localhost:30080 ...$(NC)"
 	@open -a "Google Chrome" http://localhost:30080
-
-open_minio_console: ## Open Minio console
-	@echo "$(BLUE)Opening demo web page on http://localhost:9090 ...$(NC)"
-	@open -a "Google Chrome" http://localhost:9090/browser
 
 # ------ PRIVATE TARGETS ------
 
@@ -171,13 +153,16 @@ message:
 	@echo "📋 Next steps:"
 	@echo "  🌐 Web Interface: http://localhost:30080"
 	@echo "  📊 Job History Dashboard: http://localhost:30080/job-history"
-	@echo "  🔗 Port-forward alternative: 'make port_forward_producer_api' then http://localhost:8080"
 	@echo "  📚 API Docs: http://localhost:30080/docs"
 	@echo "  🔍 Health Check: 'make test_api_health_nodeport'"
 
 # ---------------- Flink Environment ----------------
 create_environment:
-	@confluent flink environment create dev-rental --default k8s/flink_dev_rental.yaml --url $(CONFLUENT_CMF_URL) --kubernetes-namespace $(DEMO_NS)
+	@confluent flink environment create $(ENV_NAME) --defaults k8s/flink_dev_rental.yaml  --url $(CONFLUENT_CMF_URL) --kubernetes-namespace $(DEMO_NS)
+
+update_environment:
+	@confluent flink environment update $(ENV_NAME)--defaults k8s/flink_dev_rental.yaml --url $(CONFLUENT_CMF_URL)
+
 
 delete_environment:
 	@confluent flink environment delete $(ENV_NAME) --url $(CONFLUENT_CMF_URL) --force
@@ -224,7 +209,10 @@ create_catalog:
 	else \
 		echo "$(YELLOW)Catalog 'rental' already exists; skipping creation.$(NC)"; \
 	fi
-	
+
+create_database:
+	@curl -X POST -H "Content-Type: application/json" -v -d @k8s/database.json $(CONFLUENT_CMF_URL)/cmf/api/v1/catalogs/$()/databases
+
 delete_catalog:
 	@confluent flink catalog delete rental --url $(CONFLUENT_CMF_URL) --force --ignore-not-found=true
 	@echo "$(GREEN)Catalog deleted successfully$(NC)"
@@ -314,6 +302,11 @@ delete_all_schemas:
 	
 delete_all_cms: delete_raw_jobs_cm delete_raw_orders_cm delete_order_details_cm
 
+create_minio_secrets:
+	@kubectl apply -f k8s/minio-credentials-secret.yaml -n $(DEMO_NS)
+
+delete_minio_secrets:
+	@kubectl delete -f k8s/minio-credentials-secret.yaml -n $(DEMO_NS) --ignore-not-found=true
 
 delete_ns:
 	@kubectl delete ns $(DEMO_NS)

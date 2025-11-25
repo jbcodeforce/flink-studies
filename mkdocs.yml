@@ -6,26 +6,25 @@ nav:
   - Home: 
     - Introduction: index.md
     - Flink Key Concepts: concepts/index.md
+    - Flink SQL concepts: concepts/flink-sql.md
     - Getting started: coding/getting-started.md
     - Flink Architecture: architecture/index.md
     - Fit for purpose: architecture/fitforpurpose.md
     - Labs-Demos: labs/index.md
     - Agentic applications: architecture/agentic_flink.md
   - Recipes:
-    - Flink SQL concepts: architecture/flink-sql.md
+
     - Flink SQL coding: coding/flink-sql.md
-    - First Java Apps: coding/firstapp.md
-    - UDFs: coding/udf_sql.md
-    - Kubernetes Deployment: coding/k8s-deploy.md
-    - Manage CC Flink projects: https://jbcodeforce.github.io/shift_left_utils/
-    - DataStreams: coding/datastream.md
-    - Flink Cookbook: architecture/cookbook.md
     - Table API: coding/table-api.md
+    - Kubernetes Deployment (FKO, CMF): coding/k8s-deploy.md
+    - DataStreams API: coding/datastream.md
+    - UDFs & PTFs: coding/udf_sql.md
+    - Flink Cookbook: architecture/cookbook.md
+    - Manage CC Flink projects: https://jbcodeforce.github.io/shift_left_utils/
+    - IaC wt Terraform: coding/terraform.md
+    - Flink on k8s - Monitoring: techno/fk-k8s-monitor.md
     - Stateful function: coding/stateful-func.md
     - Complex Event Processing: coding/cep.md
-    - IaC wt Terraform: coding/terraform.md
-    - Flink on k8s Monitoring: techno/fk-k8s-monitor.md
-    - Labs-Demos: labs/index.md
   - Methodology:
     - Data as a product: methodology/data_as_a_product.md
     - Event Storming: https://jbcodeforce.github.io/eda-studies/methodology/event-storming/

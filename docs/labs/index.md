@@ -30,6 +30,8 @@ Those demos are not finalized:
 * [Confluent Flink how to](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#)
 * [Confluent demonstration scene](https://github.com/confluentinc/demo-scene): a lot of Kafka, Connect, and ksqlDB demos
 * [Confluent developer SQL training](https://developer.confluent.io/courses/flink-sql/overview/)
+* [Confluent Quick start with streaming Agents](https://github.com/confluentinc/quickstart-streaming-agents)
+* [lab 3- Agentic Fleet Management Using Confluent Intelligence](https://github.com/confluentinc/quickstart-streaming-agents/blob/master/LAB3-Walkthrough.md)
 
 * [Demonstrate Flink SQL test harness tool for Confluent Cloud Flink](https://jbcodeforce.github.io/shift_left_utils/coding/test_harness/#usage-and-recipe).
 * [Demonstrations for data as a product methodolgy, moving from Spark batch processing to Flink using shift_left utils.](https://github.com/jbcodeforce/flink_project_demos)

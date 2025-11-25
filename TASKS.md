@@ -4,15 +4,15 @@
 
 ### Basic Content
 
-- [x] Create comprehensive getting started guide
-* [ ] Audit and update all existing docs for accuracy and clarity
-- [x] Document basic Flink concepts
+- [x] Book introduction. why, for who, what.
+- [x] Document basic Flink core concepts referencing existing material -> docs/concepts/index.md
 - [x] Create contribution guidelines
+- [x] Flink SQL concepts -> docs/concepts/flink-sql.md
 
 ### Code getting started
 
 * [ ] Create a “first Flink DataStream app” tutorial with step-by-step instructions
-* [ ] Flink SQL basic app
+* [ ] Flink SQL basic app -> docs/coding/flink-sql.md
 * [ ] Flink Table API app
 * [ ] Changelog mode demo and  [ ] explanations
 * [ ] Flink SQL Puzzles

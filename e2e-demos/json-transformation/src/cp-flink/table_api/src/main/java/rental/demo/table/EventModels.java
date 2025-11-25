@@ -93,7 +93,7 @@ public class EventModels {
         "        service_provider_name STRING",
         "    >>",
         ") WITH (",
-        "    'connector' = 'kafka',",
+        "    'connector' = 'upsert-kafka',",
         "    'topic' = '%s',",
         "    'properties.bootstrap.servers' = '%s',",
         "    'properties.group.id' = '%s',",

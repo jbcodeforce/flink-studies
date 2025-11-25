@@ -1,13 +1,18 @@
 {
-    "apiVersion": "cmf.confluent.io/v1",
-    "kind": "KafkaDatabase",
-    "metadata": {
-      "name": "rentaldb"
-    },
-    "spec": {
+  "apiVersion": "cmf.confluent.io/v1",
+  "kind": "KafkaDatabase",
+  "metadata": {
+    "name": "rentaldb"
+  },
+  "spec": {
+    "kafkaCluster": {
       "connectionConfig": {
         "bootstrap.servers": "kafka.confluent.svc.cluster.local:9092"
       },
       "connectionSecretId": "kafka-1-secret-id"
-    }
+    },
+    "alterEnvironments": [
+      "dev-rental"
+    ]
   }
+}

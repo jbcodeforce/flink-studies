@@ -2,9 +2,11 @@ CFNT_NS=confluent
 FLCK_NS=confluent
 NS_LIST=$(FLCK_NS),el-demo,rental
 CMF_VERSION="~2.1.0"
+#CMF_VERSION="~2.0.0"
 CONFLUENT_CMF_URL=http://localhost:8084
 ENV_NAME=dev-env
 FKO_VERSION="~1.130.0"
+#FKO_VERSION="~1.120.0"
 # Colors for output
 BLUE := \033[0;34m
 GREEN := \033[0;32m
@@ -32,7 +34,7 @@ help:
 	@awk 'BEGIN {FS = ":.*##"; printf ""} /^[a-zA-Z_-]+:.*?##/ { printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 # ------- Common elements to install -------------
-deploy: create_ns  update_helm_confluent_repo  install_upgrade_fko deploy_cmf deploy_cmf_rest_class port_forward_cmf create_flink_env create_kafka_catalog ## Deploy the Confluent Manager for Flink.
+deploy: create_ns  update_helm_confluent_repo  install_upgrade_fko deploy_cmf deploy_cmf_rest_class port_forward_cmf create_flink_env  ## Deploy the Confluent Manager for Flink.
 
 
 status: verify_cmf verify_cmf_rest_class verify_flink_env list_kafka_catalogs ## Verify the Confluent Manager for Flink deployment.
@@ -49,7 +51,9 @@ use_flink_ns: ## Use the Flink namespace.
 # ---- Private commands ------------
 create_ns:
 	$(call ensure_ns, $(FLCK_NS))
-	@echo "$(GREEN) Created namespace: $(FLCK_NS)$(NC)"
+	$(call ensure_ns, el-demo)
+	$(call ensure_ns, rental)
+	@echo "$(GREEN) Created namespaces: $(NS_LIST)$(NC)"
 
 # ---------------------- Confluent Manager for Flink ----------------------
 update_helm_confluent_repo:
@@ -115,7 +119,7 @@ delete_compute_pool:
 	@confluent flink compute-pool delete pool1 --environment $(ENV_NAME) --url $(CONFLUENT_CMF_URL)
 
 create_kafka_catalog:
-	@confluent flink catalog create ../cmf/kafka_catalog.json --url $(CONFLUENT_CMF_URL)
+	@confluent flink catalog create ./kafka_catalog.json --url $(CONFLUENT_CMF_URL)
 
 list_kafka_catalogs:
 	@confluent flink catalog list --url $(CONFLUENT_CMF_URL)

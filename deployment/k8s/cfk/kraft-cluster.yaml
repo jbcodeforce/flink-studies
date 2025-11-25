@@ -64,8 +64,8 @@ metadata:
 spec:
   replicas: 1
   image:
-    application: confluentinc/cp-enterprise-control-center-next-gen:2.3.0
-    init: confluentinc/confluent-init-container:3.0.0
+    application: confluentinc/cp-enterprise-control-center-next-gen:3.1.0
+    init: confluentinc/confluent-init-container:3.1.0
   dataVolumeCapacity: 10Gi
   dependencies:
     schemaRegistry:
@@ -78,11 +78,11 @@ spec:
       url: http://controlcenter.confluent.svc.cluster.local:9093
   services:
     prometheus:
-      image: confluentinc/cp-enterprise-prometheus:2.2.0
+      image: confluentinc/cp-enterprise-prometheus:2.2.2
       pvc:
         dataVolumeCapacity: 10Gi
     alertmanager:
-      image: confluentinc/cp-enterprise-alertmanager:2.2.0
+      image: confluentinc/cp-enterprise-alertmanager:2.2.2
   externalAccess:
     type: nodePort
     nodePort:

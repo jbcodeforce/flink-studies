@@ -12,7 +12,7 @@ The Makefile in this folder defines commands for Colima, minio, certificat manag
 
 ### Storage and Data
 - **MinIO** (`MinIO/`): S3-compatible object storage for state backends and checkpoints
-- **Confluent Kafka** (`cfk/`): Kafka cluster deployment with Kraft, Connect, and monitoring
+- **Confluent Kafka** (`cfk/`): Kafka cluster deployment with Kraft, Connect, Control Center, schema registry and monitoring
 - **Confluent Manager for Flink** (`cmf/`): Environment, Compute pool and a sample Flink application configurations
 
 ## Supporting Services

@@ -11,7 +11,7 @@
           "taskmanager.numberOfTaskSlots": "1"
        },
        "flinkVersion": "v1_19",
-       "image": "confluentinc/cp-flink:1.19.1-cp3",
+       "image": "confluentinc/cp-flink:1.19.1-cp1",
        "job": {
           "jarURI": "local:///opt/flink/examples/streaming/StateMachineExample.jar",
           "parallelism": 3,

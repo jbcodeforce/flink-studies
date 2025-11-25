@@ -394,7 +394,7 @@ The approach is to keep component in separate folder under `src`, with makefile 
 | **k8s** | Makefile and common kubernetes elements of the demonstrations. Common to all components, like namespace and config map |
 | **src/cp-flink** | Flink statemens as Table API code or pure SQLs |
 | **docs** | Some diagrams |
-| **src/Producer** | Web App and CLI to produce demonstration records to the  `raw-orders` and `raw-jobs` | 
+| **src/producer** | Web App and CLI to produce demonstration records to the  `raw-orders` and `raw-jobs` | 
 | **src/schemas** | Json schema definitions to be deployed by schema registry |
 | **src/cc-flink** | Equivalent Flink SQLs for Confluent Cloud Flink - Start earlier to  code SQL logic. see the [README.md](./src/cc-flink/README.md) for instructions|
 

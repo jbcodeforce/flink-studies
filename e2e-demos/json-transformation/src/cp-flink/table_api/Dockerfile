@@ -15,8 +15,6 @@ ENV FLINK_MAIN_CLASS=rental.demo.table.RentalEventsProcessing
 # Default configuration can be overridden via environment variables
 ENV KAFKA_BOOTSTRAP_SERVERS=kafka.confluent.svc.cluster.local:9071
 
-
-
 # Expose common Flink ports
 EXPOSE 8081 6123 6124 6125
 

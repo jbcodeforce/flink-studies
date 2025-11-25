@@ -19,7 +19,8 @@ create_ns:
 
 # ---------------------- Minio ----------------------
 deploy:
-	@kubectl apply -f minio-dev.yaml 
+	@kubectl apply -f minio-dev.yaml -n $(MINIO_NS)
+	@kubectl apply -f minio-credentials-secret.yaml -n $(MINIO_NS)
 
 port_forward_minio_console:
 	@osascript -e 'tell app "Terminal" to do script "kubectl port-forward pod/minio 9090 9090 -n $(MINIO_NS)"'

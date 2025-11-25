@@ -30,20 +30,27 @@ ensure_ns = \
 	fi
 
 # ---- Public commands ----------------------
+start_orbstack: ## Start Orbstack Kubernetes cluster
+	@orb start k8s
+	kubectl get ns
+
+stop_orbstack: ## Stop Orbstack Kubernetes cluster
+	@orb stop k8s
+
 
 # ---------------------- Colima  ---------------------
-start_colima: ## Start Colima Kubernetes cluster
+start_colima: 
 	@colima start --cpu 8 --memory 24 --kubernetes
 	kubectl get ns
 
-stop_colima: ## Stop Colima Kubernetes cluster
+stop_colima: 
 	@colima stop
 
 set_docker_context: ## Set Docker context to Colima
-	@docker context use colima
+	@docker context use orb
 
 # Common deployment commands ----------------------
-deploy: ## Deploy the common elements
+deploy: ## Deploy the certificate manager, minio and create the namespace
 	@make create_ns
 	@make deploy_cert_manager
 	@make deploy_minio

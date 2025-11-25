@@ -1,7 +1,8 @@
-# Apache Flink - Core Concepts
+windowing# Apache Flink - Core Concepts
 
 ???- "Version"
     Update 07/2025 - Review done with simplification and avoid redundancies.
+    Update - revision 11/23/25
 
 ## Quick Reference
 
@@ -134,13 +135,11 @@ Flink ensures fault tolerance through [checkpoints and savepoints](../architectu
 
 [Windows](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/stream/operators/windows.html) group stream events into finite buckets for processing. Flink provides window table-valued functions (TVF): Tumbling, Hop, Cumulate, Session.
 
-**Window Types:**
-
+### Tumbling windows
 * **Tumbling** window assigns events to non-overlapping buckets of fixed size. Records are assigned to the window based on an event-time attribute field, specified by the DESCRIPTOR() function. Once the window boundary is crossed, all events within that window are sent to an evaluation function for processing. 
 
-    * **Count-based tumbling** windows define how many events are collected before triggering evaluation. 
-    * **Time-based tumbling** windows define time interval (e.g., n seconds) during which events are collected. The amount of data within a window can vary depending on the incoming event rate. 
-    
+* **Count-based tumbling** windows define how many events are collected before triggering evaluation. 
+* **Time-based tumbling** windows define time interval (e.g., n seconds) during which events are collected. The amount of data within a window can vary depending on the incoming event rate. 
     ```java
     .keyBy(...).window(TumblingProcessingTimeWindows.of(Time.seconds(2)))
     ```
@@ -160,6 +159,24 @@ Flink ensures fault tolerance through [checkpoints and savepoints](../architectu
 <figcaption>Tumbling window concept</figcaption>
 </figure>
 
+
+* See example [TumblingWindowOnSale.java](https://github.com/jbcodeforce/flink-studies/blob/master/flink-java/my-flink/src/main/java/jbcodeforce/windows/TumblingWindowOnSale.java) in my-fink folder and to test it, do the following:
+
+```shell
+# Start the SaleDataServer that starts a server on socket 9181 and will read the avg.txt file and send each line to the socket
+java -cp target/my-flink-1.0.0-SNAPSHOT.jar jbcodeforce.sale.SaleDataServer
+# inside the job manager container started with 
+`flink run -d -c jbcodeforce.windows.TumblingWindowOnSale /home/my-flink/target/my-flink-1.0.0-SNAPSHOT.jar`.
+# The job creates the data/profitPerMonthWindowed.txt file with accumulated sale and number of record in a 2 seconds tumbling window
+(June,Bat,Category5,154,6)
+(August,PC,Category5,74,2)
+(July,Television,Category1,50,1)
+(June,Tablet,Category2,142,5)
+(July,Steamer,Category5,123,6)
+...
+```
+
+### Sliding windows
 * **Sliding** windows allows for overlapping periods, meaning an event can belong to multiple buckets. This is particularly useful for capturing trends over time. The window sliding time parameter defines the duration of the window and the interval at which new windows are created. For example, in the following code snippet defines a new 2-second window is created every 1 second:
 
     ```java
@@ -173,29 +190,31 @@ Flink ensures fault tolerance through [checkpoints and savepoints](../architectu
 <figcaption>Sliding window concept</figcaption>
 </figure>
 
+### Session window
 
-* **Session** window begins when the data stream processes records and ends when there is a defined period of inactivity. The inactivity threshold is set using a timer, which determines how long to wait before closing the window.
+**Session** window begins when the data stream processes records and ends when there is a defined period of inactivity. The inactivity threshold is set using a timer, which determines how long to wait before closing the window.
 
-    ```java
-    .keyBy(...).window(ProcessingTimeSessionWindows.withGap(Time.seconds(5)))
-    ```
-    
-    The operator creates one window for each data element received.  If there is a gap of 5 seconds without new events, the window will close. This makes session windows particularly useful for scenarios where you want to group events based on user activity or sessions of interaction, capturing the dynamics of intermittent data streams effectively.
+```java
+.keyBy(...).window(ProcessingTimeSessionWindows.withGap(Time.seconds(5)))
+```
+
+The operator creates one window for each data element received.  If there is a gap of 5 seconds without new events, the window will close. This makes session windows particularly useful for scenarios where you want to group events based on user activity or sessions of interaction, capturing the dynamics of intermittent data streams effectively.
 
 <figure markdown="span">
 ![10](./images/session.png){ width=500 }
 <figcaption>Session window concept</figcaption>
 </figure>
 
+### Global 
 * **Global**: One window per key, requires explicit triggers
 
 [See Windowing TVF documentation](https://docs.confluent.io/cloud/current/flink/reference/queries/window-tvf.html).
 
-    ```java
-    .keyBy(0)
-	.window(GlobalWindows.create())
-	.trigger(CountTrigger.of(5))
-    ```
+```java
+.keyBy(0)
+.window(GlobalWindows.create())
+.trigger(CountTrigger.of(5))
+```
 
 [See Windowing Table-Valued Functions details in Confluent documentation](https://docs.confluent.io/cloud/current/flink/reference/queries/window-tvf.html).
 
@@ -263,21 +282,6 @@ The source connector sends a Watermark for each partition independently. If the 
 
 In the case of a partition does not get any events, as there is no watermark generated for this partition, it may mean the watermark does no advance, and as a side effect it prevents windows from producing events. To avoid this problem, we need to balance kafka partitions so none are empty or idle, or configure the watermarking to use idleness detection.
 
-* See example [TumblingWindowOnSale.java](https://github.com/jbcodeforce/flink-studies/blob/master/flink-java/my-flink/src/main/java/jbcodeforce/windows/TumblingWindowOnSale.java) in my-fink folder and to test it, do the following:
-
-```shell
-# Start the SaleDataServer that starts a server on socket 9181 and will read the avg.txt file and send each line to the socket
-java -cp target/my-flink-1.0.0-SNAPSHOT.jar jbcodeforce.sale.SaleDataServer
-# inside the job manager container started with 
-`flink run -d -c jbcodeforce.windows.TumblingWindowOnSale /home/my-flink/target/my-flink-1.0.0-SNAPSHOT.jar`.
-# The job creates the data/profitPerMonthWindowed.txt file with accumulated sale and number of record in a 2 seconds tumbling window
-(June,Bat,Category5,154,6)
-(August,PC,Category5,74,2)
-(July,Television,Category1,50,1)
-(June,Tablet,Category2,142,5)
-(July,Steamer,Category5,123,6)
-...
-```
 
 ### Monitoring watermark
 
@@ -355,7 +359,7 @@ The predefined evictors:
 
 * [x] [Apache Flink Product documentation](https://flink.apache.org/flink-architecture.html). 
 * [x] [Official Apache Flink training](https://ci.apache.org/projects/flink/flink-docs-release-1.20/learn-flink/).
-* [x] [Confluent "Fundamentals of Apache Flink" training- David Andersion](https://developer.confluent.io/courses/apache-flink/intro/).
+* [x] [Confluent "Fundamentals of Apache Flink" training- David Anderson](https://developer.confluent.io/courses/apache-flink/intro/).
 * [x] [Anatomy of a Flink Cluster - product documentation.](https://nightlies.apache.org/flink/flink-docs-master/docs/concepts/flink-architecture/#anatomy-of-a-flink-cluster)
 * [x] [Jobs and Scheduling - Flink product documentation.](https://nightlies.apache.org/flink/flink-docs-master/docs/internals/job_scheduling/)
 * [x] [Confluent Cloud Flink product documentation](https://docs.confluent.io/cloud/current/flink/overview.html)

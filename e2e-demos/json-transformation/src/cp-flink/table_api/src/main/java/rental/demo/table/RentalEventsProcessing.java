@@ -56,10 +56,56 @@ public class RentalEventsProcessing {
         // Create destination table for deduplicated products
         createSinkTable(tableEnv, catalogName, catalogDatabaseName, orderDetailsTopic, kafkaBootstrapServers);
    
-        tableEnv.from(orderTopic).select(withAllColumns()).execute().print();
+        // Create the transformation and join logic
+        String insertSql = String.format(
+            "INSERT INTO `%s` " +
+            "SELECT " +
+            "  o.OrderId, " +
+            "  ARRAY[ROW( " +
+            "    o.OrderId, " +
+            "    o.Status, " +
+            "    o.Equipment, " +
+            "    o.TotalPaid, " +
+            "    o.Type, " +
+            "    o.Coverage.details, " +
+            "    ROW( " +
+            "      o.Itinerary.PickupDate, " +
+            "      o.Itinerary.DropoffDate, " +
+            "      o.Itinerary.PickupLocation, " +
+            "      o.Itinerary.DropoffLocation " +
+            "    ), " +
+            "    o.OrderType, " +
+            "    CAST(o.AssociatedContractId AS BIGINT) " +
+            "  )], " +
+            "  COALESCE(j.MovingHelpDetails, ARRAY[]) " +
+            "FROM `%s` o " +
+            "LEFT JOIN ( " +
+            "  SELECT " +
+            "    order_id, " +
+            "    ARRAY_AGG(ROW( " +
+            "      job_id, " +
+            "      job_type, " +
+            "      job_status, " +
+            "      rate_service_provider, " +
+            "      total_paid, " +
+            "      job_date_start, " +
+            "      job_completed_date, " +
+            "      job_entered_date, " +
+            "      job_last_modified_date, " +
+            "      service_provider_name " +
+            "    )) as MovingHelpDetails " +
+            "  FROM `%s` " +
+            "  GROUP BY order_id " +
+            ") j ON o.OrderId = j.order_id",
+            orderDetailsTopic, orderTopic, jobTopic
+        );
+
+        LOG.info("Executing insert statement: {}", insertSql);
+        System.out.println(insertSql);
+        tableEnv.executeSql(insertSql);
     }
-    
-     /**
+
+    /**
      * Creates the source table reading from Kafka products topic
      */
     public static void createSourceTable(StreamTableEnvironment tableEnv, 
