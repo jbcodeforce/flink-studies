@@ -4,7 +4,7 @@ metadata:
   name: rental-dsp
 spec:
   image: rental-dsp:latest
-  flinkVersion: v1_19
+  flinkVersion: v2_1
   flinkConfiguration:
       taskmanager.numberOfTaskSlots: "1"
       s3.endpoint: http://minio.minio-dev.svc.cluster.local:9000

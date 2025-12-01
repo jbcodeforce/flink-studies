@@ -654,12 +654,13 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     WHEN TIMESTAMPDIFF(day, event.event_launch_date, now()) > 120 THEN ...
     ```
 
-    The table used as target to this processing, if new records are added to it, then needs to be append log, as if it is upsert then the now() time is not determenistic for each row to process.
+    If the target table is set with a `changelog mode = upsert`, the use of the now() function is problematic because the exact execution time is not deterministic for each row. So the above statement works only for `append` mode.
+
 
 ???+ question "How to extract the number of DAY, from a date field and now?"
     The only diff is on timestamp. So need to first to cast the DATE column to a ts, and then use CURRENT_DATE and the DAY dimension. [See the supported dimensions (SECOND, MINUTE, HOUR, DAY, MONTH, or YEAR)](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#temporal-functions)
     ```sql
-     TIMESTAMPDIFF(DAY, CAST(created_date AS TIMESTAMP(3)), CURRENT_DATE) as days_since_launch,
+     TIMESTAMPDIFF(DAY, CAST(created_date AS TIMESTAMP_LTZ(3)), CURRENT_DATE) as days_since_launch,
     ```
 
 ???+ question "How to mask a field?"

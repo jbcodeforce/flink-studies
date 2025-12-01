@@ -19,7 +19,7 @@
             "state.checkpoints.interval": "10000",
             "state.checkpoints.timeout": "600000"
         },
-        "flinkVersion": "v1_19",
+        "flinkVersion": "v2_1",
         "image": "rental-dsp:latest",
         "job": {
             "jarURI": "local:///opt/flink/usrlib/rental-dsp-1.0.0.jar",

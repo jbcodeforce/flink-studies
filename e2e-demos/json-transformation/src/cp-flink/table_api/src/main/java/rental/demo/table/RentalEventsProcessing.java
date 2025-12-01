@@ -21,8 +21,6 @@ public class RentalEventsProcessing {
  
 
     public static void main(String[] args) {
-        String kafkaBootstrapServers = System.getenv().getOrDefault("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092");
-        String consumerGroup = System.getenv().getOrDefault("CONSUMER_GROUP", "raw-jobs-consumer");
         String jobTopic = System.getenv().getOrDefault("RAW_JOBS_TOPIC", "raw-jobs");
         String orderTopic = System.getenv().getOrDefault("RAW_ORDERS_TOPIC", "raw-orders");
         String orderDetailsTopic = System.getenv().getOrDefault("ORDER_DETAILS_TOPIC", "order-details");
@@ -50,11 +48,11 @@ public class RentalEventsProcessing {
         //tableEnv.useCatalog(catalogName);
         //tableEnv.useDatabase(catalogDatabaseName);
 
-        createSourceTable(tableEnv, catalogName, catalogDatabaseName, orderTopic, kafkaBootstrapServers, consumerGroup);
-        createSourceTable(tableEnv, catalogName, catalogDatabaseName, jobTopic, kafkaBootstrapServers, consumerGroup);
+        createSourceTable(tableEnv, catalogName, catalogDatabaseName, orderTopic);
+        createSourceTable(tableEnv, catalogName, catalogDatabaseName, jobTopic);
 
         // Create destination table for deduplicated products
-        createSinkTable(tableEnv, catalogName, catalogDatabaseName, orderDetailsTopic, kafkaBootstrapServers);
+        createSinkTable(tableEnv, catalogName, catalogDatabaseName, orderDetailsTopic);
    
         // Create the transformation and join logic
         String insertSql = String.format(
@@ -111,20 +109,13 @@ public class RentalEventsProcessing {
     public static void createSourceTable(StreamTableEnvironment tableEnv, 
                                         String catalogName,
                                         String catalogDatabaseName,
-                                        String tableName, 
-                                        String kafkaBootstrapServers,
-                                        String consumerGroup) {
+                                        String tableName) {
         // Input validation
   
         if (tableName == null) {
             throw new NullPointerException("Table name cannot be null");
         }
-        if (kafkaBootstrapServers == null || kafkaBootstrapServers.trim().isEmpty()) {
-            throw new IllegalArgumentException("Kafka bootstrap servers cannot be null or empty");
-        }
-        if (consumerGroup == null || consumerGroup.trim().isEmpty()) {
-            throw new IllegalArgumentException("Consumer group cannot be null or empty");
-        }
+
         String sourceTableDDL = "";
         if (tableName.equals("raw_jobs")) {
             sourceTableDDL = EventModels.CREATE_RAW_JOB_TABLE;
@@ -133,7 +124,7 @@ public class RentalEventsProcessing {
         } else {
             throw new IllegalArgumentException("Invalid table name: " + tableName);
         }
-        sourceTableDDL = String.format(sourceTableDDL, catalogName, catalogDatabaseName, tableName, tableName, kafkaBootstrapServers, consumerGroup);
+        sourceTableDDL = String.format(sourceTableDDL, catalogName, catalogDatabaseName, tableName, tableName);
         
         LOG.info("Creating source table: {}", sourceTableDDL);
         System.out.println(sourceTableDDL);
