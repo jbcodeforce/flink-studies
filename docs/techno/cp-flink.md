@@ -27,6 +27,14 @@ The figure below presents the Confluent Flink components deployed on Kubernetes:
 
 Be sure to have [confluent cli.](https://docs.confluent.io/confluent-cli/current/install.html#install-confluent-cli)
 
+## References Compendium
+
+* [Platform overview](https://docs.confluent.io/platform/current/get-started/platform.html)
+* [QuickStart using Docker compose](https://docs.confluent.io/platform/current/get-started/platform-quickstart.html) with the [All in one git repo.](https://github.com/confluentinc/cp-all-in-one/tree/latest/cp-all-in-one)
+* [Kubernetes Operator](https://docs.confluent.io/operator/current/overview.html)
+* [Scripted Confluent Platform Demo](https://docs.confluent.io/platform/current/tutorials/cp-demo/overview.html)
+* [Kafka Connector](https://docs.confluent.io/platform/current/connect/kafka_connectors.html#connectors-self-managed-cp)
+
 ## Specific concepts added on top of Flink
 
 * Confluent Manager for Flink (**CMF**) provides:
@@ -44,15 +52,34 @@ Be sure to have [confluent cli.](https://docs.confluent.io/confluent-cli/current
 
 ## Product Set Up
 
+The **Confuent Flink images** and Helm chart references:
+
+* Maven repo: [https://packages.confluent.io/maven/io/confluent/flink/](https://packages.confluent.io/maven/io/confluent/flink/)
+* Docker Images: [https://hub.docker.com/r/confluentinc/cp-flink](https://hub.docker.com/r/confluentinc/cp-flink)
+* Helm charts are used to install the Confluent Manager for Apache Flink (CMF) application and the Flink Kubernetes operator. (e.g. helm pull confluentinc/confluent-manager-for-apache-flink). 
+* CP Flink may be deployed in air-gapped environments by downloading from the internet using docker pull and then stored in a tar archive using docker image save.
+
+**Demonstrations:**
+
 * [See my dedicated chapter for Confluent Plaform Kubernetes deployment](../coding/k8s-deploy.md/#confluent-manager-for-flink).
 * [See the makefile to deploy CMF](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cp-flink/Makefile), and the [product documentation](https://docs.confluent.io/platform/current/flink/installation/overview.html) 
 
+
 ## Deployment architecture
 
-* A Flink cluster always needs to run in one K8s cluster in one region, as the Flink nodes are typically exchanging a lot of data, requiring low latency network.
-* For failover between data centers, the approach if to share durable storage (HDFS, S3, Minio) accessible between data centers, get Kafka topic replicated, and being able to restart from checkpoints.
-* Recall that Flink can interact with multiple Kafka Clusters at the same time.
+* A Flink cluster always needs to run in one K8s cluster in one region, as the Flink nodes are typically exchanging a lot of data, requiring low latency network. See [K8S deployment architecture - chapter](../coding/k8s-deploy.md/#confluent-for-kubernetes-operator-cfk)
 
+<figure markdown="span">
+![](../coding/diagrams/cp-cmf-k8s-deploy.drawio.png)
+</figure>
+
+* For failover between data centers, the approach if to share durable storage (HDFS, S3, Minio) accessible between data centers, get Kafka topic replicated by keeping offset numbers, and being able to restart Flink Application from checkpoints.
+
+<figure markdown="span">
+![](./diagrams/simple_ha.drawio.png)
+</figure>
+
+* Also recall that Flink may be able to interact with multiple Kafka Clusters at the same time, which may be interesting to read from one Kafka cluster in Region A and write to another Kafka cluster in Region B.
 
 ## Important Source of Information for Deployment
 
@@ -64,6 +91,18 @@ Be sure to have [confluent cli.](https://docs.confluent.io/confluent-cli/current
 
 ## Authentication and Authorization
 
+Authentication and authorization includes access to Confluent Platform components from external systems and users and for intra-components communication. The following figure illustrates what needs to be covered:
+
+![](./diagrams/security_scope.drawio.png)
+
+By default CP components are not configured to include encryption, authentication and authorization.
+
+* [See managing security in Confluent Platform](https://docs.confluent.io/platform/current/security/overview.html)
+* TLS is used to encrypt communication
+* OAuth 2.0 supported
+* Possible to use Confluent Cloud for SSO
+* LDAP supports for users and group
+
 ### Authentication
 
 The product documentations for [CP authentication](https://docs.confluent.io/platform/current/security/authentication/overview.html) can be summarized as:
@@ -74,6 +113,7 @@ The product documentations for [CP authentication](https://docs.confluent.io/pla
 * It supports using [LDAP for authentication]() or [OAuth/OIDC](https://docs.confluent.io/platform/current/security/authentication/oauth-oidc/overview.html) where all identities across Confluent Platform workloads and interfaces can be hosted on a single identity provider providing for a unified identity management solution. [See a Keycloak docker compose demo](https://github.com/confluentinc/cp-all-in-one/tree/master/cp-all-in-one-security/oauth), and [my keycloak deployment on k8s](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/keycloak/README.md).
 * See [SSL/TLS](https://docs.confluent.io/platform/current/security/authentication/mutual-tls/overview.html#kafka-ssl-authentication) on how to use openssl for cryptography encryption.
 * By default inter broker communication is PLAINTEXT, but it can be set to SSL
+* Secrets can be saved not AWS Secrets Manager or HashiCorp Vault.
 
 ### Authorization
 
@@ -81,6 +121,9 @@ The product documentations for [CP Authorization](https://docs.confluent.io/plat
 
 * Access to Confluent Platform resources as clusters, topics, consumer groups, and connectors are controlled via [ACLs](https://docs.confluent.io/platform/current/security/authorization/acls/overview.html#acls-authorization). ACLs are stored in the KRaft-based Kafka cluster metadata.
 * Group based authorization can be defined in LDAP
+* The control of who can access what, is via RBAC with roles such as `ClusterAdmin` or `DeveloperRead` assigned to users and service accounts.
+* ACLs may be used, instead of RBAC
+
 
 ### MetaData Management Service (MDS) for RBAC for Flink
 

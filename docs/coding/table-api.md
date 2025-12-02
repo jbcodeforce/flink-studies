@@ -255,6 +255,10 @@ Table source;
 
 [See this git repository](https://github.com/confluentinc/flink-table-api-java-examples/blob/master/README.md#documentation-for-confluent-utilities)
 
+### Examples of github repo
+
+* [Timo Walther's flink api examples in Java](https://github.com/twalthr/flink-api-examples)
+
 --- 
 
 ### Define data flows

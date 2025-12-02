@@ -234,7 +234,7 @@ The watermark serves as a heuristic for this purpose.
 
 [Watermarks](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/event_timestamps_watermarks.html) are special markers indicating event-time progress in streams. This is the core mechanims to trigger computation at `event-time`.  They determine when windows can safely close by estimating when all events for a time period have arrived.
 
-**Key Concepts:**
+### Key Concepts
 
 - Generated in the data stream at regular intervals
 - Watermark timestamp = largest seen timestamp - estimated out-of-orderness. This timestamp are always increasing. 
@@ -246,7 +246,7 @@ The watermark serves as a heuristic for this purpose.
 <figcaption>Watermark concept</figcaption>
 </figure>
 
-Within a window, states are saved on disk and need to be cleaned once the window is closed. The watermark is the limit from where the garbage collection can occur. 
+Within a window, states are saved on disk and need to be cleaned once the window is closed. The watermark is the limit from where the Java garbage collection may occur. 
 
 The out-of-orderness estimate serves as an educated guess and is defined for each individual stream. Watermarks are essential for comparing timestamps of events, allowing the 
 system to assert that no earlier events will arrive after the watermark's timestamp.
@@ -282,6 +282,7 @@ The source connector sends a Watermark for each partition independently. If the 
 
 In the case of a partition does not get any events, as there is no watermark generated for this partition, it may mean the watermark does no advance, and as a side effect it prevents windows from producing events. To avoid this problem, we need to balance kafka partitions so none are empty or idle, or configure the watermarking to use idleness detection.
 
+[Interesting enablement from Confluent, David Anderson](https://docs.confluent.io/cloud/current/flink/concepts/timely-stream-processing.html)
 
 ### Monitoring watermark
 

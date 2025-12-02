@@ -344,9 +344,13 @@ And with the `Query profiler`, which represents the same content as the Flink co
 * [Flink monitoring statement product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html)
 * [Docker compose, Prometheus setup and Grafana Dashboard for Confluent Cloud for Flink reporting.](https://github.com/confluentinc/confluent-cloud-flink-workshop/tree/master/flink-monitoring)
 
-### Conpute pool monitoring
+### Compute pool monitoring
 
 [Grafana integration](https://docs.confluent.io/cloud/current/monitoring/third-party-integration.html#troubleshoot-grafana)
+
+### Some encountered errors
+
+* Some query with a lot of joins (10+) on static data, do not returns the same results when doind a SELECT from in CC Workspace. This behavior for foreground query, may be possible, as query plan construction may have timedout. When quesry start to be complex and need to process multiple real records and not just some test data, it is recommended to move to INSERT INTO sink_table SELECT ... and then use the Workspace to look at the table inside the sink_table. The query will run in background and may take sometime to deploy, but will run.
 
 ## Role Base Access Control
 
@@ -373,11 +377,13 @@ To estimate CFU consumption we need to:
     * For Joins, aggregates, ... the way in which a statement must access and maintains the state is more influential than the raw quantity of state.
 1. The total of all CFU estimates across the workload will provide a rough approximation of total CFUs required
 
-Several factors significantly affect statement throughput:
+Several factors significantly affect statement throughput so pricing:
 
-* State Overhead: The overhead related to maintaining state affects JOINs and aggregations more than the quantity of state itself. 
-* CPU Load: The complexity of the operations performed by the statement is a major contributor to CPU load.
-* Minimum CFU Consumption: Every statement will consume at least 1 CFU, and for most workloads, CFU consumption is directly proportional to the number of statements execute
+* **State Overhead**: The overhead related to maintaining state affects JOINs and aggregations more than the quantity of state itself. 
+* **Records in topic**: if there some burst in ingress traffic to Kafka topics, then Flink may need more resources for a short time period to process the lag. 
+* **CPU Load:** The complexity of the operations performed by the statement is a major contributor to CPU load.
+* **Minimum CFU Consumption:** Every statement will consume at least 1 CFU, and for most workloads, CFU consumption is directly proportional to the number of statements execute.
+* VM machine type may also impact throughput metrics
 
 ### Scoping workload
 
