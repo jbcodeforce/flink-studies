@@ -61,7 +61,7 @@ CREATE TABLE orders (
 
 * Execute `insert_curr_rate_2.sql`, while the temporal join runs. -> records are not re-evaluated so the results are the same as above.
 * Restarting the temporal join will get the expected results
-          ```sql
+     ```sql
      (order_id, price, currency, order_time, convertion_rate, usd_converted amount)
      ('ORD-001', 100.00, 'EUR', TIMESTAMP '2024-01-15 10:00:00', 1.16, 116),
      ('ORD-002', 250.50, 'YEN', TIMESTAMP '2024-01-15 10:05:00', 0.14, 35.07),
