@@ -62,7 +62,82 @@ Be sure to have [confluent cli.](https://docs.confluent.io/confluent-cli/current
 * [Flink fine-grained resource management documentation.](https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/finegrained_resource/)
 * [CP v8 announcement](https://www.confluent.io/blog/introducing-confluent-platform-8-0/): builds on Kafka 4.0, next-gen Confluent Control Center (integrating with the open telemetry protocol (OTLP),  Confluent Manager for Apache Flink® (CMF)), Kraft native (support significantly larger clusters with millions of partitions), Client-Side field level encryption. CP for Flink support SQL, Queues for Kafka is now in Early Access, 
 
-## Metadata Management Service for RBAC
+## Authentication and Authorization
+
+### Authentication
+
+The product documentations for [CP authentication](https://docs.confluent.io/platform/current/security/authentication/overview.html) can be summarized as:
+
+* Kafka brokers accesses from producer/consumer applications can be done using SASL (Simple Authentication Security Layer), mutualTLS to verify clients and server identities to ensure that traffic is secure and trusted in both directions.
+* Admin REST API authentication is done via HTTP Basic Auth
+* Access to the C3 may be done [via SSO](https://docs.confluent.io/platform/current/security/authentication/sso-for-c3/overview.html)
+* It supports using [LDAP for authentication]() or [OAuth/OIDC](https://docs.confluent.io/platform/current/security/authentication/oauth-oidc/overview.html) where all identities across Confluent Platform workloads and interfaces can be hosted on a single identity provider providing for a unified identity management solution. [See a Keycloak docker compose demo](https://github.com/confluentinc/cp-all-in-one/tree/master/cp-all-in-one-security/oauth), and [my keycloak deployment on k8s](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/keycloak/README.md).
+* See [SSL/TLS](https://docs.confluent.io/platform/current/security/authentication/mutual-tls/overview.html#kafka-ssl-authentication) on how to use openssl for cryptography encryption.
+* By default inter broker communication is PLAINTEXT, but it can be set to SSL
+
+### Authorization
+
+The product documentations for [CP Authorization](https://docs.confluent.io/platform/current/security/authorization/overview.html) highlights the following major points:
+
+* Access to Confluent Platform resources as clusters, topics, consumer groups, and connectors are controlled via [ACLs](https://docs.confluent.io/platform/current/security/authorization/acls/overview.html#acls-authorization). ACLs are stored in the KRaft-based Kafka cluster metadata.
+* Group based authorization can be defined in LDAP
+
+### MetaData Management Service (MDS) for RBAC for Flink
+
+Flink Job represents code. So it is critical to setup authentication and authorization. Flink supports [TLS/SSL for authentication and encryption](https://nightlies.apache.org/flink/flink-docs-release-1.19/docs/deployment/security/security-ssl/) of network traffic between Flink processes, both for internal connectivity (between Flink processes) and external connectivity (From outside to Flink processes).
+
+Recall that, keystore and a truststore must be set up such that the truststore trusts the keystore’s certificates.
+
+CMF supports mTLS authentication and OAuth authentication. As CMF is deployed via kubernetes operator, SREs have control over who may deploy Flink applications. All access should go through CMF to comply with the authentication and authorization requirements.
+
+* For mTLS the approach is to define a mtls-values.yaml and use it when deploying or upgrading the cmf helm chart.
+    ```sh
+    helm upgrade --install cmf confluentinc/confluent-manager-for-apache-flink -f mtls-values.yaml
+    ```
+
+    See and example of [mtls-values.yaml](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cmf/mtls-values.yaml) which declares the truststore file to use. The certificates should be defined in a secret.
+
+???- info "Defining SSL certs"
+        Use [keytool](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html) to create self-certified certificates and keys.
+        ```sh
+        keytool -genkeypair -alias flink.internal -keystore internal.keystore -dname "CN=flink.internal" \
+                -storepass internal_store_password -keyalg RSA -keysize 4096 -storetype PKCS12
+        ```
+        Define a secret with the base64 string of the certificates:
+        ```sh
+        cat your_certificate.crt | base64 -w 0
+        cat your_private_key.key | base64 -w 0
+        ```
+
+        And a secret.yaml
+        ```yaml
+        apiVersion: v1
+        kind: Secret
+        metadata:
+            name: cmf-certs
+        type: kubernetes.io/tls
+        data:
+            tls.crt: <base64_encoded_certificate>
+            tls.key: <base64_encoded_private_key>
+        ```
+
+#### Roles
+
+The Flink Kubernetes operator installs two custom roles: **flink-operator** and **flink**:
+
+* `flink-operator` is used to manage `FlinkDeployment` resources: meaning it creates and manages the JobManager deployment for each Flink job (and related resources). 
+* `flink` role is used by the jobManager process of each job to create and manage the taskManager and configMap resources.
+
+With FKO, job and task managers are dep loyed together so there is no need for the `flink` service account to have permissions to launch additional pods. K8s handles the TaskManager Pod lifecycle. With native k8s mode, flink code may could inherit the JobManager's Kubernetes permissions, and so being able to launch other pods to access sensitive cluster resoirces.
+
+#### RBAC
+
+* CMF communicates with the MDS to validate whether the principal of the incoming request is allowed to perform a specific action.
+* CMF requires its own service principal to authorize user principals.
+
+#### Metdata service (MDS)
+
+[MDS manages](https://docs.confluent.io/platform/current/kafka/configure-mds/index.html) a variety of metadata about your Confluent Platform installation. It is configured on each Kafka broker. It is possible to centralize into a hub and spoke architecture of multiple kafka clusters, Connect and schema registry. MDS maintains a local cache of authorization data that is persisted to an internal Kafka topic named _confluent-metadata-auth.
 
 * [Metadata Service Overview](https://docs.confluent.io/platform/current/kafka/configure-mds/index.html#configure-mds-long-in-cp)
 * Single broker [Kafka+MDS Deployment](https://docs.confluent.io/platform/current/kafka/configure-mds/index.html#configure-a-primary-ak-cluster-to-host-the-mds-and-role-binding)
@@ -74,28 +149,18 @@ Be sure to have [confluent cli.](https://docs.confluent.io/confluent-cli/current
 
 ## SQL specific
 
-As of Sept 2025 [SQL support is still under-preview.](https://docs.confluent.io/platform/current/flink/jobs/sql-statements/overview.html)
+As of November 2025 [SQL support is still under-preview.](https://docs.confluent.io/platform/current/flink/jobs/sql-statements/overview.html)
 
 ## Applications
-
-[Application documentation](https://docs.confluent.io/platform/current/flink/jobs/applications/overview.html) [or FlinkDeployment](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-release-1.12/docs/custom-resource/reference/), an exposed kubernetes CR.
-
-Flink SQL is supported only as part of a packaged JAR application based on the TableEnvironment interface.
 
 Important points:
 
 * After CMF is installed and running, it will continuously watch Flink applications.
 * Environment control k8s namespace in which the Flink application is deployed.
 * Suspended app, does not consume resource, and may be restored from its savepoint.
-* CLI, REST API or the Console can be used to deploy app.
+* CLI, REST API or the Control Center Console may be used to deploy app.
 
-* [See the getting started with a Java project for Flink](../coding/firstapp.md/#create-a-java-project-with-maven), see also [the Confluent specific settings](https://docs.confluent.io/platform/current/flink/jobs/applications/packaging.html#set-up-the-project-configuration)
-
-Examples of apps:
-
-* [code/]()
-* [e2e-demos]()
-
+* [See the getting started with a Java project for Flink](../coding/datastream/#first-programs), see also [the Confluent specific settings](https://docs.confluent.io/platform/current/flink/jobs/applications/packaging.html#set-up-the-project-configuration)
 
 ## Understanding Sizing
 

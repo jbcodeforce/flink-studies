@@ -5,7 +5,8 @@ This chapter is a summary on how to use DataStream API, laborate from Apache Fli
 ## Key Concepts
 
 * A DataStream program is a regular Java program packaged in a JAR file. 
-* In application mode, the main() function runs in the Job manager which constructs a logical dataflow graph and executes the graph operators within task managers
+Each Java Flink app is a [Java main function which defines the data flow to execute on one or more data streams](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/datastream_api.html#anatomy-of-a-flink-program).
+* In application mode, the `main()` function runs in the Job manager which constructs a directed acyclic graph and executes the graph operators within task managers.
 * In session mode, a cli submits the jar file to a Flink JobManager which does the same processing.
 * All programs get access to a Flink environment.
     ```java
@@ -20,24 +21,123 @@ This chapter is a summary on how to use DataStream API, laborate from Apache Fli
 * The datastream API is an abstraction to define topology of operators to be executed on the stream of events/records.
 * Use Datastream when strong control and customisation is needed. 
 * Programs are organized as a set of user functions. A function can be implemented as class, anonymous class, or lambda.
-* It is easy to go from DataStream to TableAPI. Therefore it is recommended to do windowed or interval joins with Table API.
-    ```Java
-    import org.apache.flink.table.api.Table;
-    import org.apache.flink.table.api.TableDescriptor;
-    import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
-   ...
-    final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-    StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env);
-    // Stream -> Table
-    DataStream<?> inStream1 = ...
-    Table appendOnlyTable = tableEnv.fromDataStream(inStream1)
-    // Table -> Stream
-    DataStream<T> appendOnlyStream = tableEnv.toDataStream(insertOnlyTable, T.class)
-    // using Row type
-    DataStream<Row> changelogStream = tableEnv.toChangelogStream(anyTable)
+
+???- info "Classical Code structure"
+    The code structure follows the following standard steps:
+
+    1. Obtain a Flink execution environment
+    1. Define the data pipeline graph (as a separate method to simplify unit testing)
+
+        1. Load/create the initial data from the stream
+        1. Specify transformations on the data
+        1. Specify where to put the results of the computations
+
+    1. Trigger the program execution
+
+* It is easy to go from DataStream to TableAPI. TableAPI is simpler to use for joins and windows logic implementation. 
+```Java
+import org.apache.flink.table.api.Table;
+import org.apache.flink.table.api.TableDescriptor;
+import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
+...
+final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env);
+// Stream -> Table
+DataStream<?> inStream1 = ...
+Table appendOnlyTable = tableEnv.fromDataStream(inStream1)
+// Table -> Stream
+DataStream<T> appendOnlyStream = tableEnv.toDataStream(insertOnlyTable, T.class)
+// using Row type
+DataStream<Row> changelogStream = tableEnv.toChangelogStream(anyTable)
+```
+
+
+## Create a Java project with maven
+
+[See the Apache Flink product documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/configuration/overview/) which can be summarized as:
+
+1. Be sure to have maven `mvn` cli and JAVA_HOME setup
+1. Create a project template, named quickstart, using the Flink quickstart shell and specifying the Flink version (e.g. 1.20.2)
+
+    ```sh
+    curl https://flink.apache.org/q/quickstart.sh | bash -s 1.20.2
     ```
-    
-### Best Practices
+
+1. Add the following [maven dependencies](https://mvnrepository.com/artifact/org.apache.flink) into the `pom.xml`:
+
+    ```xml
+    <!-- https://mvnrepository.com/artifact/org.apache.flink/flink-java -->
+    <dependency>
+        <groupId>org.apache.flink</groupId>
+        <artifactId>flink-java</artifactId>
+        <version>${flink-version}</version>
+    </dependency>
+    ```
+
+1. When using Kafka, add Flink kafka connector dependency in pom.xml
+
+    ```xml
+      <dependency>
+          <groupId>org.apache.flink</groupId>
+          <artifactId>flink-connector-kafka</artifactId>
+          <version>1.20.2</version>
+      </dependency>
+    ```
+
+
+1. Create a Java Class with a main function and the following code structure (See [01-word-count example]()):
+
+    * get Flink execution context
+    * defined process flow to apply to the data stream
+    * start the execution
+
+    ```java
+    // Get execution context
+      ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+      // use file as input so use program arguments to get file name
+      ParameterTool params = ParameterTool.fromArgs(args);
+      env.getConfig().setGlobalJobParameters(params);
+      defineWorkflow(env)
+      env.execute();
+    ```
+
+    The code above uses the [ParameterTool  class](https://ci.apache.org/projects/flink/flink-docs-stable/api/java/org/apache/flink/api/java/utils/ParameterTool.html) to process the program arguments. 
+    So most of the basic examples use `--input filename` and `--output filename` as java arguments. So `params` will have those arguments in a Map. 
+
+1. Define event structure as POJO, as a separate Java Bean in the `event` folder.
+1. Implement the process logic and the event mapping, filtering logic... We will see more examples later.
+1. Package with `mvn package`. Create a UBER jar if using external system, for reading from a filesystem, Flink has the predefined connectors. The `maven-shade-plugin` maven plugin creates such UBER jar.
+1. Access to a Flink compute pool, locally using local installation, docker, Kubernetes or Confluent Cloud for Flink. Use the `flink cli` to submit the job for a local cluster, use FlinkDeployment(KFF) or FlinkApplication (CMF) 
+  ```sh
+  flink run -c j9r.flink.MyJob myapp.jar
+  ```
+
+With the open source version, we have access to a lot of different connectors, for example to load data from csv file. This is convenient to do local testing. or batch processing.
+
+???- info "Create a Quarkus Flink java app"
+    * Create a Quarkus app: `quarkus create app -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`. See code examples under `flink-java/my-flink` folder and `jbcodeforce.p1` package.
+    * Do the same steps as above for the main class.
+    * Be sure to set quarkus uber-jar generation (`quarkus.package.type=uber-jar`) in the `application.properties` to get all the dependencies in a unique jar: Flink needs all dependencies in the classpath.
+
+### Submit job to Flink
+
+When the Flink cluster runs with a Job Manager, it is possible to submit the application via the `flink` cli.
+
+#### Using a JobManager running as docker image
+The jar file is mounted to the image to `/home/my-flink/target/`.
+
+```shell
+# One way with mounted files to task manager and job manager containers.
+CNAME="jbcodeforce.p1.WordCountMain"
+JMC=$(docker ps --filter name=jobmanager --format={{.ID}})
+docker exec -ti $JMC flink run -d -c $CNAME /home/my-flink/target/my-flink-1.0.0-runner.jar --input file:///home/my-flink/data/wc.txt --output file:///home/my-flink/data/out.csv 
+
+# inside the jobmanager
+flink run -d -c jbcodeforce.p1.WordCountMain /home/my-flink/target/my-flink-
+1.0.0-runner.jar --input file:///home/my-flink/data/wc.txt --output file:///home/my-flink/data/out.csv
+```
+
+## Best Practices
 
 * Isolate the business logic outside of the main, and use Flink unit test environment to validate the topology logic.
 * In production, run the main() method, to use the real sources and sinks
@@ -50,14 +150,8 @@ This chapter is a summary on how to use DataStream API, laborate from Apache Fli
 * [Confluent Flink Cookbook](https://github.com/confluentinc/flink-cookbook), is a set of recipes around Flink using DataStream, TableAPI. Once cloned, load one of the folder as a java project in IDE, build and run unit tests. This repository includes tools to run a mini Flink cluster in Java directly.
 * [DataStream v2](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream-v2/overview/)
 
-## First programs
+## Unit Testing
 
-* Start Apache Flink cluster from one of the product-tar folder.
-
-* [See code/flink-java/datastream-quickstart folder - class NumberMapJob.java](https://github.com/jbcodeforce/flink-studies/blob/master/flink-java/datastream-quickstart), then package and submit the job:
-    ```sh
-    mvn clean package
-    ```
 
 ---
  To rework

@@ -1,5 +1,9 @@
 # Moving to a data as a product architecture
 
+???- info "Version"
+    Created 01/2025
+    Update 12/2025
+    
 This chapter provides a practical overview of current data lake and lakehouse challenges, discusses the implementation of 'data as a product' principles, and demonstrates how real-time streaming can be effectively integrated into modern data architectures.
 
 ## Context
@@ -49,7 +53,7 @@ In Lakehouse or data lake architecture:
 * Constant movement of data through layers results in unnecessary processing and query inefficiencies.
 * The operational estate is also continuously growing, by adding mobile applications, serverless functions, cloud native apps, etc...
 
-### Core principles for Data Mesh
+### Core Principles for Data Mesh
 
 To address the concerns of siloed and incompatible data, while addressing scaling to constant change of data landscape, adding more data source and consumers, adding more transformations and processing resources, the data mesh is based on four core principles:
 
@@ -99,7 +103,7 @@ To address the concerns of siloed and incompatible data, while addressing scalin
 
     Even if append-logs are part of the data as a product architecture, there are more to address and to organize the component development.
 
-## A data product approach
+## A Data Product Approach
 
 As seen previously, domains need to host and serve their domain datasets in an easily consumable way, rather than flowing the data from domains into a centrally owned data lake or platform. Dataset from one domain may be consumed by another domains in a format suitable for its own application. Consumer pulls the dataset.
 
@@ -110,7 +114,7 @@ As seen previously, domains need to host and serve their domain datasets in an e
 
 So developing data as a product means shifting from push and ingest of ETL and ELT processes to serving and pull model across all domains. 
 
-### Data as a product
+### Data as a Product
 
 Data products serve analytical data, they are self-contained, deployable, valuable and exhibit eight characteristics:
 
@@ -188,7 +192,7 @@ The skill analysis use case may define the following data product:
     * Value Proposition: Ensures the organization maintains necessary certifications for compliance and client engagements, mitigating potential risks and penalties.
     * Potential Features: Automated alerts for upcoming expirations; reporting on certification coverage by practice area or client; integration with certification management platforms.
 
-#### Using bounded context
+#### Using Bounded Context
 
 Data as a product is designed with a domain-driven model combined with analytical and operational use cases. 
 
@@ -230,9 +234,8 @@ Moving from technical data delivery to product thinking requires changes in how 
 
 New requirements are added to the context of the source semantic model.
 
-### 
 
-## Motivations for moving to data stream processing
+## Motivations for Moving to Data Stream Processing
 
 The Data integration adoption is evolving with new needs to act on real-time data and reduce batch processing cost and complexity. The following table illustrates the pros and cons of data integration practices for two axes: time to insights and data integity
 
@@ -269,13 +272,14 @@ Try to get an understanding of the data integration requirements by looking at:
 
 ## Migration Context
 
-A direct "lift and shift" approach—where batch SQL scripts are converted to Flink statements on a one-to-one basis—is not recommended. Refactoring is essential, as SQL processing often differs significantly in the cases involving complexity and stateful operators, such as joins.
+A direct "lift and shift" approach—where batch SQL scripts are converted to Flink statements on a one-to-one basis— may not be recommended. Refactoring is essential, as SQL processing often differs significantly when  addressing complex and stateful operators, such as joins.
 
 Most of the filtering and selection scripts can be ported 1 to 1. While most stateful processing needs to be refactorized and deeply adapted to better manage states and complexity.
 
-There is [a repository](https://jbcodeforce.github.io/shift_left_utils/) with tools to process existing dbt project to find dependencies between tables, use local LLM to do some migrations, and create target pipelines per sink table. 
+There is [a repository](https://jbcodeforce.github.io/shift_left_utils/) with tools to process existing Spark/dbt project to find dependencies between tables, use local LLM to do some migration, and create Flink query pipelines per sink table. 
 
 ---
+To Be Continued
 
 ## Time condiderations
 

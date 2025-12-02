@@ -2,7 +2,7 @@
 
 ## Understanding Basic Joins
 
-[Based on the How to join a stream and a stream](https://developer.confluent.io/tutorials/join-a-stream-to-a-stream/flinksql.html) but adapted to Confluent Cloud.
+[Based on the Confluent's blog: 'How to join a stream and a stream'](https://developer.confluent.io/tutorials/join-a-stream-to-a-stream/flinksql.html) but adapted for Confluent Cloud.
 
 1. Create orders and shipments tables in CC, use cc_s2s_ddl_orders.sql and cc_s2__ddl_shipments.sql
 
@@ -12,7 +12,7 @@
     make create_shipments
     ```
 
-    The schemas are defined for the key and the value.
+    The avro schemas are defined for the key and the value.
 
 1. Add 3 products for 1 to 3 and all the orders ().
 1. To do a first simple left join between orders and products: `make cc_s2s_order_product_join.sql` so all orders will have a product name added from the join. Let it runs.

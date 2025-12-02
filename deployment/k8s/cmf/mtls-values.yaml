@@ -1,0 +1,23 @@
+cmf:
+  sql:
+    production: false
+    examples-catalog:
+      enabled: true
+  ssl:
+    keystore: /store/my-keystore
+    trust-store: /store/my-trust-store
+    client-auth: need # require clients with valid certificate
+  authentication:
+    type: mtls
+mountedVolumes:
+  volumes:
+    - name: certificates
+      secret:
+        secretName: cmf-certs
+  volumeMounts:
+    - name: certificates
+      mountPath: /store
+      readOnly: true
+serviceAccount:
+  create: false
+  name: flink
