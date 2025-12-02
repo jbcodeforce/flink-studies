@@ -5,8 +5,8 @@
     "name": "job-with-issues"
   },
   "spec": {
-    "image": "confluentinc/cp-flink:1.19.1-cp1",
-    "flinkVersion": "v1_19",
+    "image": "confluentinc/cp-flink:2.1.0-cp1-java21",
+    "flinkVersion": "v2_1",
     "flinkConfiguration": {
       "taskmanager.numberOfTaskSlots": "4"
     },

@@ -8,7 +8,7 @@
     * 07/25: Update for Confluent Platform v8
     * 09/29: Update to diagrams and doc structure.
     * 10/12: update to Minio and snapshot / checkpoint configuration
-    * 11/16: Reorganize content - integrate new CMF 2.1.0, CP3.1, cmf 2.1.0
+    * 11/16: Reorganize content - integrate new CMF 2.1.0, CP3.1, cmf 2.1.0 - swap to orbstack instead of colima
 
 
 Apache Flink has defined a Kubernetes Operator (FKO) to deploy and manage custom resources for Flink deployments. Confluent Platform Manager for Flink (CMF) is also deployed on Kubernetes with its own operator, leveraging the FKO. Also as part of the Confluent Platform it is integrated with Confluent Kubernetes Operator (CKO).
@@ -51,18 +51,14 @@ The deployments for [Confluent Platform](https://docs.confluent.io/operator/curr
 <figcaption>Figure 3: K8S deployment</figcaption>
 </figure>
 
-[**CFK Operator**](https://docs.confluent.io/operator/current/co-deploy-cfk.html) is the control plane for deploying and managing Confluent in your Kubernetes private cloud environment. It defines custom resource definitions to support Kafka based resources like brokers, kraft controllers, topics, schema registry, connectors, cmfrestclass, OSS flink application, OSS flink environment...
+[**CFK Operator**](https://docs.confluent.io/operator/current/co-deploy-cfk.html) is the control plane for deploying and managing Confluent in your Kubernetes private cloud environment. It defines custom resource definitions to support Kafka based resources like brokers, kraft controllers, topics, schema registry, connectors, cmfrestclass,...
 
-* Helpful commands to work on CRDs:
-
-```sh
-kubectl get crds | grep confluent
-kubectl describe crd kafkatopics.platform.confluent.io  
-kubectl describe crd cmfrestclasses.platform.confluent.io      
-```
-
-* See [This makefile](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cfk/Makefile) and [documentation](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cfk/README.md).
-* See the [KraftCluster manifest](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cfk/basic-kraft-cluster.yaml) used for all demonstrations in this repository.
+* Helpful commands to work on CRDs once Confluent Platform is deployed:
+  ```sh
+  kubectl get crds | grep confluent
+  kubectl describe crd kafkatopics.platform.confluent.io  
+  kubectl describe crd cmfrestclasses.platform.confluent.io      
+  ```
 
 ### Confluent Manager for Flink (CMF)
 
@@ -124,7 +120,7 @@ It is still possible to do pure OSS FlinkDeployment CRs but this strongly not re
     There is a Confluent [version and interoperability document](https://docs.confluent.io/platform/current/flink/installation/versions-interoperability.html) that should be updated at each release. But each time there is a new release you need to be sure to modify the references for:
 
     * Confluent Platform (e.g. 8.1)
-    * Confluent Flink image (e.g. confluentinc/cp-flink-sql:1.19-cp2) in compute pool manifests
+    * Confluent Flink image (e.g. confluentinc/cp-flink-sql:1.19-cp4) in compute pool manifests
 
 Let review the Kubernetes custom resources for Flink.
 
@@ -245,7 +241,7 @@ Confluent Managed for Flink only manages Flink application mode and is using its
   }
   ```
 * Create a database to reference a Kafka cluster: See [product documentation](https://docs.confluent.io/platform/current/flink/configure/catalog.html#create-a-database), [one example of database definition](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/json-transformation/k8s/database.json)
-* **[ComputePools](https://docs.confluent.io/platform/current/flink/configure/compute-pools.html)** are used in the context of Flink SQL to execute SQL queries or statements.  The ComputePool will only be used when the statement is deployed which happens after the compilation. It is a second level of Flink configuration for Flink cluster settings. See [the kafka catalog example in external lookup demo](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/external-lookup/flink/k8s/compute-pool-cmf.json). One important element is to specify the `image` attribute to referent a flink with SQL like `confluentinc/cp-flink-sql:1.19-cp1`. [See docker hub for last tags available.](https://hub.docker.com/u/confluentinc)
+* **[ComputePools](https://docs.confluent.io/platform/current/flink/configure/compute-pools.html)** are used in the context of Flink SQL to execute SQL queries or statements.  The ComputePool will only be used when the statement is deployed which happens after the compilation. It is a second level of Flink configuration for Flink cluster settings. See [the kafka catalog example in external lookup demo](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/external-lookup/flink/k8s/compute-pool-cmf.json). One important element is to specify the `image` attribute to referent a flink with SQL like `confluentinc/cp-flink-sql:1.19-cp4`. [See docker hub for last tags available.](https://hub.docker.com/u/confluentinc)
 
 The configuration flexibility:
 
@@ -272,8 +268,8 @@ The Components to install for each deployment approach:
 Any Kubernetes deployment should include the following pre-requisites:
 
 * [kubectl](https://Kubernetes.io/docs/tasks/tools/) 
-* A Kubernetes cluster. For local deployment use [Colima](https://github.com/abiosoft/colima) with Kubernetes enabled. See start colima with [deployment/k8s/start_colima.sh](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/start_colima.sh) or `make start_colima` under `deployment/k8s` folder. 
-    * [For production deployment the resource sizing for the two operator pods](https://docs.confluent.io/platform/current/flink/installation/helm.html#step-1-confirm-prerequisites).
+* A Kubernetes cluster. For local deployment use [Orbstack](https://orbstack.dev/) with Kubernetes enabled. Start the cluster with `make start_obstack` under `deployment/k8s` folder. 
+    * [For production deployment, see the resource sizing for the two operator pods](https://docs.confluent.io/platform/current/flink/installation/helm.html#step-1-confirm-prerequisites).
 * Be sure to have helm cli installed: ([see installation instructions](https://helm.sh/docs/intro/install/))
   ```sh
   # for mac
@@ -299,40 +295,19 @@ Any Kubernetes deployment should include the following pre-requisites:
 | CP FKO | .130.0 |under k8s/cmf folder,  make install_upgrade_fko |
 | CMF | 2.1.0 | under k8s/cmf folder,  make deploy_cmf | 
 
-* For private image repository [see this documentation](https://docs.confluent.io/operator/current/co-custom-registry.html#co-custom-registry).
+* To use private image repository [see this Confluent kubernetes operator documentation](https://docs.confluent.io/operator/current/co-custom-registry.html#co-custom-registry).
 
-* Verify the CP components run
-  * Pods are running and healthy: `kubectl get pods -n confluent`
-  * Services are deployed: `kubectl get svcs -n confluent`
-  * Control Center is accessible and monitors Kafka and other components:
-    ```sql
-    make expose_services
-    ```
   
-#### Colima playground
-
-See the [Colima installation instructions.](https://github.com/abiosoft/colima?tab=readme-ov-file#installation)
-
-* Start a Kubernetes cluster, using one of the following options:
-  ```sh
-  colima start --Kubernetes
-  # or under deployment/k8s folder
-  ./start_colima.sh
-  # or using make under deployment/k8s
-  make start_colima
-  ```
-
 ### External Components
 
 The certificate manager and minio operator may be deployed in one command under `deployment/k8s`: 
-  ```sh
-  make deploy
-  ```
+```sh
+make deploy
+```
 
 #### Certificate manager 
 
-
-* [See certificate manager current releases](https://github.com/cert-manager/cert-manager/releases), and update the CERT_MGR_VERSION=v1.18.1 in the [Makefile](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/Makefile), then run the command:
+* [See the certificate manager current releases](https://github.com/cert-manager/cert-manager/releases), and update the CERT_MGR_VERSION=v1.18.1 in the [Makefile](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/Makefile), then run the command:
   ```sh
   make deploy_cert_manager
   ```
@@ -384,13 +359,12 @@ MinIO is an object storage solution that provides an Amazon Web Services S3-comp
     # make a bucket
     mc mb dev-minio/flink
     ```
+
 #### Using Persistence Volume
 
 * Network file system, SAN and any distributed storage can be used to persist Flink checkpoints and savepoints. The storage class needs to be defined.
 
 ### CFK installation
-
-[See this Makefile](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cfk/Makefile) and [Readme](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cfk/README.md)
 
 [See the Confluent Platform product installation documentation](https://docs.confluent.io/operator/current/overview.html) for details. We can summarize as: 
 
@@ -401,10 +375,18 @@ MinIO is an object storage solution that provides an Amazon Web Services S3-comp
     <caption>Confluent Platform Components - k8s deployment</caption>
     </figure>
 
-* Under the [deployment/k8s/cfk](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cfk) folder, run `make deploy` which will do the following operations:
-    * Create a namespace for Confluent products deployment. By default, it deploys Confluent Platform in the namespaced deployment, and it manages Confluent Platform components in this namespace . 
-    * Add Confluent Platform **Helm** repositories
-    * Deploy Confluent Kafka Broker using one Kraft controller, one to three brokers, the new Confluent Center Console, with REST api and Schema Registry.
+* [The makefile in deployment/k8s/cfk](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cfk/Makefile) support a simple `deploy` target to deploy Operator, Kraft Controller, Kafka Cluster, Control Cetnter, Schema Registry, on a local kubernetes cluster. See [the corresponding readme](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cfk/README.md) for explanations. The  `make deploy` does not use security by default. 
+  ```sql
+  make deploy
+  make status
+  make undeploy
+  ```
+
+* For CP with security deployment the new target is `make deploy-with_security`, and described in the [readme](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cfk/README.md).
+
+* Verify the CP components run:
+
+    * Pods are running and healthy: `kubectl get pods -n confluent`
         ```sh
               NAME                                  READY   STATUS      RESTARTS          AGE
         confluent-operator-764dbdf6f9-6f7gx   1/1     Running     158 (5h41m ago)   89d
@@ -413,6 +395,7 @@ MinIO is an object storage solution that provides an Amazon Web Services S3-comp
         kraftcontroller-0                     1/1     Running     4 (5h41m ago)     32d
         schemaregistry-0                      1/1     Running     7 (5h41m ago)     32d
         ```
+      * Services are deployed: `kubectl get svcs -n confluent`
     * The console may be accessed via port-forwarding:
         ```sh
         kubectl -n confluent port-forward svc/controlcenter-ng 9021:9021 
@@ -421,12 +404,12 @@ MinIO is an object storage solution that provides an Amazon Web Services S3-comp
 
         ![](./images/cp-console.png)
 
-* See [Confluent Platform releases information.](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
+* See also the [Confluent Platform releases information, for product interopability.](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
 
 
 ### [Confluent Manager for Flink (CMF)](https://docs.confluent.io/operator/current/co-deploy-cp.html#co-deploy-cp)
 
-Updated 10.18.2025: For CFK version 2.0.3 and CP v8.0.2
+Updated 11.20.2025: For CFK version 2.0.3 and CP v8.0.2
 
 [See the Makefile under deployment/k8s/cmf](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cmf/Makefile) which includes a set of targets to simplify the deployment. [See Confluent Manager for Flink product documentation](https://docs.confluent.io/platform/current/flink/get-started/get-started-application.html#step-1-install-cmf-long) for deeper information. The following steps are a summary of what should be done.
 
@@ -440,76 +423,6 @@ Updated 10.18.2025: For CFK version 2.0.3 and CP v8.0.2
 
 See [deploy application section for SQL or Java app deployment](#flink-application-deployment)
 
----
-
-### HA configuration
-
-Within Kubernetes, we can enable Flink HA in the ConfigMap of the cluster configuration that will be shared with deployments:
-
-```yaml
-  flinkConfiguration:
-    taskmanager.numberOfTaskSlots: "2"
-    state.backend: rockdb
-    state.savepoints.dir: file:///flink-data/savepoints
-    state.checkpoints.dir: file:///flink-data/checkpoints
-    high-availability.type: Kubernetes
-    high-availability.storageDir: file:///flink-data/ha
-    job.autoscaler.enabled: true
-```
-
-This configuration settings is supported via FKO. 
-[See product documentation](https://nightlies.apache.org/flink/flink-Kubernetes-operator-docs-main/docs/operations/configuration/), and the [autoscaler section](https://nightlies.apache.org/flink/flink-Kubernetes-operator-docs-main/docs/operations/configuration/#autoscaler-configuration) for deeper parameter explanations. The Flink autoscaler monitors the number of unprocessed records in the input (pending records), and will allocate more resources to absorb the lag. It adjusts parallelism at the flink operator level within the DAG. 
-
-JobManager metadata is persisted in the file system specified by `high-availability.storageDir` . This `storageDir` stores all metadata needed to recover a JobManager failure.
-
-JobManager Pods, that crashed, are restarted automatically by the Kubernetes scheduler, and as Flink persists metadata and the job artifacts, it is important to mount pv to the expected paths.
-
-```yaml
-podTemplate:
-  spec:
-    containers:
-      - name: flink-main-container
-        volumeMounts:
-        - mountPath: /flink-data
-          name: flink-volume
-    volumes:
-    - name: flink-volume
-      hostPath:
-        # directory location on host
-        path: /tmp/flink
-        # this field is optional
-        type: Directory
-```
-
-Recall that `podTemplate` is a base declaration common for job and task manager pods. Can be overridden by the jobManager and taskManager pod template sub-elements (spec.taskManager.podTemplate). The previous declaration will work for local k8s with hostPath access, for Kubernetes cluster with separate storage class then the volume declaration is:
-
-```yaml
-volumes:
-  - name: flink-volume
-    persistenceVolumeClaim:
-      claimName: flink-pvc
-```
-
-podTemplate can include nodeAffinity to allocate taskManager to different node characteristics:
-
-```yaml
-  podTemplate:
-      spec:
-        affinity:
-          nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-                - matchExpressions:
-                    - key: cfk-cr
-                      operator: In
-                      values:
-                        - flink
-        tolerations:
-          - key: cfk-cr
-            operator: Equal
-            value: flink
-            effect: NoSchedule
-```
 ### Documentations
 
 * [Confluent Platform for Flink has another operator](https://docs.confluent.io/platform/current/flink/get-started-cpf.html) integrated with FKO. [See my CP Flink summary](../techno/cp-flink.md).
@@ -518,73 +431,16 @@ podTemplate can include nodeAffinity to allocate taskManager to different node c
 * [Apache Flink Native Kubernetes deployment.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/native_Kubernetes/)
 * [A Confluent Platform demonstration git repo: confluentinc/confluent-demo](https://github.com/confluentinc/confluent-demo)
 
----
-* Next steps is to upload jar files for the different applications to deploy, or data sets for SQL table. See [application section](#flink-application-deployment).
-
----
-
-TO UPDATE 
-
-#### Durable Storage
-
-Durable storage is used to store consistent checkpoints of the Flink state. Review [the state management](../concepts/index.md#state-management) section in the concept chapter. The checkpoints are saved to object storage [compatible with S3](https://docs.confluent.io/platform/current/flink/how-to-guides/checkpoint-s3.html), or HDFS protocol. The FlinkConfiguration can be set at the Application, ComputePool or Environment level.
-
-Two important elements to configure: 
-1. the environment variable ENABLE_BUILT_IN_PLUGINS
-1. The `state.checkpoints.dir` to the location of S3 bucket.
-
-The following is a configuration using minio and the presto S3FileSystem which is a specific implementation (created by Presto) of the file system interface within Apache Flink. (See the [S3FileSystemFactory class](https://nightlies.apache.org/flink/flink-docs-master/api/java/org/apache/flink/fs/s3presto/S3FileSystemFactory.html)). 
-
-```json
-"flinkConfiguration": {
-        "pipeline.operator-chaining.enabled": "false",
-        "execution.checkpointing.interval": "10s",
-        "taskmanager.numberOfTaskSlots": "4",
-        "fs.s3.impl": "org.apache.flink.fs.s3presto.S3FileSystem",
-        "presto.s3.endpoint": "http://minio.minio-dev.svc.cluster.local:9000",
-        "presto.s3.path.style.access": "true",
-        "presto.s3.connection.ssl.enabled": "false",
-        "presto.s3.access-key": "admin",
-        "presto.s3.secret-key": "admin123",
-        "state.checkpoints.dir": "s3://flink/stateful-flink/checkpoints",
-        "state.savepoints.dir": "s3://flink/stateful-flink/savepoints",
-        "state.checkpoints.interval": "10000",
-        "state.checkpoints.timeout": "600000"
-  
-      },
-```
-
-For Minio settings:
-
-```yaml
-  s3.endpoint: http://minio.minio-dev.svc.cluster.local:9000
-  s3.path.style.access: "true"
-  s3.connection.ssl.enabled: "false"
-  s3.access-key: minioadmin
-  s3.secret-key: minioadmin
-  state.checkpoints.dir: s3://flink/stateful-flink/checkpoints
-  state.savepoints.dir: s3://flink/stateful-flink/savepoints
-  state.checkpoints.interval: "10000"
-  state.checkpoints.timeout: "600000"
-```
-
-TO BE CONTINUED
-
-A RWX, shared PersistentVolumeClaim (PVC) for the Flink JobManagers and TaskManagers provides persistence for stateful checkpoint and savepoint of Flink jobs. 
-
-<figure markdown=span>
-![4](./diagrams/storage.drawio.png)
-</figure>
-
-A flow is a packaged as a jar, so developers need to define a docker image with the Flink API and any connector jars. Example of [Dockerfile](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale/flink-app/Dockerfile) and [FlinkApplication manifest](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale/k8s/cmf_app_deployment.yaml).
-
-Also one solution includes using MinIO to persist application jars.
 
 ## Apache Flink OSS 
 
+As seen in previous section, Apache Flink has implemented a [Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) with the [stable versions](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/)
+
+* The prerequisites includes getting Certificat Manager deployed. (Optional Minio).
+* Get the [list of Apache Flink releases and tags here](https://downloads.apache.org/flink/) 
 * Add the Apache Flink **Helm** repositories: 
     ```sh
-    helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-Kubernetes-operator-1.11.0
+    helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-Kubernetes-operator-1.13.0
     # Verify help repo entries exist
     helm repo list
     # Be sure to change the repo as the URL may not be valid anymore
@@ -592,98 +448,30 @@ Also one solution includes using MinIO to persist application jars.
     # try to update repo content
     helm repo update
     ```
-   
-    See [Apache Flink Operator documentation](https://nightlies.apache.org/flink/flink-Kubernetes-operator-docs-main/) 
-
-### Deploy Apache Flink Kubernetes Operator
-
-The [Apache flink Kubernetes operator product documentation](https://nightlies.apache.org/flink/flink-Kubernetes-operator-docs-main/docs/try-flink-Kubernetes-operator/quick-start/) lists the setup steps.
-
-* Get the [list of Apache Flink releases and tags here](https://downloads.apache.org/flink/) 
-* To get access to k8s deployment manifests and a Makefile to simplify deployment, of Apache Flink, or Confluent Platform on k8s (local colima or minikube) see [the deployment/k8s/flink-oss folder](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/fink-oss/README.md). 
+* This repository includes a Makefile to simplify deployment, of Apache Flink, or Confluent Platform on k8s (local orbstack or colima) see [the deployment/k8s/flink-oss folder](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/fink-oss/README.md). 
   ```sh
   make prepare
   make verify_flink
   make deploy_basic_flink_deployment  
   ```
+* Smoke Test with one of the pre-packaged app:
+  ```sh
+  kubectl create -f https://raw.githubusercontent.com/apache/flink-kubernetes-operator/release-1.13/examples/basic.yaml
+  kubectl logs -f deploy/basic-example
+  # Access WebUI
+  kubectl port-forward svc/basic-example-rest 8081
+  ```
 * [Access Flink UI](http://localhost:8081)
-* Mount a host folder as a PV to access data or SQL scripts, using hostPath.
+* Stop the job
+  ```sh
+  kubectl delete flinkdeployment/basic-example
+  ```
 
-
-
-## Flink Config Update
-
-* If a write operation fails when the pod creates a folder or updates the Flink config, verify the following:
-
-    * Assess PVC and R/W access. Verify PVC configuration. Some storage classes or persistent volume types may have restrictions on directory creation
-    * Verify security context for the pod. Modify the pod's security context to allow necessary permissions.
-    * The podTemplate can be configured at the same level as the task and job managers so any mounted volumes will be available to those pods. See [basic-reactive.yaml](https://github.com/apache/flink-Kubernetes-operator/blob/main/examples/basic-reactive.yaml) from Flink Operator examples.
-
-[See PVC and PV declarations](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/pvc.yaml)
-
-## Flink Session Cluster
-
-For Session cluster, there is no jobSpec. See [this deployment definition](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/basic-job-task-mgrs.yaml). Once a cluster is defined, it has a name and can be referenced to submit SessionJobs.
-
-A SessionJob is executed as a long-running Kubernetes Deployment. We may run multiple Flink jobs on a Session cluster. Each job needs to be submitted to the cluster after the cluster has been deployed.
-To deploy a job, we need at least three components:
-
-* a Deployment which runs a JobManager
-* a Deployment for a pool of TaskManagers
-* a Service exposing the JobManager’s REST and UI ports
-
-
-For a deployment select the execution mode: `application, or session`. For production it is recommended to deploy in `application` mode for better isolation, and using a cloud native approach. We can just build a dockerfile for our application using the Flink jars.
-
-### Session Deployment
-
-Flink has a [set of examples](https://github.com/apache/flink/blob/master/flink-examples/) like the [Car top speed computation with simulated record](https://github.com/apache/flink/blob/master/flink-examples/flink-examples-streaming/src/main/java/org/apache/flink/streaming/examples/windowing/TopSpeedWindowing.java). As this code is packaged in a jar available in maven repository, we can declare a job session.
-
-Deploy a config map to define the `log4j-console.properties` and other parameters for Flink (`flink-conf.yaml`)
-
-The diagram below illustrates the standard deployment of a job on k8s with session mode:
-
- ![1](https://ci.apache.org/projects/flink/flink-docs-release-1.14/fig/FlinkOnK8s.svg)
- 
- *src: apache Flink site*
- 
-
-```yaml
-apiVersion: flink.apache.org/v1beta1
-kind: FlinkSessionJob
-metadata:
-  name: car-top-speed-job
-spec:
-  deploymentName: flink-session-cluster
-  job:
-    jarURI: https://repo1.maven.org/maven2/org/apache/flink/flink-examples-streaming_2.12/1.17.2/flink-examples-streaming_2.12-1.17.2-TopSpeedWindowing.jar
-    parallelism: 4
-    upgradeMode: stateless
-```
-
-Before deploying this job, be sure to deploy a session cluster using the following command:
-
-```sh
-# under deployment/k8s
-kubectl apply -f basic-job-task-mgrs.yaml 
-```
-
-Once the job is deployed we can see the pod and then using the user interface the job continuously running:
-
-* Example of deploying Java based [SQL Runner](https://github.com/apache/flink-Kubernetes-operator/blob/main/examples/flink-sql-runner-example/README.md) to interpret a Flink SQL script: package it as docker images, and deploy it with a Session Job. There is a equivalent for Python using [Pyflink](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/overview/).
-
-    * [See the ported code for Java](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/sql-runner)
-    * And for the [Python implementation](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/flink-python-sql-runner)
-
-
-### Flink State Snapshot
-
-To help managing snapshots, there is another CR called [FlinkStateSnapshot](https://nightlies.apache.org/flink/flink-Kubernetes-operator-docs-main/docs/custom-resource/reference/#flinkstatesnapshotspec)
 
 
 ## Flink Application Deployment 
 
-There two types of Flink application: the java packaging or the SQL client with open session to the cluster.
+There two types of Flink application to consider for deployment: the java packaging or the SQL Statements deployed via SQL client with open session to the cluster.
 
 ### Flink SQL processing
 
@@ -735,7 +523,7 @@ As seen previously in **Confluent Manager for Flink** the method is to create an
   ```
 
 
-#### Apache Flink (OSS)
+#### Apache Flink (OSS) - Flink SQL
 
 You can run the SQL Client in a couple of ways:
 
@@ -757,34 +545,15 @@ You can run the SQL Client in a couple of ways:
 
 ### Flink Application
 
-An **application deployment** must define the job (JobSpec) field with the `jarURI`, `parallelism`, `upgradeMode` one of (stateless/savepoint/last-state) and the desired `state` of the job (running/suspended). [See this sample app](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/basic-sample.yaml) or the [cmf_app_deployment.yaml](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale/k8s/cmf_app_deployment.yaml) in the e-com-sale demonstration.
+For java application, once the jar is built, we need to define a manifest to deploy the application. 
 
-Here is an example of FlinkApplication, the CRD managed by the CMF operator:
-
-```yaml
-apiVersion: "cmf.confluent.io/v1
-kind: FlinkApplication"
-spec:
-  flinkVersion: v1_19
-  image: confluentinc/cp-flink:1.19.1-cp2  # or a custom image based on this one.
-  job:
-      jarURI: local:///opt/flink/examples/streaming/StateMachineExample.jar
-      # For your own deployment, use your own jar
-      jarURI: local:///opt/flink/usrlib/yourapp01.0.0.jar
-      parallelism: 2
-      upgradeMode: stateless
-      state: running
-  jobManager: 
-    resource: 
-      cpu: 1
-      memory: 1048m
-  taskManager: 
-    resource: 
-      cpu: 1
-      memory: 1048m
-```
+#### Confluent Flink
 
 * [See manage Flink app using Confluent for Flink](https://docs.confluent.io/operator/current/co-manage-flink.html)
+
+#### Apache Flink OSS
+
+* [See the documentation]()
 
 #### Fault tolerance
 
@@ -900,6 +669,210 @@ COPY /path/of/my-flink-job-*.jar $FLINK_HOME/usrlib/my-flink-job.jar
     # the Kafka cluster
     # the operators
     ```
+---
+
+To REWORK  --- To REWORK  --- To REWORK --- To REWORK  --- To REWORK
+
+### HA configuration
+
+Within Kubernetes, we can enable Flink HA in the ConfigMap of the cluster configuration that will be shared with deployments:
+
+```yaml
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "2"
+    state.backend: rockdb
+    state.savepoints.dir: file:///flink-data/savepoints
+    state.checkpoints.dir: file:///flink-data/checkpoints
+    high-availability.type: Kubernetes
+    high-availability.storageDir: file:///flink-data/ha
+    job.autoscaler.enabled: true
+```
+
+This configuration settings is supported via FKO. 
+[See product documentation](https://nightlies.apache.org/flink/flink-Kubernetes-operator-docs-main/docs/operations/configuration/), and the [autoscaler section](https://nightlies.apache.org/flink/flink-Kubernetes-operator-docs-main/docs/operations/configuration/#autoscaler-configuration) for deeper parameter explanations. The Flink autoscaler monitors the number of unprocessed records in the input (pending records), and will allocate more resources to absorb the lag. It adjusts parallelism at the flink operator level within the DAG. 
+
+JobManager metadata is persisted in the file system specified by `high-availability.storageDir` . This `storageDir` stores all metadata needed to recover a JobManager failure.
+
+JobManager Pods, that crashed, are restarted automatically by the Kubernetes scheduler, and as Flink persists metadata and the job artifacts, it is important to mount pv to the expected paths.
+
+```yaml
+podTemplate:
+  spec:
+    containers:
+      - name: flink-main-container
+        volumeMounts:
+        - mountPath: /flink-data
+          name: flink-volume
+    volumes:
+    - name: flink-volume
+      hostPath:
+        # directory location on host
+        path: /tmp/flink
+        # this field is optional
+        type: Directory
+```
+
+Recall that `podTemplate` is a base declaration common for job and task manager pods. Can be overridden by the jobManager and taskManager pod template sub-elements (spec.taskManager.podTemplate). The previous declaration will work for local k8s with hostPath access, for Kubernetes cluster with separate storage class then the volume declaration is:
+
+```yaml
+volumes:
+  - name: flink-volume
+    persistenceVolumeClaim:
+      claimName: flink-pvc
+```
+
+podTemplate can include nodeAffinity to allocate taskManager to different node characteristics:
+
+```yaml
+  podTemplate:
+      spec:
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: cfk-cr
+                      operator: In
+                      values:
+                        - flink
+        tolerations:
+          - key: cfk-cr
+            operator: Equal
+            value: flink
+            effect: NoSchedule
+```
+
+---
+
+TO UPDATE 
+
+### Durable Storage
+
+Durable storage is used to store consistent checkpoints of the Flink state. Review [the state management](../concepts/index.md#state-management) section in the concept chapter. The checkpoints are saved to object storage [compatible with S3](https://docs.confluent.io/platform/current/flink/how-to-guides/checkpoint-s3.html), or HDFS protocol. The FlinkConfiguration can be set at the Application, ComputePool or Environment level.
+
+Two important elements to configure: 
+1. the environment variable ENABLE_BUILT_IN_PLUGINS
+1. The `state.checkpoints.dir` to the location of S3 bucket.
+
+The following is a configuration using minio and the presto S3FileSystem which is a specific implementation (created by Presto) of the file system interface within Apache Flink. (See the [S3FileSystemFactory class](https://nightlies.apache.org/flink/flink-docs-master/api/java/org/apache/flink/fs/s3presto/S3FileSystemFactory.html)). 
+
+```json
+"flinkConfiguration": {
+        "pipeline.operator-chaining.enabled": "false",
+        "execution.checkpointing.interval": "10s",
+        "taskmanager.numberOfTaskSlots": "4",
+        "fs.s3.impl": "org.apache.flink.fs.s3presto.S3FileSystem",
+        "presto.s3.endpoint": "http://minio.minio-dev.svc.cluster.local:9000",
+        "presto.s3.path.style.access": "true",
+        "presto.s3.connection.ssl.enabled": "false",
+        "presto.s3.access-key": "admin",
+        "presto.s3.secret-key": "admin123",
+        "state.checkpoints.dir": "s3://flink/stateful-flink/checkpoints",
+        "state.savepoints.dir": "s3://flink/stateful-flink/savepoints",
+        "state.checkpoints.interval": "10000",
+        "state.checkpoints.timeout": "600000"
+  
+      },
+```
+
+For Minio settings:
+
+```yaml
+  s3.endpoint: http://minio.minio-dev.svc.cluster.local:9000
+  s3.path.style.access: "true"
+  s3.connection.ssl.enabled: "false"
+  s3.access-key: minioadmin
+  s3.secret-key: minioadmin
+  state.checkpoints.dir: s3://flink/stateful-flink/checkpoints
+  state.savepoints.dir: s3://flink/stateful-flink/savepoints
+  state.checkpoints.interval: "10000"
+  state.checkpoints.timeout: "600000"
+```
+
+TO BE CONTINUED
+
+A RWX, shared PersistentVolumeClaim (PVC) for the Flink JobManagers and TaskManagers provides persistence for stateful checkpoint and savepoint of Flink jobs. 
+
+<figure markdown=span>
+![4](./diagrams/storage.drawio.png)
+</figure>
+
+A flow is a packaged as a jar, so developers need to define a docker image with the Flink API and any connector jars. Example of [Dockerfile](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale/flink-app/Dockerfile) and [FlinkApplication manifest](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/e-com-sale/k8s/cmf_app_deployment.yaml).
+
+Also one solution includes using MinIO to persist application jars.
+
+
+
+## Flink Config Update
+
+* If a write operation fails when the pod creates a folder or updates the Flink config, verify the following:
+
+    * Assess PVC and R/W access. Verify PVC configuration. Some storage classes or persistent volume types may have restrictions on directory creation
+    * Verify security context for the pod. Modify the pod's security context to allow necessary permissions.
+    * The podTemplate can be configured at the same level as the task and job managers so any mounted volumes will be available to those pods. See [basic-reactive.yaml](https://github.com/apache/flink-Kubernetes-operator/blob/main/examples/basic-reactive.yaml) from Flink Operator examples.
+
+[See PVC and PV declarations](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/pvc.yaml)
+
+## Flink Session Cluster
+
+For Session cluster, there is no jobSpec. See [this deployment definition](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/basic-job-task-mgrs.yaml). Once a cluster is defined, it has a name and can be referenced to submit SessionJobs.
+
+A SessionJob is executed as a long-running Kubernetes Deployment. We may run multiple Flink jobs on a Session cluster. Each job needs to be submitted to the cluster after the cluster has been deployed.
+To deploy a job, we need at least three components:
+
+* a Deployment which runs a JobManager
+* a Deployment for a pool of TaskManagers
+* a Service exposing the JobManager’s REST and UI ports
+
+
+For a deployment select the execution mode: `application, or session`. For production it is recommended to deploy in `application` mode for better isolation, and using a cloud native approach. We can just build a dockerfile for our application using the Flink jars.
+
+### Session Deployment
+
+Flink has a [set of examples](https://github.com/apache/flink/blob/master/flink-examples/) like the [Car top speed computation with simulated record](https://github.com/apache/flink/blob/master/flink-examples/flink-examples-streaming/src/main/java/org/apache/flink/streaming/examples/windowing/TopSpeedWindowing.java). As this code is packaged in a jar available in maven repository, we can declare a job session.
+
+Deploy a config map to define the `log4j-console.properties` and other parameters for Flink (`flink-conf.yaml`)
+
+The diagram below illustrates the standard deployment of a job on k8s with session mode:
+
+ ![1](https://ci.apache.org/projects/flink/flink-docs-release-1.14/fig/FlinkOnK8s.svg)
+ 
+ *src: apache Flink site*
+ 
+
+```yaml
+apiVersion: flink.apache.org/v1beta1
+kind: FlinkSessionJob
+metadata:
+  name: car-top-speed-job
+spec:
+  deploymentName: flink-session-cluster
+  job:
+    jarURI: https://repo1.maven.org/maven2/org/apache/flink/flink-examples-streaming_2.12/1.17.2/flink-examples-streaming_2.12-1.17.2-TopSpeedWindowing.jar
+    parallelism: 4
+    upgradeMode: stateless
+```
+
+Before deploying this job, be sure to deploy a session cluster using the following command:
+
+```sh
+# under deployment/k8s
+kubectl apply -f basic-job-task-mgrs.yaml 
+```
+
+Once the job is deployed we can see the pod and then using the user interface the job continuously running:
+
+* Example of deploying Java based [SQL Runner](https://github.com/apache/flink-Kubernetes-operator/blob/main/examples/flink-sql-runner-example/README.md) to interpret a Flink SQL script: package it as docker images, and deploy it with a Session Job. There is a equivalent for Python using [Pyflink](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/overview/).
+
+    * [See the ported code for Java](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/sql-runner)
+    * And for the [Python implementation](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/flink-python-sql-runner)
+
+
+### Flink State Snapshot
+
+To help managing snapshots, there is another CR called [FlinkStateSnapshot](https://nightlies.apache.org/flink/flink-Kubernetes-operator-docs-main/docs/custom-resource/reference/#flinkstatesnapshotspec)
+
+
 
 ## Practices
 
