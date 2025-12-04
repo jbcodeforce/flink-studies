@@ -24,6 +24,8 @@ SQL Client helps developers to write and submit table programs to a Flink cluste
     # In this mode, the client will not open an interactive terminal.
     ./bin/sql-client.sh -f query_file.sql
     ```
+* Recall that within the SQL client we can see the changelog of what happen to the table, using [M]
+
 * [Play with some first queries (code/flink-sql/00-basis-sql)](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/00-basic-sql)
 
 ## Basic commands

@@ -20,9 +20,40 @@ This is important to recall that a select applies to a stream of record so the r
 select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 ```
 
+
+???+ question "What are the different SQL execution modes? (OSS)"
+
+    Using previous table it is possible to count the elements in the table using:
+
+    ```sql
+    select count(*) AS `count` from pageviews;
+    ```
+
+    and we get different behaviors depending of the execution mode:
+
+    ```sql
+    set 'execution.runtime-mode' = 'batch';
+    # default one
+    set 'execution.runtime-mode' = 'streaming';
+
+    set 'sql-client.execution.result-mode' = 'table';
+    ```
+
+    In changelog mode, the SQL Client doesn't just update the count in place, but instead displays each message in the stream of updates it's receiving from the Flink SQL runtime.
+    
+    ```sql
+    set 'sql-client.execution.result-mode' = 'changelog';
+    ```
+
+    ![](./images/changelog-exec-mode.png)
+
+[See this lab in changelog mode](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/05-changelog) and [this section in SQL concepts chapter](../concepts/flink-sql.md#changelog-mode).
+
 ### Filtering
 
 * [Start by looking at this Confluent tutorial](https://developer.confluent.io/confluent-tutorials/filtering/flinksql/) or [The Apache Flink doc section]()
+* SELECT ... FROM ... WHERE ... consists of column projections or filters and are stateless. Except if the output table has a a `retract` changelog while input is `upsert`, the sink will have a `changelog materializer` (see [section below.](#sinkupsertmaterializer))
+* SELECT DISTINCT to remove duplicate rows. Which leads to keep state for each row.
 
 ???+ question "How to filter out records?"
 
@@ -66,59 +97,26 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     [See this example](https://docs.confluent.io/cloud/current/flink/how-to-guides/deduplicate-rows.html#flink-sql-deduplicate-topic-action).
 
 
-???+ question "How to support nested rows, DDL and inserts?"
-    Avro, Protobuf or Json schemas are very often hierarchical per design. ROW and ARRAY are the objects with nested elements
+
+???+ question "How to filter row that has column content not matching a regular expression?"
+
+    Use [REGEX](https://docs.confluent.io/cloud/current/flink/reference/functions/string-functions.html#flink-sql-regexp-function)
+
     ```sql
-    -- DDL
-    create table t (
-        StatesTable ROW< states ARRAY<ROW<name STRING, city STRING, lg DOUBLE, lat DOUBLE>>>,
-        creationDate STRING
+    WITH filtered_data AS (
+    SELECT *,
+        CASE 
+            WHEN NOT REGEXP(user_agent, '.*Opera/.*') 
+            THEN TRUE  -- Keep this row
+            ELSE FALSE -- Filter out rows that match "Opera/"
+        END AS keep_row
+    FROM examples.marketplace.clicks
     )
 
-    insert into t(StatesTable,creationDate)
-    values( 
-        (
-        ARRAY[ row('California', 'San Francisco', -122.4194, 37.7749),
-            row('New York', 'New York City', -74.0060, 40.7128),
-            row('Texas', 'Austin', -97.7431, 30.2672)
-        ]
-        ), 
-        '2020-10-10'
-    )
+    SELECT * 
+    FROM filtered_data
+    WHERE keep_row = TRUE;
     ```
-
-    ```sql
-    -- example of defining attribute from the idx element of an array from a nested json schema:
-      CAST(StatesTable.states[3] AS DECIMAL(10, 4)) AS longitude,
-      CAST(StatesTable.states[4] AS DECIMAL(10, 4)) AS latitude,
-    ```
-
-    See also the [CROSS JOIN UNNEST](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/joins/#array-expansion) keywords.
-
-    See also running demo in [flink-sql/03-nested-row](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/03-nested-row)
-
-
-???+ question "How to access element of an array of rows?"
-    The table has a column that is an array of rows. 
-    ```sql
-     CREATE TABLE my_table (
-        key_col INT,
-        nested_data ARRAY<ROW<id INT, name STRING>>
-    ) WITH (...)
-    ```
-
-    To create one record per row within the array, so exploding the array, use CROSS JOIN UNNEST:
-    ```sql
-     SELECT
-        t.key_col,
-        unnested_row.id,
-        unnested_row.name
-    FROM
-        my_table AS t
-    CROSS JOIN UNNEST(t.nested_data) AS unnested_row;
-    ```
-
-    So each row in the nested_data array will be a row in the output table with the matching key_col.
 
 ???+ info "Navigate a hierarchical structure in a table"
     The unique table has node and ancestors representation. Suppose the graph represents a Procedure at the highest level, then an Operation, then a Phase and a Phase Step at the level 4. In the Procedures table we can have rows like:
@@ -166,6 +164,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
         info from `procedures` cross join unnest(parentIds) as ids(parent_id)
     ```
 
+### Transformation
 
 ???+ question "How to transform a field representing epoch to a timestamp?"
     
@@ -202,6 +201,28 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
      TIMESTAMPDIFF(DAY, CAST(created_date AS TIMESTAMP_LTZ(3)), CURRENT_DATE) as days_since_launch,
     ```
 
+???+ question "How to access element of an array of rows?"
+    The table has a column that is an array of rows. 
+    ```sql
+     CREATE TABLE my_table (
+        key_col INT,
+        nested_data ARRAY<ROW<id INT, name STRING>>
+    ) WITH (...)
+    ```
+
+    To create one record per row within the array, so exploding the array, use CROSS JOIN UNNEST:
+    ```sql
+     SELECT
+        t.key_col,
+        unnested_row.id,
+        unnested_row.name
+    FROM
+        my_table AS t
+    CROSS JOIN UNNEST(t.nested_data) AS unnested_row;
+    ```
+
+    So each row in the nested_data array will be a row in the output table with the matching key_col.
+
 ???+ question "How to mask a field?"
     Create a new table from the existing one, and then use REGEXP_REPLACE to mask an existing attribute
 
@@ -210,25 +231,6 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     INSERT INTO users_msk SELECT ..., REGEXP_REPLACE(credit_card,'(\w)','*') as credit_card FROM users;
     ```
 
-???+ question "How to filter row that has column content not matching a regular expression?"
-
-    Use [REGEX](https://docs.confluent.io/cloud/current/flink/reference/functions/string-functions.html#flink-sql-regexp-function)
-
-    ```sql
-    WITH filtered_data AS (
-    SELECT *,
-        CASE 
-            WHEN NOT REGEXP(user_agent, '.*Opera/.*') 
-            THEN TRUE  -- Keep this row
-            ELSE FALSE -- Filter out rows that match "Opera/"
-        END AS keep_row
-    FROM examples.marketplace.clicks
-    )
-
-    SELECT * 
-    FROM filtered_data
-    WHERE keep_row = TRUE;
-    ```
 
 
 ## Stateful aggregations
@@ -322,31 +324,6 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     ```
 
 
-???+ question "What are the different SQL execution modes?"
-
-    Using previous table it is possible to count the elements in the table using:
-
-    ```sql
-    select count(*) AS `count` from pageviews;
-    ```
-
-    and we get different behaviors depending of the execution mode:
-
-    ```sql
-    set 'execution.runtime-mode' = 'batch';
-    # default one
-    set 'execution.runtime-mode' = 'streaming';
-
-    set 'sql-client.execution.result-mode' = 'table';
-    ```
-
-    In changelog mode, the SQL Client doesn't just update the count in place, but instead displays each message in the stream of updates it's receiving from the Flink SQL runtime.
-    
-    ```sql
-    set 'sql-client.execution.result-mode' = 'changelog';
-    ```
-
-    ![](./images/changelog-exec-mode.png)
 
 ???+ question "How to access json data from a string column being a json object?"
     
@@ -446,14 +423,48 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 ## Joins
 
-When doing a join, Flink needs to materialize both the right and left of the join tables fully in state, which can cost a lot of memory, because if a row in the left-hand table (LHT), also named the **probe side**, is updated, the operator needs to emit an updated match for all matching rows in the right-hand table (RHT) or **build side**. The cardinality of right side will be mostly bounded at a given point of time, but the left side may vary a lot. A join emits matching rows to downstream processing.
+When doing a join in a database, the result reflects the state of the join at the time we execute the query. In streaming, as both side of a join receive new rows, both side of joins need to continuously change. This is a **continuous query on dynamic tables**, where the engine needs to keep a lot of state: each row of each table. 
+
+This is the common join we do between two tables: 
+```sql
+SELECT t.amount, t.order_type, s.name, s.opening_value FROM transactions t
+LEFT JOIN stocks s
+ON t.stockid = s.id
+```
+
+On the left side, the fact table, has high velocity of changes, but the events are immutables, while on the right side, the dimension, the new records arrive slowly.
+
+When doing a join, Flink needs to fully materialize both the right and left of the join tables in state, which may cost a lot of memory, because if a row in the left-hand table (LHT), also named the **probe side**, is updated, the operator needs to emit an updated match for all matching rows in the right-hand table (RHT) or **build side**. The cardinality of right side will be mostly bounded at a given point of time, but the left side may vary a lot. A join emits matching rows to downstream operator.
+
+The key points to keep in mind are:
+
+* The order of joins is important, try to get the first join done on table with the lowest update frequency.
+* Cross join makes the query fails
+* When the RHS is an upsert table, the result will be upsert too. Which means a result will be re-emitted if the RHS change. To avoid that we need to take the reference data, RHS, in effect at time of the event on LHS. The result is becoming **time-versioned**.
+    ```sql
+    SELECT t.amount, t.order_type, s.name, s.opening_value FROM transactions t
+    LEFT JOIN stocks s
+    FOR SYSTEM_TIME AS OF t.purchase_ts
+    ON t.stockid = s.id
+    ```
+* Temporal joins help to reduce the state size, as we need to keep recent records on both side. The time will be linked to the watermark progress.
+* INNER JOIN is a cartesian product.
+* OUTER joins like left, right or full, may generate records with empty columns for non-matching join.
+* INTERVAL JOIN equires at least one equi-join predicate and a join condition that bounds the time on both sides.
+    ```sql
+    SELECT t.amount, t.order_type, s.name, s.opening_value FROM transactions t, stocks s
+    WHERE t.stockid = s.id AND t.ts BETWEEN s.ts - INTERVAL '6' HOURS AND s.ts
+    ```
 
 Here is a list of important tutorials on Joins:
 
-* [Confluent Cloud: video on joins.](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html)
+* [Confluent Cloud: video on joins](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html) with details on fow joins work.
 * [Confluent -developer: How to join streams](https://developer.confluent.io/tutorials/join-a-stream-to-a-stream/flinksql.html). The matching content is in [flink-sql/04-joins folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/04-joins) for Confluent Cloud or Platform for Flink. This folder also includes more SQL exercises.
-* [Confluent temporal join](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html#temporal-joins)
+* [Confluent temporal join documentation.](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html#temporal-joins)
 * [Window Join Queries in Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/flink/reference/queries/window-join.html)
+* [Temporal Join Study in this repo.](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/09-temporal-joins)
+
+
 
 ???+ info "Inner knowledge on temporal join"
     Event-time temporal joins are used to join two or more tables based on a **common** event time (in one of the record table or the kafka record: `$rowtime` system column). With an event-time attribute, the operator can retrieve the value of a key as it was at some point in the past. The right-side, versioned table, stores all versions, identified by time, since the last watermark.
@@ -488,6 +499,9 @@ Here is a list of important tutorials on Joins:
         where P.ts between T.ts and T.ts + interval '1' minutes;
     end
     ```
+
+???- question "how primary key selection impacts joins?"
+
 
 ???+ warning "Join on 1x1 relationship"
     In current Flink SQL it is not possible to *efficiently* join elements from two tables when we know the relation is 1 to 1: one transaction to one account, one shipment to one order. As soon as there is a match, normally we want to emit the result and clear the state. This is possible to do so with the DataStream API, not SQL.

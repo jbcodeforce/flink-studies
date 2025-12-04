@@ -1,6 +1,6 @@
 # Temporal joins studies
 
-Let try [the Flink example about temporal joins](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/joins/#temporal-joins) to join against a versioned table, on Confluent Cloud.
+Let try [the Flink example about temporal joins](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/joins/#temporal-joins) to join against a versioned table, on Confluent Cloud or Flink local.
 
 The join will get value of the versioned table at the event time of the probe side (LHS).
 
@@ -32,13 +32,14 @@ CREATE TABLE orders (
 ) 
 ```
 
-## Run the three DDLs
+## Confluent Cloud for Flink
+### Run the three DDLs
 
 * Run in Confluent Cloud Workspace the `ddl.orders.sql`, `ddl.currencu_rates.sql`, and the sink table: `ddl.orders_with_curr_rate.sql`
 
 * Use the orders as defined in `insert_orders.sql`
 
-## First Case : no rate yet
+### First Case : no rate yet
 
 * Run the temporal join without right side, will generate records without conversion rate:
      ```sql
@@ -47,7 +48,7 @@ CREATE TABLE orders (
      ...
      ```
 
-## Add one set of rates
+### Add one set of rates
 
 * Now add 1 set of rate for each currency at 10:00:00: run the `insert_curr_rates_1.sql`, while the temporal join still running. --> no changes
 * Stop the temporal and restart it. Now the conversion rate are gound with the match and converted amounts work:
@@ -57,7 +58,7 @@ CREATE TABLE orders (
      ...
      ```
 
-## Adding more rates for each time slices
+### Adding more rates for each time slices
 
 * Execute `insert_curr_rate_2.sql`, while the temporal join runs. -> records are not re-evaluated so the results are the same as above.
 * Restarting the temporal join will get the expected results
@@ -74,3 +75,8 @@ CREATE TABLE orders (
      ('ORD-009', 425.80, 'YEN', TIMESTAMP '2024-01-15 10:40:00', 0.15, 63.87),
      ...
      ```
+
+## Apache Flink local
+
+* Start the SQL client
+* Execute the temporal_joins.sql

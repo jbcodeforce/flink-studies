@@ -169,6 +169,57 @@ Create table statements do not changes between managed services and standalone F
     as select id, first_name, last_name, email from shoe_customers;
     ```
 
+???+ question "How to support nested rows, DDL and inserts?"
+    Avro, Protobuf or Json schemas are very often hierarchical per design. ROW and ARRAY are the objects with nested elements
+    ```sql
+    -- DDL
+    create table t (
+        StatesTable ROW< states ARRAY<ROW<name STRING, city STRING, lg DOUBLE, lat DOUBLE>>>,
+        creationDate STRING
+    )
+
+    insert into t(StatesTable,creationDate)
+    values( 
+        (
+        ARRAY[ row('California', 'San Francisco', -122.4194, 37.7749),
+            row('New York', 'New York City', -74.0060, 40.7128),
+            row('Texas', 'Austin', -97.7431, 30.2672)
+        ]
+        ), 
+        '2020-10-10'
+    )
+    ```???+ question "How to support nested rows, DDL and inserts?"
+    Avro, Protobuf or Json schemas are very often hierarchical per design. ROW and ARRAY are the objects with nested elements
+    ```sql
+    -- DDL
+    create table t (
+        StatesTable ROW< states ARRAY<ROW<name STRING, city STRING, lg DOUBLE, lat DOUBLE>>>,
+        creationDate STRING
+    )
+
+    insert into t(StatesTable,creationDate)
+    values( 
+        (
+        ARRAY[ row('California', 'San Francisco', -122.4194, 37.7749),
+            row('New York', 'New York City', -74.0060, 40.7128),
+            row('Texas', 'Austin', -97.7431, 30.2672)
+        ]
+        ), 
+        '2020-10-10'
+    )
+    ```
+
+    ```sql
+    -- example of defining attribute from the idx element of an array from a nested json schema:
+      CAST(StatesTable.states[3] AS DECIMAL(10, 4)) AS longitude,
+      CAST(StatesTable.states[4] AS DECIMAL(10, 4)) AS latitude,
+    ```
+
+    See also the [CROSS JOIN UNNEST](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/joins/#array-expansion) keywords.
+
+    See also running demo in [flink-sql/03-nested-row](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/03-nested-row)
+
+
 ???+ question "How to generate data using Flink Faker? (Flink OSS)"
     Create at table with records generated with [Flink faker](https://github.com/knaufk/flink-faker) connector using the [DataFaker expressions.](https://github.com/datafaker-net/datafaker). Valid only on OSS Flink or Confluent platform for Flink.
 
