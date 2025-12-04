@@ -1,489 +1,28 @@
-# Flink SQL Coding
+# Flink SQL DML
 
-???+ Info "Updates"
+???- Info "Updates"
     Created 10/24, Updated 12/20/24
     Revised 12/06/24
 
+This chapter offers continue on the best practices for implementing Flink SQL solutions, for Data Manipulation Language queries. DML is used to define statements which modify the data and don’t change the metadata.
 
-This chapter offers a compilation of best practices for implementing Flink SQL solutions, applicable to local Flink open-source, the Confluent Platform for Flink or the Confluent Cloud for Flink.
+## Sources Of Information
 
-## Getting started with a SQL client
+* [Confluent SQL documentation for DML samples](https://docs.confluent.io/cloud/current/flink/reference/queries/overview.html#flink-sql-queries) 
+* [Apache Flink SQL](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/insert/)
+* [Confluent Developer Flink tutorials](https://developer.confluent.io/tutorials/)
 
-Confluent Cloud enables users to write Flink SQL statements through the web console or a CLI shell, while Flink Open Source features a `sql-client` shell that communicates with an existing job manager. Currently, the Flink Kubernetes operator does not support the SQL client for Session Clusters. When using Kubernetes deployment, any SQL script must be packaged with a Java program called SQL Runner and deployed as a Flink Application using a FlinkDeployment descriptor."
-
-Use one of the following approaches:
-
-* Once Flink project is downloaded locally, and the cluster started, use `sql-client.sh` to connect to the cluster.
-* When using Flink with docker compose: the SQL client in the docker container runs against local Flink cluster (see [deployment/custom-flink-image](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/custom-flink-image) folder to build a custom image using the dockerfile with the `sql-client` service and any specific connector jars).
-* Use Confluent Cloud Flink console to write SQL Statements in a Workspace, and run them directly from there: statements may run on a compute pool and may run forever.
-* Use Confluent cli connected to a compute pool defined in a **Confluent Cloud** environment. (To create a new environment using Terraform see [this note](terraform.md))
-
-???+ tip "Local SQL client"
-    The SQL Client aims to provide an easy way to write, debug, and submit table programs to a Flink cluster without a single line of code in any programming language. To interact with Flink using the SQL client, open a bash in the running container, or in the flink bin folder:
-
-    ```sh
-    # be sure to mount the folder with sql scripts into the container
-
-    # Using running job manager running within docker
-    docker exec -ti sql-client bash
-    # in kubernetes pod
-    kubectl exec -ti pod_name -n namespace -- bash
-    # in the shell /opt/flink/bin 
-    ./sql-client.sh
-    ```
-
-
-???+ example  "SQL client with Confluent Cloud cli"
-    [See quick start note](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-shell.html) which is summarized as:
-
-    * Connect to Confluent Cloud with CLI, then get environment and compute pool identifiers
-
-    ```sh
-    confluent login --save
-    export ENV_ID=$(confluent environment list -o json | jq -r '.[] | select(.name == "aws-west") | .id')
-    export COMPUTE_POOL_ID=$(confluent flink compute-pool list -o json | jq -r '.[0].id')
-    ```
-
-    * Start local SQL client - using the `aws-west` environment.
-
-    ```sh
-    confluent flink shell --compute-pool $COMPUTE_POOL_ID --environment $ENV_ID
-    ```
-
-    * Write SQL statements, results are visible in the active session.
-
-???+ info "Run SQL in Kubernetes application" 
-    Write SQL statements and test them with Java SQL runner. The Class is in [flink-studies/code/flink-java/sql-runner](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-java/sql-runner) folder. Then package the java app and sql script into a docker image then use a FlinkDeployment  descriptor; (see [this git doc](https://github.com/apache/flink-kubernetes-operator/tree/main/examples/flink-sql-runner-example)). As another solution write [Table API](./table-api.md) code that can also include SQL.
-
-[See the Flink SQL CLI commands documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sqlclient/).
-
-See [the flink-sql/00-basic-sql folder](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/00-basic-sql) to get some getting started with Flink SQL examples.
-
-## Basic commands
-
-* Show catalogs, tables... By default there is a default catalog and database withour any table.
-
-    ```sql
-    SHOW CATALOGS;
-    USE CATALOG `examples`;
-    SHOW DATABASES;
-    USE `marketplace`;
-    SHOW TABLES;
-    SHOW TABLES LIKE '*_raw'
-    SHOW JOBS;
-    DESCRIBE tablename;
-    DESCRIBE EXTENDED table_name;
-    ```
-
-???+ info "Understand a type of attribute or get table structure with metadata"
-    ```sql
-    show create table 'tablename';
-    -- for a specific attribute
-    select typeof(column_name) from table_name limit 1;
-    ```
-
-    Flink SQL planner performs type checking. Assessing type of inferred table is helpful specially around timestamp. See [Data type mapping documentation.](https://docs.confluent.io/cloud/current/flink/reference/serialization.html)
-
-???+ info "Understand the physical execution plan for a SQL query"
-    See the [explain keyword](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/explain/) or [Confluent Flink documentation](https://docs.confluent.io/cloud/current/flink/reference/statements/explain.html) for the output explanations.
-
-    ```sql
-    explain select ...
-    ```
-
-    Indentation indicates data flow, with each operator passing results to its parent. 
-    
-    Review the state size, the changelog mode, the upsert key... Operators change changelog modes when different update patterns are needed, such as when moving from streaming reads to aggregations.
-    
-    Pay special attention to data skew when designing your queries. If a particular key value appears much more frequently than others, it can lead to uneven processing where a single parallel instance becomes overwhelmed handling that key’s data. Consider strategies like adding additional dimensions to your keys or pre-aggregating hot keys to distribute the workload more evenly. Whenever possible, configure the primary key to be identical to the upsert key.
-
-
-## DDL statements
-
-Data Definition Language (DDL) are statements to define metadata in Flink SQL by creating, updating, or deleting tables. [See the Flink SQL Examples in Confluent Cloud for Apache Flink documentation.](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#flink-sql-examples-in-af-long)
-
-A table registered with the CREATE TABLE statement can be used as a table source or a table sink.
- 
-### Table creation how-tos
-
-???+ tip "Primary key and partition by considerations"
-    * Primary key can have one or more columns, all of them should be not null, and only being `NOT ENFORCED`
-    * The primary key declaration, partitions the table implicitly by the key column(s)
-    * Flink uses the primary key for state management and deduplication with upsert, if the sink connector supports it. While the partition key is what determines which Kafka partition a message will be written to. This is a Kafka-level concept.
-    * For upsert mode, the bucket key must be equal to primary key. While for append/retract mode, the bucket key can be a subset of the primary key.
-    * In Confluent Cloud, partition key will generate a key schema, except if using the option (`'key.format' = 'raw'`)
-    * If the destination topic doesn't define partitioning key, then CC Flink SQL will write the records in whatever partitioning that was used at the end of the query. if last operation in the query is `GROUP BY foo` or `JOIN ON A.foo = B.foo`, then output records would be partitioned on `foo` values, and they wouldn't be re-partitioned before writing them into Kafka. The `foo` partitioning is preserved. 
-    * If you have parallel queries like without any data shuffling, like `INSERT INTO Table_A SELECT * FROM Table_B`, then any skew from Table_B would be repeated in Table_A. Otherwise, if partitioning key is defined (like `DISTRIBUTED BY HASH(metric) `), any writes into that topic would be shuffled by that new key.
-    * In case of key skew, add more fields in the distribution to partition not just in one key. That would allow Flink to read data in more parallel fashion, improving the problem with readings from Kafka's bottleneck of 18MBs/connection (partition)
-    * An interesting metric for Confluent Cloud Flink, 5 partitions feeds 1 CFU. CFU has constraint on memory and cpu.
-    * The performance bottleneck will be actually records serialization and deserialisation, avro is slower than protobuf.
-
-    ```sql
-    -- simplest table
-    CREATE TABLE humans (race STRING, origin STRING);
-    -- with primary key 
-    CREATE TABLE manufactures (m_id INT PRIMARY KEY NOT ENFORCED, site_name STRING);
-    -- with hash distribution to 2 partitions that match the primary key
-    CREATE TABLE humans (hid INT PRIMARY KEY NOT ENFORCED, race STRING, gender INT) DISTRIBUTED BY (hid) INTO 2 BUCKETS;
-    ```
-
-???+ tip "Create a table with csv file as persistence - Flink OSS"
-    We need to use the file system connector.
-
-    ```sql
-    create table user (
-        'user_id' VARCHAR(250),
-        'name' VARCHAR(50)
-    ) partitioned by ('used-id')
-    WITH (
-        'format' = 'json', -- other format are: csv, parquet
-        'connector' = 'filesystem',
-        'path' = '/tmp/users'
-    );
-    ```
-
-
-???+ question "How to consume from a Kafka topic to a SQL table? -- Flink OSS"
-    On Confluent Cloud for flink, there are already tables created for each topic. For local Flink we need to create table with column definitions that maps to attributes of the record. The `From` right operand proposes the list of topic/table for the catalog and database selected. For Flink OSS or Confluent Platform for Flink the `WITH` statement helps to specify the source topic.
-
-    ```sql
-    select .... from TableName 
-    WITH (
-        'connector' = 'kafka',
-        'topic' = 'flight_schedules',
-        'properties.bootstrap.servers' = 'localhost:9092',
-        'properties.group.id' = 'fs_grp',
-        'scan.startup.mode' = 'earliest-offset',
-    )
-    ```
-
-    For Avro and schema registry with open source Flink. See the tool [extract_sql_from_avro.py](https://github.com/jbcodeforce/flink-studies/blob/master/tools/extract_sql_from_avro.py) to query Confluent Schema Registry and build the matching SQL to create a table connected to the topic using this schema.
-
-    ```sql
-    CREATE TABLE shoe_customers (
-        id STRING,
-        first_name STRING,
-        last_name STRING,
-        email STRING,
-        phone STRING,
-        street_address STRING,
-        state STRING,
-        zip_code STRING,
-        country STRING,
-        country_code STRING
-    ) WITH (
-        'connector' = 'kafka',
-        'topic' = 'shoe_customers',
-        'properties.bootstrap.servers' = 'broker:29092',
-        'scan.startup.mode' = 'earliest-offset',
-        'key.format' = 'raw',
-        'key.fields' = 'id',
-        'value.format' = 'avro-confluent',
-        'properties.group.id' = 'flink-sql-consumer',
-        'value.fields-include' = 'ALL',
-        'value.avro-confluent.url' = 'http://schema-registry:8081'
-    );
-    ```
-
- 
-
-???+ question "How to load data from a csv file using filesystem connector using SQL - Flink OSS"
-    Enter the following statement in a SQL client session:
-
-    ```sql
-    SET execution.runtime-mode=BATCH;
-    ```
-    Create a table from the content of the file, mounted inside the container or accessible on local file system:
-
-    ```sql
-    CREATE TABLE employee_info (
-        emp_id INT,
-        name VARCHAR,
-        dept_id INT
-    ) WITH ( 
-        'connector' = 'filesystem',
-        'path' = '/home/flink-sql-demos/00-basic-sql/data/employees.csv',
-        'format' = 'csv'
-    );
-    ```
-
-    Show tables and list some elements within the table.
-    
-    ```sql
-    SHOW TABLES;
-
-    SELECT * from employee_info WHERE dept_id = 101;
-    ```
-
-    Show how the table is created:
-
-    ```sql
-    show create table orders;
-    ```
-
-    [See complete example in the readme](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/00-basic-sql)
-
-
-???+ question "How to add a metadata field in a table?"
-    [Use ALTER TABLE](https://docs.confluent.io/cloud/current/flink/reference/statements/alter-table.html) to modify existing table. Below is an example of adding dt attribute.
-    
-    ```sql
-    alter table flight_schedules add(dt string metadata virtual);
-    ```
-
-
-???+ tip "Create a table as another table by inserting all records (CTAS create table as select)"
-    [CREATE TABLE AS SELECT](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-as-select-ctas) is used to create table and insert values in the same statement. It derives the physical column data types and names (from aliased columns), the changelog.mode (from involved tables, operations, and upsert keys), and the primary key.
-    
-    By using a primary key:
-
-    ```sql
-    create table shoe_customer_keyed(
-        primary key(id) not enforced
-    ) distributed by(id) into 1 buckets
-    as select id, first_name, last_name, email from shoe_customers;
-    ```
-
-???+ question "How to generate data using Flink Faker? (Flink OSS)"
-    Create at table with records generated with [Flink faker](https://github.com/knaufk/flink-faker) connector using the [DataFaker expressions.](https://github.com/datafaker-net/datafaker). Valid only on OSS Flink or Confluent platform for Flink.
-
-    ```sql
-    CREATE TABLE `bounded_pageviews` (
-      `url` STRING,
-      `user_id` STRING,
-      `browser` STRING,
-      `ts` TIMESTAMP(3)
-    )
-    WITH (
-      'connector' = 'faker',
-      'number-of-rows' = '500',
-      'rows-per-second' = '100',
-      'fields.url.expression' = '/#{GreekPhilosopher.name}.html',
-      'fields.user_id.expression' = '#{numerify ''user_##''}',
-      'fields.browser.expression' = '#{Options.option ''chrome'', ''firefox'', ''safari'')}',
-      'fields.ts.expression' =  '#{date.past ''5'',''1'',''SECONDS''}'
-    );
-    ```
-    This will only work in customized Flink client with the jar from Flink faker.
-
-???+ info "Generate data with DataGen for Flink OSS"
-    [Use DataGen to do in-memory data generation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/connectors/table/datagen/) and the [new feature in product how to guide documentation](https://docs.confluent.io/cloud/current/flink/how-to-guides/custom-sample-data.html#flink-sql-custom-sample-data).
-
-???+ question "How to generate test data to Confluent Cloud Flink?"
-    Use Kafka Connector with DataGen. Those connector exists with a lot of different pre-defined model. Also it is possible to define custom Avro schema and then use predicates to generate data. There is a [Produce sample data quick start tutorial from the Confluent Cloud home page](https://docs.confluent.io/cloud/current/connectors/cc-datagen-source.html). See also [this readme](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/01-confluent-kafka-local-flink).
-
-???+ question "How to transfer the source timestamp to another table"
-    As $rowtime is the timestamp of the record in Kafka, it may be interesting to keep the source timestamp to the downstream topic.
-
-    ```sql
-    create table `some_clicks` (
-          `order_id` STRING NOT NULL,
-          ...
-          `event_time` TIMESTAMP_LTZ(3) METADATA FROM 'timestamp')
-    distributed.... 
-    ```
-
-    Then the statement to insert record to the new table:
-    
-    ```sql
-    insert into `some_clicks`
-    select
-        order_id, 
-        user_id,
-        $rowtime as event_time
-    from  `src_table`;
-    ```
-
-???+ info "Views over Tables"
-    Recall [views](https://docs.confluent.io/cloud/current/flink/reference/statements/create-view.html), are read-only, and have no insert operation and are used to encapsulate complex queries and reference them like regular tables. It acts as a virtual table that refers to the result of the specified statement expression.
-    Views and tables share the same namespace in Flink. [See array of row view example](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-sql/03-nested-row/vw.array_of_rows.sql).
-
-???+ question "Dealing with late event"
-    Any streams mapped to a table have records arriving more-or-less in order, according to the `$rowtime`, and the watermarks let the Flink SQL runtime know how much buffering of the incoming stream is needed to iron out any out-of-order-ness before emitting the sorted output stream.
-
-    We need to  specify the watermark strategy: for example within 30 second of the event time:
-
-    ```sql
-    create table new_table (
-        ....
-        `event_time` TIMESTAMP_LTZ(3) METADATA FROM 'timestamp',
-     watermark for `event_time` as `event_time` - INTERVAL '30' SECOND
-    );
-    ```
-
-    On CCF the watermark is on the `$rowtime` by default.
-
-???+ question "How to change system watermark?"
-    Modify the WATERMARK metadata using alter table.
-
-    ```sql
-    ALTER TABLE table_name MODIFY WATERMARK FOR $rowtime AS $rowtime - INTERVAL '1' SECOND;
-    -- in case we need to reverse back
-    ALTER TABLE table_name DROP WATERMARK;
-    ```
-
-    This can be used when doing enrichment join on reference table. We do not want to wait for watermark arriving on the reference table, so set the watermark of this reference table to the max INT using `ALTER TABLE table_name SET `$rowtime` TO_TIMESTAMP(,0)`
-
-???+ question "Create a table with topic as one day persistence"
-    See the [WITH options](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#with-options).
-
-    ```sql
-    create table `small-orders` (
-        `order_id` STRING NOT NULL,
-        `customer_id` INT NOT NULL,
-        `product_id` STRING NOT NULL,
-        `price` DOUBLE NOT NULL
-    ) distributed by hash(order_id) into 1 buckets
-    with (
-        'kafka.retention.time' = '1 d'
-    );
-
-    insert into `small-orders` select * from `examples`.`marketplace`.`orders` where price < 20;
-    ```
-    `distributed by hash(order_id)` and `into 1 buckets` specify that the table is backed by a Kafka topic with 1 partition, and the order_id field will be used as the partition key. 
-
-???+ tip "Table with Kafka Topic metadata"
-    The headers and timestamp are the only options not read-only, all are VIRTUAL. Virtual columns are by default excluded from a SELECT * similar to the system column like `$rowtime`. 
-
-    ```sql
-    ALTER TABLE <table_name> ADD (
-        `headers` MAP<STRING,STRING> METADATA,
-        `leader-epoch`INT METADATA VIRTUAL,
-        `offset` BIGINT METADATA VIRTUAL,
-        `partition` BIGINT METADATA VIRTUAL,
-        `timestamp` TIMESTAMP_LTZ(3) METADATA,
-        `timestamp-type` STRING METADATA VIRTUAL,
-        `topic` STRING METADATA VIRTUAL
-    );
-    ```
-
-    The headers can be updated within SQL statements, some values may be static or coming from the value of one of the selected field. The timestamp can also being updated and for example in most time window queries will be set to the `window_time`.
-
-    ```sql
-    CREATE TABLE clicks_per_seconds (
-        events_per_second BIGINT,
-        window_time TIMESTAMP_LTZ(3) METADATA FROM 'timestamp'
-        )
-
-    INSERT INTO clicks_per_seconds
-    SELECT
-        COUNT(*) AS events_per_second,
-        window_time
-    FROM TABLE(TUMBLE(TABLE clicks, DESCRIPTOR(`$rowtime`), INTERVAL '1' SECOND))
-    GROUP BY window_time, window_end, window_start
-    ``` 
-
-#### Applying to a Medallion Architecture
-
-The current approach can be used for Flink pipeline processing:
-
-| Table type | Goals | Parameters |
-| --- | --- | --- |
-| Raw table  non debezium format | Get the raw data from CDC or outbox pattern | cleanup.policy = 'delete', changelog.mode = 'append', value.format = 'avro-registry'...
-| Raw table debezium format | Same goals | cleanup.policy = 'delete', changelog.mode = 'retract' (retract is the default for Debezium connector),  value.format = 'avro-debezium-registry'|
-| Sources | Deduplicate and keep last record per key |   cleanup.policy = 'delete', changelog.mode = 'upsert' |
-| Intermediates | Enrichment, transformation |    cleanup.policy = 'delete',  changelog.mode = 'upsert' |
-| Sink tables: Facts, Dimensions, Views | Create star schema elements| cleanup.policy = 'compact', changelog.mode = 'retract' or 'upsert' |
-
-#### Deeper dive
-
-* [Confluent product document - changelog ](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#changelog-mode)
-* [Flink SQL Secrets: Mastering the Art of Changelog Event Out-of-Orderness](https://www.ververica.com/blog/flink-sql-secrets-mastering-the-art-of-changelog-event-out-of-orderness)
-* [Resolving: Primary key differs from derived upsert key](https://docs.confluent.io/cloud/current/flink/how-to-guides/resolve-common-query-problems.html#primary-key-differs-from-derived-upsert-key)
-
-
-### Confluent Cloud Flink table creation specific
-
-[See the product documentation](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#create-table-statement-in-af-long) with some specificities, like source and sink tables are directly mapped to Kafka Topics. The `$rowtime` TIMESTAMP_LTZ(3) NOT NULL is provided as a system column.
-
-* For each topic there is an inferred table created. The catalog is the Confluent environment and the Kafka cluster is the database. We can use the ALTER TABLE statement to evolve schemas for those inferred tables.
-
-* A table by default is mapped to a topic with 6 partitions, and the changelog being append. Primary key leads to an implicit DISTRIBUTED BY(k), and value and key schemas are created in Schema Registry. It is possible to create table with primary key and append mode, while by default it is a upsert mode. 
-
-    ```sql
-    CREATE TABLE telemetries (
-        device_id INT PRIMARY KEY NOT ENFORCED, 
-        geolocation STRING, metric BIGINT,
-        ts TIMESTAMP_LTZ(3) NOT NULL METADATA FROM 'timestamp')
-    DISTRIBUTED INTO 4 BUCKETS
-    WITH ('changelog.mode' = 'append');
-    ```
-
-The statement above also creates a metadata column for writing a Kafka message timestamp. This timestamp will not be defined in the schema registry. Compared to `$rowtime` which is declared as a `METADATA VIRTUAL` column, `ts` is selected in a `SELECT *` and is writable.
-
-* When the primary key is specified, then it will not be part of the value schema, except if we specify (using `value.fields-include' = 'all'`) that the value contains the full table schema. The payload of k is stored twice in Kafka message:
-
-    ```sql
-    CREATE TABLE telemetries (k INT, v STRING)
-    DISTRIBUTED BY (k)
-    WITH ('value.fields-include' = 'all');
-    ```
-
-* If the key is a string, it may make sense to do not have a schema for the key in this case declare (the key columns are determined by the DISTRIBUTED BY clause): This does not work if the key name is not `key`.
-
-    ```sql
-    CREATE TABLE telemetries (device_id STRING, metric BIGINT)
-    DISTRIBUTED BY (key)
-    WITH ('key.format' = 'raw');
-    ```
-
-* To keep the record in the topic forever add this `kafka.retention.time' = '0'` as options in the WITH. The supported units are:
-    ```sh
-    "d", "day", "h", "hour", "m", "min", "minute", "ms", "milli", "millisecond",
-    "micro", "microsecond", "ns", "nano", "nanosecond"
-    ```
-
-
-???+ info "CREATE TABLE in Confluent Cloud for Flink"
-    The table creation creates topic and -key, -value schemas in the Schema Registry in the same environment as the compute pool in which the query is run. The `connector` is automatically set to `confluent`. 
-    The non null and nullable columns are translate as the following avro fields:
-    ```avro
-      "fields": [
-            {
-            "name": "customer_id",
-            "type": "string"
-            },
-            {
-            "default": null,
-            "name": "first_name",
-            "type": [
-                "null",
-                "string"
-            ]
-            }
-      ]
-    ```
-
-    DATE as:
-
-    ```avro
-    {
-      "default": null,
-      "name": "registration_date",
-      "type": [
-        "null",
-        {
-          "logicalType": "local-timestamp-millis",
-          "type": "long"
-        }
-      ]
-    }
-    ```
-
-
-* [See SQL examples from product documentation.](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html)
-
-## DML statements
-
-Data modification language, is used to define statements which modify the data and don’t change the metadata.
-
-### Common patterns
+## Common Patterns
 
 This is important to recall that a select applies to a stream of record so the results will change at each new record. A query as below will show the last top 10 orders, and when a new record arrives this list is updated. 
 
 ```sql
 select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 ```
+
+### Filtering
+
+* [Start by looking at this Confluent tutorial](https://developer.confluent.io/confluent-tutorials/filtering/flinksql/) or [The Apache Flink doc section]()
 
 ???+ question "How to filter out records?"
 
@@ -528,7 +67,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 
 ???+ question "How to support nested rows, DDL and inserts?"
-    Avro, Protobuf or Json schemas are very often hierarchical per design. ROW and ARRAY are the object to nest elements
+    Avro, Protobuf or Json schemas are very often hierarchical per design. ROW and ARRAY are the objects with nested elements
     ```sql
     -- DDL
     create table t (
@@ -556,7 +95,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     See also the [CROSS JOIN UNNEST](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/joins/#array-expansion) keywords.
 
-    See also running demo in [flink-sql/03-nested-row](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/03-nested-row)
+    See also running demo in [flink-sql/03-nested-row](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/03-nested-row)
 
 
 ???+ question "How to access element of an array of rows?"
@@ -692,7 +231,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     ```
 
 
-### Stateful aggregations
+## Stateful aggregations
 
 ???+ info "OVER aggregations"
     [OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) compute an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY does, but produces one result for every input row. 
@@ -872,7 +411,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     The minimum out-of-orderness is 50ms and can be set up to 7 days. See [Confluent documentation.](https://docs.confluent.io/cloud/current/flink/reference/functions/datetime-functions.html#flink-sql-source-watermark-function) 
 
-### Statement Set
+## Statement Set
 
 ???+ question "How to manage late message to be sent to a DLQ using Statement Set?"
     First, create a DLQ table like `late_orders` based on the order table:
@@ -905,7 +444,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 
 
-### Joins
+## Joins
 
 When doing a join, Flink needs to materialize both the right and left of the join tables fully in state, which can cost a lot of memory, because if a row in the left-hand table (LHT), also named the **probe side**, is updated, the operator needs to emit an updated match for all matching rows in the right-hand table (RHT) or **build side**. The cardinality of right side will be mostly bounded at a given point of time, but the left side may vary a lot. A join emits matching rows to downstream processing.
 
@@ -953,7 +492,7 @@ Here is a list of important tutorials on Joins:
 ???+ warning "Join on 1x1 relationship"
     In current Flink SQL it is not possible to *efficiently* join elements from two tables when we know the relation is 1 to 1: one transaction to one account, one shipment to one order. As soon as there is a match, normally we want to emit the result and clear the state. This is possible to do so with the DataStream API, not SQL.
 
-### Windowing / Table Value Functions
+## Windowing / Table Value Functions
 
 [Windowing Table-Valued Functions](https://docs.confluent.io/cloud/current/flink/reference/queries/window-tvf.html) groups the Tumble, Hop, Cumulate, and Session Windows. Windows split the stream into “buckets” of finite size, over which we can implement logic. The return value adds three additional columns named “window_start”, “window_end”, “window_time” to indicate the assigned window.
 
@@ -1035,7 +574,7 @@ Here is a list of important tutorials on Joins:
         GROUP BY window_start, window_end;
     ```
 
-### SinkUpsertMaterializer
+## SinkUpsertMaterializer
 
 When operating in upsert mode and processing two update events, a potential issue arises. If input operators for two tables in upsert mode are followed by a join and then a sink operator, update events might arrive at the sink out of order. If the downstream operator's implementation doesn't account for this out-of-order delivery, it can lead to incorrect results.
 
@@ -1053,7 +592,7 @@ To mitigate the usage of `SinkUpsertMaterializer`:
 * A higher number of distinct values per primary key directly increases the state size of the SinkUpsertMaterializer.
 
 
-### Row pattern recognition
+## Row pattern recognition
 
 ???+ question "Find the longest period of time for which the average price of a stock did not go below a value"
     Create a Datagen to publish StockTicker to a Kafka topic.
@@ -1081,7 +620,7 @@ To mitigate the usage of `SinkUpsertMaterializer`:
     The logical components of the row pattern variables are specified in the DEFINE clause.
     B is defined implicitly as not being A.
 
-### Confluent Cloud Specific
+## Confluent Cloud Specific
 
 [See Flink Confluent Cloud queries documentation.](https://docs.confluent.io/cloud/current/flink/reference/queries/overview.html)
 

@@ -423,6 +423,11 @@ Updated 11.20.2025: For CFK version 2.0.3 and CP v8.0.2
 
 See [deploy application section for SQL or Java app deployment](#flink-application-deployment)
 
+### Security
+
+Confluent Platform and Manager Flink security principals are summarized [in this section](../techno/cp-flink.md/#authentication-and-authorization).
+
+
 ### Documentations
 
 * [Confluent Platform for Flink has another operator](https://docs.confluent.io/platform/current/flink/get-started-cpf.html) integrated with FKO. [See my CP Flink summary](../techno/cp-flink.md).
@@ -430,7 +435,7 @@ See [deploy application section for SQL or Java app deployment](#flink-applicati
 * [Getting started with Flink OSS Standalone Kubernetes Setup.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/Kubernetes/)
 * [Apache Flink Native Kubernetes deployment.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/native_Kubernetes/)
 * [A Confluent Platform demonstration git repo: confluentinc/confluent-demo](https://github.com/confluentinc/confluent-demo)
-
+* []()
 
 ## Apache Flink OSS 
 

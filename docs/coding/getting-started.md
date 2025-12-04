@@ -8,7 +8,7 @@
 
 There are four different approaches to deploy and run Apache Flink / Confluent Flink:
 
-1. [Local Binary Installation](#1-open-source-apache-flink-local-binary-installation)
+1. [Local Binary Installation](#1-open-source-apache-Flink-local-binary-installation)
 2. [Docker-based local deployment](#2-docker-based-deployment)
 3. [Kubernetes Deployment](#3-kubernetes-deployment) Colima, AKS, EKS, GKS, King or minicube
 4. [Confluent Cloud Managed Service](#4-confluent-cloud-deployment)
@@ -30,14 +30,14 @@ This approach is ideal for development and testing on a single machine.
 
 ### Installation Steps
 
-1. Download and extract Flink binary
+1. Download and extract Flink binary. See in the release page -> [downloads](https://flink.apache.org/downloads/) the last version.
    ```sh
-   # Using the provided script
+   # Using the provided script, and change the version
    ./deployment/product-tar/install-local.sh
    
    # Or manually
-   curl https://dlcdn.apache.org/flink/flink-1.20.1/flink-1.20.1-bin-scala_2.12.tgz --output flink-1.20.1-bin-scala_2.12.tgz
-   tar -xzf flink-1.20.1-bin-scala_2.12.tgz
+   curl https://dlcdn.apache.org/flink/flink-2.1.1/flink-2.1.1-bin-scala_2.12.tgz --output Flink-2.1.1-bin-scala_2.12.tgz
+   tar -xzf Flink-2.1.1-bin-scala_2.12.tgz
    ```
 1. Download and extract Kafka binary [See download versions](https://downloads.apache.org/kafka) 
    ```sh
@@ -50,15 +50,15 @@ This approach is ideal for development and testing on a single machine.
 
 2. Set environment variables:
    ```sh
-   export FLINK_HOME=$(pwd)/flink-1.20.1
+   export Flink_HOME=$(pwd)/flink-2.1.1
    export KAFKA_HOME=$(pwd)/kafka_2.13-3.9.0
-   export PATH=$PATH:$FLINK_HOME/bin:$KAFKA_HOME/bin
+   export PATH=$PATH:$Flink_HOME/bin:$KAFKA_HOME/bin
 
    ```
 
 3. Start the Flink cluster:
    ```sh
-   $FLINK_HOME/bin/start-cluster.sh
+   $Flink_HOME/bin/start-cluster.sh
    ```
 
 1. Access the Web UI at [http://localhost:8081](http://localhost:8081)
@@ -71,100 +71,28 @@ This approach is ideal for development and testing on a single machine.
    ```
 1. Download needed SQL connector for Kafka
    ```sh
-   cd flink-1.20.1
+   cd Flink-2.1.1
    mkdir sql-lib
    cd sql-lib
-   curl https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/3.4.0-1.20/flink-sql-connector-kafka-3.4.0-1.20.jar --output flink-sql-connector-kafka-3.4.0-1.20.jar
+   curl https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/3.4.0-1.20/flink-sql-connector-kafka-3.4.0-1.20.jar --output Flink-sql-connector-kafka-3.4.0-1.20.jar
    ```
 
 1. Stop the cluster:
     ```sh
-    $FLINK_HOME/bin/stop-cluster.sh
+    $Flink_HOME/bin/stop-cluster.sh
     ```
 
+* [See this deployement readme in this repo](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/product-tar/README.md).
 
-### Running a simple SQL application
+### Running simple SQL application
 
-
-1. Start Kafka cluster and create topics
-   ```sh
-   $KAFKA_HOME/bin/kafka-server-start.sh $KAFKA_HOME/config/kraft/server.properties
-   $KAFKA_HOME/bin/kafka-topics.sh --create --topic flink-input --bootstrap-server localhost:9092
-   $KAFKA_HOME/bin/kafka-topics.sh --create --topic message-count --bootstrap-server localhost:9092
-   ```
-
-1. Use the Flink SQL Shell:
-   ```sql
-   $FLINK_HOME/bin/sql-client.sh --library $FLINK_HOME/sql-lib
-   ```
-      * Create a table using Kafka connector:
-      ```sql
-      CREATE TABLE flinkInput (
-         `raw` STRING,
-         `ts` TIMESTAMP(3) METADATA FROM 'timestamp'
-      ) WITH (
-         'connector' = 'kafka',
-         'topic' = 'flink-input',
-         'properties.bootstrap.servers' = 'localhost:9092',
-         'properties.group.id' = 'j9rGroup',
-         'scan.startup.mode' = 'earliest-offset',
-         'format' = 'raw'
-      );
-      ```
-      * Create an output table in a debezium format so we can see the before and after data:
-      ```sql
-      CREATE TABLE msgCount (
-         `count` BIGINT NOT NULL
-      ) WITH (
-         'connector' = 'kafka',
-         'topic' = 'message-count',
-         'properties.bootstrap.servers' = 'localhost:9092',
-         'properties.group.id' = 'j9rGroup',
-         'scan.startup.mode' = 'earliest-offset',
-         'format' = 'debezium-json'
-      );
-      ```
-      * Make the simplest flink processing by counting the messages:
-      ```sql
-      INSERT INTO msgCount SELECT COUNT(*) as `count` FROM flinkInput;
-      ```
-      The result will look like:
-      ```sh
-      [INFO] Submitting SQL update statement to the cluster...
-      [INFO] SQL update statement has been successfully submitted to the cluster:
-      Job ID: 2be58d7f7f67c5362618b607da8265d7
-      ```
-      * Start a producer in one terminal
-      ```sh
-       bin/kafka-console-producer.sh --topic flink-input --bootstrap-server localhost:9092
-      ```
-      * Verify result in a second terminal
-      ```sh
-      bin/kafka-console-consumer.sh -topic message-count  --bootstrap-server localhost:9092
-      ```
-      The results will be a list of debezium records like
-      ```sh
-      {"before":null,"after":{"count":1},"op":"c"}
-      {"before":{"count":1},"after":null,"op":"d"}
-      {"before":null,"after":{"count":2},"op":"c"}
-      {"before":{"count":2},"after":null,"op":"d"}
-      {"before":null,"after":{"count":3},"op":"c"}
-      {"before":{"count":3},"after":null,"op":"d"}
-      {"before":null,"after":{"count":4},"op":"c"}
-      ```
-
-3. [Optional] Start [SQL Gateway](https://nightlies.apache.org/flink/flink-docs-release-2.0/docs/dev/table/sql-gateway/overview/)  for concurrent SQL queries:
-   ```sh
-   $FLINK_HOME/bin/sql-gateway.sh start -Dsql-gateway.endpoint.rest.address=localhost
-   ```
-   
-See [product documentation for different examples](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/try-flink/datastream/). To do some 
-Python Table API demonstrations [see this chapter](./table-api.md/#python).
+* [See this sql programming lab 0 in this repo](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-sql/00-basic-sql/README.md)
+* [And the lab with Kafka integration](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-sql/01-confluent-kafka-local-Flink)
 
 ### Troubleshooting
 
-- If port 8081 is already in use, modify `$FLINK_HOME/conf/flink-conf.yaml`
-- Check logs in `$FLINK_HOME/log` directory
+- If port 8081 is already in use, modify `$Flink_HOME/conf/flink-conf.yaml`
+- Check logs in `$Flink_HOME/log` directory
 - Ensure Java 11+ is installed and JAVA_HOME is set correctly
 
 ## 2. Docker-based Deployment
@@ -173,10 +101,10 @@ This approach provides containerized deployment using Docker Compose.
 
 ### Quick Start
 
-1. Build a custom Apache Flink image with your own connectors. Verify current [docker image tag](https://hub.docker.com/_/flink/tags) then use [the Dockerfile](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/custom-flink-image/Dockerfile):
+1. Build a custom Apache Flink image with your own connectors. Verify current [docker image tag](https://hub.docker.com/_/flink/tags) then use [the Dockerfile](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/custom-Flink-image/Dockerfile):
    ```sh
-   cd deployment/custom-flink-image
-   docker build -t jbcodeforce/myflink .
+   cd deployment/custom-Flink-image
+   docker build -t jbcodeforce/myFlink .
    ```
 
 2. Start Flink session cluster:
@@ -201,7 +129,7 @@ To run Flink with Kafka:
 During development, we can use docker-compose to start a simple `Flink session` cluster or a standalone job manager to execute one unique job, which has 
 the application jar mounted inside the docker image. We can use this same environment to do SQL based Flink apps. 
 
-As Task manager will execute the job, it is important that the container running the flink code has access to the jars needed to connect to external sources like Kafka or other tools like FlinkFaker. Therefore, in `deployment/custom-flink-image`, there is a [Dockerfile](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/custom-flink-image/Dockerfile) to get the needed jars to build a custom Flink image that may be used for Taskmanager 
+As Task manager will execute the job, it is important that the container running the Flink code has access to the jars needed to connect to external sources like Kafka or other tools like FlinkFaker. Therefore, in `deployment/custom-Flink-image`, there is a [Dockerfile](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/custom-Flink-image/Dockerfile) to get the needed jars to build a custom Flink image that may be used for Taskmanager 
 and SQL client. Always update the jar version with new [Flink version](https://hub.docker.com/_/flink).
 
 ???- Warning "Docker hub and maven links"
@@ -215,18 +143,22 @@ This approach provides scalable, production-ready deployment using Kubernetes.
 
 ### Apache Flink
 
-See the K8S deployment [deeper dive chapter](./k8s-deploy.md) and the [lab readme](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/flink-oss) for details.
+See the K8S deployment [deeper dive chapter](./k8s-deploy.md) and the [lab readme](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/flink-oss) for Apache Flink OSS details.
 
 
 ### Confluent Platform Manager for Flink on Kubernetes
 
-See [Kubernetes deployment chapter](./k8s-deploy.md) for detailed instructions, and the [deployment folder and readme](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cp-flink). See also the [Confluent operator documentation](https://docs.confluent.io/operator/current/co-prepare.html), [submit Flink SQL Statement with Confluent Manager for Apache Flink](https://docs.confluent.io/platform/current/flink/get-started/get-started-statement.html):
+See [Kubernetes deployment chapter](./k8s-deploy.md) for detailed instructions, and the [deployment folder and readme](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cmf). See also the [Confluent operator documentation](https://docs.confluent.io/operator/current/co-prepare.html), [submit Flink SQL Statement with Confluent Manager for Apache Flink](https://docs.confluent.io/platform/current/flink/get-started/get-started-statement.html):
 
 
 ## 4. Confluent Cloud Deployment
 
-This approach provides a fully managed Flink service and very easy to get started quickly without managing Flink clusters or Kafka Clusters.
+This approach provides a fully managed Flink service and very easy to get started quickly without managing Flink clusters or Kafka Clusters. It uses the confluent cli
 
+1. Upgrade the cli
+   ```sh
+   confluent update
+   ```
 1. Create a Flink compute pool:
    ```sh
    confluent flink compute-pool create my-pool --cloud aws --region us-west-2
@@ -253,7 +185,7 @@ This approach provides a fully managed Flink service and very easy to get starte
    );
    ```
 
-See [Confluent Cloud Flink documentation](../techno/ccloud-flink.md) for more details.
+See [Confluent Cloud Flink documentation](../techno/ccloud-Flink.md) for more details.
 
 Explore the [Shift Left project](https://jbcodeforce.github.io/shift_left_utils/), your dedicated CLI for scaling and organizing Confluent Cloud Flink projects with an opinionated, streamlined approach.
 

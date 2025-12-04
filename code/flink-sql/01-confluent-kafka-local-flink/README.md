@@ -133,3 +133,74 @@ INSERT INTO pageviews_kafka SELECT * FROM pageviews;
 
 10/08/24  the module org.apache.kafka.common.security.plain.PlainLoginModule is missing in job and task managers. We  need to add libraries. Verify if these are the good paths in the dockerfile of sql-client. This is not aligned with https://github.com/confluentinc/learn-apache-flink-101-exercises/blob/master/sql-client/Dockerfile
 
+
+---
+To sort out
+
+
+1. Start Kafka cluster and create topics
+   ```sh
+   $KAFKA_HOME/bin/kafka-server-start.sh $KAFKA_HOME/config/kraft/server.properties
+   $KAFKA_HOME/bin/kafka-topics.sh --create --topic flink-input --bootstrap-server localhost:9092
+   $KAFKA_HOME/bin/kafka-topics.sh --create --topic message-count --bootstrap-server localhost:9092
+   ```
+
+1. Use the Flink SQL Shell:
+   ```sql
+   $FLINK_HOME/bin/sql-client.sh --library $FLINK_HOME/sql-lib
+   ```
+      * Create a table using Kafka connector:
+      ```sql
+      CREATE TABLE flinkInput (
+         `raw` STRING,
+         `ts` TIMESTAMP(3) METADATA FROM 'timestamp'
+      ) WITH (
+         'connector' = 'kafka',
+         'topic' = 'flink-input',
+         'properties.bootstrap.servers' = 'localhost:9092',
+         'properties.group.id' = 'j9rGroup',
+         'scan.startup.mode' = 'earliest-offset',
+         'format' = 'raw'
+      );
+      ```
+      * Create an output table in a debezium format so we can see the before and after data:
+      ```sql
+      CREATE TABLE msgCount (
+         `count` BIGINT NOT NULL
+      ) WITH (
+         'connector' = 'kafka',
+         'topic' = 'message-count',
+         'properties.bootstrap.servers' = 'localhost:9092',
+         'properties.group.id' = 'j9rGroup',
+         'scan.startup.mode' = 'earliest-offset',
+         'format' = 'debezium-json'
+      );
+      ```
+      * Make the simplest flink processing by counting the messages:
+      ```sql
+      INSERT INTO msgCount SELECT COUNT(*) as `count` FROM flinkInput;
+      ```
+      The result will look like:
+      ```sh
+      [INFO] Submitting SQL update statement to the cluster...
+      [INFO] SQL update statement has been successfully submitted to the cluster:
+      Job ID: 2be58d7f7f67c5362618b607da8265d7
+      ```
+      * Start a producer in one terminal
+      ```sh
+       bin/kafka-console-producer.sh --topic flink-input --bootstrap-server localhost:9092
+      ```
+      * Verify result in a second terminal
+      ```sh
+      bin/kafka-console-consumer.sh -topic message-count  --bootstrap-server localhost:9092
+      ```
+      The results will be a list of debezium records like
+      ```sh
+      {"before":null,"after":{"count":1},"op":"c"}
+      {"before":{"count":1},"after":null,"op":"d"}
+      {"before":null,"after":{"count":2},"op":"c"}
+      {"before":{"count":2},"after":null,"op":"d"}
+      {"before":null,"after":{"count":3},"op":"c"}
+      {"before":{"count":3},"after":null,"op":"d"}
+      {"before":null,"after":{"count":4},"op":"c"}
+      ```

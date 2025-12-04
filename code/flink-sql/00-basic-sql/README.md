@@ -1,58 +1,70 @@
-# Flink SQL some basic examples
+# Flink SQL Basic Examples
 
-#### Version
-    Created from Flink Study 2021 
-    Updated 1/2025 from Confluent Flink studies - 
+#### Versions
+    Created from Flink Study 2021
+    Updated 1/2025 from Confluent Flink studies
+    Updated 12/2025 Getting started by using SQL client
 
-This folder includes some basic SQL examples to be used with local Flink OSS or Confluent Platform for Flink running locally. There are multiple ways to run Flink locally:
+This folder includes some basic SQL examples to be used with local Flink OSS or Confluent Platform for Flink running locally. 
 
-1. install Apache Flink binary locally and start the cluster and SQL client. [See this note](https://jbcodeforce.github.io/flink-studies/coding/getting-started/#install-locally)
+
+## SQL Client
+### Apache Flink OSS Binary
+
+* [See this readme to get last Apache Flink OSS image](../../../deployment/product-tar/README.md)
+* Start Flink SQL Client:
     ```sh
     # under deployment/product-tar
-    export FLINK_HOME=$(pwd)/flink-1.20.1
+    export FLINK_HOME=$(pwd)/flink-2.1.1
     export PATH=$PATH:$FLINK_HOME/bin
-    $FLINK_HOME/bin/start-cluster.sh
     $FLINK_HOME/bin/sql-client.sh --library $FLINK_HOME/sql-lib
     ```
-1. Use docker images and docker-compose. See the docker compose in deployment/docker folder of this project. The docker engine mounts a project folder in `/home`, so content of the data will be in `/home/flink-sql/data`. As it may not be possible to have Docker Desktop on your machine, consider colima VM.
-1. Kubernetes with  [Minikube or Colima](https://jbcodeforce.github.io/flink-studies/coding/k8s-deploy/)
 
-For each installation, start one Flink **Job manager** and one **Task manager** container. 
+### Docker image
+1. Use docker images and docker-compose. See the docker compose in deployment/docker folder of this project. The docker engine mounts a project folder in `/home`, so content of the data will be in `/home/flink-sql/data`. 
+1. Start SQL client
+  ```sh
+  docker exec -it sql-client bash
+  ```
 
-[For setup see this note](https://jbcodeforce.github.io/flink-studies/coding/getting-started/)
+### Kubernetes
 
-## First demo 
+1. Kubernetes with  [Orbstack](../../../deployment/k8s)
+    ```sh
+    make start_orbstack
+    ```
+1. Start SQL client
+  ```sh
+  kubectl exec -ti <flink-pod> -- bash
+  # then in the container shell
+  sql-client.sh
+  ```
 
-This demonstration is based on the SQL getting started [Flink documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/gettingstarted/).
+## Employees demo 
+
+This demonstration is based on the SQL getting started [Flink 2.1 documentation](https://nightlies.apache.org/flink/flink-docs-release-2.1/docs/dev/table/sql/gettingstarted/).
 
 The [data/employee.csv](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-sql/00-basic-sql/data/employes.csv) has 15 records.
 
-* Connect to the SQL client container via:
+* Once connected set default catalog and db.
 
 ```sh
-# with standalone install
-$FLINK_HOME/bin/sql-client.sh --library $FLINK_HOME/sql-lib
-# with docker
-docker exec -it sql-client bash
-# with k8s pod
-kubectl exec -ti <flink-pod> -- bash
-# then in the container shell
-sql-client.sh
-# Validate some basic query
 show catalogs;
-use catalog default;
+use catalog default_catalog;
 show databases;
 use <yourdatabase>
+use default_database;
 show tables;
+show functions;
 ```
+
+Should get an empty set.
 
 ### Read from CSV mounted in current container
 
-* The following job is a batch processing and uses a DDL to create a table matching the column of a employee csv file. Start the sql_client in the running container.
+* The following job is a batch processing and uses a DDL to create a table matching the column of a employee csv file.
 
 ```sql
-SET execution.runtime-mode=BATCH;
-
 CREATE TABLE employees (
     emp_id INT,
     name VARCHAR,
@@ -70,7 +82,12 @@ CREATE TABLE employees (
 SELECT * from employees WHERE dept_id = 101;
 ```
 
-* Or count the  number of employees per department, with this query:
+**Potential Error**:
+* "The jobGraphFileName field must not be omitted or be null." This could be done because of running diffent version between client and cluster.
+
+### Aggregation
+
+Count the  number of employees per department, with this query:
 
 ```sql
 select dept_id, count(*) as employees_dept from employees group by dept_id;
@@ -78,7 +95,13 @@ select dept_id, count(*) as employees_dept from employees group by dept_id;
 
 ### Streaming consumption, grouping records and aggregation by group
 
-When moving to data streaming, aggregations need to store aggregated results continuously during the execution of the query. Therefore the query needs to maintain the most up to date count for each department to output results as new rows are processed. Flink’s advanced fault-tolerance mechanism maintains internal state and consistency, so queries always return the correct result, even in the face of hardware failure.
+When moving to data streaming, aggregations need to store aggregated results continuously during the execution of the query. Therefore the query needs to maintain the most up-to-date count for each department to output results as new rows are processed. Flink’s advanced fault-tolerance mechanism maintains internal state and consistency, so queries always return the correct result, even in the face of hardware failure.
+
+As we work from file content, which is bounded, we need to specify the runtime mode to be batch:
+
+```sql
+SET 'execution.runtime-mode' = 'batch';
+```
 
 To get the analytic results to external applications, we need to define sinks by adding a sink table like below:
 
@@ -93,9 +116,7 @@ CREATE TABLE department_counts (
 );
 ```
 
-```sql
-SET 'sql-client.execution.result-mode' = 'table';
-```
+Once created the following query will create the file under the folder: `flink-sql/00-basic-sql/data/dept_count`
 
 ```sql
 INSERT INTO department_counts
@@ -112,32 +133,13 @@ GROUP BY dept_id;
 exit();
 ```
 
-## Deduplication
+## Using Datagen faker
 
-* Create a simple table:
+--- ! this does not work with Flink 2.1.1
 
-```sql
-CREATE TABLE employees (
-    emp_id INT,
-    name VARCHAR,
-    dept_id INT,
-    primary key(emp_id) not enforced
-) distributed by hash(emp_id) into '1' buckets 
-  with (
-    'connector' = 'kafka',
-    'changelog.mode' = 'upsert',
-    'scan.bounded.mode' = 'unbounded',
-    'scan.startup.mode' = 'earliest-offset',
-    'value.fields-include' = 'all'
-);
-```
+This example  is based on [Batch and Stream Processing with Flink SQL (Confluent Exercise)](https://developer.confluent.io/courses/apache-flink/stream-processing-exercise/)
 
-* Generate records to kafka
-* Add deduplication sql
-  ```sql
-  ```
-
-## Example based on [Batch and Stream Processing with Flink SQL (Confluent Exercise)](https://developer.confluent.io/courses/apache-flink/stream-processing-exercise/)
+See [The flink-faker github.](https://github.com/knaufk/flink-faker?tab=readme-ov-file) and install the jar in the lib of the Apache Flink installation.
 
 Create a fixed-length (bounded) table with 500 rows of data generated by the faker table source. [Flink-faker](https://github.com/knaufk/flink-faker) tool is a convenient and powerful mock data generator designed to be used with Flink SQL.
 
@@ -159,6 +161,8 @@ WITH (
 );
 ```
 
+*Remarks: Creating this table does not triggers the execution of the connector.* 
+
 ```sql
 set 'sql-client.execution.result-mode' = 'changelog';
 
@@ -166,9 +170,10 @@ set 'sql-client.execution.result-mode' = 'changelog';
 select count(*) AS `count` from bounded_pageviews;
 ```
 
-## Some examples with CC
+## Examples for Confluent Cloud Flink
 
-The `cc-flink/ddl.customers.sql` create a simple customers table. Running this query inside the Confluent Cloud Console -> Flink -> Workspace, creates the `customers` topic, the -key and -value schemas.
+The `cc-flink/ddl.customers.sql` create a simple customers table. Running this query inside the Confluent Cloud Console -> Flink -> Workspace. This will create the `customers` topic, the -key and -value schemas.
+
 A non null string becomes
 
 * See also the [json transformation demo](../../../e2e-demos/json-transformation/README.md) as a basic ARRAY, ROW to JSON Object transformation, runnable in CC Flink or CP Flink.

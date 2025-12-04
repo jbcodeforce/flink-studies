@@ -67,28 +67,6 @@ This architecture helps to clearly separate schema management per environment, a
 ???+ info "Gitops"
     The core concept of [GitOps](https://opengitops.dev/) is to maintain a single Git repository that consistently holds declarative descriptions of the desired infrastructure in the production environment. An automated process ensures that the production environment aligns with the state described in the repository. The methodology and tools support changing infrastructure using feature branches, PR, PR review, 
 
-## Sizing
-
-Sizing a Flink cluster is a complex process influenced by many factors, including workload demands, application logic, data characteristics, expected state size, required throughput and latency, concurrency, and hardware. 
-
-Because of those variables, every Flink deployment needs a unique sizing approach. The most effective method is to run a real job, on real hardware and tune Flink to that specific workload.
-
-For architects seeking sizing guidance, it's helpful to consider:
-* the workload semantic complexity, with the usage of aggregations, joins, windows, processing type, 
-* the input throughput (MB/s or records/second), 
-* the expected state size (GB), 
-* the expected latency.
-
-While Kafka sizing estimates are based on throughput and latency, this is a very crude method for Flink, as it overlooks many critical details. 
-
-For new Flink deployments, a preliminary estimate can be provided, but it's important to stress its inexact nature. 
-A simple Flink job can process approximately **10,000 records per second per CPU**. However, a more substantial job, based on benchmarks, might process closer to 5,000 records per second per CPU. Sizing may use record size, throughput, and Flink statement complexity to estimate CPU load.
-
-???+ info "Tool help manage Flink Cluster estimations"
-    The [flink-estimator git repository](https://github.com/jbcodeforce/flink-estimator) includes a web app with backend estimator for Flink Cluster sizing and locally manage your own configuration. To access this web app there is a docker image at [dockerhub - flink-estimator](https://hub.docker.com/repository/docker/jbcodeforce/flink-estimator/general). It can be started with `docker-compose start -d` or deployed to local kubernetes: `kubectl apply -k k8s`. Access via web browser [http://localhost:8002/](http://localhost:8002/)
-
-    ![](./images/flink-estimator.png)
-
 ## Exactly-once-delivery
 
 Flink's internal exactly-once guarantee is robust, but for the results to be accurate in the external system, that system (the sink) must cooperate.
