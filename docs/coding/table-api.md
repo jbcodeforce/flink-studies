@@ -40,7 +40,6 @@ Summary of important concepts:
 
 It is important to note that Table API and SQL queries can be easily integrated with and embedded into DataStream programs.
 
-
 ### Packaging
 
 TBD
@@ -49,7 +48,7 @@ TBD
 
 In Confluent Manager for Flink deployment, only Flink Application mode is supported. A **Flink Application** is any user's program that spawns one or multiple Flink jobs from its `main()` method. The execution of these jobs can happen in a local JVM (LocalEnvironment) or on a remote setup of clusters with multiple machines ([kubernetes](./k8s-deploy.md)).
 
-In the context of **Confluent Cloud**, the Table API program acts as a client-side library for interacting with the Flink engine hosted in the cloud. It enables the submission of  `Statements` and retrieval of `StatementResults`. The provided Confluent plugin integrates specific components for configuring the TableEnvironment, eliminating the need for a local Flink cluster. By including the `confluent-flink-table-api-java-plugin` dependency, Flink's internal components—such as CatalogStore, Catalog, Planner, Executor, and configuration, are managed by the plugin and fully integrated with Confluent Cloud. This integration is via the REST API, so Confluent Table API plugin is an higher emcapsulation of the CC REST API. 
+In the context of **Confluent Cloud**, the Table API program acts as a client-side library for interacting with the Flink engine hosted in the cloud. It enables the submission of `Statements` and retrieval of `StatementResults`. The provided Confluent plugin integrates specific components for configuring the TableEnvironment, eliminating the need for a local Flink cluster. By including the `confluent-flink-table-api-java-plugin` dependency, Flink's internal components—such as CatalogStore, Catalog, Planner, Executor, and configuration, are managed by the plugin and fully integrated with Confluent Cloud. This integration is via the REST API, so Confluent Table API plugin is an higher emcapsulation of the CC REST API. 
 
 ## Getting Started
 
@@ -287,6 +286,12 @@ Some code is in [this folder](https://github.com/jbcodeforce/flink-studies/tree/
         public static void main(String[] args) {
             EnvironmentSettings settings = ConfluentSettings.fromResource("/cloud.properties");
             TableEnvironment env = TableEnvironment.create(settings);
+    ```
+    
+    With environment variables
+
+    ```java
+    ConfluentSettings settings = ConfluentSettings.fromGlobalVariables();
     ```
 
 ???- question "Create a table with Kafka topic as persistence in Confluent Cloud?"

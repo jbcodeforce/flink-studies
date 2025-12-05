@@ -75,26 +75,29 @@ A Stream is a sequence of events, bounded or unbounded:
 ### Dataflow
 
 
-In [Flink 1.20.x](https://ci.apache.org/projects/flink/flink-docs-release-1.20/learn-flink/#stream-processing), applications are composed of streaming dataflows. Dataflow can consume from Kafka, Kinesis, Queue, and any data sources. A typical high level view of Flink app is presented in figure below:
+In [Flink 2.1.x](https://nightlies.apache.org/flink/flink-docs-release-2.1/learn-flink/overview/#stream-processing), applications are composed of streaming dataflows. Dataflow can consume from Kafka, Kinesis, Queue, and any data sources. A typical high level view of Flink app is presented in figure below:
 
 <figure markdown="span">
-![4](https://ci.apache.org/projects/flink/flink-docs-release-1.20/fig/flink-application-sources-sinks.png)
+![4](https://nightlies.apache.org/flink/flink-docs-release-2.1/fig/flink-application-sources-sinks.png)
 <figcaption>A Flink application -  src: apache Flink product doc</figcaption>
 </figure>
 
 
-Stream processing includes a set of functions to transform data, and to produce a new output stream. Intermediate steps compute rolling aggregations like min, max, mean, or collect 
+Stream processing includes a set of functions to transform data, and to produce a new output stream. An operator in Flink is a component that performs a specific operation on the data stream. Operations can be transformations (e.g., map, filter, reduce); an action (e.g., print, save); or, a source or sink.  Intermediate steps compute rolling aggregations like min, max, mean, or collect 
 and buffer records in time window to compute metrics on a finite set of events. 
 
 <figure markdown="span">
-![5](https://ci.apache.org/projects/flink/flink-docs-release-1.20/fig/program_dataflow.svg){ width=600 }
+![5](https://nightlies.apache.org/flink/flink-docs-release-2.1/fig/program_dataflow.svg){ width=600 }
 <figcaption>Streaming Dataflow  src: apache Flink product doc</figcaption>
 </figure>
 
-Data is partitioned for parallel processing. Each stream has multiple partitions, and each operator has multiple subtasks for scalability.
+Data is partitioned for parallel processing.Flink performs computations using tasks, subtasks and operators. Each stream has multiple partitions, and each operator has multiple tasks for scalability. Tasks are the basic unit of execution in Flink. A task represents a piece of work that gets scheduled and executed by the Flink runtime. 
+
+Each task is responsible for executing a specific part of the data processing logic defined by Flink. Tasks are parallelizable, meaning you can have multiple instances of a task running in parallel to process data streams more efficiently.  A subtask in Flink is a parallel instance of a task. A task can be divided into multiple subtasks that can all be running at the same time. Each subtask processes a portion of the data leading to more efficient data processing. 
+
 
 <figure markdown="span">
-![6](https://ci.apache.org/projects/flink/flink-docs-release-1.20/fig/parallel_dataflow.svg){ width=600 }
+![6](https://nightlies.apache.org/flink/flink-docs-release-2.1/fig/parallel_dataflow.svg){ width=600 }
 <figcaption>Distributed processing  src: apache Flink product doc</figcaption>
 </figure>
 

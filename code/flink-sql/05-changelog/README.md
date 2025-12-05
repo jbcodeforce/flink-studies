@@ -350,7 +350,6 @@ So the `enriched_orders` needs to be upsert or retract. With this we got the sam
 
 For the same reason as above an append mode for a changelog does not support consuming update and delete changes which is produced by a Join.
 
-
 ## Other interesting articles
 
 * [Robin Moffatt's Exploring Joins and Changelogs in Flink SQL](https://rmoff.net/2025/05/20/exploring-joins-and-changelogs-in-flink-sql/)

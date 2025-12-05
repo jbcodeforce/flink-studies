@@ -2,7 +2,7 @@
 
 ???- info "Chapter updates"
     * Created 10/2024 
-    * Review 10/31/24 Updated 4/08/2025
+    * Review 10/31/24 Updated 12/04/2025
 
 [Confluent Cloud for Apache Flink®](https://docs.confluent.io/cloud/current/flink/overview.html) is a cloud-native, managed service, for Flink, strongly integrated with the Confluent Cloud Kafka managed service. It is a simple, serverless and scalable way to build real-time, reusable data products over streams.
 
@@ -165,17 +165,34 @@ Nothing special to mention, except that users need to recall that once the job i
 
 Confluent Cloud for Flink [supports the Table API, in Java](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-java-table-api.html) or [Python](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-python-table-api.html).
 
-The Table API code is a client SDK to send SQL statement to the job manager and is interpreted by the SQL engine, and so the code runs on an external systems, but uses an specific Flink environment for Confluent Cloud to submit the DAG to the remote engine.
+The [Table API](../coding/table-api.md) code is a client SDK, it communicates with Confluent Cloud by using REST requests to send SQL statement to the job manager and is interpreted by the SQL engine. 
 
-When running TableAPI with Confluent Cloud for Flink, there are some specifics code to have:
+The Table API program acts as a client-side library for interacting with the Flink engine hosted in the cloud. It enables the submission of `Statements` and retrieval of `StatementResults`. The provided Confluent plugin integrates specific components for configuring the TableEnvironment, eliminating the need for a local Flink cluster. By including the `confluent-flink-table-api-java-plugin` dependency, Flink's internal components—such as CatalogStore, Catalog, Planner, Executor, and configuration, are managed by the plugin and fully integrated with Confluent Cloud. This integration is via the REST API, so Confluent Table API plugin is an higher emcapsulation of the CC REST API. 
+
+The code runs on an external systems, but uses an specific Flink environment for Confluent Cloud to submit the DAG to the remote engine.
+
+When running TableAPI with Confluent Cloud for Flink plugin, we need to provide [configurations](https://docs.confluent.io/cloud/current/flink/reference/table-api.html#configure-the-plugin) via properties file or Environment variables. 
 
 1. Set the environment variables to connect to Confluent Cloud:
     ```sh
+    export FLINK_API_KEY="<your-flink-api-key>"
+    export FLINK_API_SECRET="<your-flink-api-secret>"
+    export ORG_ID="<your-organization-id>"
+    export ENV_ID="<your-environment-id>"
+    export COMPUTE_POOL_ID="<your-compute-pool-id>"
+    export CLOUD_PROVIDER="aws"
+    export CLOUD_REGION="us-east-1"
     ```
 
-1. Create a Table environment in the Java or Python code like:
+1. Create a Table environment in the Java or Python, using the template approach for URLs:
     ```java
-    ConfluentSettings.Builder settings = ConfluentSettings.newBuilderFromResource("/prod.properties")
+    ConfluentSettings settings1 = ConfluentSettings.newBuilder()
+      .setRegion("us-east-1")
+      .setCloud("aws")
+      .setEndpointTemplate("https://flinkpls-dom123.{region}.{cloud}.confluent.cloud")
+      .setArtifactEndpointTemplate("https://artifacts.{region}.{cloud}.custom-domain.com")
+      // Other required settings...
+      .build();
     ```
 
 1. Package and run
@@ -329,28 +346,90 @@ At the Statement level we can get the following metrics, over time:
 
 ![](./images/statement_metrics.png)
 
-And with the `Query profiler`, which represents the same content as the Flink console UI, we can assess each operator of the query DAG, with CPU utilization, state size, ...
+### Query Profiler
+
+[Query Profiler](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/query-profiler.html) helps developers to get visibility into each operator of the query DAG, with metrcis like CPU utilization, state size, ...
 
 ![](./images/statement_query_profiler.png)
 
+Developers can now visualize data flow, track data volume processed by each operator, and identify operators experiencing high latency, unbounded state growth, or backpressure.
+
+As explained [in Flink Dataflow concept](http://localhost:8000/flink-studies/concepts/#dataflow), a task is responsible for executing a specific part of the data processing logics. As a task may be divided into multiple subtasks, the metrics at the task level will be calculated by aggregating together the metrics from the subtasks inside the task. 
+
+As Flink optimizes the operators execution plan, so operator level metrics are also reported. Operators which are chained together form tasks, tasks will be presented visually by grouping operators together inside a rectangle.
+
+Consider assessing the following metrics:
+
+* Backpressure
+* Busyness
+* Bytes in and out
+* State Size
+* Watermark
+
+**watermark and watermark alignment** status is presenter for the partitions in a Kafka topic that Flink reads data from. The watermark alignment status has 3 columns: blocked, active, idle with percentages to represent *how much time the Kafka partition* is contributing to watermark alignment. Partition watermarks metric is available for Flink source operators only. Developer may be able to see **idle partitions**, or idleness behavior over time (this last issue may impact the record processing with delay from second to several minutes).
+
+<figure markdown="span">
+![](./images/wm_metrics.png)
+</figure>
+
+Metric skew is presented at the task level. The skew tell developers if there is a particular subtask inside the task that is problematic and they then may take the relevant actions to fix it. Data skew metrics are for throughput, state size, busyness and backpressure.  They are aggregated up to create task level and operator level. Data skew indicates the degree of variation in these performance metrics across subtasks and operators, telling developers how well balanced the workloads are. 
+
+In Confluent Cloud, Flink uses kafka topic/partition as sources and sinks. The topic partitioning significantly increases scalability and performance as it allows for higher throughput of message processing. This applies to the Flink sources or sink connectors.
+
+*A Flink statement, is a Flink application, but the Flink UI is not exposed. This WebApp uses an old software stack, that may not fit well in modern SaaS platform.*
+
+???+ info "EXPLAIN vs Query Profiler"
+     The EXPLAIN command outputs the Flink query plan showing the operations that Flink will execute and the changelog mode used to handle state updates.  This gives users insight into how Flink understands and plans to execute the Statement. Developers use it during development and adjustment. There is no data metrics.
+
+     Query profiler is dynamic with data metrics. It helps developers to diagnose performance issues during or after statement execution.
+
+
+[See the product demonstration for an example](https://docs.confluent.io/cloud/current/flink/how-to-guides/profile-query.html#flink-sql-profile-query) to analyze a temporal join with EXPLAIN and Query profiler. To avoid statement to stop change the SQL as:
+```sql
+create table last_orders(
+  order_id VARCHAR(2147483647) NOT NULL PRIMARY KEY not enforced,
+  ts TIMESTAMP_LTZ(3),
+  customer_id INT,
+  product_id VARCHAR(2147483647),
+  name VARCHAR(2147483647),
+  email VARCHAR(2147483647),
+  price DOUBLE
+) DISTRIBUTED BY (order_id) WITH (
+  'changelog.mode' = 'upsert'
+) as 
+SELECT
+  o.order_id,
+  o.`$rowtime` as ts,
+  c.customer_id,
+  o.product_id,
+  c.name,
+  c.email,
+  o.price
+FROM examples.marketplace.orders o
+JOIN examples.marketplace.customers FOR SYSTEM_TIME AS OF o.`$rowtime` c
+ON o.customer_id = c.customer_id
+WHERE o.`$rowtime` >= CURRENT_TIMESTAMP - INTERVAL '1' HOUR;
+```
+
+
+### Metrics
 
 * Confluent Cloud for Apache Flink supports metrics integrations with services like Prometheus, Grafana and Datadog.
 
 ![](./images/export_metrics.png)
-
- 
-* DML statement failing, or being degraded, or pending can be notified to external system. [See the notification for CC documentation](https://docs.confluent.io/cloud/current/monitoring/configure-notifications.html#ccloud-notifications)
 
 * [Flink monitoring statement product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html)
 * [Docker compose, Prometheus setup and Grafana Dashboard for Confluent Cloud for Flink reporting.](https://github.com/confluentinc/confluent-cloud-flink-workshop/tree/master/flink-monitoring)
 
 ### Compute pool monitoring
 
-[Grafana integration](https://docs.confluent.io/cloud/current/monitoring/third-party-integration.html#troubleshoot-grafana)
+See [Grafana integration](https://docs.confluent.io/cloud/current/monitoring/third-party-integration.html#troubleshoot-grafana)
 
-### Some encountered errors
+### Some common errors
 
 * Some query with a lot of joins (10+) on static data, do not returns the same results when doind a SELECT from in CC Workspace. This behavior for foreground query, may be possible, as query plan construction may have timedout. When quesry start to be complex and need to process multiple real records and not just some test data, it is recommended to move to INSERT INTO sink_table SELECT ... and then use the Workspace to look at the table inside the sink_table. The query will run in background and may take sometime to deploy, but will run.
+
+* DML statement failing, or being degraded, or pending can be notified to external system. [See the notification for CC documentation](https://docs.confluent.io/cloud/current/monitoring/configure-notifications.html#ccloud-notifications)
 
 ## Role Base Access Control
 

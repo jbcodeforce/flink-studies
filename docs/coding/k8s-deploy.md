@@ -425,7 +425,7 @@ See [deploy application section for SQL or Java app deployment](#flink-applicati
 
 ### Security
 
-Confluent Platform and Manager Flink security principals are summarized [in this section](../techno/cp-flink.md/#authentication-and-authorization).
+Confluent Platform Flink security principals are summarized [in this section](../techno/cp-flink.md/#authentication-and-authorization).
 
 
 ### Documentations

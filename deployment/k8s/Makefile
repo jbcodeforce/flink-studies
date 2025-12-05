@@ -32,7 +32,6 @@ ensure_ns = \
 # ---- Public commands ----------------------
 start_orbstack: ## Start Orbstack Kubernetes cluster
 	@orb start k8s
-	kubectl get ns
 
 stop_orbstack: ## Stop Orbstack Kubernetes cluster
 	@orb stop k8s

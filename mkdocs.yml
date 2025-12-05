@@ -15,8 +15,8 @@ nav:
   - Recipes:
     - Flink SQL coding:
       - SQL Clients: coding/flink-sql-clients.md
-      - Create Table SQL: coding/flink-sql-1.md
-      - DML SQL: coding/flink-sql-2.md
+      - Create Table (SQL): coding/flink-sql-1.md
+      - DML: coding/flink-sql-2.md
     - Java - Python:
       - Table API: coding/table-api.md
       - DataStreams API: coding/datastream.md
