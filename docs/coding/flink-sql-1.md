@@ -26,7 +26,17 @@ Create table statements do not changes between managed services and standalone F
 * Primary key can have one or more columns, all of them should be not null, and only being `NOT ENFORCED`
 * Inside Flink processing, the primary key declaration, partitions the table implicitly by the key column(s)
 * Flink uses the primary key for state management and deduplication with upsert. While the partition key is what determines which Kafka partition a message will be written to. This is a Kafka-level concept.
-* For upsert mode, the bucket key must be equal to primary key. While for append/retract mode, the bucket key can be a subset of the primary key. [See more on changelog.mode]()
+* For upsert mode, the bucket key must be equal to primary key. While for append/retract mode, the bucket key can be a subset of the primary key. [See more on changelog.mode](../concepts/flink-sql.md/#changelog-mode)
+
+* Understanding the table structure and mapping from a Kafka topic: the basic query helps a lot to understand table configuration and column types. This is helpful to assess time column, to confirm if the type of a column as event_time is a STRING, TIMESTAMP or TIMESTAMP_LTZ.
+
+    ```sql
+    show create table
+    ```
+
+    The `TYPEOF(column_name)` can also being used in a select to understand the type, and troubleshooting a type error.
+
+* Understand the execution plan of a query using `EXPLAIN insert or select`, helps to assess if the query supports the expected semantic like window aggregation, interval joins or classical joins. The change to append to retract or upsert is also very important for state assessment. Recall that properties of the destination table will influence the plan. 
 
 ## Table Creation How-Tos
 

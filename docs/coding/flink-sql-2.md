@@ -232,6 +232,34 @@ But it does not demonstrate the last message is kept. The [deduplication sample]
 
     So each row in the nested_data array will be a row in the output table with the matching key_col.
 
+
+
+???+ question "How to Aggregate a field into an ARRAY - ARRAY_AGG?"
+    Let start by a simple array indexing (the index is between 1 to n_element). Below, the `values array` creates test data into a memory table aliased a `T` with a column named `array_field`:
+
+    ```sql
+    SELECT array_field[4] FROM ((VALUES ARRAY[5,4,3,2,1])) AS T(array_field)
+    ```
+
+    The following code, is creating a view with an [array of aggregates](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions), which in this case, is concatenating the urls over a 1 minute tumble window.
+
+    ```sql
+    CREATE VIEW visited_pages_per_minute AS 
+    SELECT 
+        window_time,
+        user_id, 
+        ARRAY_AGG(url) AS urls
+    FROM TABLE(TUMBLE(TABLE `examples.marketplace.clicks`, DESCRIPTOR(`$rowtime`), INTERVAL '1' MINUTE))
+    GROUP BY window_start, window_end, window_time, user_id;
+    -- once the view is created
+    SELECT * from visited_pages_per_minute;
+    
+    -- it is possible to expand an array into multiple rows using cross join unnest
+
+    SELECT v.window_time, v.user_id, u.url FROM visited_pages_per_minute AS v
+    CROSS JOIN UNNEST(v.urls) AS u(url)
+    ```
+
 ???+ question "How to mask a field?"
     Create a new table from the existing one, and then use REGEXP_REPLACE to mask an existing attribute
 
@@ -338,32 +366,6 @@ Do not use `Statement Set` when the source are different for all statements with
     ```
 
 
-???+ question "How to Aggregate a field into an ARRAY?"
-    Let start by a simple array indexing (the index is between 1 to n_element). Below, the `values array` creates test data into a memory table aliased a `T` with a column named `array_field`:
-
-    ```sql
-    SELECT array_field[4] FROM ((VALUES ARRAY[5,4,3,2,1])) AS T(array_field)
-    ```
-
-    The following code, is creating a view with an [array of aggregates](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions), which in this case, is concatenating the urls over a 1 minute tumble window.
-
-    ```sql
-    CREATE VIEW visited_pages_per_minute AS 
-    SELECT 
-        window_time,
-        user_id, 
-        ARRAY_AGG(url) AS urls
-    FROM TABLE(TUMBLE(TABLE `examples.marketplace.clicks`, DESCRIPTOR(`$rowtime`), INTERVAL '1' MINUTE))
-    GROUP BY window_start, window_end, window_time, user_id;
-    -- once the view is created
-    SELECT * from visited_pages_per_minute;
-    -- it is possible to expand an array into multiple rows using cross join unnest
-    SELECT v.window_time, v.user_id, u.url FROM visited_pages_per_minute AS v
-    CROSS JOIN UNNEST(v.urls) AS u(url)
-    ```
-
-
-
 ???+ question "How to access json data from a string column being a json object?"
     
     Use json_query function in the select.
@@ -372,7 +374,7 @@ Do not use `Statement Set` when the source are different for all statements with
      json_query(task.object_state, '$.dueDate') AS due_date,
     ```
 
-    Use json_value() instead if the column content is a dict or json {}.
+    Use `json_value()` instead if the column content is a dict or json {}.
 
 
 
@@ -396,6 +398,7 @@ Do not use `Statement Set` when the source are different for all statements with
     ```sql
     SELECT explode(col1) from values (array(10,20)), (null)
     ```
+
     SQL has also EXPLODE_OUTER, which returns all values in array including null or empty.
     To translate this to Flink SQL we can use MAP_ENTRIES and MAP_FROM_ARRAYS. MAP_ENTRIES returns an array of all entries in the given map. While MAP_FROM_ARRAYS returns a map created from an arrays of keys and values.
     ```sql

@@ -177,15 +177,14 @@ The `cc-flink/ddl.customers.sql` create a simple customers table. Running this q
 
 ### Deduplication example
 
-The insert to customers includes one  for CUST_01, with different timestamp and street address to help validating the last records is kept. The registration_date is the timestamp to sort on. It may be best practice to keep the key as part of the values by using the following configuration: `'value.fields-include' = 'all'`
+The insert to customers includes two records for CUST_01, with different timestamp and street address to help validating the last records is kept. The r`egistration_date` is the timestamp to sort on. It may be a best practice to keep the key as part of the column values by using the following configuration: `'value.fields-include' = 'all'`
 
-The `cc-flink/ddl.customers.sql` is an append table so doing a `select * from customers` in the CC Workspace will returns the last
-records of CUST_01, without any deduplication logic. Changing back the changelog mode to `upsert`, with: 
+The `cc-flink/ddl.customers.sql` is an `append` table so doing a `select * from customers` in the CC Workspace will returns the both records of CUST_01. Changing back the changelog mode to `upsert`, with: 
 
 ```sql
 alter table `customers` SET ('changelog.mode' = 'upsert')
 ```
-Will remove duplicate records in the table. 
+Will remove duplicate records in the table.
 
 For append mode source table, the `dml.dedup_customers.sql` illustrates the deduplication approach using ROW_NUMBER() function.
 As for eack key, there may be update and delete changes done, the changelog has to be `upsert`

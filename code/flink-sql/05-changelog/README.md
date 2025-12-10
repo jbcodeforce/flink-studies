@@ -4,7 +4,7 @@ This folder includes a set of sqls to demonstrate the impact of using different 
 
 * [Confluent product document - changelog ](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#changelog-mode)
 * [Flink SQL Secrets: Mastering the Art of Changelog Event Out-of-Orderness](https://www.ververica.com/blog/flink-sql-secrets-mastering-the-art-of-changelog-event-out-of-orderness)
-* [Summary of those articles in this repo](https://jbcodeforce.github.io/flink-studies/coding/flink-sql/#changelog-mode)
+* [Summary of those articles in this repo](https://jbcodeforce.github.io/flink-studies/coding/flink-sql-2/#changelog-mode)
 
 Those examples are for Confluent Cloud Flink SQL, and can be deployed using Confluent CLI.
 
