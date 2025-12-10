@@ -8,7 +8,7 @@
 
 There are four different approaches to deploy and run Apache Flink / Confluent Flink:
 
-1. [Local Binary Installation](#1-open-source-apache-Flink-local-binary-installation)
+1. [Local Binary Installation](#1-open-source-apache-flink-local-binary-installation)
 2. [Docker-based local deployment](#2-docker-based-deployment)
 3. [Kubernetes Deployment](#3-kubernetes-deployment) Colima, AKS, EKS, GKS, King or minicube
 4. [Confluent Cloud Managed Service](#4-confluent-cloud-deployment)
@@ -185,7 +185,7 @@ This approach provides a fully managed Flink service and very easy to get starte
    );
    ```
 
-See [Confluent Cloud Flink documentation](../techno/ccloud-Flink.md) for more details.
+See [Confluent Cloud Flink documentation](../techno/ccloud-flink.md) for more details.
 
 Explore the [Shift Left project](https://jbcodeforce.github.io/shift_left_utils/), your dedicated CLI for scaling and organizing Confluent Cloud Flink projects with an opinionated, streamlined approach.
 

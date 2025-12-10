@@ -1,0 +1,49 @@
+apiVersion: flink.apache.org/v1beta1
+kind: FlinkDeployment
+metadata:
+  name: flink-sql-client
+  namespace: flink
+spec:
+  image: flink:1.20.1
+  flinkVersion: v1_20
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "2"
+  serviceAccount: flink
+  jobManager:
+    resource:
+      memory: "2048m"
+      cpu: 1
+  taskManager:
+    resource:
+      memory: "2048m"
+      cpu: 1
+  podTemplate:
+    spec:
+      containers:
+        - name: flink-jobmanager
+          #Use securityContext to set the user and group ID.
+          securityContext:
+            runAsUser: 9999  # Flink user
+            runAsGroup: 9999 # Flink group
+        - name: flink-taskmanager
+          #Use securityContext to set the user and group ID.
+          securityContext:
+            runAsUser: 9999  # Flink user
+            runAsGroup: 9999 # Flink group
+          volumeMounts:
+            - name: csv-data
+              mountPath: /opt/flink/csv-data # Mount path inside the container
+
+      volumes:
+        - name: csv-data
+          persistentVolumeClaim:
+            claimName: flink-csv-pvc
+  job:
+    jarURI: local:///opt/flink/opt/flink-sql-client-1.20.1.jar
+    className: org.apache.flink.client.cli.FlinkRun 
+    args:
+      - embedded
+      - -f /opt/flink/csv-data/create_employees.sql
+    
+    parallelism: 1
+    upgradeMode: stateless

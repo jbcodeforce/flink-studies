@@ -51,6 +51,7 @@ In the kafka topic, the records in the output topic may reflect the matching rec
 The output table can be set to retract and the records in the the topic look like:
 
 To demonstrate this do:
+
 1. Stop the ctas statement on the user_order_quantity
 1. `drop table user_order_quantity`
 1. `drop table orders`, and recreate it from the  `ddl.orders-append-mode.sql` file

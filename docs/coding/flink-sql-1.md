@@ -170,7 +170,8 @@ Create table statements do not changes between managed services and standalone F
     ```
 
 ???+ question "How to support nested rows, DDL and inserts?"
-    Avro, Protobuf or Json schemas are very often hierarchical per design. ROW and ARRAY are the objects with nested elements
+    Avro, Protobuf or Json schemas are very often hierarchical per design. ROW and ARRAY are the objects with nested elements.
+    `StatesTable` is a column in table `t`. It has rows of `states` column which is itself a array of `name,city,lg,lat`.
     ```sql
     -- DDL
     create table t (
@@ -178,46 +179,38 @@ Create table statements do not changes between managed services and standalone F
         creationDate STRING
     )
 
-    insert into t(StatesTable,creationDate)
+    insert into t(group_id, StatesTable,creationDate)
     values( 
+        'grp_1',
         (
         ARRAY[ row('California', 'San Francisco', -122.4194, 37.7749),
             row('New York', 'New York City', -74.0060, 40.7128),
             row('Texas', 'Austin', -97.7431, 30.2672)
         ]
-        ), 
-        '2020-10-10'
-    )
-    ```???+ question "How to support nested rows, DDL and inserts?"
-    Avro, Protobuf or Json schemas are very often hierarchical per design. ROW and ARRAY are the objects with nested elements
-    ```sql
-    -- DDL
-    create table t (
-        StatesTable ROW< states ARRAY<ROW<name STRING, city STRING, lg DOUBLE, lat DOUBLE>>>,
-        creationDate STRING
-    )
-
-    insert into t(StatesTable,creationDate)
-    values( 
-        (
-        ARRAY[ row('California', 'San Francisco', -122.4194, 37.7749),
-            row('New York', 'New York City', -74.0060, 40.7128),
-            row('Texas', 'Austin', -97.7431, 30.2672)
-        ]
-        ), 
-        '2020-10-10'
+        ),            -- StatesTable
+        '2020-10-10'  -- creationDate
     )
     ```
 
+???+ question "How to support nested rows, and inserts from previous table definition?"
+    From previous table definition, to extract lat and long:
+
     ```sql
-    -- example of defining attribute from the idx element of an array from a nested json schema:
+    select
+    group_id,
+    -- example of defining attribute from the idx element of an array (starts from 1) from a nested schema:
       CAST(StatesTable.states[3] AS DECIMAL(10, 4)) AS longitude,
-      CAST(StatesTable.states[4] AS DECIMAL(10, 4)) AS latitude,
+      CAST(StatesTable.states[4] AS DECIMAL(10, 4)) AS latitude
+    from t
+    -- results
+     'grp_1', -122.4194, 37.7749
+     'grp_1', -74.0060, 40.7128
+     'grp_1', -97.7431, 30.2672
     ```
 
     See also the [CROSS JOIN UNNEST](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/joins/#array-expansion) keywords.
 
-    See also running demo in [flink-sql/03-nested-row](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/03-nested-row)
+    See also a running demo in [flink-sql/03-nested-row](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/03-nested-row)
 
 
 ???+ question "How to generate data using Flink Faker? (Flink OSS)"
@@ -246,17 +239,20 @@ Create table statements do not changes between managed services and standalone F
     [Use DataGen to do in-memory data generation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/connectors/table/datagen/) and the [new feature in product how to guide documentation](https://docs.confluent.io/cloud/current/flink/how-to-guides/custom-sample-data.html#flink-sql-custom-sample-data).
 
 ???+ question "How to generate test data to Confluent Cloud Flink?"
-    Use Kafka Connector with DataGen. Those connector exists with a lot of different pre-defined model. Also it is possible to define custom Avro schema and then use predicates to generate data. There is a [Produce sample data quick start tutorial from the Confluent Cloud home page](https://docs.confluent.io/cloud/current/connectors/cc-datagen-source.html). See also [this readme](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/01-confluent-kafka-local-flink).
+    Use Kafka Connector with DataGen. Those connector exists with a lot of different pre-defined model. Also it is possible to define custom Avro schema and then use predicates to generate data. There is a [Produce sample data quick start tutorial from the Confluent Cloud home page](https://docs.confluent.io/cloud/current/connectors/cc-datagen-source.html). See also [this readme](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/01-kafka-flink).
+
+    The [Shift_left tool](https://jbcodeforce.github.io/shift_left_utils/coding/test_harness/#usage-and-recipe) has also a test harness to generate synthetic data taking into account the SQL content.
 
 ???+ question "How to transfer the source timestamp to another table"
-    As $rowtime is the timestamp of the record in Kafka, it may be interesting to keep the source timestamp to the downstream topic.
+    As $rowtime is the timestamp of the record in Kafka, it may be interesting to keep the source timestamp for the downstream tables.
 
     ```sql
     create table `some_clicks` (
           `order_id` STRING NOT NULL,
           ...
-          `event_time` TIMESTAMP_LTZ(3) METADATA FROM 'timestamp')
-    distributed.... 
+          `event_time` TIMESTAMP_LTZ(3) METADATA FROM 'timestamp'),
+          PRIMARY KEY(order_id) NOT ENFORCED
+    distributed by hash(order_id) into '4' buckets
     ```
 
     Then the statement to insert record to the new table:
@@ -271,13 +267,18 @@ Create table statements do not changes between managed services and standalone F
     ```
 
 ???+ info "Views over Tables"
-    Recall [views](https://docs.confluent.io/cloud/current/flink/reference/statements/create-view.html), are read-only, and have no insert operation and are used to encapsulate complex queries and reference them like regular tables. It acts as a virtual table that refers to the result of the specified statement expression.
+    Recall [views](https://docs.confluent.io/cloud/current/flink/reference/statements/create-view.html), are read-only, and have no insert operation and are used to encapsulate complex queries and reference them like regular tables. It acts as a virtual table that refers to the result of the specified statement expression. They are read-only. 
+    
+    ```sql
+    CREATE VIEW IF NOT EXISTS table_view AS SELECT ...
+    ```
+    
     Views and tables share the same namespace in Flink. [See array of row view example](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-sql/03-nested-row/vw.array_of_rows.sql).
 
 ???+ question "Dealing with late event"
     Any streams mapped to a table have records arriving more-or-less in order, according to the `$rowtime`, and the watermarks let the Flink SQL runtime know how much buffering of the incoming stream is needed to iron out any out-of-order-ness before emitting the sorted output stream.
 
-    We need to  specify the watermark strategy: for example within 30 second of the event time:
+    We need to  specify the watermark strategy: for example within 30 second of the event time: 
 
     ```sql
     create table new_table (
@@ -287,7 +288,7 @@ Create table statements do not changes between managed services and standalone F
     );
     ```
 
-    On CCF the watermark is on the `$rowtime` by default.
+    Event_time could be a ts from the source table (like CDC table). On CCF, the watermark is on the `$rowtime` by default, but it can be changed. 
 
 ???+ question "How to change system watermark?"
     Modify the WATERMARK metadata using alter table.
@@ -316,7 +317,7 @@ Create table statements do not changes between managed services and standalone F
 
     insert into `small-orders` select * from `examples`.`marketplace`.`orders` where price < 20;
     ```
-    `distributed by hash(order_id)` and `into 1 buckets` specify that the table is backed by a Kafka topic with 1 partition, and the order_id field will be used as the partition key. 
+    `distributed by hash(order_id)` and `into 1 buckets` specify that the table is backed by a Kafka topic with 1 partition, and the `order_id` field will be used as the Kafka partition key. 
 
 ???+ tip "Table with Kafka Topic metadata"
     The headers and timestamp are the only options not read-only, all are VIRTUAL. Virtual columns are by default excluded from a SELECT * similar to the system column like `$rowtime`. 
@@ -349,7 +350,7 @@ Create table statements do not changes between managed services and standalone F
     GROUP BY window_time, window_end, window_start
     ``` 
 
-#### Applying to a Medallion Architecture
+### Applying to a Medallion Architecture
 
 The current approach can be used for Flink pipeline processing:
 
@@ -361,7 +362,7 @@ The current approach can be used for Flink pipeline processing:
 | Intermediates | Enrichment, transformation |    cleanup.policy = 'delete',  changelog.mode = 'upsert' |
 | Sink tables: Facts, Dimensions, Views | Create star schema elements| cleanup.policy = 'compact', changelog.mode = 'retract' or 'upsert' |
 
-#### Deeper dive
+### Deeper dive
 
 * [Confluent product document - changelog ](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#changelog-mode)
 * [Flink SQL Secrets: Mastering the Art of Changelog Event Out-of-Orderness](https://www.ververica.com/blog/flink-sql-secrets-mastering-the-art-of-changelog-event-out-of-orderness)
@@ -412,7 +413,7 @@ The statement above also creates a metadata column for writing a Kafka message t
 
 ???+ info "CREATE TABLE in Confluent Cloud for Flink"
     The table creation creates topic and -key, -value schemas in the Schema Registry in the same environment as the compute pool in which the query is run. The `connector` is automatically set to `confluent`. 
-    The non null and nullable columns are translate as the following avro fields:
+    The non null and nullable columns are translated as the following avro fields:
     ```avro
       "fields": [
             {
@@ -449,7 +450,7 @@ The statement above also creates a metadata column for writing a Kafka message t
 
 ## Analyzing Table
 
-### Understand a type of attribute or get table structure with metadata
+### Understand the type of attribute or get the table structure with metadata
 
 ```sql
 show create table 'tablename';
@@ -458,26 +459,3 @@ select typeof(column_name) from table_name limit 1;
 ```
 
 Flink SQL planner performs type checking. Assessing the type of inferred table is helpful, specially around timestamp. See [Data type mapping documentation.](https://docs.confluent.io/cloud/current/flink/reference/serialization.html)
-
-### Understand the physical execution plan for a SQL query
-See the [explain keyword](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/explain/) or [Confluent Flink documentation](https://docs.confluent.io/cloud/current/flink/reference/statements/explain.html) for the output explanations.
-
-```sql
-explain select ...
-```
-
-Indentation indicates data flow, with each operator passing results to its parent. 
-
-Review the state size, the changelog mode, the upsert key... Operators change changelog modes when different update patterns are needed, such as when moving from streaming reads to aggregations.
-
-Pay special attention to data skew when designing your queries. If a particular key value appears much more frequently than others, it can lead to uneven processing where a single parallel instance becomes overwhelmed handling that key’s data. Consider strategies like adding additional dimensions to your keys or pre-aggregating hot keys to distribute the workload more evenly. Whenever possible, configure the primary key to be identical to the upsert key.
-
-### Confluent Flink Query Profiler
-
-This is a specific, modern implemenation of the Flink WebUI, used to monitor the performance of the query.
-
-![](../architecture/images/query-profiler.png)
-
-* [Query Profiler Product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/query-profiler.html)
-
-

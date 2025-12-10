@@ -16,7 +16,7 @@ nav:
     - Flink SQL coding:
       - SQL Clients: coding/flink-sql-clients.md
       - Create Table (SQL): coding/flink-sql-1.md
-      - DML: coding/flink-sql-2.md
+      - SQL DML: coding/flink-sql-2.md
     - Java - Python:
       - Table API: coding/table-api.md
       - DataStreams API: coding/datastream.md
@@ -28,7 +28,6 @@ nav:
       - Flink on k8s - Monitoring: techno/fk-k8s-monitor.md
       - Manage CC Flink projects: https://jbcodeforce.github.io/shift_left_utils/
     - More advanced topics:
-      - Flink SQL puzzled: coding/puzzles.md
       - Stateful function: coding/stateful-func.md
       - Complex Event Processing: coding/cep.md
       - Flink Cookbook: architecture/cookbook.md

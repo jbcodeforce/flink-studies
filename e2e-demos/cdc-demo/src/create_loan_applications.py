@@ -49,7 +49,7 @@ def insert_loan_applications(cur, conn):
         INSERT INTO loan_applications (application_id, customer_id, application_date, loan_type, loan_amount_requested, loan_tenure_months, interest_rate_offered, purpose_of_loan, employment_status, monthly_income, cibil_score, existing_emis_monthly, debt_to_income_ratio, property_ownership_status, residential_address, applicant_age, gender, number_of_dependents, loan_status, fraud_flag, fraud_type)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
-    with open("../datasets/loan_applications.csv", "r") as file:
+    with open("./datasets/loan_applications.csv", "r") as file:
         reader = csv.reader(file)
         next(reader) # Skip header row
         for row in reader:
@@ -58,6 +58,6 @@ def insert_loan_applications(cur, conn):
     print("Data inserted into loan_applications table successfully")
 
 if __name__ == '__main__':
-    cur, conn = connect("local_db.ini")
+    cur, conn = connect("src/local_db.ini")
     create_loan_applications_table(cur, conn)
     insert_loan_applications(cur, conn)

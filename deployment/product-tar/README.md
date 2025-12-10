@@ -1,4 +1,6 @@
-# Apache Flink OSS Update
+# Flink and Apache binary
+
+## Apache Flink OSS Update
 
 **Updated 12/2025**
 
@@ -29,5 +31,19 @@
     $FLINK_HOME/bin/sql-client.sh --library $FLINK_HOME/sql-lib
     ```
 
+## Kafka binary
 
-
+1. See [download page](https://kafka.apache.org/downloads)
+1. Update the VERSION variable inside the `install-kafka-local.sh`
+1. Set cluster id
+    ```sh
+    KAFKA_CLUSTER_ID="$(bin/kafka-storage.sh random-uuid)"
+    ```
+1. Format logs directory
+    ```sh
+    bin/kafka-storage.sh format --standalone -t $KAFKA_CLUSTER_ID -c config/server.properties
+    ```
+1. Start the Kafka server:
+    ```sh
+    bin/kafka-server-start.sh config/server.properties
+    ```

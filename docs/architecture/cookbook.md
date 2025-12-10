@@ -136,7 +136,7 @@ TO BE DONE
 
 ## Deduplication
 
-Deduplication is documented [here](../coding/flink-sql.md/#table-creation-how-tos) and [here](https://docs.confluent.io/cloud/current/flink/reference/queries/deduplication.html#flink-sql-deduplication) and at its core principal, it uses a CTE to add a row number, as a unique sequential number to each row. The columns used to de-duplicate are defined in the partitioning. Ordering is using a timestamp to keep the last record or first record. Flink support only ordering on time.
+Deduplication is documented [here](../coding/flink-sql-1.md/#table-creation-how-tos) and [here](https://docs.confluent.io/cloud/current/flink/reference/queries/deduplication.html#flink-sql-deduplication) and at its core principal, it uses a CTE to add a row number, as a unique sequential number to each row. The columns used to de-duplicate are defined in the partitioning. Ordering is using a timestamp to keep the last record or first record. Flink support only ordering on time.
 
 ```sql
 SELECT [column_list]

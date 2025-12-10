@@ -1,0 +1,11 @@
+{
+    "name": "shoe-products-dg",
+    "config": {
+      "connector.class": "io.confluent.kafka.connect.datagen.DatagenConnector",
+      "kafka.topic": "shoe_products",
+      "quickstart": "SHOES",
+      "output.data.format": "AVRO",
+      "tasks.max": "1",
+      "max.interval": 500
+    }
+  }

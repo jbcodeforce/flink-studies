@@ -94,8 +94,10 @@ This book is structured to support both **linear reading** and **focused deep-di
 
 === "**Quick Start Track** (1-2 weeks)""
     1. [Getting Started](coding/getting-started.md) - Your first Flink application
-    2. [Flink SQL Basics](coding/flink-sql.md) - Stream processing with SQL
-    3. [Local Deployment](coding/k8s-deploy.md) - Running Flink on Kubernetes
+    2. [Flink SQL Basics - DDLs](coding/flink-sql-1.md) - Stream processing with SQL - Table creation
+    3. [Flink SQL Basics - DMLs](coding/flink-sql-2.md) - Stream processing with SQL
+    4. [Local Deployment](coding/k8s-deploy.md) - Running Flink on Kubernetes
+
 
 === "**Foundation Track** (3-4 weeks)""
     1. [Architecture Deep Dive](architecture/index.md) - Understanding Flink internals

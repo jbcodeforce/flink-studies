@@ -11,6 +11,7 @@ This chapter offers continue on the best practices for implementing Flink SQL so
 * [Confluent SQL documentation for DML samples](https://docs.confluent.io/cloud/current/flink/reference/queries/overview.html#flink-sql-queries) 
 * [Apache Flink SQL](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/insert/)
 * [Confluent Developer Flink tutorials](https://developer.confluent.io/tutorials/)
+* [The Flink built-in system functions.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/functions/systemfunctions/)
 
 ## Common Patterns
 
@@ -83,19 +84,6 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     [See product documentation on Union](https://docs.confluent.io/cloud/current/flink/reference/queries/set-logic.html#flink-sql-set-logic-union). Remember that UNION will apply distinct, and avoid duplicate, while UNION ALL will generate duplicates. 
 
 
-???+ question "Deduplication example"
-
-    ```sql
-    SELECT ip_address, url, TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) as click_timestamp
-    FROM (
-        SELECT *,
-        ROW_NUMBER() OVER ( PARTITION BY ip_address ORDER BY TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) DESC) as rownum FROM clicks
-        )
-    WHERE rownum = 1;
-    ```
-
-    [See this example](https://docs.confluent.io/cloud/current/flink/how-to-guides/deduplicate-rows.html#flink-sql-deduplicate-topic-action).
-
 
 
 ???+ question "How to filter row that has column content not matching a regular expression?"
@@ -117,6 +105,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     FROM filtered_data
     WHERE keep_row = TRUE;
     ```
+
 
 ???+ info "Navigate a hierarchical structure in a table"
     The unique table has node and ancestors representation. Suppose the graph represents a Procedure at the highest level, then an Operation, then a Phase and a Phase Step at the level 4. In the Procedures table we can have rows like:
@@ -163,6 +152,26 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
         case when `depth` = 0 then id end as procedure_id,
         info from `procedures` cross join unnest(parentIds) as ids(parent_id)
     ```
+
+
+### Deduplication
+
+Deduplication will occur on `upsert` table with primary key: the last records per $rowtime or timestamp will be kept. When the source table is in append mode, the approach is to use the ROW_NUMBER() function:
+
+```sql
+SELECT ip_address, url, TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) as click_timestamp
+FROM (
+    SELECT *,
+    ROW_NUMBER() OVER ( PARTITION BY ip_address ORDER BY TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) DESC) as rownum 
+    FROM clicks
+    )
+WHERE rownum = 1;
+```
+
+[See this example](https://docs.confluent.io/cloud/current/flink/how-to-guides/deduplicate-rows.html#flink-sql-deduplicate-topic-action) in the Confluent product documentation which demonstrates there is no duplicate in the Job session with `select * from dedup_table;` return 8 messages. Same in the topic with 8 messages too. 
+
+But it does not demonstrate the last message is kept. The [deduplication sample](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/00-basic-sql#deduplication-example) demonstrates that an upsert table is already removing duplicates, and keep the last record per key. 
+
 
 ### Transformation
 
@@ -231,9 +240,39 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     INSERT INTO users_msk SELECT ..., REGEXP_REPLACE(credit_card,'(\w)','*') as credit_card FROM users;
     ```
 
+### Statement Set
 
+The benefit of bundling statements in a single set is to reduce the repeated read from the source for each Insert. A single read from the source is executed and shared with all downstream INSERTS.
+
+Do not use `Statement Set` when the source are different for all statements within the Statement Sets. Take into account that within the statement set if one statement fails, then all queries fail. The state is shared by all the statements within Statement set, so one stateful query can impact all other statements.
+
+???+ question "How to manage late message to be sent to a DLQ using Statement Set?"
+    First, create a DLQ table like `late_orders` based on the order table:
+    
+    ```sql
+        create table late_orders
+        with (
+            'connector'= ''
+        ) 
+        LIKE orders (EXCLUDING OPTIONS)
+    ```
+
+    Groups the main stream processing and the late arrival processing in a statement set:
+
+    ```sql
+    EXECUTE STATEMENT SET
+    BEGIN
+        INSERT INTO late_orders SELECT from orders WHERE `$rowtime` < CURRENT_WATERMARK(`$rowtime`);
+        INSERT INTO order_counts -- the sink table
+            SELECT window_time, COUNT(*) as cnt
+            FROM TABLE(TUMBLE(TABLE orders DESCRIPTOR(`$rowtime`), INTERVAL '1' MINUTE))
+            GROUP BY window_start, window_end, window_time
+    END
+    ```
 
 ## Stateful aggregations
+
+### OVER 
 
 ???+ info "OVER aggregations"
     [OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) compute an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY does, but produces one result for every input row. 
@@ -314,7 +353,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
         window_time,
         user_id, 
         ARRAY_AGG(url) AS urls
-    FROM TABLE(TUMBLE(TABLE examples.marketplace.clicks, DESCRIPTOR(`$rowtime`), INTERVAL '1' MINUTE))
+    FROM TABLE(TUMBLE(TABLE `examples.marketplace.clicks`, DESCRIPTOR(`$rowtime`), INTERVAL '1' MINUTE))
     GROUP BY window_start, window_end, window_time, user_id;
     -- once the view is created
     SELECT * from visited_pages_per_minute;
@@ -388,35 +427,6 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     The minimum out-of-orderness is 50ms and can be set up to 7 days. See [Confluent documentation.](https://docs.confluent.io/cloud/current/flink/reference/functions/datetime-functions.html#flink-sql-source-watermark-function) 
 
-## Statement Set
-
-???+ question "How to manage late message to be sent to a DLQ using Statement Set?"
-    First, create a DLQ table like `late_orders` based on the order table:
-    
-    ```sql
-        create table late_orders
-        with (
-            'connector'= ''
-        ) 
-        LIKE orders (EXCLUDING OPTIONS)
-    ```
-
-    Groups the main stream processing and the late arrival processing in a statement set:
-
-    ```sql
-    EXECUTE STATEMENT SET
-    BEGIN
-        INSERT INTO late_orders SELECT from orders WHERE `$rowtime` < CURRENT_WATERMARK(`$rowtime`);
-        INSERT INTO order_counts -- the sink table
-            SELECT window_time, COUNT(*) as cnt
-            FROM TABLE(TUMBLE(TABLE orders DESCRIPTOR(`$rowtime`), INTERVAL '1' MINUTE))
-            GROUP BY window_start, window_end, window_time
-    END
-    ```
-
-    The benefit of bundling statements in a single set is to reduce the repeated read from the source for each Insert. A single read from the source is executed and shared with all downstream INSERTS.
-
-    Do not use Statement Setm when the sourcea are different for all statements within the Statement Sets. Take into account that wWithin the statement set if one statement fails, then all queries fail. The state is shared by all the statements within Statement set, so one stateful query can impact all other statements.
 
 
 
@@ -634,7 +644,7 @@ To mitigate the usage of `SinkUpsertMaterializer`:
     The logical components of the row pattern variables are specified in the DEFINE clause.
     B is defined implicitly as not being A.
 
-## Confluent Cloud Specific
+## Confluent Cloud Specifics
 
 [See Flink Confluent Cloud queries documentation.](https://docs.confluent.io/cloud/current/flink/reference/queries/overview.html)
 
@@ -689,6 +699,8 @@ Each topic is automatically mapped to a table with some metadata fields added, l
     confluent flink statement create my-statement --sql "SELECT * FROM my-topic;" --compute-pool <compute_pool_id> --service-account sa-123456 --database my-cluster
     ```
 
+## Analyzing Statements
+
 ???+ question "Assess the current flink statement running in Confluent Cloud"
     To assess which jobs are still running, which jobs failed, and which stopped, we can use the user interface, go to the Flink console > . Or the `confluent` CLI:
 
@@ -699,8 +711,22 @@ Each topic is automatically mapped to a table with some metadata fields added, l
     ```
 
 
+### Understand the physical execution plan for a SQL query
 
-## Troubleshooting SQL statement running slow
+See the [explain keyword](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/explain/) or [Confluent Flink documentation](https://docs.confluent.io/cloud/current/flink/reference/statements/explain.html) for the output explanations.
+
+```sql
+explain select ...
+```
+
+Indentation indicates data flow, with each operator passing results to its parent. 
+
+Review the state size, the changelog mode, the upsert key... Operators change changelog modes when different update patterns are needed, such as when moving from streaming reads to aggregations.
+
+Pay special attention to data skew when designing your queries. If a particular key value appears much more frequently than others, it can lead to uneven processing where a single parallel instance becomes overwhelmed handling that key’s data. Consider strategies like adding additional dimensions to your keys or pre-aggregating hot keys to distribute the workload more evenly. Whenever possible, configure the primary key to be identical to the upsert key.
+
+
+### Troubleshooting SQL statement running slow
 
 ???+ info "How to search for hot key?"
     ```sql
@@ -753,9 +779,13 @@ Each topic is automatically mapped to a table with some metadata fields added, l
     WHERE ks.record_count > ds.mean_count 
     ```
 
-### Metric to consider
+### Confluent Flink Query Profiler
 
-## Important links
+This is a specific, modern implementation of the Flink WebUI, used to monitor the performance of the query.
 
-* [The Flink built-in system functions.](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/functions/systemfunctions/)
+![](../architecture/images/query-profiler.png)
+
+* [Query Profiler Product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/query-profiler.html)
+* [See how to use QP to debug statement, in the techno chapter](../techno/ccloud-flink.md#query-profiler).
+
 

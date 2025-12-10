@@ -534,4 +534,4 @@ To consider:
 
 * [Confluent Flink workshop](https://github.com/confluentinc/commercial-workshops/tree/master/series-getting-started-with-cc/workshop-flink) to learn how to build stream processing applications using Apache Flink® on Confluent Cloud.
 * [Shoe-store workshop](https://github.com/jbcodeforce/shoe-store) with Terraform and SQL demonstration using DataGen.
-* [SQL coding practice from this repo.](../coding/flink-sql.md)
+* [SQL coding practices from this repo.](../coding/flink-sql-1.md) and [this](../coding/flink-sql-2.md).

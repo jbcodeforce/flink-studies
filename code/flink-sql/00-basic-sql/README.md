@@ -5,8 +5,9 @@
     Updated 1/2025 from Confluent Flink studies
     Updated 12/2025 Getting started by using SQL client
 
-This folder includes some basic SQL examples to be used with local Flink OSS or Confluent Platform for Flink running locally. 
+This folder includes some basic SQL examples to be used with local Flink OSS or Confluent Platform for Flink running locally.
 
+* [Process employee data from csv](#employees-demo) to count the  number of employees per department,
 
 ## SQL Client
 ### Apache Flink OSS Binary
@@ -174,8 +175,54 @@ select count(*) AS `count` from bounded_pageviews;
 
 The `cc-flink/ddl.customers.sql` create a simple customers table. Running this query inside the Confluent Cloud Console -> Flink -> Workspace. This will create the `customers` topic, the -key and -value schemas.
 
-A non null string becomes
+### Deduplication example
+
+The insert to customers includes one  for CUST_01, with different timestamp and street address to help validating the last records is kept. The registration_date is the timestamp to sort on. It may be best practice to keep the key as part of the values by using the following configuration: `'value.fields-include' = 'all'`
+
+The `cc-flink/ddl.customers.sql` is an append table so doing a `select * from customers` in the CC Workspace will returns the last
+records of CUST_01, without any deduplication logic. Changing back the changelog mode to `upsert`, with: 
+
+```sql
+alter table `customers` SET ('changelog.mode' = 'upsert')
+```
+Will remove duplicate records in the table. 
+
+For append mode source table, the `dml.dedup_customers.sql` illustrates the deduplication approach using ROW_NUMBER() function.
+As for eack key, there may be update and delete changes done, the changelog has to be `upsert`
+
+```sql
+create table customers_dedup (
+  primary key(customer_id) not enforced
+)
+DISTRIBUTED BY HASH(customer_id) INTO 1 BUCKETS
+WITH (
+  'changelog.mode' = 'upsert',
+  'kafka.cleanup-policy' = 'delete',
+  'scan.bounded.mode' = 'unbounded',
+  'scan.startup.mode' = 'earliest-offset',
+  'value.fields-include' = 'all'
+) as select 
+  --- omitted
+from (
+  select *,
+  ROW_NUMBER() OVER ( PARTITION BY customer_id ORDER BY registration_date DESC) as row_num
+  from customers
+) where row_num = 1;
+```
+
+A select * on this dedup table, gives the expected results. But in the kafka topic at offset 0 the first CUST_01 record will be the old one, while around offset 8 the new CUST_01 is present.
 
 * See also the [json transformation demo](../../../e2e-demos/json-transformation/README.md) as a basic ARRAY, ROW to JSON Object transformation, runnable in CC Flink or CP Flink.
+
+### Snapshot Query
+
+See [the example from Confluent tutorials](https://docs.confluent.io/cloud/current/flink/how-to-guides/run-snapshot-query.html). 
+The most important thing is to set the mode and read from append model only table.
+
+```sql
+SET 'sql.snapshot.mode' = 'now';
+select * from `customers`
+-- select * from dedup_customers   WILL NOT work
+```
 
 [Next will be Kafka integration running locally or on Confluent Cloud](../01-confluent-kafka-local-flink/README.md)

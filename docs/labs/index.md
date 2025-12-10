@@ -26,7 +26,8 @@ Those demos are not finalized:
 ## Public repositories with valuable demonstrations
 
 
-* [Managing your Confluent Cloud Flink project at scale with a CLI](https://github.com/jbcodeforce/shift_left_utils)
+* [Managing your Confluent Cloud Flink project at scale with a shift_left CLI](https://github.com/jbcodeforce/shift_left_utils)
+* [Personal Flink demo repository](https://jbcodeforce.github.io/flink_project_demos/) for Data as a product, ksql to Flink or Spark to Flink automatic migration test sets.
 * [Confluent Flink how to](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#)
 * [Confluent demonstration scene](https://github.com/confluentinc/demo-scene): a lot of Kafka, Connect, and ksqlDB demos
 * [Confluent developer SQL training](https://developer.confluent.io/courses/flink-sql/overview/)
@@ -34,7 +35,7 @@ Those demos are not finalized:
 * [lab 3- Agentic Fleet Management Using Confluent Intelligence](https://github.com/confluentinc/quickstart-streaming-agents/blob/master/LAB3-Walkthrough.md)
 
 * [Demonstrate Flink SQL test harness tool for Confluent Cloud Flink](https://jbcodeforce.github.io/shift_left_utils/coding/test_harness/#usage-and-recipe).
-* [Demonstrations for data as a product methodolgy, moving from Spark batch processing to Flink using shift_left utils.](https://github.com/jbcodeforce/flink_project_demos)
+
 * [Shoes Store Labs](https://github.com/jbcodeforce/shoe-store)  to run demonstrations on Confluent Cloud. 
 
 ## Interesting Blogs

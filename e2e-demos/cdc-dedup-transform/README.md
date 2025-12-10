@@ -4,15 +4,16 @@
 
 This demonstration showcases an approach to processing Change Data Capture (CDC) records from Qlik Replicate using Apache Flink. Change Data Capture is a critical pattern in modern data architectures that enables real-time data synchronization by capturing and streaming database changes as they occur
 
-We assume the reader to have basic knowledge of Confluent Cloud environment, Kafka, Schema Registry. For [Flink SQL introduction](https://developer.confluent.io/courses/apache-flink/intro/ ) and tutorial [follow these videos](https://developer.confluent.io/courses/flink-sql/overview/).
+We assume the reader to have basic knowledge of Confluent Cloud environment, Kafka, Schema Registry. See [Flink SQL introduction](https://developer.confluent.io/courses/apache-flink/intro/ ) and those [videos tutorial](https://developer.confluent.io/courses/flink-sql/overview/).
 
-## Business Problem
+## Business Problems
 
 Organizations often struggle with processing raw CDC streams that contain:
+
 - **Duplicate records** from network retries and CDC tool behavior
 - **Invalid or malformed data** that can break downstream pipelines 
 - **Complex nested structures** requiring transformation for analytics consumption
-- **Mixed operation types** (REFRESH, INSERT, UPDATE, DELETE) that may need different handling logic, one being to propagate soft delete
+- **Mixed operation types** (REFRESH, INSERT, UPDATE, DELETE) that may need different handling logic, one being to propagate soft delete to downstream sinks
 
 ## Solution Architecture
 
@@ -39,7 +40,7 @@ This proof-of-concept demonstrates a robust pipeline that transforms raw Qlik CD
 
 In log-based CDC, when a new transaction comes into a database, it gets logged into a log file with no impact on the source system.  
 
-The `qlik_cdc_output_table` represents the output of Qlik CDC output as raw topic in kafka. The envelop and metadata are important.
+The `qlik_cdc_output_table` represents the output of Qlik CDC as raw topic in kafka. The envelop and metadata are important.
 
 Most CDC connectors to Kafka, are creating schema into the schema registry with an envelop to track the data before and after. 
 

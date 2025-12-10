@@ -1,9 +1,0 @@
-[project]
-name = "cdc_demo"
-version = "0.1.0"
-description = "Transactions and loan applications fraud detection"
-readme = "README.md"
-requires-python = ">=3.11"
-dependencies = [
-     "psycopg2-binary>=2.9.10",
-]

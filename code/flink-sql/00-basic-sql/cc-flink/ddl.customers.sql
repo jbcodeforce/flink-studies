@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS customers (
   PRIMARY KEY(customer_id) NOT ENFORCED
 ) DISTRIBUTED BY HASH(customer_id) INTO 1 BUCKETS
 WITH (
-  'changelog.mode' = 'upsert',
+  'changelog.mode' = 'append',
   'key.avro-registry.schema-context' = '.flink-dev',
   'value.avro-registry.schema-context' = '.flink-dev',
   'key.format' = 'avro-registry',
@@ -25,6 +25,7 @@ WITH (
   'kafka.retention.time' = '0',
   'kafka.producer.compression.type' = 'snappy',
   'scan.bounded.mode' = 'unbounded',
+  'kafka.cleanup-policy' = 'delete',
   'scan.startup.mode' = 'earliest-offset',
   'value.fields-include' = 'all'
 );

@@ -45,7 +45,7 @@ def insert_transactions(cur, conn):
         INSERT INTO transactions (transaction_id, customer_id, transaction_date, transaction_type, transaction_amount, merchant_category, merchant_name, transaction_location, account_balance_after_transaction, is_international_transaction, device_used, ip_address, transaction_status, transaction_source_destination, transaction_notes, fraud_flag)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
-    with open("../datasets/transactions.csv", "r") as file:
+    with open("./datasets/transactions.csv", "r") as file:
         reader = csv.reader(file)
         next(reader) # Skip header row
         for row in reader:
@@ -54,6 +54,6 @@ def insert_transactions(cur, conn):
     print("Data inserted into transactions table successfully")
 
 if __name__ == '__main__':
-    cur, conn = connect("local_db.ini")
+    cur, conn = connect("src/local_db.ini")
     create_transactions_table(cur, conn)
     insert_transactions(cur, conn)

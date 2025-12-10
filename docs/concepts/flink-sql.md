@@ -52,7 +52,7 @@ show create table orders;
 
 [See the getting started chapter](../coding/getting-started.md) to run Flink open-source locally with the Flink SQL shell client connected to a Job Manager and Task manager running in container. 
 
-[See also the SQL coding practices chapter.](../coding/flink-sql.md)
+[See also the SQL coding practices chapters](../coding/flink-sql-1.md) and [this one](../coding/flink-sql-2.md).
 
 ### Main use cases
 

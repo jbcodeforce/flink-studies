@@ -24,7 +24,12 @@ metadata:
   namespace: pgdb
 spec:
   instances: 1
-
+  postgresql:
+    parameters:
+      wal_level: logical
+      max_replication_slots: 4
+      max_wal_senders: 4
+      shared_preload_libraries: wal2json
   bootstrap:
     initdb:
       database: app

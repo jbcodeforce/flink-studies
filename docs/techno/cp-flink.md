@@ -203,7 +203,7 @@ Important points:
 * Suspended app, does not consume resource, and may be restored from its savepoint.
 * CLI, REST API or the Control Center Console may be used to deploy app.
 
-* [See the getting started with a Java project for Flink](../coding/datastream/#first-programs), see also [the Confluent specific settings](https://docs.confluent.io/platform/current/flink/jobs/applications/packaging.html#set-up-the-project-configuration)
+* [See the getting started with a Java project for Flink](../coding/datastream.md/#create-a-java-project-with-maven), see also [the Confluent specific settings](https://docs.confluent.io/platform/current/flink/jobs/applications/packaging.html#set-up-the-project-configuration).
 
 ## Understanding Sizing
 

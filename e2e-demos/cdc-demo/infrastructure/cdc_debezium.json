@@ -3,12 +3,13 @@
     "config": {  
       "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
       "tasks.max": "1",  
-      "database.hostname": "postgres",  
-      "database.port": "5436",
+      "database.hostname": "pg-cluster-rw.pgdb.svc.cluster.local",  
+      "database.port": "5432",
+      "database.dbname": "app",
       "database.user": "app",
       "database.password": "apppwd",
       "topic.prefix": "cdc",  
-      "database.include.list": "transactions,loan_applications",  
+      "table.include.list": "transactions,loan_applications",  
       "schema.history.internal.kafka.bootstrap.servers": "kafka:9071",  
       "schema.history.internal.kafka.topic": "schema-changes.inventory"  
     }

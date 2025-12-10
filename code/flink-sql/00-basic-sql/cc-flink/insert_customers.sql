@@ -11,6 +11,7 @@ INSERT INTO customers VALUES
   ('CUST010', 'Isabella', 'Anderson', 'isabella.a@email.com', '555-0110', DATE '1993-06-11', 'F', TIMESTAMP '2024-04-01 12:33:42.234', 'Standard', 'Email', '741 Poplar Street', 'San Jose', 'CA', '95101', 'USA'),
   ('CUST011', 'David', 'Thomas', 'david.thomas@email.com', '555-0111', DATE '1987-10-19', 'M', TIMESTAMP '2024-04-08 09:27:15.567', 'Gold', 'Phone', '852 Hickory Avenue', 'Austin', 'TX', '73301', 'USA'),
   ('CUST012', 'Mia', 'Taylor', 'mia.taylor@email.com', '555-0112', DATE '1991-02-28', 'F', TIMESTAMP '2024-04-15 14:51:38.890', 'Premium', 'Web', '963 Magnolia Road', 'Jacksonville', 'FL', '32099', 'USA'),
+  ('CUST001', 'John', 'Smith', 'john.smith@email.com', '555-0101', DATE '1985-03-15', 'M', TIMESTAMP '2024-01-15 14:51:38.890', 'Premium', 'Email', '123 bis Oak Street', 'New York', 'NY', '10001', 'USA'), -- duplicate
   ('CUST013', 'Richard', 'Moore', 'r.moore@email.com', '555-0113', DATE '1976-07-07', 'M', TIMESTAMP '2024-05-01 11:42:21.123', 'Standard', 'Mobile', '159 Dogwood Lane', 'Fort Worth', 'TX', '76101', 'USA'),
   ('CUST014', 'Charlotte', 'Jackson', 'charlotte.j@email.com', '555-0114', DATE '1989-11-16', 'F', TIMESTAMP '2024-05-10 16:05:44.456', 'Gold', 'Email', '357 Sycamore Circle', 'Columbus', 'OH', '43085', 'USA'),
   ('CUST015', 'Joseph', 'Martin', 'joseph.martin@email.com', '555-0115', DATE '1984-03-09', 'M', TIMESTAMP '2024-05-18 08:38:29.789', 'Premium', 'Phone', '486 Redwood Drive', 'San Francisco', 'CA', '94101', 'USA'),
