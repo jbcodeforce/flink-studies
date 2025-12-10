@@ -2,11 +2,13 @@
 
 ???- info "Chapter updates"
     * Created 10/2024 
-    * Review 10/31/24 Updated 12/04/2025
+    * Review 10/31/24 Updated 12/10/2025
 
 [Confluent Cloud for Apache Flink®](https://docs.confluent.io/cloud/current/flink/overview.html) is a cloud-native, managed service, for Flink, strongly integrated with the Confluent Cloud Kafka managed service. It is a simple, serverless and scalable way to build real-time, reusable data products over streams.
 
+<figure markdown="span">
 ![](./diagrams/ccloud-flink.drawio.png){ width=800 }
+</figure>
 
 Confluent Cloud Flink is built on the same open-source version as Apache Flink® with additional features:
 
@@ -73,7 +75,9 @@ Some **limitations**:
 
 The Confluent Cloud for Kafka and for Flink is based on the SaaS pattern of control and data planes. [See this presentation - video from Frank Greco Jr](https://youtu.be/ss5OEBejFCs).
 
+<figure markdown="span">
 ![](./diagrams/ccloud-architecture.drawio.png)
+</figure>
 
 * Each data plane is made of a VPC, a kubernetes cluster, a set of Kafka clusters and some management services to support platform management and communication with the control plane.
 * The control plane is called  the *mothership*, and refers to VPC, services, Database to manage the multi-tenancy platform, a kubernetes cluster, Kafka cluster, and other components. This is where the Confluent console runs for users to administer the Kafka clusters. 
@@ -278,7 +282,9 @@ Kafka clusters have the following properties:
 * For AWS and Confluent Dedicated Clusters, networking can be done via VPC peering, transit gateway, inbound and outbound private link (for Kafka and Flink): this is a one-way connection access from a VPC to CC.
 * Flink Private Networking requires a [PrivateLink Attachment](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/private-networking.html#create-a-pla-overview) (PLATT) to access Kafka clusters with private networking. It is used to connect clients such as confluent CLI, the console, the rest api or terraform with Flink. Flink-to-Kafka is routed internally within Confluent Cloud.
 
+<figure markdown="span">
 ![](https://docs.confluent.io/cloud/current/_images/flink-private-networking.svg)
+</figure>
 
 * PLATT is independant of the network type: PrivateLink, VPC peering or transit GTW.
 
@@ -318,7 +324,9 @@ You must create an API key to authenticate your requests to the Metrics API.
 
 Once the Flink SQL statement runs, Data Engineers may use the Console, (Environment > Flink > Flink page > Flink statements) to assess the list of statements and their state of processing. 
 
+<figure markdown="span">
 ![](./images/statement_list.png)
+</figure>
 
 See the [monitoring product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html) for explanations of the different fields. The following fields are important to consider:
 
@@ -416,7 +424,9 @@ WHERE o.`$rowtime` >= CURRENT_TIMESTAMP - INTERVAL '1' HOUR;
 
 * Confluent Cloud for Apache Flink supports metrics integrations with services like Prometheus, Grafana and Datadog.
 
+<figure markdown="span">
 ![](./images/export_metrics.png)
+</figure>
 
 * [Flink monitoring statement product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html)
 * [Docker compose, Prometheus setup and Grafana Dashboard for Confluent Cloud for Flink reporting.](https://github.com/confluentinc/confluent-cloud-flink-workshop/tree/master/flink-monitoring)
@@ -479,19 +489,26 @@ As a base for discussion, 10k record/s per CPU is reachable for simple Flink sta
 
 ## Disaster Recovery
 
-* CC Flink is a regional, multi-AZ service.
-* In case of Job failure, failed jobs auto-restart using the last known state, last checkpoint.
-* Checkpoint is used for in-region fault tolerance. Checkpoints capture the state of a Flink job at regular intervals, including Kafka consumer offsets, operator states, and internal timers. In CC checkpoints are done every minute
-* In case of Cloud Provider failure, there is no protection, for a region lost. To address that, architects need to set up cross region DR
+* CC Flink is a regional, multi-AZ service. 
+* In case of Job failure, failed jobs auto-restart using the last known states loaded from the last checkpoint.
+* Checkpoint is used for in-region fault tolerance. Checkpoints capture the state of a Flink job at regular intervals, including Kafka consumer offsets, operator states, and internal timers. In CC checkpoints are done every minute.
+* In case of Cloud Provider failure, there is no protection, for a region lost. To address that, architects need to set up a cross region DR strategy.
 * All Flink DR options first require a DR strategy for Kafka & Schema Registry (SR). It needs to have an exact replication of the data (including offsets) and schemas.
 * On CC, [cluster link](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/index.html) and [schema link](https://docs.confluent.io/cloud/current/sr/schema-linking.html) supports data and schema replication.
 
 As any flink solution, the following need to be deeply assessed:
 
+* What Flink application and SQL statements to consider in scope of DR?
 * Can Flink's state be recreated?  This is driven by the underlying Kafka Clusters RPO and their retention.
 * How long is tolerable to recreate that state? This is driven by the overall RTO. 
 * What is the semantic expected by consumer apps? This is driven by consuming apps tolerances. Semantics options are: exactly-once, at-least once (duplicate possible), at-most once (data loss and duplicate possible).
 * Is the Flink job processing deterministic? will a Flink job always output the same results?
+
+A generic view of DR components is presented in following figure:
+
+<figure markdown="span">
+![](./diagrams/dr_act_act.drawio.png)
+</figure>
 
 ### Active / Active
 

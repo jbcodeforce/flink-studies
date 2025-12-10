@@ -209,7 +209,27 @@ from (
 ) where row_num = 1;
 ```
 
-A select * on this dedup table, gives the expected results. But in the kafka topic at offset 0 the first CUST_01 record will be the old one, while around offset 8 the new CUST_01 is present.
+A select * on this dedup table, gives the expected results. In the kafka topic at offset 0 the first CUST_01 record will be the old one, while around offset 8 the new CUST_01 is present: this is normal.
+
+### Tombstone creation
+
+From the dedupled topic, we can add another processing to get Premium customers
+
+```sh
+create table `customers_filtered` (
+  primary key(customer_id) not enforced 
+) 
+as select * from `customers_dedup` where customer_segment = 'Premium'
+```
+
+Last we want to modify CUST001 again by changing the customer_segment to Standard, but to make it working and pass the dedup, we also need to change the registration_date to be later than the creation of the first CUST001.
+```sql
+nsert into `customers` values ('CUST001', 'John', 'Smith', 'john.smith@email.com', '555-0101', DATE '1985-03-15', 'M', TIMESTAMP '2024-01-25 10:23:45.123', 'Standard', 'Email', '123 3nd Oak Street', 'New York', 'NY', '10001', 'USA')
+```
+
+If the `select * from customers_filtered` is still running we can see the CUST001 is no more in the Premium list, and in the `customers_filtered` topic a tombstone record is present:
+![](./images/tombstone_cust.png)
+
 
 * See also the [json transformation demo](../../../e2e-demos/json-transformation/README.md) as a basic ARRAY, ROW to JSON Object transformation, runnable in CC Flink or CP Flink.
 
