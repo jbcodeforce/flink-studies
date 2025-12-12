@@ -300,6 +300,20 @@ Do not use `Statement Set` when the source are different for all statements with
 
 ## Stateful aggregations
 
+An aggregate function computes a single result from multiple input rows.
+
+### Group BY
+
+Classical SQL grouping of records, but with Streaming the state may grow infinitely. The size will depend of the # of groups and the amount of data to keep per group.
+
+### Distinct
+
+Remove duplicate before doing the aggregation:
+
+```sql
+  ARRAY_AGG(DISTINCT user_name) as persons
+```
+
 ### OVER 
 
 ???+ info "OVER aggregations"

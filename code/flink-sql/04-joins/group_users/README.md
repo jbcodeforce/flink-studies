@@ -11,6 +11,8 @@
 
 ![](../images/group_hierarchy.drawio.png)
 
+1. Address the deletion of user
+
 ## Hierarchical Group of Users
 
 *Flink SQL does not support recursive CTEs (WITH RECURSIVE) like traditional databases. For hierarchical queries with unknown depth, you'd need iterative processing or user-defined functions.*
@@ -47,12 +49,12 @@ However, for a fixed depth hierarchy (which is common in practice), you can achi
 
 
 * The logic should leverage joins on the same table, and ARRAY_AGG to build the list of persons per groups. 
-* First basic query is to the person to group assignment
+* First basic query is to get the person to group assignment
     ```sql
     select group_name, item_name as person_name from `group_hierarchy` where item_type = 'PERSON'
     ```
 
-    which could be transformed by the list of groups a user belong too
+    which could be transformed by the list of groups a user belongs too
     ```sql
     select 
         item_name as person_name, 
@@ -93,15 +95,16 @@ However, for a fixed depth hierarchy (which is common in practice), you can achi
 
         ![](../images/person_dep_flat.png)
 
-* Two level hierarchy will be:
+* Two level hierarchy will combine the direct person to group with the person to upper group one level higher:
     ```sql
     with direct_persons as (
-    select group_name, item_name as person_name from `group_hierarchy` where item_type = 'PERSON'
+        select group_name, item_name as person_name from `group_hierarchy` where item_type = 'PERSON'
     ),
 
-    subgroup_members as (select
-        parent.group_name as group_name,
-        child.item_name as person_name
+    subgroup_members as (
+        select
+            parent.group_name as group_name,
+            child.item_name as person_name
         from `group_hierarchy` parent left join `group_hierarchy` child on parent.item_name = child.group_name
         where parent.item_type = 'GROUP' and child.item_type = 'PERSON'
     ),
@@ -117,23 +120,37 @@ However, for a fixed depth hierarchy (which is common in practice), you can achi
     from all_persons group by group_name
     ```
 
-* Inserting new users update the table:
+* Inserting new users, will update the table, same if adding more group to the lower level with users
     ![](../images/2nd_lvl_groups.png)
 
 * For dynamic we need to implement a User Defined Function. [See this code]()
 
-## Context
+## Deleting users
 
-* In the  groups_users_rec there is only events for group/users creation or update
-* The event that specifies a user is deleted from a group will not come in this source. Only an event saying the group has a delete in the form
+This time it will be possible to get as input events, the fact that a user is created or updated in the hierarchy. But not the delete. So how to respond to the question a user is part of a group?
+
+Fetching data from datasource should be ordered. But it could be out of order in some rare case.
+
+* The fact table looks like (see [](./ddl.groups_users_rec.sql)):
+    ```sql
+    CREATE TABLE `groups_users_rec` (
+        group_uid STRING,
+        group_member STRING,
+        event_timestamp TIMESTAMP_LTZ(3),
+        is_deleted BOOLEAN,
+        PRIMARY KEY (group_uid, group_member) NOT ENFORCED
+    )
+    ```
+
+* The event that specifies a user is deleted from a group will not come in this source. Only an event saying the group has a delete done in the form of:
     ```sql
     ('grp-002', '', TIMESTAMP '2025-11-26 09:15:00.000', TRUE)
     ```
 
-    Let call it a tombstone at the group level.
+    Let call it a 'tombstone' event at the group level.
 
 * If the delete events are sent for a given user within a group like:
-    ```
+    ```sql
     ('grp-002', 'user_201', TIMESTAMP '2025-11-26 09:15:00.000', TRUE)
     ```
 
@@ -142,11 +159,9 @@ However, for a fixed depth hierarchy (which is common in practice), you can achi
     select group_uid, group_member,  is_deleted from `groups_users_rec` group by group_uid, group_member, is_deleted
     ```
 
-*  Fetching data from datasource should be ordered. But it could be out of order in some rare case.
 * When a group has been modified and the event is a tombstone, normally all users should be deleted so the `is_deteled` flag, should be set to True
 
-* We need to handle a "tombstone" event where an empty group_member with is_deleted=TRUE marks all existing members of that group as deleted, unless they have newer events after the tombstone.
-* On this example:
+* We need to handle a "tombstone" event where an empty group_member with is_deleted=TRUE marks all existing members of that group as deleted, unless they have newer events after the tombstone which are re-integrating those users:
     ```sql
     INSERT INTO groups_users_rec (group_uid, group_member, event_timestamp, is_deleted) VALUES
     ('grp-001', 'user-100', TIMESTAMP '2025-11-01 09:00:00.000', FALSE),
@@ -158,11 +173,12 @@ However, for a fixed depth hierarchy (which is common in practice), you can achi
     ('grp-002', '', TIMESTAMP '2025-11-26 09:15:00.000', TRUE),
     ('grp-003', 'user-301', TIMESTAMP '2025-11-28 20:45:15.250', FALSE),
     ('grp-001', 'user-102', TIMESTAMP '2025-11-30 23:59:59.999', FALSE),
+    -- refresh of grp-002 users
     ('grp-002', 'user-200', TIMESTAMP '2025-11-26 10:11:10.123', FALSE),
     ('grp-002', 'user-202', TIMESTAMP '2025-11-26 10:12:00.000', FALSE);
     ```
 
-    The expected results is:
+    The expected results are:
     ```
     'grp-001', 'user-100', FALSE
     'grp-001', 'user-101', FALSE
@@ -174,34 +190,36 @@ However, for a fixed depth hierarchy (which is common in practice), you can achi
     'grp-003', 'user-301', FALSE
     ```
 
-The final query is:
-```sql
-INSERT INTO dim_latest_group_users_rec
-SELECT
-    group_uid,
-    group_member,
-    event_timestamp,
-    CASE
-        WHEN tombstone_ts IS NOT NULL
-             AND event_timestamp < tombstone_ts
-        THEN TRUE
-        ELSE is_deleted
-    END as is_deleted
-FROM (SELECT
-        r.group_uid,
-        r.group_member,
-        r.event_timestamp,
-        r.is_deleted,
-        -- Get the maximum tombstone timestamp for each group
-        t.tombstone_timestamp as tombstone_ts
-    FROM groups_users_rec r
-    LEFT JOIN (
-        SELECT
-            group_uid,
-            MAX(event_timestamp) as tombstone_timestamp
-        FROM groups_users_rec
-        WHERE group_member = '' AND is_deleted = TRUE
-        GROUP BY group_uid
-    ) t ON r.group_uid = t.group_uid
-    WHERE r.group_member <> '' );
-```
+* To support this processing logic, the final query is:
+    ```sql
+    INSERT INTO dim_latest_group_users_rec
+    SELECT
+        group_uid,
+        group_member,
+        event_timestamp,
+        CASE
+            WHEN tombstone_ts IS NOT NULL
+                AND event_timestamp < tombstone_ts
+            THEN TRUE
+            ELSE is_deleted
+        END as is_deleted
+    FROM (SELECT
+            r.group_uid,
+            r.group_member,
+            r.event_timestamp,
+            r.is_deleted,
+            -- Get the maximum tombstone timestamp for each group
+            t.tombstone_timestamp as tombstone_ts
+        FROM groups_users_rec r
+        LEFT JOIN (
+            SELECT
+                group_uid,
+                MAX(event_timestamp) as tombstone_timestamp
+            FROM groups_users_rec
+            WHERE group_member = '' AND is_deleted = TRUE
+            GROUP BY group_uid
+        ) t ON r.group_uid = t.group_uid
+        WHERE r.group_member <> '' );
+    ```
+
+    See [this dml](./dml.dim_latest_group_users.sql)
