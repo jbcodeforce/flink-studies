@@ -1,7 +1,126 @@
-# A Simple Join
+# User to group patterns
 
-## Problem
- Build a Dimension that define what user belonging to group?.  
+
+## Problems
+
+
+1. Support Hierarchy within the same table, and try to get the users in a group by flattening the hierarchy. As an example there is a group of hospital, with department, and group of people, then persons.
+    * Person can be part of multiple groups
+    * Group can be part of other group.
+    * There is one root group
+
+![](../images/group_hierarchy.drawio.png)
+
+## Hierarchical Group of Users
+
+*Flink SQL does not support recursive CTEs (WITH RECURSIVE) like traditional databases. For hierarchical queries with unknown depth, you'd need iterative processing or user-defined functions.*
+
+However, for a fixed depth hierarchy (which is common in practice), you can achieve this with self-joins and ARRAY_AGG. 
+
+* A unique table keeps group  and user assignment information. Here is the simplest definition:
+    ```sql
+    CREATE TABLE group_hierarchy (
+    id              INT PRIMARY KEY NOT ENFORCED,
+    group_name STRING,
+    item_name       STRING,
+    item_type       STRING NOT NULL,   -- 'GROUP' or 'PERSON'
+    ```
+
+    See the [ddl.group_hierarchy.sql](./ddl.group_hierarchy.sql)
+
+* With some insert statements to reflect the figure above (see [insert_group_hierarchy.sql](./insert_group_hierarchy.sql))
+
+    ![](../images/src_group_info.png)
+
+* The expected results look like:
+
+| Group | Persons |
+| --- | --- |
+| nurses_gp_1 | [Himani, Laure] |
+| nurses_gp_2 | [Bratt, Carol, Lucy, Mary] |
+| Dept_1 | [Bratt, Carol, Julie, Lucy, Mary] |
+| Dept_11 | [Paul, Julie] |
+| Hospital West | [Bratt, Carol,  Himani, Julie, Laure, Lucy, Mary] |
+| Hopital East | [Paul, Julie] |
+| Region 1 | [Bratt, Carol,  Himani, Julie, Laure, Lucy, Mary, Paul] |
+
+
+
+* The logic should leverage joins on the same table, and ARRAY_AGG to build the list of persons per groups. 
+* First basic query is to the person to group assignment
+    ```sql
+    select group_name, item_name as person_name from `group_hierarchy` where item_type = 'PERSON'
+    ```
+
+    which could be transformed by the list of groups a user belong too
+    ```sql
+    select 
+        item_name as person_name, 
+        ARRAY_AGG(distinct group_name) as group_names
+    from `group_hierarchy`
+        where item_type = 'PERSON'
+    group by item_name
+    ```
+
+* Looking more at the group level, we can get all persons per group:
+    1. See grouping person at one level higher in their current group
+        ```sql
+        select
+            parent.group_name as group_name,
+            child.item_name as person_name
+        from `group_hierarchy` parent left join `group_hierarchy` child on parent.item_name = child.group_name
+        where parent.item_type = 'GROUP' and child.item_type = 'PERSON' 
+        ```
+
+    1. Then aggregate by wrapping the previous with 
+        ```sql
+        with depts as 
+            (
+            SELECT 
+                l.group_name AS group_name,
+                r.item_name AS person_name
+            FROM group_hierarchy l
+            JOIN group_hierarchy r
+                ON r.item_name IS NOT NULL and (r.item_name = l.group_name OR r.group_name = l.group_name)
+            WHERE r.item_type = 'PERSON'
+        )
+        select 
+            group_name,
+            ARRAY_AGG(distinct person_name) as persons
+        from depts
+        group by group_name
+        ```
+
+        ![](../images/person_dep_flat.png)
+
+* Two level hierarchy will be:
+    ```sql
+    with direct_persons as (
+    select group_name, item_name as person_name from `group_hierarchy` where item_type = 'PERSON'
+    ),
+
+    subgroup_members as (select
+        parent.group_name as group_name,
+        child.item_name as person_name
+        from `group_hierarchy` parent left join `group_hierarchy` child on parent.item_name = child.group_name
+        where parent.item_type = 'GROUP' and child.item_type = 'PERSON'
+    ),
+
+    all_persons as ( 
+        select group_name, person_name from direct_persons
+        union all
+        select group_name, person_name from subgroup_members
+    )
+    select
+        group_name,
+        ARRAY_AGG(person_name) as persons
+    from all_persons group by group_name
+    ```
+
+* Inserting new users update the table:
+    ![](../images/2nd_lvl_groups.png)
+
+* For dynamic we need to implement a User Defined Function. [See this code]()
 
 ## Context
 
