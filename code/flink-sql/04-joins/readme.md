@@ -157,7 +157,7 @@ Product_details is 1 to 1 linked to the products table. The Dimension column is 
 
 The solution needs first to do the join to get the product detail for each product within the order. To get the product ids within the order, it uses the `cross join unnest`, then to get the product details, it uses a `left join`
 
-See cc-3-avg-prod-volume-per-mn.sql.
+See [cc-3-avg-prod-volume-per-mn.sql](./cc/cc-3-avg-prod-volume-per-mn.sql).
 
 ```sql
 CREATE TABLE order_volumes AS
@@ -235,3 +235,6 @@ The state is unbounded.
 
 Improve the ValidateProductName UDF to not only return whether product name is valid, but also a (n ideally structured) error with information why it is invalid, if it is invalid. The error shall be NULL if the product name is valid.
 
+## Data Skew
+
+[See problem and solution statement](https://jbcodeforce.github.io/flink-studies/concepts/#data-skew) and the demo code is in the [./data_skew/](./data_skew/) folder.

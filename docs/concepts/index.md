@@ -221,6 +221,33 @@ The operator creates one window for each data element received.  If there is a g
 
 [See Windowing Table-Valued Functions details in Confluent documentation](https://docs.confluent.io/cloud/current/flink/reference/queries/window-tvf.html).
 
+
+### Trigger
+
+A [Trigger](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/stream/operators/windows.html#triggers) in Flink, determines when a window is ready to be processed. 
+
+Each window has a default trigger associated with it. For example, a tumbling window might have a default trigger set to 2 seconds, while a global window requires an explicit trigger definition.
+
+You can implement custom triggers by creating a class that implements the Trigger interface, which includes methods such as onElement(..), onEventTime(..), and onProcessingTime(..).
+
+
+Flink provides several default triggers::
+
+* **EventTimeTrigger** fires based upon progress of event time
+* **ProcessingTimeTrigger** fires based upon progress of processing time
+* **CountTrigger** fires when # of elements in a window exceeds a specified parameter.
+* **PurgingTrigger** is used for purging the window, allowing for more flexible management of state.
+
+### Eviction
+
+**Evictor** is used to remove elements from a window either after the trigger fires or before/after the window function is applied. The specific logic for removing elements is application-specific and can be tailored to meet the needs of your use case.
+
+The predefined evictors: 
+
+* **CountEvictor** removes elements based on a specified count, allowing for fine control over how many elements remain in the window.
+* **DeltaEvictor** evicts elements based on the difference between the current and previous counts, useful for scenarios where you want to maintain a specific change threshold.
+* **TimeEvictor** removes elements based on time, allowing you to keep only the most recent elements within a given time frame.
+
 ## Event time
 
 **Time** is a central concept in stream processing and can have different interpretations based on the context of the flow or environment:
@@ -239,7 +266,32 @@ The watermark serves as a heuristic for this purpose.
 
 ### Key Concepts
 
-- Generated in the data stream at regular intervals
+- Generated in the data stream at regular intervals, they are part of the source operator processing or immediately after it. Each parallel subtask of the source typically generates its watermarks independently, based on the events it processes. This is especially important for partitioned sources like Kafka, where each source subtask might read from one or more partitions. 
+- Watermark generation logic is defined using a WatermarkStrategy. This strategy is typically applied directly when you define the data source. It tells Flink how to extract the event time timestamp from each incoming data record. And it determines how to generate the actual watermark based on those timestamps.
+    ```java
+    StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        // 1. Define the Watermark Strategy
+        WatermarkStrategy<MyEvent> watermarkStrategy = 
+            WatermarkStrategy
+                // This strategy is ideal for out-of-order data streams.
+                // It allows events up to 5 seconds late (out-of-order) to be processed.
+                .<MyEvent>forBoundedOutOfOrderness(Duration.ofSeconds(5))
+                
+                // 2. Define how to extract the event timestamp from the record
+                .withTimestampAssigner((event, timestamp) -> event.getEventTime());
+
+        // 3. Apply the Strategy directly to the Source Connector
+        DataStream<MyEvent> stream = env
+            .fromSource(
+                // In a real application, this would be a KafkaSource, FileSource, etc.
+                // Here, we use a simple collection source for demonstration.
+                new DummyEventSource(), // Assuming a custom Flink Source implementation
+                watermarkStrategy, 
+                "My Event Source"
+            );
+    ```
+- Watermarks flow downstream alongside the data records
 - Watermark timestamp = largest seen timestamp - estimated out-of-orderness. This timestamp are always increasing. 
 - Events arriving after watermarks are considered late and typically discarded
 - Essential for triggering window computations in event-time processing
@@ -259,7 +311,7 @@ after the operator has already processed events with that timestamp from other s
 semantics.
 
 When working with Kafka topic partitions, the absence of watermarks may represent some challenges. Watermarks are generated independently for each stream and partition. When two 
-partitions are combined, the resulting watermark will be the oldest of the two, reflecting the point at which the system has complete information. If one partition stops receiving 
+partitions are combined, the resulting watermark will be the oldest of the two (min value), reflecting the point at which the system has complete information. If one partition stops receiving 
 new events, the watermark for that partition will not progress. To ensure that processing continues over time, an idle timeout configuration can be implemented.
 
 Each task has its own watermark, and at the arrival of a new watermark, it checks if it needs to advance its own watermark. When it is advanced, the task performs all triggered computations and emits all result records. The watermark is broadcasted to all output of the task.
@@ -327,32 +379,71 @@ The table alteration can be undone with:
 ALTER TABLE <table_name> DROP _part;
 ```
 
-## Trigger
+## Data Skew
 
-A [Trigger](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/stream/operators/windows.html#triggers) in Flink, determines when a window is ready to be processed. 
+When dealing with large scale dataset, and state, keys used for upsert operation, joins or aggregrations may be subject to data skew. 
+Hot keys are sent to the same Flink subtask. Those operator workers receive a lot of data while others are idle. Scaling the number of task manager will not help, as still the majority of records go to the same task. 
 
-Each window has a default trigger associated with it. For example, a tumbling window might have a default trigger set to 2 seconds, while a global window requires an explicit trigger definition.
+It is important to compute the number of keys found in left and right tables. NULL key may be found, and may be also very common. 
 
-You can implement custom triggers by creating a class that implements the Trigger interface, which includes methods such as onElement(..), onEventTime(..), and onProcessingTime(..).
+The following query is a standard approach to assess the percent allocation of all the data groups:
 
+```sql
+SELECT 
+    column_name, 
+    COUNT(*) AS rows_count,
+FROM 
+    your_table_name
+GROUP BY 
+    column_name;
+```
 
-Flink provides several default triggers::
+If for example one value accounts for more than 30% of the rows then we face data skew.
 
-* **EventTimeTrigger** fires based upon progress of event time
-* **ProcessingTimeTrigger** fires based upon progress of processing time
-* **CountTrigger** fires when # of elements in a window exceeds a specified parameter.
-* **PurgingTrigger** is used for purging the window, allowing for more flexible management of state.
+For join, Flink distributes rows based on key used in the on condition.
 
-### Eviction
+It is then necessary to use a 'salting' key technique, by spreading the hot key to multiple processing tasks. The original join looks like:
 
-**Evictor** is used to remove elements from a window either after the trigger fires or before/after the window function is applied. The specific logic for removing elements is application-specific and can be tailored to meet the needs of your use case.
+```sql
+select 
+    u.*,
+    g.group_name
+from src_users u
+join src_groups g on u.group_id = g.id
+```
 
-The predefined evictors: 
+For that we need to add a column (the salt) to the skewed table and the smaller tllbe, and append a sequence number between 0 to N-1, where N is the number of buckets to use to repartition the data. See [SEQUENCE UDTF](https://github.com/jbcodeforce/flink-udfs-catalog/tree/main/sequence)
 
-* **CountEvictor** removes elements based on a specified count, allowing for fine control over how many elements remain in the window.
-* **DeltaEvictor** evicts elements based on the difference between the current and previous counts, useful for scenarios where you want to maintain a specific change threshold.
-* **TimeEvictor** removes elements based on time, allowing you to keep only the most recent elements within a given time frame.
+Below is an example to creat 3 bucket for each key of the slow table:
 
+```sql
+create view groups_salted as select
+   g.*,
+  S.salt_id as salt_id
+from `src_groups` as g
+cross join lateral table(SEQUENCE(1,3)) as S(salt_id)
+```
+
+Same apply to the big table:
+```sql
+create view users_salted as select
+  u.*,
+  S.salt_id as salt_id
+from `src_users` as u
+cross join lateral table(SEQUENCE(1,3)) as S(salt_id)
+```
+
+The joins now taking into account the combined key:
+```sql
+select 
+    u.*,
+    g.group_name
+from users_salted u
+join groups_salted g on u.group_id = g.id and u.salt_id = g.salt_id
+```
+
+To demonstrate the partitioning use a sink topic with 3 partitions, and a partition key based on group_od with the first approach the records are going a lot in one partition, while in the second sink the partition key will be group_id and salt_id and so will be thread againts the 3 partition.
+[See matching demo scripts in flink-sql/04-joins/data_skew.](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/04-joins/data_skew)
 
 ## From batch to real-time
 

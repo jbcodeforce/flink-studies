@@ -305,79 +305,137 @@ An aggregate function computes a single result from multiple input rows.
 ### Group BY
 
 Classical SQL grouping of records, but with Streaming the state may grow infinitely. The size will depend of the # of groups and the amount of data to keep per group.
+`group by` generate upsert events as it manages key-value and repartition data.
+
+```sql
+EXPLAIN 
+SELECT 
+  account_number,
+  transaction_type,
+  SUM(amount) 
+  FROM `transactions` 
+  where transaction_type = 'withdrawal' 
+  GROUP BY account_number,  transaction_type
+HAVING SUM(amount) > 5000
+```
+
+The physical plan looks like
+```
+== Physical Plan ==
+
+StreamSink [6]
+  +- StreamCalc [5]
+    +- StreamGroupAggregate [4]
+      +- StreamExchange [3]
+        +- StreamCalc [2]
+          +- StreamTableSourceScan [1]
+
+== Physical Details ==
+
+[1] StreamTableSourceScan
+Table: `j9r-env`.`j9r-kafka`.`transactions`
+Primary key: (txn_id)
+Changelog mode: append
+Upsert key: (txn_id)
+State size: low
+Startup mode: earliest-offset
+Key format: avro-registry
+Key registry schemas: (:.:transactions/100220)
+Value format: avro-registry
+Value registry schemas: (:.:transactions/100219)
+
+[4] StreamGroupAggregate
+Changelog mode: retract
+Upsert key: (account_number,transaction_type)
+State size: medium
+State TTL: never
+
+[5] StreamCalc
+Changelog mode: retract
+Upsert key: (account_number,transaction_type)
+
+[6] StreamSink
+Table: Foreground
+Changelog mode: retract
+Upsert key: (account_number,transaction_type)
+State size: low
+```
 
 ### Distinct
 
 Remove duplicate before doing the aggregation:
 
 ```sql
-  ARRAY_AGG(DISTINCT user_name) as persons
+ARRAY_AGG(DISTINCT user_name) as persons
 ```
 
 ### OVER 
 
-???+ info "OVER aggregations"
-    [OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) compute an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY does, but produces one result for every input row. 
-    OVER specifies the time window over which the aggregation is performed. The changelog mode, of the output of OVER is `append`. This is helpful when we need to act on each input row, but consider some time interval. A classical example is to get a moving sum or average: the number of orders in the last 10 seconds: 
+[OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) compute an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY does, but produces one result for every input row. 
 
-    ```sql
-    SELECT 
-        order_id,
-        customer_id,
-        `$rowtime`,
-        SUM(price) OVER w AS total_price_ten_secs, 
-        COUNT(*) OVER w AS total_orders_ten_secs
-    FROM `examples`.`marketplace`.`orders`
-    WINDOW w AS (
-        PARTITION BY customer_id
-        ORDER BY `$rowtime`
-        RANGE BETWEEN INTERVAL '10' SECONDS PRECEDING AND CURRENT ROW
+OVER specifies the time window over which the aggregation is performed. A classical example is to get a moving sum or average: the number of orders in the last 10 seconds: 
+
+```sql
+SELECT 
+    order_id,
+    customer_id,
+    `$rowtime`,
+    SUM(price) OVER w AS total_price_ten_secs, 
+    COUNT(*) OVER w AS total_orders_ten_secs
+FROM `examples`.`marketplace`.`orders`
+WINDOW w AS (
+    PARTITION BY customer_id
+    ORDER BY `$rowtime`
+    RANGE BETWEEN INTERVAL '10' SECONDS PRECEDING AND CURRENT ROW
+)
+```
+
+The changelog mode, of the output of OVER is `append`. This is helpful when we need to act on each input row, but consider some time interval. 
+
+
+To get the order exceeding some limits for the first time and then when the computed aggregates go below other limits. [LAG](https://docs.confluent.io/cloud/current/flink/reference/functions/aggregate-functions.html#lag)
+
+```sql
+-- compute the total price and # of orders for a period of 10s for each customer
+WITH orders_ten_secs AS ( 
+SELECT 
+    order_id,
+    customer_id,
+    `$rowtime`,
+    SUM(price) OVER w AS total_price_ten_secs, 
+    COUNT(*) OVER w AS total_orders_ten_secs
+FROM `examples`.`marketplace`.`orders`
+WINDOW w AS (
+    PARTITION BY customer_id
+    ORDER BY `$rowtime`
+    RANGE BETWEEN INTERVAL '10' SECONDS PRECEDING AND CURRENT ROW
     )
-    ```
-
-    To get the order exceeding some limits for the first time and then when the computed aggregates go below other limits. [LAG](https://docs.confluent.io/cloud/current/flink/reference/functions/aggregate-functions.html#lag)
-
-    ```sql
-    -- compute the total price and # of orders for a period of 10s for each customer
-    WITH orders_ten_secs AS ( 
-    SELECT 
-        order_id,
-        customer_id,
-        `$rowtime`,
-        SUM(price) OVER w AS total_price_ten_secs, 
-        COUNT(*) OVER w AS total_orders_ten_secs
-    FROM `examples`.`marketplace`.`orders`
-    WINDOW w AS (
-        PARTITION BY customer_id
-        ORDER BY `$rowtime`
-        RANGE BETWEEN INTERVAL '10' SECONDS PRECEDING AND CURRENT ROW
-        )
-    ),
-    -- get previous orders and current order per customer
-    orders_ten_secs_with_lag AS (
-    SELECT 
-        *,
-        LAG(total_price_ten_secs, 1) OVER w AS total_price_ten_secs_lag, 
-        LAG(total_orders_ten_secs, 1) OVER w AS total_orders_ten_secs_lag
-    FROM orders_ten_secs
-    WINDOW w AS (
-        PARTITION BY customer_id
-        ORDER BY `$rowtime`
-        )
-    -- Filter orders when the order price and number of orders were above some limits for previous or current order aggregates
+),
+-- get previous orders and current order per customer
+orders_ten_secs_with_lag AS (
+SELECT 
+    *,
+    LAG(total_price_ten_secs, 1) OVER w AS total_price_ten_secs_lag, 
+    LAG(total_orders_ten_secs, 1) OVER w AS total_orders_ten_secs_lag
+FROM orders_ten_secs
+WINDOW w AS (
+    PARTITION BY customer_id
+    ORDER BY `$rowtime`
     )
-    SELECT customer_id, 'BLOCK' AS action, `$rowtime` AS updated_at 
-    FROM orders_ten_secs_with_lag 
-    WHERE 
-        (total_price_ten_secs > 300 AND total_price_ten_secs_lag <= 300) OR
-        (total_orders_ten_secs > 5 AND total_orders_ten_secs_lag <= 5)
-    UNION ALL 
-    SELECT customer_id, 'UNBLOCK' AS action, `$rowtime` AS updated_at 
-    FROM orders_ten_secs_with_lag 
-    WHERE 
-        (total_price_ten_secs <= 300 AND total_price_ten_secs_lag > 300) OR
-        (total_orders_ten_secs <= 5 AND total_orders_ten_secs_lag > 5);
-    ```
+-- Filter orders when the order price and number of orders were above some limits for previous or current order aggregates
+)
+SELECT customer_id, 'BLOCK' AS action, `$rowtime` AS updated_at 
+FROM orders_ten_secs_with_lag 
+WHERE 
+    (total_price_ten_secs > 300 AND total_price_ten_secs_lag <= 300) OR
+    (total_orders_ten_secs > 5 AND total_orders_ten_secs_lag <= 5)
+UNION ALL 
+SELECT customer_id, 'UNBLOCK' AS action, `$rowtime` AS updated_at 
+FROM orders_ten_secs_with_lag 
+WHERE 
+    (total_price_ten_secs <= 300 AND total_price_ten_secs_lag > 300) OR
+    (total_orders_ten_secs <= 5 AND total_orders_ten_secs_lag > 5);
+```
 
 
 ???+ question "How to access json data from a string column being a json object?"
@@ -446,8 +504,6 @@ Remove duplicate before doing the aggregation:
 
 
 
-
-
 ## Joins
 
 When doing a join in a database, the result reflects the state of the join at the time we execute the query. In streaming, as both side of a join receive new rows, both side of joins need to continuously change. This is a **continuous query on dynamic tables**, where the engine needs to keep a lot of state: each row of each table. 
@@ -470,18 +526,19 @@ The key points to keep in mind are:
 * When the RHS is an upsert table, the result will be upsert too. Which means a result will be re-emitted if the RHS change. To avoid that we need to take the reference data, RHS, in effect at time of the event on LHS. The result is becoming **time-versioned**.
     ```sql
     SELECT t.amount, t.order_type, s.name, s.opening_value FROM transactions t
-    LEFT JOIN stocks s
-    FOR SYSTEM_TIME AS OF t.purchase_ts
+    LEFT JOIN stocks s FOR SYSTEM_TIME AS OF t.purchase_ts
     ON t.stockid = s.id
     ```
-* Temporal joins help to reduce the state size, as we need to keep recent records on both side. The time will be linked to the watermark progress.
+* The above query is a Temporal join. Temporal joins help to reduce the state size, as we need to keep recent records on both side. The time will be linked to the watermark progress.
 * INNER JOIN is a cartesian product.
-* OUTER joins like left, right or full, may generate records with empty columns for non-matching join.
+* OUTER joins like left, right or full, may generate records with empty columns for non-matching row.
 * INTERVAL JOIN equires at least one equi-join predicate and a join condition that bounds the time on both sides.
     ```sql
     SELECT t.amount, t.order_type, s.name, s.opening_value FROM transactions t, stocks s
     WHERE t.stockid = s.id AND t.ts BETWEEN s.ts - INTERVAL '6' HOURS AND s.ts
     ```
+
+### References
 
 Here is a list of important tutorials on Joins:
 
@@ -492,7 +549,7 @@ Here is a list of important tutorials on Joins:
 * [Temporal Join Study in this repo.](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/09-temporal-joins)
 
 
-
+### FAQs
 ???+ info "Inner knowledge on temporal join"
     Event-time temporal joins are used to join two or more tables based on a **common** event time (in one of the record table or the kafka record: `$rowtime` system column). With an event-time attribute, the operator can retrieve the value of a key as it was at some point in the past. The right-side, versioned table, stores all versions, identified by time, since the last watermark.
 
@@ -527,8 +584,20 @@ Here is a list of important tutorials on Joins:
     end
     ```
 
-???- question "how primary key selection impacts joins?"
+???+ question "how primary key selection impacts joins?"
+    Primary keys on source tables do not impact joins as the joins can be done on any column of the left and right tables. The important keys are the one on the sink table and they need to match the last join columns.
 
+???+ info "Understand Left side velocity and update strategy"
+    If the left table has a high velocity and there is no new event for the defined primary key, then it is important to set a TTL on the left side that is short so the state will stay under control. Use the aliases set on the tables and set the retention time.
+    ```sql
+    select /* STATE_TTL('tx'='120s', 'c'='4d') */
+        tx_id, account_id, amount, merchant_id, tx_type 
+    from transaction tx
+    LEFT JOIN account c
+    on tx.account_id = c.id
+    ```
+
+    **Remark**: Running an EXPLAIN on the above statement give the TTL.
 
 ???+ warning "Join on 1x1 relationship"
     In current Flink SQL it is not possible to *efficiently* join elements from two tables when we know the relation is 1 to 1: one transaction to one account, one shipment to one order. As soon as there is a match, normally we want to emit the result and clear the state. This is possible to do so with the DataStream API, not SQL.
