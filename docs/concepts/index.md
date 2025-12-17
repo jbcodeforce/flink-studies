@@ -381,8 +381,10 @@ ALTER TABLE <table_name> DROP _part;
 
 ## Data Skew
 
-When dealing with large scale dataset, and state, keys used for upsert operation, joins or aggregrations may be subject to data skew. 
-Hot keys are sent to the same Flink subtask. Those operator workers receive a lot of data while others are idle. Scaling the number of task manager will not help, as still the majority of records go to the same task. 
+*This section assumes a lot of knowledge on sql, joins, stateful state. It is in the concept chapter because I am not sure where to put it otherwise*.
+
+When dealing with large scale dataset and state, keys used for upsert operation, joins or aggregrations may be subject to data skew. 
+Hot keys are sent to the same Flink subtask. Those operator workers receive most of the records while others are idle. Scaling the number of task manager will not help, as the majority of records go to the same task. 
 
 It is important to compute the number of keys found in left and right tables. NULL key may be found, and may be also very common. 
 
@@ -414,17 +416,21 @@ join src_groups g on u.group_id = g.id
 
 For that we need to add a column (the salt) to the skewed table and the smaller tllbe, and append a sequence number between 0 to N-1, where N is the number of buckets to use to repartition the data. See [SEQUENCE UDTF](https://github.com/jbcodeforce/flink-udfs-catalog/tree/main/sequence)
 
-Below is an example to creat 3 bucket for each key of the slow table:
+Below is an example to create 3 buckets for each key of the slow table:
 
 ```sql
+-- using the SEQUENCE UDF
 create view groups_salted as select
    g.*,
   S.salt_id as salt_id
 from `src_groups` as g
 cross join lateral table(SEQUENCE(1,3)) as S(salt_id)
+-- using the UNNEST
+CROSS JOIN UNNEST(ARRAY[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]) as S(salt_id)
 ```
 
-Same apply to the big table:
+
+Same approach applies to the big table, if we can do it with a view
 ```sql
 create view users_salted as select
   u.*,
@@ -442,7 +448,13 @@ from users_salted u
 join groups_salted g on u.group_id = g.id and u.salt_id = g.salt_id
 ```
 
-To demonstrate the partitioning use a sink topic with 3 partitions, and a partition key based on group_od with the first approach the records are going a lot in one partition, while in the second sink the partition key will be group_id and salt_id and so will be thread againts the 3 partition.
+When the join needs to be temporal, we may need tables and not a view.
+
+```
+```
+
+To demonstrate the partitioning, use a sink topic with 3 partitions, and a partition key based on group_id with the first approach a lot of records are going one partition, while with the salty key, the sink  partition key will be group_id and salt_id and so will be spread against the 3 partitions.
+
 [See matching demo scripts in flink-sql/04-joins/data_skew.](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/04-joins/data_skew)
 
 ## From batch to real-time

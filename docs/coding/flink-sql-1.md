@@ -235,7 +235,7 @@ Create table statements do not changes between managed services and standalone F
     )
     WITH (
       'connector' = 'faker',
-      'number-of-rows' = '500',
+      'number-of-rows' = '500',  -- or null for infinite
       'rows-per-second' = '100',
       'fields.url.expression' = '/#{GreekPhilosopher.name}.html',
       'fields.user_id.expression' = '#{numerify ''user_##''}',
@@ -244,6 +244,17 @@ Create table statements do not changes between managed services and standalone F
     );
     ```
     This will only work in customized Flink client with the jar from Flink faker.
+
+???- info "Deeper five into Faker Connector"
+    **flink-faker** is a specialized table source that bridges Apache Flink’s SQL engine with the Java DataFaker. It acts as a ScanTableSource. It creates an internal generator that produces rows on-the-fly. Each column is mapped to a "Faker expression" using the syntax #{className.methodName 'parameter'}. By default, it generates an infinite stream of data. You can make it "bounded" (stop after a certain number of rows) for batch-style testing.
+
+    | Field operation | Description |
+    | --- | --- |
+    | Time-based generation | Give a strings that Flink can parse into TIMESTAMP(3): 'fields.ts.expression' = '#{date.past ''15'',''SECONDS''}' |
+    | 
+
+
+
 
 ???+ info "Generate data with DataGen for Flink OSS"
     [Use DataGen to do in-memory data generation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/connectors/table/datagen/) and the [new feature in product how to guide documentation](https://docs.confluent.io/cloud/current/flink/how-to-guides/custom-sample-data.html#flink-sql-custom-sample-data).

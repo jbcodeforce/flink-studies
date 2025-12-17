@@ -26,10 +26,29 @@ For developer the steps are:
 1. Build a uber jar
 1. Deploy to Confluent Cloud or into the lib folder of CP Flink Application or into the lib folder of the OSS Flink distribution.
 
+On Confluent Cloud, be sure to use log4j to get function logs and wrap code into try .. .catch. [See log debug messages documentation.](https://docs.confluent.io/cloud/current/flink/how-to-guides/enable-udf-logging.html)
 
-[See this repository to get a set of reusable UDFs](https://github.com/jbcodeforce/flink-udfs-catalog) implemented as solution for generic problems asked by our customers.
+### Iterate on UDF development
 
-See also the [Confluent documentation on UDF](https://docs.confluent.io/cloud/current/flink/how-to-guides/create-udf.html#flink-sql-create-udf) and a [Confluent git repo](https://github.com/confluentinc/flink-udf-java-examples) with some sample UDFs.
+In some case we need to iterate on the deployment of new UDF version. It is possible to deploy UDF with different version.
+
+* Need to drop the function:
+    ```sh
+    drop function USERS_IN_GROUPS
+    ```
+* Delete the artifacts
+* Upload the new jar as new artifact
+* Then recreate it with the new artifact id
+
+### Examples 
+
+* [See this repository to get a set of reusable UDFs](https://github.com/jbcodeforce/flink-udfs-catalog) implemented as solution for generic problems asked by our customers.
+* See also the [Confluent documentation on UDF](https://docs.confluent.io/cloud/current/flink/how-to-guides/create-udf.html#flink-sql-create-udf) and a [Confluent git repo](https://github.com/confluentinc/flink-udf-java-examples) with some sample UDFs.
+
+
+### Table API examples
+
+* [Confluent Flink table api example with UDF.](https://github.com/confluentinc/flink-table-api-java-examples/blob/master/src/main/java/io/confluent/flink/examples/table/Example_09_Functions.java)
 
 ### Extending base APIs
 
@@ -66,11 +85,15 @@ The function is used with SQL,using the `LATERAL TABLE(<TableFunction>) with JOI
 
 Aggregate user defined function, maps scalar values of multiple rows to a new scalar value, using accumulator. The accumulator is an intermediate data structure that stores the aggregated values until a final aggregation result is computed. 
 
-See [code example]()
-
 The `accumulate()` method is called for each input row to update the accumulator.
 
 [For more detail, see the product documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/udfs/#aggregate-functions).
+
+
+#### Deeper considerations
+
+* Scalar UDFs in the Table API/SQL are generally expected to be stateless
+
 
 ### Deploying to Confluent Cloud
 
@@ -99,12 +122,19 @@ The `accumulate()` method is called for each input row to update the accumulator
     Also visible in the Artifacts menu
     ![](./images/udf_artifacts.png)
 
-* UDFs are registered inside a Flink database
+* UDFs are registered inside a Flink database. It may take some time.
     ```sql
     CREATE FUNCTION GEO_DISTANCE
     AS
     'io.confluent.udf.GeoDistanceFunction'
     USING JAR 'confluent-artifact://cfa-...';
     ```
+
+
 * Use the function to compute distance between Paris and London:
     ![](./images/udf_in_sql.png)
+
+### Runtime explanation
+
+* UDF invocations are batched (may wait up to 500ms), the runtime tries to accumulate several records before it calls them. 
+* In Confluent Cloud the UDFs actually run in a separate pod for security isolation, which increases the consumption.
