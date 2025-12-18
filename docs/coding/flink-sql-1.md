@@ -224,7 +224,7 @@ Create table statements do not changes between managed services and standalone F
 
 
 ???+ question "How to generate data using Flink Faker? (Flink OSS)"
-    Create at table with records generated with [Flink faker](https://github.com/knaufk/flink-faker) connector using the [DataFaker expressions.](https://github.com/datafaker-net/datafaker). Valid only on OSS Flink or Confluent platform for Flink.
+    Create at table with records generated with [Flink faker](https://github.com/knaufk/flink-faker) connector using the [DataFaker expressions.](https://github.com/datafaker-net/datafaker). 
 
     ```sql
     CREATE TABLE `bounded_pageviews` (
@@ -243,15 +243,20 @@ Create table statements do not changes between managed services and standalone F
       'fields.ts.expression' =  '#{date.past ''5'',''1'',''SECONDS''}'
     );
     ```
-    This will only work in customized Flink client with the jar from Flink faker.
+    
+    Attention on Confluent Cloud, this is a connector, there is no marching Kafka Topic created. The faker will run as part of the platform and use resources. Better to drop the table once demonstrations are done.
 
-???- info "Deeper five into Faker Connector"
+???- info "Deeper dive into Faker Connector"
     **flink-faker** is a specialized table source that bridges Apache Flink’s SQL engine with the Java DataFaker. It acts as a ScanTableSource. It creates an internal generator that produces rows on-the-fly. Each column is mapped to a "Faker expression" using the syntax #{className.methodName 'parameter'}. By default, it generates an infinite stream of data. You can make it "bounded" (stop after a certain number of rows) for batch-style testing.
 
     | Field operation | Description |
     | --- | --- |
     | Time-based generation | Give a strings that Flink can parse into TIMESTAMP(3): 'fields.ts.expression' = '#{date.past ''15'',''SECONDS''}' |
-    | 
+    | categorical values | 'fields.status.expression' = '#{Options.option ''PENDING'',''SHIPPED'',''CANCELLED''}' |
+    | Regex specific pattern | 'fields.zip_code.expression' = '#{regexify ''[0-9]{5}-[0-9]{4}''}' |
+    | Nested json via row |  ... details ROW<item_name STRING, price DOUBLE> ) WITH ( 'connector' = 'faker', 'fields.details.item_name.expression' = '#{commerce.productName}', 'fields.details.price.expression' = '#{commerce.price}'| 
+
+    See [This test sql for the transaction processing](https://github.com/jbcodeforce/flink_project_demos/tree/main/tx_processing/pipelines/sources/tx/src_transactions/tests/dml_faker.sql)
 
 
 

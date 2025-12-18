@@ -17,6 +17,8 @@ Developers can leverage ny existing libraries like Geospatial calculation, Math 
 
 ## Implementation approach
 
+See [Apache flink UDF implementation guide](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/udfs/#implementation-guide).
+
 For developer the steps are:
 
 1. Develop a Class to extends a `org.apache.flink.table.functions.ScalarFunction` or `org.apache.flink.table.functions.TableFunction`
@@ -79,7 +81,7 @@ public static class SplitFunction extends TableFunction<Row> {
 
 AsyncTableFunction should be used to generate n rows when integrating with external systems.
 
-The function is used with SQL,using the `LATERAL TABLE(<TableFunction>) with JOIN or LEFT JOIN` with an ON TRUE join condition.
+The function is used with SQL `LATERAL TABLE(<TableFunction>) with JOIN or LEFT JOIN` with an ON TRUE join condition. See [Lateral table section](./flink-sql-2.md/#lateral-joins)
 
 #### Aggregate Function
 
@@ -93,7 +95,8 @@ The `accumulate()` method is called for each input row to update the accumulator
 #### Deeper considerations
 
 * Scalar UDFs in the Table API/SQL are generally expected to be stateless
-
+* Stateful with hashmap to keep state is risky as the map will be wiped if the Task Manager restarts. We need a distributed cache, or use KeyedProcessFunction with the ValueState or ListState. If the UDTF's output depends on internal state that changes over time, it can sometimes lead to unexpected results in complex joins or aggregations. For inner join lateral,  when the logic decides not to call collect(), the entire row is filtered out of the result. This effectively acts as a stateful filter. For left join lateral, the non call to collect() will return null, and it is possible to keep the input record from the left table. 
+* [Process Table Function](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/ptfs/) may be needed to define those complex stateful processing as PTF has access to Flink’s managed state, event-time and timer services, and underlying table changelogs. When invoking a PTF, the system automatically adds implicit arguments for state and time management alongside the user-defined input arguments. 
 
 ### Deploying to Confluent Cloud
 

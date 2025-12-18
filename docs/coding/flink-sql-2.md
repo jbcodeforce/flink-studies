@@ -156,22 +156,45 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 ### Deduplication
 
-Deduplication will occur on `upsert` table with primary key: the last records per $rowtime or timestamp will be kept. When the source table is in append mode, the approach is to use the ROW_NUMBER() function:
+Deduplication will occur on `upsert` table with primary key: the last records per `$rowtime` or other timestamp will be kept. When the source table is in `append` mode, the approach is to use the [ROW_NUMBER()]() combined with OVER():
+
 
 ```sql
-SELECT ip_address, url, TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) as click_timestamp
-FROM (
-    SELECT *,
-    ROW_NUMBER() OVER ( PARTITION BY ip_address ORDER BY TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) DESC) as rownum 
-    FROM clicks
-    )
-WHERE rownum = 1;
+INSERT INTO table_deduped (
+    SELECT ip_address, url, TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) as click_timestamp
+    FROM (
+        SELECT *,
+        ROW_NUMBER() OVER ( PARTITION BY ip_address ORDER BY TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) ASC) as rownum 
+        FROM clicks
+        )
+    WHERE rownum = 1;
+)
 ```
 
-[See this example](https://docs.confluent.io/cloud/current/flink/how-to-guides/deduplicate-rows.html#flink-sql-deduplicate-topic-action) in the Confluent product documentation which demonstrates there is no duplicate in the Job session with `select * from dedup_table;` return 8 messages. Same in the topic with 8 messages too. 
+* ROW_NUMBER() Assigns an unique, sequential number to each row. It is part of the Top-N queries pattern.
+* Use OVER window clause and a filter condition to express a Top-N query. Combined with PARTITION BY clause, Flink supports a per group Top-N. 
+* The internal CTE add a row_num for each 
+* where condition is for selecting the Top-N. It could be row_num <=10 
+* Flink will sort the data according to the sorting key, when a new record arrive a retraction/update recors is emitted. 
+* If after deduplication, the upsert sink needs to have the same key as the partition keys used. 
+
+[See this example](https://docs.confluent.io/cloud/current/flink/how-to-guides/deduplicate-rows.html#flink-sql-deduplicate-topic-action) in the Confluent product documentation which demonstrates there is no duplicate in the query result with `select * from dedup_table;` returns 8 messages. Same in the Kafka topic there are 8 messages . 
 
 But it does not demonstrate the last message is kept. The [deduplication sample](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/00-basic-sql#deduplication-example) demonstrates that an upsert table is already removing duplicates, and keep the last record per key. 
 
+* Confluent Cloud has limitations: the order by can only be timestamp in ASC mode.
+* Example of deduplication on OSS Flink where order can apply to any column type.
+```sql
+select *  FROM (
+    SELECT 
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY emp_id 
+            ORDER BY emp_id DESC
+        ) AS row_num
+    FROM employees
+) WHERE row_num = 1
+```
 
 ### Transformation
 
@@ -371,7 +394,7 @@ ARRAY_AGG(DISTINCT user_name) as persons
 
 ### OVER 
 
-[OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) compute an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY does, but produces one result for every input row. 
+[OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) computes an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY does, but produces one result for every input row. 
 
 OVER specifies the time window over which the aggregation is performed. A classical example is to get a moving sum or average: the number of orders in the last 10 seconds: 
 
@@ -389,6 +412,8 @@ WINDOW w AS (
     RANGE BETWEEN INTERVAL '10' SECONDS PRECEDING AND CURRENT ROW
 )
 ```
+
+The source topic needs to be append mode as over window operaton does not supporting retraction/update semantic.
 
 The changelog mode, of the output of OVER is `append`. This is helpful when we need to act on each input row, but consider some time interval. 
 
@@ -537,6 +562,28 @@ The key points to keep in mind are:
     SELECT t.amount, t.order_type, s.name, s.opening_value FROM transactions t, stocks s
     WHERE t.stockid = s.id AND t.ts BETWEEN s.ts - INTERVAL '6' HOURS AND s.ts
     ```
+
+### Lateral Joins
+
+LATERAL TABLE clause is used to invoke a Table-Valued Function (TVF) or a [User-Defined Table Function](./udf_sql.md) (UDTF) for every row of a base (outer) table. The Lateral Join evaluates a subquery or a function for each row of the first table, and the result of that evaluation is then joined back to the original row. The UDTF/TVF on the right side of the join can reference columns from the table on the left side.
+
+```sql
+SELECT
+    t.*,
+    tf.*
+FROM
+    input_table AS t,
+    LATERAL TABLE(udtf_function(t.column_a, t.column_b)) AS tf(output_column_1, output_column_2)
+```
+
+We can combine the LATERAL TABLE with different join types to control which rows are preserved
+
+| Joins | Behavior |
+| --- | --- |
+| CROSS JOIN LATERAL TABLE(...) | If the UDTF returns zero rows for a given input row, the original row from the outer table is discarded. |
+| LEFT JOIN LATERAL | Returns all rows from the outer table, even if the UDTF produces zero rows.|
+
+The Lateral Table allows to dynamically transform stream records in a row-by-row fashion, which is often difficult with standard joins.
 
 ### References
 

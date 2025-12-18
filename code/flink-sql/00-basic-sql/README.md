@@ -3,7 +3,7 @@
 #### Versions
     Created from Flink Study 2021
     Updated 1/2025 from Confluent Flink studies
-    Updated 12/2025 Getting started by using SQL client
+    Updated 12/2025 Getting started by using SQL client - Add deduplicate for OSS
 
 This folder includes some basic SQL examples to be used with local Flink OSS or Confluent Platform for Flink running locally.
 
@@ -18,7 +18,10 @@ This folder includes some basic SQL examples to be used with local Flink OSS or 
     # under deployment/product-tar
     export FLINK_HOME=$(pwd)/flink-2.1.1
     export PATH=$PATH:$FLINK_HOME/bin
-    $FLINK_HOME/bin/sql-client.sh --library $FLINK_HOME/sql-lib
+    # Start the cluster
+    $FLINK_HOME/bin/start-cluster.sh
+    # Then sql client
+    $FLINK_HOME/bin/sql-client.sh
     ```
 
 ### Docker image
@@ -80,11 +83,28 @@ CREATE TABLE employees (
 * Using the SQL client, we can select some data from this table: 
 
 ```sql
-SELECT * from employees WHERE dept_id = 101;
+SELECT * from employees WHERE dept_id = 102;
 ```
 
 **Potential Error**:
 * "The jobGraphFileName field must not be omitted or be null." This could be done because of running diffent version between client and cluster.
+
+### Deduplication
+
+The csv data has two employee_id = 10. It is possible to apply the standard Top-1 pattern to remove the last record:
+```sql
+select *  FROM (
+    SELECT 
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY emp_id 
+            ORDER BY emp_id DESC
+        ) AS row_num
+    FROM employees
+) WHERE row_num = 1
+```
+
+Element 10 is present only one time.
 
 ### Aggregation
 
@@ -104,7 +124,7 @@ As we work from file content, which is bounded, we need to specify the runtime m
 SET 'execution.runtime-mode' = 'batch';
 ```
 
-To get the analytic results to external applications, we need to define sinks by adding a sink table like below:
+To get the analytic results to external applications, we need to define a sink table like below:
 
 ```sql
 CREATE TABLE department_counts (
@@ -134,6 +154,10 @@ GROUP BY dept_id;
 exit();
 ```
 
+* If needed terminate the cluster
+```
+$FLINK_HOME/bin/stop-cluster.sh 
+```
 ## Using Datagen faker
 
 --- ! this does not work with Flink 2.1.1
@@ -177,9 +201,9 @@ The `cc-flink/ddl.customers.sql` create a simple customers table. Running this q
 
 ### Deduplication example
 
-The insert to customers includes two records for CUST_01, with different timestamp and street address to help validating the last records is kept. The r`egistration_date` is the timestamp to sort on. It may be a best practice to keep the key as part of the column values by using the following configuration: `'value.fields-include' = 'all'`
+The insert to customers includes two records for CUST_01, with different timestamp and street address to help validating the last record is kept. The `registration_date` is the timestamp to sort on. It may be a best practice to keep the key as part of the column values by using the following configuration: `'value.fields-include' = 'all'`
 
-The `cc-flink/ddl.customers.sql` is an `append` table so doing a `select * from customers` in the CC Workspace will returns the both records of CUST_01. Changing back the changelog mode to `upsert`, with: 
+The `cc-flink/ddl.customers.sql` is an `append` table so doing a `select * from customers` in the CC Workspace will returns all records of CUST_01. Changing back the changelog mode to `upsert`, with: 
 
 ```sql
 alter table `customers` SET ('changelog.mode' = 'upsert')
