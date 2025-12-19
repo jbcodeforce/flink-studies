@@ -13,7 +13,7 @@ data "confluent_schema_registry_cluster" "essentials" {
 ## Kafka Cluster
 
 resource "confluent_kafka_cluster" "standard" {
-  display_name = var.lab_name
+  display_name = "${var.prefix}-kafka"
   availability = "SINGLE_ZONE"
   cloud        = var.cloud_provider
   region       = var.cloud_region
@@ -22,6 +22,10 @@ resource "confluent_kafka_cluster" "standard" {
   environment {
     id = confluent_environment.env.id
   }
+
+  depends_on = [
+    confluent_environment.env
+  ]
 }
 
 resource "confluent_api_key" "standard-kafka-api-key" {

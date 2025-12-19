@@ -1,7 +1,7 @@
 # CC Environment and service account to manage the environment
 
 resource "confluent_environment" "env" {
-  display_name = var.lab_name
+  display_name = "${var.prefix}-env"
 
   stream_governance {
     package = "ADVANCED"
@@ -9,8 +9,8 @@ resource "confluent_environment" "env" {
 }
 
 resource "confluent_service_account" "env-manager" {
-  display_name = "${var.lab_name}-env-manager"
-  description  = "Service account to manage ${var.lab_name} environment"
+  display_name = "${var.prefix}-env-manager"
+  description  = "Service account to manage ${var.prefix} environment"
   depends_on = [
     confluent_environment.env
   ]

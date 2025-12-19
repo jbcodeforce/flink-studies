@@ -1,12 +1,15 @@
 # My CCloud environment
 
-The flink.tf in deployment cc-terraform: defines the following components: A flink pool, with 2 service accounts, one for flink app management and one for developing flink statements.
-
-[See Terraform Confluent provider documentation.](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs/guides/sample-project)
+[See the terraform chapter](http://jbcodeforce.git.io/flink-studies/coding/terraform/)
 
 ## Define basic variable in tfvars
 
-Populate a tfvars with api key, secret, cloud provider and region.
+Populate a tfvars with prefix, cloud provider and region.
+Set environment variables for 
+```sh
+export  TF_VAR_confluent_cloud_api_key=""
+export  TF_VAR_confluent_cloud_api_secret=""
+```
 
 ## deployment
 

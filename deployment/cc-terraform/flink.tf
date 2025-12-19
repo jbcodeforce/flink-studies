@@ -1,20 +1,11 @@
-resource "confluent_flink_compute_pool" "default" {
-  display_name     = "${var.lab_name}-pool"
-  cloud            =  upper(data.confluent_flink_region.flink_region.cloud)
-  region           =  data.confluent_flink_region.flink_region.region
-  max_cfu          = 50
-  environment {
-     id =  confluent_environment.env.id
-  }
-}
 
 resource "confluent_service_account" "flink-app" {
-  display_name = "${var.lab_name}-flink-app"
+  display_name = "${var.prefix}-flink-app"
   description  = "Service account as which Flink Statements run in the environment"
 }
 
 resource "confluent_service_account" "flink-developer-sa" {
-  display_name = "${var.lab_name}-fd-sa"
+  display_name = "${var.prefix}-fd-sa"
   description  = "Service account to deploy Flink Statements in the environment"
 }
 

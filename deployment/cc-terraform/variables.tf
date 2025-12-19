@@ -11,17 +11,20 @@ variable "confluent_cloud_api_secret" {
 }
 
 
-variable "lab_name" {
-  description = "Environment name, and prefix for other elements"
-  type        = string
-}
-
 variable "cloud_provider" {
   description = "Name of the cloud Provider like AWS"
   type        = string
+  default     = "AWS"
 }
 
 variable "cloud_region" {
   description = "Name of the region for the cloud Provider like us-west-2"
   type        = string
+  default     = "us-west-2"
+}
+
+variable "prefix" {
+  description = "Prefix for resource names to avoid conflicts"
+  type        = string
+  default     = "j9r"
 }

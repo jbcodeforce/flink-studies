@@ -231,7 +231,7 @@ When a SQL statement is started, it reads the source tables from the beginning (
 
 Source operators use the latest schema version for key and value at the time of deployment. There is a snapshot of the different dependency configuration saved for the statement: the reference to the dependants tables, user-defined functions... Any modifications to these objects are not propagated to running statement, which means that:
 
-* A change to the schema of the source topic is not picked up by the running statement that reference the topic.
+* A change to the schema of the source topic is not picked up by the running statement that references the topic.
 * Same applies to other objects in the catalog like watermark, UDF etc.
 
 First let review the schema definition evolution best practices for Flink processing.
@@ -255,33 +255,35 @@ The following table lists the schema compatibility types, with the Flink impacts
 With FULL_TRANSITIVE, old data can be read with the new schema, and new data can also be read between the schemas X, X-1, and X-2. Which means in a pipeline, downstream Flink statements can read newly created schema, and will be able to replay messages from a previous schemas. Therefore, you can upgrade the producers and consumers independently.
 
 
-Confluent Schema Registry supports Avro, Json or Protobuf, but Avro was designed to support schema evolution, so this is the preferred approach.
+Confluent Schema Registry supports Avro, Json or Protobuf, but Avro was designed to support schema evolution, so this is the preferred serialization mechanism to use.
 
 ### Handling Changes with CDC
-The CDC component may create schema automatically reflecting the source table. [See Debezium documentation about schema evolution](https://debezium.io/documentation/reference/stable/connectors/mysql.html)
+The CDC component may create schema automatically reflecting the source table. [See Debezium documentation about schema evolution](https://debezium.io/documentation/reference/stable/connectors/mysql.html).
 
-Developers may only delete optional columns. During the migration, all current source tables coming as outcome of the Debezium process are not deletable. If a NOT NULL constraint is added to a column, older records with no value will violate the constraint. To handle such situation, there is a way to configure CDC connector (Debezium) to use the `envelop structure` which uses `key, before, after, _ts_ms, op` structure. This will result in a standard schema for Flink tables, which allows the source table to evolve by adding / dropping both NULL & NON NULL COLUMNS. 
+Developers may only delete optional columns. During the migration, all current source tables coming as outcome of the Debezium process are not deletable. If a NOT NULL constraint is added to a column, older records with no value will violate the constraint. To handle such situation, there is a way to configure CDC connector (Debezium) to use the `envelop structure` which uses `key, before, after, _ts_ms, op` fields. This will result in a standard schema for Flink tables, which allows the source table to evolve by adding / dropping both NULL & NON NULL COLUMNS. 
 
 The Debezium Envelope pattern offers the most flexibility for upstream Schema Evolution without impacting downstream Flink Statements.
 
-* Adding Columns do not break the connectors or the RUNNING DML Statements
-* Dropping Column needs coordination between teams to ensure the columns that are part of Running DML statements are not Dropped.
+* Adding Columns do not break the connectors or the RUNNING DML Statements. But if developers need to access new field, the JSON_* built-in functions may be used, so a new Flink statement version is needed. 
 
 ???+ danger "Key schema evolution"
     It is discouraged from any changes to the key schema in order to do not adversely affect partitioning for the new topic/ table.
 
 ???+ warning "Updating schema in schema registry"
-    Adding a field directly in the avro-schema with default value, will be visible in the next command like: `show create table <table_name>`, as tables in flink are virtuals, and the Confluent Cloud schema definition comes from the Schema Registry. The RUNNING Flink DML is not aware of the new added column. Even STOP & RESUME of the Flink DML is not going to pick the new column neither. Only new deployed statement will see the new schema consuming from the beginning or from specific offsets. For column drop, Debezium connector will drop the new column and register a schema version for the topic (if the alteration resulted in a schema that doesnt match with previous versions). Same as above runnning statements will go degraded mode.
+    Adding a field directly in the avro-schema with default value, will be visible in the next command like: `show create table <table_name>`, as tables in flink are virtuals, and the Confluent Cloud schema definition comes from the Schema Registry. The RUNNING Flink DML is not aware of the new added column. Even STOP & RESUME of the Flink DML is not going to pick the new column neither. 
+    
+    Only new deployed statement will see the new schema. For column drop, Debezium connector will drop the new column and register a schema version for the topic (if the alteration resulted in a schema that doesnt match with previous versions). Same as above runnning statements will go into `degraded` mode.
 
 ???+ warning "Migrate a NULL column to NOT NULL with retro update of rows with a default value"
-    Most likely such operation eill result in a connector failure as you are adding a NOT NULL column without a default value, even if you retro updated all the rows. 
+    Most likely such operation will result in a connector failure as you are adding a NOT NULL column without a default value, even if you retro updated all the rows. 
+
     If you have control of the change do the following
     ```sql
     UPDATE Customers set zipcode=0;
     ALTER TABLE Customers alter column zipcode INT NOT NULL CONSTRAINT add_zip DEFAULT 0;
     ```
     
-    If the upstream has already updated without default valuechange the compatibility mode to NONE for the connector to recover and then:
+    If the upstream has already updated without default value, change the compatibility mode to NONE for the connector to recover and then:
     ```sql
     ALTER TABLE Customers ADD CONSTRAINT add_zip DEFAULT 0;
     ```

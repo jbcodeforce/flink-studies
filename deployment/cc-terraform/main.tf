@@ -2,13 +2,15 @@ terraform {
   required_providers {
     confluent = {
       source  = "confluentinc/confluent"
-      version = "2.16.0"
+      version = "2.57.0"
     }
   }
 }
 
 provider "confluent" {
   endpoint = "https://confluent.cloud/api"
+  cloud_api_key    = var.confluent_cloud_api_key    # optionally use TF_VAR_confluent_cloud_api_key env var
+  cloud_api_secret = var.confluent_cloud_api_secret # optionally use TF_VAR_confluent_cloud_api_secret env var
 }
 
 data "confluent_flink_region" "flink_region" {
