@@ -72,6 +72,19 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
     Recall that this results produces a dynamic table.
 
+???+ question "HAVING to filter after aggregation"
+    The `HAVING` clause is used to filter results after the aggregation (i.e., like `GROUP BY`). It is similar to the `WHERE` clause, but while `WHERE` filters rows before aggregation, `HAVING` filters rows after aggregation.
+    ```sql
+    SELECT url as product_page, 
+        COUNT(click_id) as num_of_times_viewed, 
+        COUNT(DISTINCT user_id) as num_of_users,
+        AVG(view_time) as avg_view_time,
+        MAX(view_time) as max_view_time
+    FROM clicks
+    GROUP BY url
+    HAVING COUNT(click_id)  > 2;
+    ```
+
 ???+ question "How to combine records from multiple tables (UNION)?"
     When the two tables has the same number of columns of the same type, then we can combine them:
 
@@ -156,26 +169,27 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 ### Deduplication
 
-Deduplication will occur on `upsert` table with primary key: the last records per `$rowtime` or other timestamp will be kept. When the source table is in `append` mode, the approach is to use the [ROW_NUMBER()]() combined with OVER():
+Deduplication will occur on `upsert` table with primary key: the last records per `$rowtime` or other timestamp will be kept. When the source table is in `append` mode, the approach is to use the [ROW_NUMBER()](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions) combined with [OVER()](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/over-agg/):
 
 
 ```sql
-INSERT INTO table_deduped (
-    SELECT ip_address, url, TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) as click_timestamp
+CREATE TABLE unique_clicks
+AS SELECT ip_address, url, TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) as click_timestamp
     FROM (
         SELECT *,
         ROW_NUMBER() OVER ( PARTITION BY ip_address ORDER BY TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) ASC) as rownum 
         FROM clicks
         )
     WHERE rownum = 1;
-)
 ```
 
+* The query is designed to identify and persist only the earliest record. Once the record is written to the table_deduped any subsequent events pertaining to the same `ip_address` are effectively discarded by the `WHERE rownum = 1` filter.
 * ROW_NUMBER() Assigns an unique, sequential number to each row. It is part of the Top-N queries pattern.
-* Use OVER window clause and a filter condition to express a Top-N query. Combined with PARTITION BY clause, Flink supports a per group Top-N. 
+* Use OVER aggregation to compute agg value for every input window clause and a filter condition to express a Top-N query. Combined with PARTITION BY clause, Flink supports a per group Top-N. 
 * The internal CTE add a row_num for each 
-* where condition is for selecting the Top-N. It could be row_num <=10 
-* Flink will sort the data according to the sorting key, when a new record arrive a retraction/update recors is emitted. 
+* The subsequent `WHERE rownum = 1` clause filters the results to retain only the very first event observed for each unique `ip_address` based on its timestamp.
+* The created table is an append table. There is no mechanism within this query to generate update or delete operations for records that have already been processed. Even if the underlying `clicks` table has a primary key defined, the transformation applied here dictates that the `unique_clicks` table will only ever grow by appending new, unique `ip_address` entries.
+* If the sorting was DESC when a new record arrive a retraction/update record is emitted. 
 * If after deduplication, the upsert sink needs to have the same key as the partition keys used. 
 
 [See this example](https://docs.confluent.io/cloud/current/flink/how-to-guides/deduplicate-rows.html#flink-sql-deduplicate-topic-action) in the Confluent product documentation which demonstrates there is no duplicate in the query result with `select * from dedup_table;` returns 8 messages. Same in the Kafka topic there are 8 messages . 
@@ -256,6 +270,61 @@ select *  FROM (
     So each row in the nested_data array will be a row in the output table with the matching key_col.
 
 
+
+
+???+ question "How to access json data from a string column being a json object?"
+    
+    Use json_query function in the select.
+
+    ```sql
+     json_query(task.object_state, '$.dueDate') AS due_date,
+    ```
+
+    Use `json_value()` instead if the column content is a dict or json {}.
+
+
+
+???+ question "How to transform a json array column (named data) into an array to then generate n rows?"
+    Returning an array from a json string:
+    ```sql
+    json_query(`data`, '$' RETURNING ARRAY<STRING>) as anewcolumn
+    ```
+
+    To create as many rows as there are elements in the nested array:
+    ```sql
+    SELECT existing_column, anewcolumn from table_name
+    cross join unnest (json_query(`data`, '$' RETURNING ARRAY<STRING>)) as t(anewcolumn)
+    ```
+
+    UNNEST returns a new row for each element in the array
+    [See multiset expansion doc](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/joins/#array-multiset-and-map-expansion)
+
+???+ question "How to implement the equivalent of SQL explode?"
+    SQL EXPLODE creates a row for each element in the array or map, and ignore null or empty values in array.
+    ```sql
+    SELECT explode(col1) from values (array(10,20)), (null)
+    ```
+
+    SQL has also EXPLODE_OUTER, which returns all values in array including null or empty.
+    To translate this to Flink SQL we can use MAP_ENTRIES and MAP_FROM_ARRAYS. MAP_ENTRIES returns an array of all entries in the given map. While MAP_FROM_ARRAYS returns a map created from an arrays of keys and values.
+    ```sql
+    select map_entries(map_from_arrays())
+    ```
+
+???+ question "How to use conditional functions?"
+    [Flink has built-in conditional functions](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#conditional-functions) (See also [Confluent support](https://docs.confluent.io/cloud/current/flink/reference/functions/conditional-functions.html)) and specially the CASE WHEN:
+
+    ```sql
+    SELECT 
+        *
+        FROM `stocks`
+        WHERE  
+        CASE 
+            WHEN price > 200 THEN 'high'
+            WHEN price <=200 AND price > 150 THEN 'medium'
+            ELSE 'low'
+        END;
+    ```
 
 ???+ question "How to Aggregate a field into an ARRAY - ARRAY_AGG?"
     Let start by a simple array indexing (the index is between 1 to n_element). Below, the `values array` creates test data into a memory table aliased a `T` with a column named `array_field`:
@@ -463,59 +532,6 @@ WHERE
 ```
 
 
-???+ question "How to access json data from a string column being a json object?"
-    
-    Use json_query function in the select.
-
-    ```sql
-     json_query(task.object_state, '$.dueDate') AS due_date,
-    ```
-
-    Use `json_value()` instead if the column content is a dict or json {}.
-
-
-
-???+ question "How to transform a json array column (named data) into an array to then generate n rows?"
-    Returning an array from a json string:
-    ```sql
-    json_query(`data`, '$' RETURNING ARRAY<STRING>) as anewcolumn
-    ```
-
-    To create as many rows as there are elements in the nested array:
-    ```sql
-    SELECT existing_column, anewcolumn from table_name
-    cross join unnest (json_query(`data`, '$' RETURNING ARRAY<STRING>)) as t(anewcolumn)
-    ```
-
-    UNNEST returns a new row for each element in the array
-    [See multiset expansion doc](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/joins/#array-multiset-and-map-expansion)
-
-???+ question "How to implement the equivalent of SQL explode?"
-    SQL EXPLODE creates a row for each element in the array or map, and ignore null or empty values in array.
-    ```sql
-    SELECT explode(col1) from values (array(10,20)), (null)
-    ```
-
-    SQL has also EXPLODE_OUTER, which returns all values in array including null or empty.
-    To translate this to Flink SQL we can use MAP_ENTRIES and MAP_FROM_ARRAYS. MAP_ENTRIES returns an array of all entries in the given map. While MAP_FROM_ARRAYS returns a map created from an arrays of keys and values.
-    ```sql
-    select map_entries(map_from_arrays())
-    ```
-
-???+ question "How to use conditional functions?"
-    [Flink has built-in conditional functions](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#conditional-functions) (See also [Confluent support](https://docs.confluent.io/cloud/current/flink/reference/functions/conditional-functions.html)) and specially the CASE WHEN:
-
-    ```sql
-    SELECT 
-        *
-        FROM `stocks`
-        WHERE  
-        CASE 
-            WHEN price > 200 THEN 'high'
-            WHEN price <=200 AND price > 150 THEN 'medium'
-            ELSE 'low'
-        END;
-    ```
 
 ???+ question "When and how to use custom watermark?"
     Developer should use their own [watermark strategy](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#watermark-clause) when there are not a lot of records per topic/partition, there is a need for a large watermark delay, and need to use another timestamp. 
@@ -534,6 +550,7 @@ WHERE
 When doing a join in a database, the result reflects the state of the join at the time we execute the query. In streaming, as both side of a join receive new rows, both side of joins need to continuously change. This is a **continuous query on dynamic tables**, where the engine needs to keep a lot of state: each row of each table. 
 
 This is the common join we do between two tables: 
+
 ```sql
 SELECT t.amount, t.order_type, s.name, s.opening_value FROM transactions t
 LEFT JOIN stocks s
@@ -550,14 +567,32 @@ The key points to keep in mind are:
 * Cross join makes the query fails
 * When the RHS is an upsert table, the result will be upsert too. Which means a result will be re-emitted if the RHS change. To avoid that we need to take the reference data, RHS, in effect at time of the event on LHS. The result is becoming **time-versioned**.
     ```sql
+    insert into enriched_transactions
     SELECT t.amount, t.order_type, s.name, s.opening_value FROM transactions t
     LEFT JOIN stocks s FOR SYSTEM_TIME AS OF t.purchase_ts
     ON t.stockid = s.id
     ```
-* The above query is a Temporal join. Temporal joins help to reduce the state size, as we need to keep recent records on both side. The time will be linked to the watermark progress.
+* The above query is a Temporal join. Temporal joins help to reduce the state size, as we need to keep recent records on both side. The time will be linked to the watermark progress. If the opening_value of the stock change over time, it will not trigger update to the prevuously generated enriched transactions.  
 * INNER JOIN is a cartesian product.
 * OUTER joins like left, right or full, may generate records with empty columns for non-matching row.
-* INTERVAL JOIN equires at least one equi-join predicate and a join condition that bounds the time on both sides.
+* Interval joins are particularly useful when working with unbounded data streams. Here is an example for orders and payments, whetre 
+    ```sql
+    CREATE TABLE valid_orders (
+        order_id STRING,
+        customer_id INT,
+        product_id STRING,
+        order_time TIMESTAMP_LTZ(3),
+        payment_time TIMESTAMP_LTZ(3),
+        amount DECIMAL,
+        WATERMARK FOR order_time AS order_time - INTERVAL '5' SECOND
+    ) AS SELECT unique_orders.order_id, customer_id, product_id, unique_orders.`$rowtime` AS order_time, payment_time, amount
+    FROM unique_orders
+        INNER JOIN payments
+        ON unique_orders.order_id = payments.order_id
+        WHERE unique_orders.`$rowtime` BETWEEN payment_time - INTERVAL '10' MINUTES AND payment_time;
+    ```
+    
+* INTERVAL JOIN requires at least one equi-join predicate and a join condition that bounds the time on both sides.
     ```sql
     SELECT t.amount, t.order_type, s.name, s.opening_value FROM transactions t, stocks s
     WHERE t.stockid = s.id AND t.ts BETWEEN s.ts - INTERVAL '6' HOURS AND s.ts

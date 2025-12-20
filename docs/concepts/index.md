@@ -262,7 +262,8 @@ The watermark serves as a heuristic for this purpose.
 
 ## Watermarks
 
-[Watermarks](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/event_timestamps_watermarks.html) are special markers indicating event-time progress in streams. This is the core mechanims to trigger computation at `event-time`.  They determine when windows can safely close by estimating when all events for a time period have arrived.
+[Watermarks](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/event_timestamps_watermarks.html) are special markers indicating event-time progress in streams to keep track of how time progress and to handle out-of-order records. This is the core mechanims to trigger computation at `event-time`.  
+They determine when windows can safely close by estimating when all events for a time period have arrived.
 
 ### Key Concepts
 
@@ -294,6 +295,7 @@ The watermark serves as a heuristic for this purpose.
 - Watermarks flow downstream alongside the data records
 - Watermark timestamp = largest seen timestamp - estimated out-of-orderness. This timestamp are always increasing. 
 - Events arriving after watermarks are considered late and typically discarded
+- The default strategy is designed for large-scale production workloads, requiring a significant volume of data (around 250 events per partition) before advancing the watermark and emitting results.
 - Essential for triggering window computations in event-time processing
 
 <figure markdown="span">
@@ -303,7 +305,7 @@ The watermark serves as a heuristic for this purpose.
 
 Within a window, states are saved on disk and need to be cleaned once the window is closed. The watermark is the limit from where the Java garbage collection may occur. 
 
-The out-of-orderness estimate serves as an educated guess and is defined for each individual stream. Watermarks are essential for comparing timestamps of events, allowing the 
+The out-of-orderness estimation serves as an educated guess and is defined for each individual stream. Watermarks are essential for comparing timestamps of events, allowing the 
 system to assert that no earlier events will arrive after the watermark's timestamp.
 
 Watermarks are crucial when dealing with multiple sources. In scenarios involving IoT devices and network latency, it's possible to receive an event with an earlier timestamp even 
@@ -337,11 +339,23 @@ The source connector sends a Watermark for each partition independently. If the 
 
 In the case of a partition does not get any events, as there is no watermark generated for this partition, it may mean the watermark does no advance, and as a side effect it prevents windows from producing events. To avoid this problem, we need to balance kafka partitions so none are empty or idle, or configure the watermarking to use idleness detection.
 
-[Interesting enablement from Confluent, David Anderson](https://docs.confluent.io/cloud/current/flink/concepts/timely-stream-processing.html)
+### Source of information
+
+* [Confluent documentation]()
+* [Interesting enablement from Confluent, David Anderson](https://docs.confluent.io/cloud/current/flink/concepts/timely-stream-processing.html)
+* [An animated webapp to explain the Watermark concepts](https://flink-watermarks.wtf/?utm_source=cd_newsletter).
+
+### Classical issue due to watermark
+
+* **Records may not being seen in output table or topic**. When testing with only a few events, this fails to meet the initial "safety margin" of 250 events per partition. This causes the system to apply a massive 7-day default margin, which stalls the watermark indefinitely and prevents time windows from ever closing and producing a result.
+
+* **Stalled Joins with Idle Sources**: When joining two streams, if one stream is idle or has very old data, its watermark remains far in the past. The join operator's watermark becomes the minimum of the two, effectively stalling the entire query and preventing any new join results from being produced, even when one stream is active.
+* **Losing the Last Message:** In a sparse stream of events, the very last event is correctly placed in its time window but remains buffered. Because no new event ever arrives to advance the watermark past the end of that final window, the window never closes, and the result for the last message is never produced, making it seem like Flink lost data.
 
 ### Monitoring watermark
 
-The following metrics are used at the operator and task level:
+The following metrics are used at the operator and task level
+
 
 * `currentInputWatermark`: the last watermark received by the operator in its n inputs.
 * `currentOutputWatermark`: last emitted watermark by the operator
@@ -349,6 +363,9 @@ The following metrics are used at the operator and task level:
 
 Watermarks can be seen in Apache flink Console. 
 
+???+ info "Confluent Cloud for Flink"
+    * The default watermark strategy is set to 180ms.
+    * There is a support for configurable late data handling to DLQ to avoid data drop. Developers choose between three options: "pass," "drop," or "send to a dead letter queue (DLQ)
 
 ### Identify which watermark is calculated
 

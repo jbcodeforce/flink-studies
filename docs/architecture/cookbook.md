@@ -352,6 +352,23 @@ or
 SET `sql.tables.scan.startup.mode`= "earliest"
 ```
 
+#### Materialized Table
+
+[FLIP 435](https://cwiki.apache.org/confluence/display/FLINK/FLIP-435%3A+Introduce+a+New+Materialized+Table+for+Simplifying+Data+Pipelines) presents a new table construct to simplify streaming and batchin pipeline. Users can define a data transformation with a single declarative CREATE MATERIALIZED TABLE ... AS SELECT ... statement and specify a desired FRESHNESS interval. Flink then automatically creates and manages the underlying data refresh pipeline, intelligently choosing between a continuous streaming job for low-latency updates or a scheduled batch job for less frequent refreshes. This eliminates the need for separate codebases, manual job orchestration, and complex parameter tuning. The entire lifecycle of the data pipeline, including pausing, resuming, manual backfills, and altering data freshness, can be managed through simple SQL commands, allowing developers to focus on business logic rather than the complexities of stream and batch execution.
+
+See the [Flink 2.x documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/materialized-table/overview/).
+
+* It supports the FRESHNESS keyword,  to define the maximum amount of time that the materialized table’s content should lag behind updates to the base tables.
+* By default the CONTINUOUS mode is a 3 minutes: so the refresh pipeline is a streaming job with a checkpoint interval of 3 minutes. For FULL mode, the pipeline is a scheduled job executed every 1 hour.
+  ```sql
+  CREATE MATERIALIZED TABLE my_materialized_table_full
+    REFRESH_MODE = FULL
+    AS SELECT * FROM source_table;
+  ```
+* Alter mateterialized table allows developer to suspend and resume refresh pipeline. When suspending a table in CONTINUOUS mode, the job will be paused using STOP WITH SAVEPOINT by default.
+* Altering an existing materialized table, schema evolution currently only supports adding nullable columns to the end of the original materialized table’s schema.
+* Materialized Tables must be created through SQL Gateway,
+
 ---
 
 TO CONTINUE
