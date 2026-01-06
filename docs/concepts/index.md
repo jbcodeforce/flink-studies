@@ -475,6 +475,23 @@ To demonstrate the partitioning, use a sink topic with 3 partitions, and a parti
 [See matching demo scripts in flink-sql/04-joins/data_skew.](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/04-joins/data_skew)
 
 ## From batch to real-time
+In business analytics there is a need to differentiate data tables according to their usage and reusability. There are two important concepts of this practice:
+
+* The **Dimensions**, which provide the “who, what, where, when, why, and how” context surrounding a business process event. Dimension tables contain the descriptive attributes used by BI applications for ﬁltering and grouping the facts. 
+* THe **Facts**, which are the measurements that result from a business process event and are almost always numeric. The design of a fact table is entirely based on a physical activity, and not by the reports to produce from those facts. A fact table always contains foreign keys for each of its associated dimensions, as well as optional degenerate dimension keys and date/time stamps
+
+### The star schema
+
+The star schema, was defined at the end of the 80s, as a multi-dimensional data model to organize data in Date warehouse, to maintain history and by reducing the data duplication. A star schema is used to denormalize business data into dimensions and facts. The fact table connects to multiple other dimension tables along "dimensions" like time, or product.
+
+![](./diagrams/star_schema.drawio.png)
+
+The following project illustrates how to implement the star schema using Flink:
+
+* [Customer 360](https://jbcodeforce.github.io/flink_project_demos/c360/flink_project/#define-the-shift_left-utils-configuration)
+* [Transaction analytics](https://github.com/jbcodeforce/flink_project_demos/tree/main/tx_processing)
+
+In Flink a dimension may created via a SQL statement, and persisted as table with Kafka topic, JDBC table or files. When less reusable a Dimension can be a CTE within a bigger flink statement.
 
 ???+ info "How to support Type 2 slowly changing dimension (SCD) table?"
     Type 2 SCDs are designed to maintain a complete history of all changes to dimension data. When a change occurs, a new row is inserted into the table, representing the updated record, while the original record remains untouched. Each record in the table is typically assigned a unique identifier (often a surrogate key) to distinguish between different versions of the same dimension member. 

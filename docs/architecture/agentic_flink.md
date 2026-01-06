@@ -1,23 +1,34 @@
 # Agentic applications cross systems
 
 AI agentic applications, at scale will not only be triggered by users, but by **systems** using asynchronous events. It is assumed that AI Agents are becoming experts to certain tasks within a business workflow using domain-specific knowledge, and acts on direct user's queries or from events coming from other systems.
+
 As humen collaborate in a business function and process, AI Agents will collaborate with AI Agents and humen.
+
+The vision is to have a fleet of streaming agents—background "teammates" that constantly monitor data to:
+
+* Optimize costs and drive revenue.
+* Prevent outages and failures.
+* Operate with varying levels of autonomy (including human-in-the-loop).
 
 As part of the Agentic architecture, there is the planning phase of an agent, which has to use up-to-date data to define the best future actions. As two examples, AI Agents may predict maintenance needs, adjust operational parameters to prevent downtime, and ensure that energy production meets demand without excess waste. In healthcare, AI Agents may analyze genetic data, medical histories, and real-time responses to various treatments.
 
-Flink's event capabilities in real-time distributed event processing, state management and exact-once consistency fault tolerance make it well-suited as a framework for building such system-triggered agents.
+Flink's event capabilities in real-time distributed event processing, state management and exact-once consistency fault tolerance make it well-suited as a framework for building such system-triggered agents. This is where developers build **real-time context**.
 
 Currently, agent frameworks contain some major inhibitors: data preparation and pipeline to build embedding and process semi-structured an unstructured data.
 
+Agents shouldn't just query a single database; they should participate in an ecosystem where they consume events, perform logic, and republish results for other agents to use. We are entering the aget of **Event-driven agents**.
+
 ## Needs
 
+* One of the most practical insights is the cost-efficiency model. Pushing every business event through an LLM is prohibitively expensive. It is better fit to use **traditional machine learning** (for anomaly detection, fraud, or forecasting) as **a first-pass filter**.
 * Deliver fresh data from the transactional systems to the AI Agents: stale data leads to irrelevant recommendations and decisions. This is only uses during inference and in the LLM conversation context enrichment.
+* Standard models are trained on historical, public data; they don't understand a company’s specific business or what is **happening right now**.
 * Model fine tuning needs clean data that is prepared by Data engineers using traditional SQL query, and python code to build relevant AI features. The data are at rest.
 * Search (full text search, vector search and graph search) is used to enrich the LLM context. But point-in-time lookups need to be supported with temporal windows and lookup joins.
 * RAG systems that must adapt to information/source changes in real-time.
 * Real-time data processing may need scoring computed by AI model, remotly accessed.
 * Adopt an event-driven architecture for AI Agents integration and data exchanges using messaging: the orchestration is not hard coded into a work flow (Apache airflow) but more event oriented and AI agent consumers act on those events.
-* Event processing can trigger AI agents to act to address customer's inqueries.
+* Event processing can trigger AI agents to act to address customer's inqueries. The MCP protocol can also be used to call external tools.
 * Embeded AI in drones to adapt to environment conditions and task requirements.
 
 ???- info "Decision Intelligent Platforms"
@@ -50,9 +61,27 @@ Extending the [Agentic reference architecture](https://jbcodeforce.github.io/ML-
 
 ![]()
 
+Because it’s built on Kafka, developers can "replay" production data streams to test why a probabilistic AI model gave a certain answer—making debugging much easier than in traditional batch systems.
+
 ## Technologies
 
-* Flink paired with Kafka is purpose-built for real-time data processing and event-driven microservices. [Confluent AI with Flink SQL](https://docs.confluent.io/cloud/current/ai/overview.html)
+### Apache Flink-Agents
+
+[Apache Flink Agent](https://nightlies.apache.org/flink/flink-agents-docs-latest/docs/get-started/overview/) is an open-source framework for building event-driven streaming agents.
+
+There will be multiple patterns supported by Flink. 
+
+1. Workflow streaming agents: a directed workflow of modular steps, called actions, connected by events.To orchestrate complex, multi-stage tasks in a transparent, extensible. This is an implementation of the [SAGA choreography pattern](https://jbcodeforce.github.io/eda-studies/patterns/saga/#services-choreography). [See the appache Flink Agent git repo](https://github.com/apache/flink-agents.git) and python [example of workflow](https://github.com/apache/flink-agents/blob/main/python/flink_agents/examples/quickstart/workflow_single_agent_example.py)
+1. ReAct: to combine reasoning and action, where the user's prompt specify the goal, then agent, with tools and LLM, decide how to achieve the goal. A [steaming ReAct agent example in python](https://github.com/apache/flink-agents/blob/main/python/flink_agents/examples/quickstart/react_agent_example.py) demonstrates how to do this with Flink Agents. [See my own implementation with Kafka and OSS Flink](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/agentic-demo)
+
+### Confluent
+Confluent builds its AI strategy on three functional layers:
+
+* **Real-Time Processing** (Flink Streaming Agents): Using Kafka and Flink to process data from disparate systems in real-time, built on open-source standards to avoid vendor lock-in.
+* **Interoperability (MCP Protocol)**: Leveraging the Model Context Protocol (MCP) as a universal language, allowing Confluent to serve real-time context to any AI agent or tool regardless of the provider.
+* **Governance and Replayability:** Ensuring data is secure and auditable. A key advantage is Kafka’s "replayability," which allows developers to re-run data streams for debugging, auditing, and refining AI responses.
+
+* Flink paired with Kafka is purpose-built for real-time data processing and event-driven microservices. [Confluent AI with Flink SQL](https://docs.confluent.io/cloud/current/ai/overview.html) helps decouple AI agents.
 * Agent communication protocols are available to define agent interations: [Agent to Agent from Google](https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/) and [ACP from IBM/ Linux foundations](https://agentcommunicationprotocol.dev/introduction/welcome)
 * Agent integrate with IT applications and services via [Model Context Protocol from Anthropic](https://www.anthropic.com/news/model-context-protocol)
 
@@ -61,7 +90,8 @@ Extending the [Agentic reference architecture](https://jbcodeforce.github.io/ML-
 * What are the current GenAI goals and projects?
 * How data are delivered as context to agents?
 
-## [Confluent Cloud Flink SQL constructs](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html#ai-tool-invoke)
+## Sources 
 
-A set of function to call an AI or ML model remotely from SQL queries.
+* []()
+* [Confluent Cloud Flink SQL constructs](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html#ai-tool-invoke): A set of function to call an AI or ML model remotely from SQL queries.
 

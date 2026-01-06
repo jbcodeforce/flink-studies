@@ -1,0 +1,9 @@
+[project]
+name = "agentic-demo"
+version = "0.1.0"
+description = "Flink Python Agents demos"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "flink-agents>=0.1.1",
+]
