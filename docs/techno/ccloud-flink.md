@@ -445,7 +445,7 @@ See [Grafana integration](https://docs.confluent.io/cloud/current/monitoring/thi
 
 [The product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/flink-rbac.html) goes into sufficient details on how RBAC works for Flink. 
 
-Examples of Terraform definitions for service accounts, roles, and role binding []().
+Examples of Terraform definitions for service accounts, roles, and role binding [cc-terraform for my env](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/cc-terraform).
 
 ## Understanding pricing
 
