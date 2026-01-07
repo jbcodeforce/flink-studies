@@ -1,45 +1,13 @@
+# Flink Service Accounts, Role Bindings, and API Keys
+# for j9r-env base infrastructure
+
+# ------------------------------------------------------
+# Flink Runtime Principal (runs Flink statements)
+# ------------------------------------------------------
 
 resource "confluent_service_account" "flink-app" {
   display_name = "${var.prefix}-flink-app"
-  description  = "Service account as which Flink Statements run in the environment"
-}
-
-resource "confluent_service_account" "flink-developer-sa" {
-  display_name = "${var.prefix}-fd-sa"
-  description  = "Service account to deploy Flink Statements in the environment"
-}
-
-resource "confluent_role_binding" "flink-developer-sa-flink-developer" {
-  principal   = "User:${confluent_service_account.flink-developer-sa.id}"
-  role_name   = "FlinkDeveloper"
-  //crn_pattern = "${data.confluent_organization.my_org.resource_name}/environment=${var.cc_environment_id}"
-  crn_pattern=confluent_environment.env.resource_name
-}
-
-resource "confluent_role_binding" "app-manager-assigner" {
-  principal   = "User:${confluent_service_account.flink-developer-sa.id}"
-  role_name   = "Assigner"
-  crn_pattern = "${data.confluent_organization.my_org.resource_name}/service-account=${confluent_service_account.flink-app.id}"
-}
-
-resource "confluent_api_key" "flink-developer-sa-flink-api-key" {
-  display_name = "flink-statement-runner-flink-api-key"
-  description  = "Flink API Key that is owned by 'flink-developer-sa' service account"
-  owner {
-    id          = confluent_service_account.flink-developer-sa.id
-    api_version = confluent_service_account.flink-developer-sa.api_version
-    kind        = confluent_service_account.flink-developer-sa.kind
-  }
-
-  managed_resource {
-    id          = data.confluent_flink_region.flink_region.id
-    api_version = data.confluent_flink_region.flink_region.api_version
-    kind        = data.confluent_flink_region.flink_region.kind
-
-    environment {
-       id =  confluent_environment.env.id
-    }
-  }
+  description  = "Service account as which Flink statements run in the environment"
 }
 
 resource "confluent_role_binding" "flink-app-clusteradmin" {
@@ -48,22 +16,16 @@ resource "confluent_role_binding" "flink-app-clusteradmin" {
   crn_pattern = confluent_kafka_cluster.standard.rbac_crn
 }
 
-data "confluent_schema_registry_cluster" "env" {
-  environment {
-    id = confluent_environment.env.id
-  }
-}
-
 resource "confluent_role_binding" "flink-app-sr-read" {
   principal   = "User:${confluent_service_account.flink-app.id}"
   role_name   = "DeveloperRead"
-  crn_pattern = "${data.confluent_schema_registry_cluster.env.resource_name}/subject=*"
+  crn_pattern = "${data.confluent_schema_registry_cluster.essentials.resource_name}/subject=*"
 }
 
 resource "confluent_role_binding" "flink-app-sr-write" {
   principal   = "User:${confluent_service_account.flink-app.id}"
   role_name   = "DeveloperWrite"
-  crn_pattern = "${data.confluent_schema_registry_cluster.env.resource_name}/subject=*"
+  crn_pattern = "${data.confluent_schema_registry_cluster.essentials.resource_name}/subject=*"
 }
 
 resource "confluent_api_key" "flink-app-flink-api-key" {
@@ -81,7 +43,48 @@ resource "confluent_api_key" "flink-app-flink-api-key" {
     kind        = data.confluent_flink_region.flink_region.kind
 
     environment {
-       id =  confluent_environment.env.id
+      id = confluent_environment.env.id
+    }
+  }
+}
+
+# ------------------------------------------------------
+# Flink Developer (deploys Flink statements)
+# ------------------------------------------------------
+
+resource "confluent_service_account" "flink-developer-sa" {
+  display_name = "${var.prefix}-fd-sa"
+  description  = "Service account to deploy Flink statements in the environment"
+}
+
+resource "confluent_role_binding" "flink-developer-sa-flink-developer" {
+  principal   = "User:${confluent_service_account.flink-developer-sa.id}"
+  role_name   = "FlinkDeveloper"
+  crn_pattern = confluent_environment.env.resource_name
+}
+
+resource "confluent_role_binding" "flink-developer-sa-assigner" {
+  principal   = "User:${confluent_service_account.flink-developer-sa.id}"
+  role_name   = "Assigner"
+  crn_pattern = "${data.confluent_organization.my_org.resource_name}/service-account=${confluent_service_account.flink-app.id}"
+}
+
+resource "confluent_api_key" "flink-developer-sa-flink-api-key" {
+  display_name = "flink-developer-sa-flink-api-key"
+  description  = "Flink API Key that is owned by 'flink-developer-sa' service account"
+  owner {
+    id          = confluent_service_account.flink-developer-sa.id
+    api_version = confluent_service_account.flink-developer-sa.api_version
+    kind        = confluent_service_account.flink-developer-sa.kind
+  }
+
+  managed_resource {
+    id          = data.confluent_flink_region.flink_region.id
+    api_version = data.confluent_flink_region.flink_region.api_version
+    kind        = data.confluent_flink_region.flink_region.kind
+
+    environment {
+      id = confluent_environment.env.id
     }
   }
 }

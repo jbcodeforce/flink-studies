@@ -1,3 +1,6 @@
+# Terraform Provider Configuration for j9r-env
+# Base infrastructure for Confluent Cloud Flink applications
+
 terraform {
   required_providers {
     confluent = {
@@ -8,24 +11,15 @@ terraform {
 }
 
 provider "confluent" {
-  endpoint = "https://confluent.cloud/api"
-  cloud_api_key    = var.confluent_cloud_api_key    # optionally use TF_VAR_confluent_cloud_api_key env var
-  cloud_api_secret = var.confluent_cloud_api_secret # optionally use TF_VAR_confluent_cloud_api_secret env var
+  cloud_api_key    = var.confluent_cloud_api_key
+  cloud_api_secret = var.confluent_cloud_api_secret
 }
+
+# Data sources for organization and Flink region
+
+data "confluent_organization" "my_org" {}
 
 data "confluent_flink_region" "flink_region" {
   cloud  = var.cloud_provider
   region = var.cloud_region
-  
 }
-
-data "confluent_organization" "my_org" {}
-
-
-
-
-
-
-
-
-

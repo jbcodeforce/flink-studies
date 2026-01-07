@@ -443,6 +443,10 @@ See [Grafana integration](https://docs.confluent.io/cloud/current/monitoring/thi
 
 ## Role Base Access Control
 
+[The product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/flink-rbac.html) goes into sufficient details on how RBAC works for Flink. 
+
+Examples of Terraform definitions for service accounts, roles, and role binding []().
+
 ## Understanding pricing
 
 The [CFU pricing is here.](https://docs.confluent.io/cloud/current/flink/concepts/flink-billing.html#cfu-billing) Price per hour computed by the minute. 
