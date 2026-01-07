@@ -152,6 +152,64 @@ All those elements can be defined as code in a git repository or between a gitop
 ???- info "Data lake, lakehouse and data warehouse"
     Data lake is no more a central piece of the architecture with complex pipelines, they are becoming a node in the data mesh, to expose a dataset. It may not be used as the source of truth is becoming the immutable distributes logs and storage that holds the dataset available for replayability. Datawarehouse for business intelligence is also a node, and consumer of the data product.
 
+### Data Contracts for Streaming Products
+
+In a Data Mesh, the "Product" is defined by its interface. The industry is moving toward **Data Contracts** as a formal mechanism to define the agreement between a Flink producer and downstream consumers.
+
+A Data Contract goes beyond simple schema definition to include:
+
+* **Schema Definition**: Using Protobuf or Avro with the Confluent Schema Registry as the enforcement mechanism. The schema registry provides version management and compatibility checking.
+* **Watermark Alignment Expectations**: The contract should specify the expected watermark strategy (e.g., bounded out-of-orderness with a maximum delay of 5 seconds).
+* **Lateness Tolerance**: Define how late-arriving data is handled. This includes specifying the allowed lateness window and what happens to events that arrive after the window closes.
+* **Data Quality Guarantees**: Expected completeness, accuracy thresholds, and error handling behavior.
+
+Example contract specification elements for a Flink streaming product:
+
+```yaml
+contract:
+  name: customer-events-v1
+  schema:
+    format: avro
+    registry: schema-registry.example.com
+    subject: customer-events-value
+    compatibility: BACKWARD
+  streaming:
+    watermark:
+      strategy: bounded-out-of-orderness
+      max_delay_seconds: 5
+    lateness:
+      allowed_lateness_seconds: 60
+      late_data_handling: side_output
+  slo:
+    freshness_seconds: 10
+    completeness_percent: 99.5
+```
+
+The contract becomes the primary interface documentation, enabling consumers to understand not just *what* data they receive, but *when* and *how reliably* they can expect to receive it.
+
+### Dual-Nature Storage: Streaming and Batch
+
+Many analytical consumers still require SQL/Batch access while real-time applications need live streams. A Flink-based data product can simultaneously exist as a "Live Stream" (Kafka) and a "Historical Table" (Iceberg/Lakehouse).
+
+**Apache Iceberg** and **Confluent TableFlow** serve as bridges between these two access patterns:
+
+* Flink SQL can write to a unified table that serves both real-time alerts and long-term BI queries.
+* The same data product exposes multiple access interfaces: a Kafka topic for streaming consumers and an Iceberg table for batch analytics.
+
+```sql
+-- Flink SQL writing to both Kafka and Iceberg
+INSERT INTO iceberg_catalog.db.customer_events
+SELECT * FROM kafka_customer_events;
+
+-- The Iceberg table is queryable by Spark, Trino, or other batch engines
+-- while Kafka consumers receive the same events in real-time
+```
+
+This dual-nature approach fulfills the "Polyglot" requirement of a data product, allowing each consumer to access data in their preferred format without requiring separate data pipelines.
+
+???- info "TableFlow for Unified Access"
+    Confluent TableFlow provides automatic materialization of Kafka topics into Iceberg tables, maintaining consistency between the streaming and batch representations. This reduces the operational burden of maintaining separate pipelines for different access patterns.
+
 ### Methodology
 
 Defining, designing and implementing data products follow the same principles as other software development and should start by the end goal and use case. This should solidify clear product objectives. Domain discovery is part of the DDD methodology, and in the data product a domain may be more oriented to source and some to consumers. But use cases and what needs to be created as analytical data should be the main goals of the design and implementation activities. Source domain datasets represent the **facts of the business**. The source domain datasets capture the data that is mapped very closely to what the operational systems of their origin, generate.
@@ -278,10 +336,134 @@ Most of the filtering and selection scripts can be ported 1 to 1. While most sta
 
 There is [a repository](https://jbcodeforce.github.io/shift_left_utils/) with tools to process existing Spark/dbt project to find dependencies between tables, use local LLM to do some migration, and create Flink query pipelines per sink table. 
 
----
-To Be Continued
+## Measuring Data Product SLOs in Flink
 
-## Time condiderations
+The "Trustworthy" and "Reliable" pillars of Data Mesh require measurable Service Level Objectives (SLOs). A Data Product Owner should monitor specific metrics for each Flink job that powers their data product.
+
+### Freshness
+
+Freshness measures how current the data is. In Flink, this is tracked by comparing the `currentEmitWatermark` against the wall clock time.
+
+* **Metric**: `currentProcessingTime - currentEmitWatermark`
+* **Target**: Define acceptable lag (e.g., < 30 seconds for near-real-time products)
+* **Monitoring**: Expose via Flink metrics and alert when the gap exceeds thresholds
+
+```sql
+-- Flink SQL hint for watermark configuration
+CREATE TABLE orders (
+    order_id STRING,
+    order_time TIMESTAMP(3),
+    WATERMARK FOR order_time AS order_time - INTERVAL '5' SECOND
+) WITH (...);
+```
+
+### Completeness
+
+Completeness addresses how the product handles late-arriving data. Flink provides mechanisms to track and report on data that arrives after the allowed lateness window.
+
+* **Side Outputs for Late Data**: Configure side outputs to capture late events rather than silently dropping them. These become part of the product's quality report.
+* **Late Data Metrics**: Track the percentage of events arriving late and the distribution of lateness.
+
+```java
+// Java DataStream API - capturing late data
+OutputTag<Event> lateOutputTag = new OutputTag<Event>("late-data"){};
+
+SingleOutputStreamOperator<Result> result = stream
+    .keyBy(Event::getKey)
+    .window(TumblingEventTimeWindows.of(Time.minutes(5)))
+    .allowedLateness(Time.minutes(1))
+    .sideOutputLateData(lateOutputTag)
+    .process(new MyWindowFunction());
+
+// Late data stream for quality reporting
+DataStream<Event> lateStream = result.getSideOutput(lateOutputTag);
+```
+
+[See Flink side output mecanism](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream/side_output/) and [Late events](https://nightlies.apache.org/flink/flink-docs-release-1.13/docs/learn-flink/streaming_analytics/#late-events).
+
+### Cost-per-Product (FinOps)
+
+Resource tagging enables "Billback" or "Showback" for specific data products.
+
+* **Resource Labels**: Tag Flink jobs, Kafka topics, and storage with product identifiers.
+* **Compute Metrics**: Track CPU, memory, and checkpoint storage per product.
+* **Cost Allocation**: Map infrastructure costs to business domains based on resource consumption.
+
+| Metric | Description | Target |
+| --- | --- | --- |
+| Freshness Lag | Watermark delay vs wall clock | < 30s |
+| Completeness | Percentage of on-time events | > 99.5% |
+| Late Data Rate | Events arriving after allowed lateness | < 0.1% |
+| Cost per Million Events | Infrastructure cost normalized by throughput | Varies by product |
+
+## Data Discovery via Flink Catalogs
+
+One of the biggest hurdles in Data Mesh is **Discoverability**. If a Flink job creates a view or a table, users in other domains need a mechanism to find it.
+
+### Centralized Catalogs
+
+The Flink Catalog serves as the registration point for data products:
+
+* **Hive Catalog**: Traditional metadata store, widely supported across batch and streaming engines.
+* **AWS Glue Catalog**: Managed catalog service integrated with AWS analytics ecosystem.
+* **DataHub Integration**: Connect Flink metadata to a company-wide data discovery portal.
+
+```sql
+-- Register a catalog in Flink OSS SQL
+CREATE CATALOG iceberg_catalog WITH (
+    'type' = 'iceberg',
+    'catalog-type' = 'hive',
+    'uri' = 'thrift://hive-metastore:9083',
+    'warehouse' = 's3://data-lake/warehouse'
+);
+
+-- Create a table that becomes discoverable
+CREATE TABLE iceberg_catalog.sales.daily_revenue (
+    date_key DATE,
+    region STRING,
+    total_revenue DECIMAL(18,2)
+) WITH (...);
+```
+
+### Making Products Discoverable
+
+"Data as a Product" means registering Flink SQL metadata so it is searchable in a company-wide data portal, not hidden in JAR files or deployment scripts.
+
+* **Automated Registration**: CI/CD pipelines should register table metadata to the catalog upon deployment.
+* **Rich Metadata**: Include descriptions, ownership, SLOs, and lineage information.
+* **Search and Browse**: Users can find products by domain, data type, or semantic meaning.
+
+## Versioning and Schema Evolution
+
+Data products must remain "Secure" and "Interoperable" even when they change. Versioning a streaming product presents [unique challenges. (see query evolution in cookbook chapter)](https://jbcodeforce.github.io/flink-studies/architecture/cookbook/#query-evolution).
+
+### State Compatibility Challenges
+
+When the data product logic changes (e.g., a new calculation for "Churn Probability"), the Flink job's state must be considered:
+
+* **Savepoint Compatibility**: Changes to state schema may require state migration or fresh start.
+* **Versioned Output Topics**: Use versioned Kafka topics (e.g., `customer-churn-v2`) to avoid breaking downstream consumers.
+* **Blue-Green Deployment**: Run both old and new versions in parallel during transition periods.
+
+```bash
+# Blue-Green deployment pattern
+# 1. Deploy new version reading from same source, writing to new topic
+flink run -s savepoint-path job-v2.jar --output-topic customer-churn-v2
+
+# 2. Migrate consumers to v2 topic
+# 3. Deprecate and eventually stop v1 job
+```
+
+[See shift_left tool to support blue/green deployment](https://jbcodeforce.github.io/shift_left_utils/blue_green_deploy/)
+
+### Migration Strategies
+
+| Strategy | Use Case | Trade-offs |
+| --- | --- | --- |
+| In-place upgrade | Compatible schema changes | Requires savepoint compatibility |
+| Blue-Green | Breaking changes | Double resource cost during transition |
+| Versioned topics | Major logic changes | Consumers must migrate |
+| Parallel processing | Gradual rollout | Increased complexity |
 
 ## Some implementation challenges
 
@@ -316,6 +498,39 @@ left join table_right
     on table_left.column_used_for_join = table_right.column_used_for_join
     where table_right.column_used_for_join is NULL;
 ```
+
+### State Management as a Product Lifecycle Challenge
+
+In a data product, the Flink **state** (the checkpoint and savepoint) is part of the product's technical debt and asset. "Owning the data" also means "owning the state."
+
+**State as a Product Asset:**
+
+* **Savepoints are Data**: Savepoints contain aggregated values, window contents, and keyed state that may represent hours or days of processing. They are not disposable artifacts.
+* **Recovery Dependency**: The ability to recover a data product depends on savepoint availability and compatibility.
+* **Migration Complexity**: State schema evolution requires careful planning and testing.
+
+**Operational Considerations:**
+
+* **Savepoint Retention Policy**: Define how long savepoints are retained and archived. Consider compliance and recovery requirements.
+* **State Size Monitoring**: Large state can impact checkpoint duration and recovery time. Track state size as a product metric.
+* **Compatibility Testing**: Before upgrading job logic, validate that the new code can restore from existing savepoints.
+
+```bash
+# Taking a savepoint before upgrade
+flink savepoint <job-id> s3://savepoints/product-name/
+
+# Validating state compatibility (conceptual)
+flink run --dry-run --restore-from savepoint-path new-job.jar
+```
+
+**State Ownership Questions:**
+
+1. Who is responsible for savepoint storage and retention?
+2. What is the recovery point objective (RPO) for this data product?
+3. How is state migration tested before production deployment?
+4. What is the fallback strategy if state restoration fails?
+
+Including state management in the data product definition ensures that operational concerns are addressed alongside functional requirements.
 
 ## Source of information - go deeper
 
