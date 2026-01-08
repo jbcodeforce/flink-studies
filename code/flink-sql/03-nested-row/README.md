@@ -1,6 +1,39 @@
 # Nested objects and arrays
 
-This folder includes three examples, one for mock of health care json to json transformation with nested array and objects, and the other one illustrating Row and `cross join unnest`. 
+This folder includes array field processing studies:
+
+* How to use Row and `CROSS JOIN UNNEST`
+* ARRAY_AGG for aggregating multple fields or data into arrays
+* Healthcare JSON-to-JSON transformation with nested arrays and objects
+* Truck loads example: keeping last records from exploded arrays
+
+## File Structure
+
+```sh
+03-nested-row/
+├── README.md
+├── vw.nested_user.sql         # View creating nested ROW from clicks
+├── dml.nested_user.sql        # Query accessing nested user data
+├── vw.array_of_rows.sql       # ARRAY_AGG with tumbling window
+├── fligh_out.json             # Sample flight API response
+├── images/
+│   ├── truck_load_1.png
+│   └── truck_loads_2.png
+├── truck_loads/               # Array aggregation example
+│   ├── ddl.truck_loads.sql    # Source table with ARRAY<ROW>
+│   ├── ddl.last_load.sql      # Upsert sink table
+│   ├── insert_truck_loads.sql # Test data
+│   └── dml.get_last_load.sql  # UNNEST query
+├── cc-array_agg/              # Suite aggregation example
+│   ├── cc_array_agg.sql       # Complete DDL/DML workflow
+│   └── suites_agg_chglog.png  # Results screenshot
+└── cc-flink-health/           # Healthcare transformation demo
+    ├── README.md              # Detailed documentation
+    ├── producer/              # Kafka producer code
+    ├── schemas/               # Member/Provider JSON schemas
+    ├── sql/                   # Flink SQL transformations
+    └── test/                  # Test input/expected data
+```
 
 ## Pre-requisites
 
@@ -20,21 +53,21 @@ confluent flink shell --compute-pool $CPOOL --environment $CENV
 
 ## 1- Access user information from nested schemas
 
-Recall that: `examples`.`marketplace`.`clicks`  structure is:
-```sql
-CREATE TABLE `examples`.`marketplace`.`clicks` (
-  `click_id` VARCHAR(2147483647) NOT NULL,
-  `user_id` INT NOT NULL,
-  `url` VARCHAR(2147483647) NOT NULL,
-  `user_agent` VARCHAR(2147483647) NOT NULL,
-  `view_time` INT NOT NULL
-)
-```
+* Recall the: `examples`.`marketplace`.`clicks`  table structure is:
+    ```sql
+    CREATE TABLE `examples`.`marketplace`.`clicks` (
+    `click_id` VARCHAR(2147483647) NOT NULL,
+    `user_id` INT NOT NULL,
+    `url` VARCHAR(2147483647) NOT NULL,
+    `user_agent` VARCHAR(2147483647) NOT NULL,
+    `view_time` INT NOT NULL
+    )
+    ```
 
 1. Create a mockup of nested schema with the `vw.nested_user.sql` file. 
 
     ```sql
-    create view nested_user_clicks as
+   CREATE VIEW nested_user_clicks as
     select
         click_id,
         view_time,
@@ -62,7 +95,7 @@ CREATE TABLE `examples`.`marketplace`.`clicks` (
     FROM nested_user_clicks as t;
     ```
 
-1. For array iteration and aggregation use ARRAY_AGG, see the `vw.array_of_rows.sql`. The query below, denormalize and aggregate click events into one minute collection of page views, grouped by URL. Each record represents a specific URL's activity during a specific one-minute period. The full details of all the individual clicks (who viewed it and when) during that minute are stored  in a single, page_views array column.
+1. For array iteration and aggregation use ARRAY_AGG, see the `vw.array_of_rows.sql`. The query below, denormalizes and aggregates click events into one minute collection of page views, grouped by URL. Each ROW record represents a specific URL's activity during a specific one-minute period. The full details of all the individual clicks (who viewed it and when) during that minute are stored in a single, page_views array column.
 
     ```sql
     CREATE VIEW page_views_1m AS
@@ -74,9 +107,9 @@ CREATE TABLE `examples`.`marketplace`.`clicks` (
     GROUP BY window_start, window_end, window_time, url;
     ```
 
-    *ARRAY_AGG aggregates values from a specified expression across a group of rows and returns them as an array.*
+    *The ARRAY_AGG*() function aggregates values from a specified expression across a group of rows and returns them as an array.*
 
-    and a unnesting of the array with
+    Then it is possible to unnest the array with CROSS JOIN UNNEST
 
     ```sql
     SELECT window_time, url, T.*
@@ -84,7 +117,7 @@ CREATE TABLE `examples`.`marketplace`.`clicks` (
     CROSS JOIN UNNEST(page_views_1m.page_views) AS T(user_id, view_time, viewed_at)
     ```
 
-1. Without windowing: for each user group the url and user agent
+1. Without windowing: for each user_id, the following SQL groups the url and user_agent data:
     ```sql
     SELECT 
         user_id,
@@ -151,7 +184,7 @@ News from 10/14/2025, there is a [UDF to compute goe_distance](https://github.co
 
 ## 3- Array aggregation
 
-Problem: how to keep the last records of an exploded array. The source event includes truck container content as array of goods. 
+**Problem**: how to keep the last records of an exploded array. The source event includes truck container which contains an array of goods. 
 ```sh
 truck_1, good_1, ts_ms
 truck_2, good_1, ts_ms
@@ -176,11 +209,13 @@ truck_2, good_3, ts_ms
     ```
 
     By default,   'changelog.mode' = 'append', and 'kafka.cleanup-policy' = 'delete'. 
+
 * See the truck_loads/insert_truck_loads.sql for some test data
     ```sql
     INSERT INTO truck_loads VALUES
         ('truck_1', ARRAY [ROW(1, 'good_1', 1718000000000), ROW(2, 'good_2', 1718000100000), ROW(3, 'good_1', 1718000200000)]),
     ```
+
 * Exploding the array:
     ```sql
     select truck_id, good_id, ts_ms from truck_loads
@@ -209,4 +244,72 @@ truck_2, good_3, ts_ms
 
     The results are as expected: 
     ![](./images/truck_loads_2.png)
+
+## 4- Suite Asset Aggregation
+
+The `cc-array_agg/cc_array_agg.sql` file demonstrates aggregating asset IDs into arrays per suite, with proper changelog handling.
+
+1. Create a source table with individual suite-asset mappings:
+    ```sql
+    create table suites (
+        suite_id STRING,
+        asset_id STRING,
+        suite_name STRING,
+        ts_ltz timestamp_ltz(3),
+        insert_ts_ltz timestamp_ltz(3),
+        PRIMARY KEY(suite_id) NOT ENFORCED
+    ) distributed by (suite_id) into 1 buckets with (
+        'changelog.mode' = 'append'
+    );
+    ```
+
+2. Create an upsert sink table to store aggregated arrays:
+    ```sql
+    create table suites_agg (
+        suite_id STRING,
+        asset_ids ARRAY<STRING>,
+        ts_ltz timestamp_ltz(3),
+        insert_ts_ltz timestamp_ltz(3),
+        PRIMARY KEY(suite_id) NOT ENFORCED
+    ) distributed by (suite_id) into 1 buckets with (
+        'changelog.mode' = 'upsert'
+    );
+    ```
+
+    The changelog needs to be `upsert` mode to support consuming update changes produced by the GroupAggregate operator.
+
+3. Insert aggregated data:
+    ```sql
+    insert into suites_agg (suite_id, asset_ids, ts_ltz, insert_ts_ltz)
+    select suite_id, 
+           ARRAY_AGG(asset_id) as asset_ids, 
+           max(ts_ltz) as ts_ltz, 
+           max(insert_ts_ltz) as insert_ts_ltz 
+    from suites 
+    group by suite_id;
+    ```
+
+4. Query results maintain Flink SQL semantics with accumulated arrays:
+    | suite_id | asset_ids          |
+    |----------|-------------------|
+    | suite_1  | [asset_1, asset_3] |
+    | suite_2  | [asset_1, asset_2] |
+
+    ![](./cc-array_agg/suites_agg_chglog.png)
+
+See the same example but with Array_agg with ROW and sub row in [cc-array_agg/cc_array_agg_on_row.sq](./cc-array-agg/cc_array_agg_on_row.sql)
+
+## 5- Healthcare JSON Transformation
+
+The `cc-flink-health/` folder contains a complete demonstration of processing CDC records for transformation from nested CDC JSON schema to flattened JSON schema for business entity construction.
+
+See [cc-flink-health/README.md](./cc-flink-health/README.md) for detailed documentation covering:
+
+* Member and Provider entity schemas
+* CDC source data simulation with mock Qlik output
+* JSON extraction using `JSON_VALUE()` and `JSON_QUERY()`
+* Nested object creation using `ROW()`
+* Array element access: `changeSet[1].changes[1].action`
+* Filtering CDC operations via headers
+* Kafka producer for test data generation
 

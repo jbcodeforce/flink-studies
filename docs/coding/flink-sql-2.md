@@ -267,8 +267,7 @@ select *  FROM (
     CROSS JOIN UNNEST(t.nested_data) AS unnested_row;
     ```
 
-    So each row in the nested_data array will be a row in the output table with the matching key_col.
-
+    Each row in the nested_data array will be a row in the output table with the matching key_col. 
 
 
 
@@ -306,6 +305,7 @@ select *  FROM (
     ```
 
     SQL has also EXPLODE_OUTER, which returns all values in array including null or empty.
+
     To translate this to Flink SQL we can use MAP_ENTRIES and MAP_FROM_ARRAYS. MAP_ENTRIES returns an array of all entries in the given map. While MAP_FROM_ARRAYS returns a map created from an arrays of keys and values.
     ```sql
     select map_entries(map_from_arrays())
@@ -324,32 +324,6 @@ select *  FROM (
             WHEN price <=200 AND price > 150 THEN 'medium'
             ELSE 'low'
         END;
-    ```
-
-???+ question "How to Aggregate a field into an ARRAY - ARRAY_AGG?"
-    Let start by a simple array indexing (the index is between 1 to n_element). Below, the `values array` creates test data into a memory table aliased a `T` with a column named `array_field`:
-
-    ```sql
-    SELECT array_field[4] FROM ((VALUES ARRAY[5,4,3,2,1])) AS T(array_field)
-    ```
-
-    The following code, is creating a view with an [array of aggregates](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions), which in this case, is concatenating the urls over a 1 minute tumble window.
-
-    ```sql
-    CREATE VIEW visited_pages_per_minute AS 
-    SELECT 
-        window_time,
-        user_id, 
-        ARRAY_AGG(url) AS urls
-    FROM TABLE(TUMBLE(TABLE `examples.marketplace.clicks`, DESCRIPTOR(`$rowtime`), INTERVAL '1' MINUTE))
-    GROUP BY window_start, window_end, window_time, user_id;
-    -- once the view is created
-    SELECT * from visited_pages_per_minute;
-    
-    -- it is possible to expand an array into multiple rows using cross join unnest
-
-    SELECT v.window_time, v.user_id, u.url FROM visited_pages_per_minute AS v
-    CROSS JOIN UNNEST(v.urls) AS u(url)
     ```
 
 ???+ question "How to mask a field?"
@@ -460,6 +434,67 @@ Remove duplicate before doing the aggregation:
 ```sql
 ARRAY_AGG(DISTINCT user_name) as persons
 ```
+
+### ARRAY_AGG
+
+This [aggregate function](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions) 
+
+???+ question "How to Aggregate a field into an ARRAY - ARRAY_AGG?"
+    Let start by a simple array indexing (the index is between 1 to n_element). Below, the `values array` creates test data into a memory table aliased a `T` with a column named `array_field`:
+
+    ```sql
+    SELECT array_field[4] FROM ((VALUES ARRAY[5,4,3,2,1])) AS T(array_field)
+    ```
+
+    The following SQL, is creating a view with an [array of aggregates](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions), which in this case, is concatenating the urls for each user_id over a 1 minute tumble window.
+
+    ```sql
+    CREATE VIEW visited_pages_per_minute AS 
+    SELECT 
+        window_time,
+        user_id, 
+        ARRAY_AGG(url) AS urls
+    FROM TABLE(TUMBLE(TABLE `examples.marketplace.clicks`, DESCRIPTOR(`$rowtime`), INTERVAL '1' MINUTE))
+    GROUP BY window_start, window_end, window_time, user_id;
+    -- once the view is created
+    SELECT * from visited_pages_per_minute;
+    
+    -- it is possible to expand an array into multiple rows using cross join unnest
+
+    SELECT v.window_time, v.user_id, u.url FROM visited_pages_per_minute AS v
+    CROSS JOIN UNNEST(v.urls) AS u(url)
+    ```
+
+    One thing important is that new clicks for the same user_id with new url, will create a new output record with the aggregated array. See [cc-array-agg study](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/03-nested-row/cc-array-agg)
+
+???- info "More Array aggregation behaviors"
+    * The type within the array can be a row. [See SQL examples](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/03-nested-row/cc-array-agg/cc_array_agg_on_row.sql)
+    ```sql
+    select 
+        suite_id, 
+        ARRAY_AGG(ROW (asset_id, asset_name, asset_price_min, asset_price_max)) as asset_data 
+    from suites 
+    group by suite_id;
+    ```
+
+    * and subrow:
+    ```sql
+    create table suites_agg (
+    suite_id INTEGER,
+    asset_data ARRAY<
+        ROW<
+          asset_id INTEGER, 
+          asset_name STRING, 
+          asset_price_range ROW<
+             asset_price_min DECIMAL(24,4), 
+             asset_price_max DECIMAL(24,4)
+          >
+        >,
+    ts_ltz timestamp_ltz(3),
+    insert_ts_ltz timestamp_ltz(3),
+    PRIMARY KEY(suite_id) NOT ENFORCED
+    ```
+
 
 ### OVER 
 
