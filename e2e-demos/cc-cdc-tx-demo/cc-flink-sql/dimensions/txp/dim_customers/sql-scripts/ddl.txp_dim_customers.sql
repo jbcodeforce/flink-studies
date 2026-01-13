@@ -1,11 +1,4 @@
--- -----------------------------------------------------------------------------
--- Customers Table Definition
--- Card Transaction Processing Demo
--- -----------------------------------------------------------------------------
--- This table reads from the CDC Debezium topic for customers
--- with proper watermark for event-time processing
-
-CREATE TABLE IF NOT EXISTS dim_customers (
+CREATE TABLE IF NOT EXISTS txp_dim_customers (
     account_number STRING,
     customer_name STRING,
     email STRING,
@@ -13,10 +6,13 @@ CREATE TABLE IF NOT EXISTS dim_customers (
     date_of_birth STRING,
     city STRING,
     created_at STRING,
-    op STRING,
-    ts TIMESTAMP_LTZ(3),
+    src_op STRING,
+    is_deleted BOOLEAN,
+    src_timestamp TIMESTAMP_LTZ(3),
+    `partition` INT METADATA VIRTUAL,
+    `offset` BIGINT METADATA VIRTUAL
     -- Watermark for event-time processing
-    WATERMARK FOR ts AS ts - INTERVAL '5' SECOND,
+    WATERMARK FOR src_timestamp AS src_timestamp - INTERVAL '5' SECOND,
     -- Primary key for upsert semantics
     PRIMARY KEY (account_number) NOT ENFORCED
 ) DISTRIBUTED BY HASH (account_number) INTO 1 BUCKETS WITH (
@@ -31,5 +27,3 @@ CREATE TABLE IF NOT EXISTS dim_customers (
   'scan.startup.mode' = 'earliest-offset',
   'value.fields-include' = 'all'
 );
-
-

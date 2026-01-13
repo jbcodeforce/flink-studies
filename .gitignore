@@ -23,3 +23,5 @@ e2e-demos/cdc-demo/datasets/
 **/.specify/
 **/client.properties
 **/variables.tfvars
+**/set_env.sh
+e2e-demos/config.yaml

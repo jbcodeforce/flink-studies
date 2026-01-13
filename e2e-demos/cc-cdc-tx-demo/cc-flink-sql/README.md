@@ -175,28 +175,65 @@ The usecase to demonstrate is how to extract data from the after or before envel
 
 * At this stage we have 3 use cases: records loaded from the source table snapshot, new record added while the debezium connector is running, and delete an existing record.
 
-* Extracting the payload from debezium envelop using SQL - propagating the operation for downstream processing:
-    ```sql
-    insert into `dim_customers` select 
-        account_number,
-        coalesce(if (op = 'd', before.customer_name, after.customer_name), 'NULL') as customer_name,
-        coalesce(if (op = 'd', before.email, after.email), 'NULL') as email,
-        coalesce(if (op = 'd', before.phone_number, after.phone_number), 'NULL') as phone_number,
-        DATE_FORMAT(if (op = 'd', before.date_of_birth, after.date_of_birth), 'YYYY-MM-DD') as date_of_birth,
-        coalesce(if (op = 'd', before.city, after.city), 'NULL') as city,
-        coalesce(if (op = 'd', before.created_at, after.created_at), 'NULL') as created_at,
-        op,
-        TO_TIMESTAMP_LTZ(source.ts_ms, 3) AS ts
-    from `card-tx.public.customers` 
-    ```
+## Propagating the operation (delete too)
 
-    For not propagating delete operation add a `where op <> 'd'` condition.
+The common use cases for this behavior include: 
+* Maintain historical data even after deletes
+* Keep deleted records for compliance
+* Allow downstream systems to handle deletes gracefully
+* Ability to restore deleted records for recovery
+
+
+When a delete operation is encountered, preserve the existing values in the target table rather than overwriting with NULLs
+
+Extracting the payload from debezium envelop using SQL - propagating the operation for downstream processing:
+```sql
+insert into `dim_customers` select 
+    account_number,
+    coalesce(if (op = 'd', before.customer_name, after.customer_name), 'NULL') as customer_name,
+    coalesce(if (op = 'd', before.email, after.email), 'NULL') as email,
+    coalesce(if (op = 'd', before.phone_number, after.phone_number), 'NULL') as phone_number,
+    DATE_FORMAT(if (op = 'd', before.date_of_birth, after.date_of_birth), 'YYYY-MM-DD') as date_of_birth,
+    coalesce(if (op = 'd', before.city, after.city), 'NULL') as city,
+    coalesce(if (op = 'd', before.created_at, after.created_at), 'NULL') as created_at,
+    op as src_op,
+    (op = 'd') as is_deleted,
+    TO_TIMESTAMP_LTZ(source.ts_ms, 3) AS src_timestamp
+from `card-tx.public.customers` 
+```
+
+To do not propagating delete operation add a `where op <> 'd'` condition.
 
 * With upsert mode, Flink will consume and digest CDC delete events.
     ```sql
     alter table `card-tx.public.transactions` set ('value.format' = 'avro-debezium-registry');
     alter table `card-tx.public.transactions` set ('changelog.mode' = 'append');
     ```
+
+### Some Common Practices
+* For append-only sinks (S3, Iceberg), explicitly track deletes or use Confluent Tableflow with upsert support.
+* Consider data retention policies - how long to keep deleted records
+* Use separate delete tracking tables for audit purposes:
+  ```sql
+  CREATE TABLE IF NOT EXISTS customer_deletes (
+    account_number STRING,
+    deleted_at TIMESTAMP_LTZ(3),
+    deleted_by_operation STRING,
+    source_timestamp TIMESTAMP_LTZ(3),
+    PRIMARY KEY (account_number) NOT ENFORCED
+  )
+  -- in dml
+  INSERT INTO customer_deletes
+  SELECT 
+      before.account_number AS account_number,
+      TO_TIMESTAMP_LTZ(source.ts_ms, 3) AS deleted_at,
+      op AS deleted_by_operation,
+      TO_TIMESTAMP_LTZ(source.ts_ms, 3) AS source_timestamp
+  FROM `card-tx.public.customers`
+  WHERE op = 'd' AND before.account_number IS NOT NULL;
+  ```
+
+* Filter deleted records in downstream queries using `is_deleted` flag
 
 
 ## Sliding Window Aggregations
@@ -209,3 +246,96 @@ The demo implements multiple window sizes for transaction analysis:
 | 15_MINUTE | 15 min | 5 min | Short-term spending patterns |
 | 1_HOUR | 1 hour | 15 min | Hourly spending limits |
 | 1_DAY | 1 day | N/A (tumbling) | Daily transaction summaries |
+
+## Advanced CDC Patterns
+
+The demo includes several advanced CDC processing patterns adapted from production ETL pipelines:
+
+### CDC Metadata Extraction (`07-cdc-metadata-extraction.sql`)
+
+Comprehensive extraction of CDC metadata from Debezium envelopes for audit trails, debugging, and data lineage tracking.
+
+**Key Features:**
+- Source timestamps (`source.ts_ms`) - Track when changes occurred at the source
+- Transaction metadata - Track transaction boundaries (if available)
+- Kafka metadata - Partition, offset, and key information
+- Source information - Database, table, schema, connector name
+- Snapshot flags - Distinguish initial load vs. incremental changes
+- Operation type tracking - Track all CDC operations (c, u, d, r)
+
+**Use Cases:**
+- **Audit Trails**: Track all changes with full metadata for compliance
+- **Debugging**: Identify source of issues using source timestamps and connector information
+- **Data Lineage**: Track which source database/table each record came from
+- **Snapshot Detection**: Filter or handle initial snapshot data differently from incremental changes
+
+**Example:**
+```sql
+SELECT 
+    account_number,
+    customer_name,
+    op AS cdc_operation,
+    source.ts_ms AS source_timestamp_ms,
+    TO_TIMESTAMP_LTZ(source.ts_ms, 3) AS source_timestamp,
+    source.db AS source_database,
+    source.table AS source_table,
+    COALESCE(CAST(source.snapshot AS STRING), 'false') AS is_snapshot,
+    (op = 'd') AS is_deleted
+FROM `card-tx.public.customers`;
+```
+
+### Multi-level Deduplication (`08-deduplication-pattern.sql`)
+
+Handle duplicate CDC records using multi-level deduplication strategies to ensure idempotency.
+
+**Strategy:**
+1. **First-level deduplication**: By transaction ID and position (if available)
+2. **Second-level deduplication**: By source timestamp
+3. **Tie-breaker**: Use Kafka offset when timestamps are identical
+
+**Use Cases:**
+- **CDC Replay Scenarios**: Handle cases where the same record appears multiple times
+- **Idempotency**: Ensure downstream processing is idempotent
+- **Out-of-order Events**: Handle events that arrive out of order
+- **Data Quality**: Ensure only the most recent version of each record is processed
+
+**Pattern:**
+```sql
+WITH ranked_by_timestamp AS (
+    SELECT *,
+        ROW_NUMBER() OVER (
+            PARTITION BY account_number
+            ORDER BY source_timestamp DESC, kafka_offset DESC
+        ) AS deduplication_rank
+    FROM customers_staging
+)
+SELECT * FROM ranked_by_timestamp WHERE deduplication_rank = 1;
+```
+
+**Best Practices:**
+- Always include `source_timestamp` in deduplication logic
+- Use Kafka offset as tie-breaker when timestamps are identical
+- Consider transaction boundaries if available
+- For upsert sinks, primary key handles some deduplication automatically
+- For append-only sinks, explicit deduplication is required
+
+
+
+### Enhanced Customer Envelope Processing (`02-customer-envelop.sql`)
+
+Enhanced version of basic envelope extraction with comprehensive metadata.
+
+**Enhancements:**
+- Comprehensive metadata extraction (source timestamps, Kafka offsets, etc.)
+- `is_deleted` boolean flag for easier filtering
+- Snapshot flag to distinguish initial load vs. incremental changes
+- Source database/table information for multi-source scenarios
+
+**When to Use Each Pattern:**
+
+| Pattern | When to Use |
+|---------|-------------|
+| **CDC Metadata Extraction** | - Need audit trails<br>- Debugging CDC issues<br>- Multi-source scenarios<br>- Data lineage tracking |
+| **Deduplication** | - CDC replay scenarios<br>- Out-of-order events<br>- Append-only sinks<br>- Ensuring idempotency |
+| **Soft Delete Handling** | - Audit requirements<br>- Data retention policies<br>- Recovery scenarios<br>- Downstream systems need delete awareness |
+| **Enhanced Envelope Processing** | - Need metadata alongside business data<br>- Filtering by snapshot vs. incremental<br>- Multi-source CDC pipelines |

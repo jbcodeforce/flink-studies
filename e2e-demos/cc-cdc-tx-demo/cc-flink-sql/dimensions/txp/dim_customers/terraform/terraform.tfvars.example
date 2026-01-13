@@ -1,0 +1,23 @@
+# -----------------------------------------------------------------------------
+# Terraform Variables Example
+# Copy this file to terraform.tfvars and fill in your values
+# -----------------------------------------------------------------------------
+
+# Confluent Cloud API Credentials
+# These can also be set via environment variables:
+#   TF_VAR_confluent_cloud_api_key
+#   TF_VAR_confluent_cloud_api_secret
+confluent_cloud_api_key    = "<your-confluent-cloud-api-key>"
+confluent_cloud_api_secret = "<your-confluent-cloud-api-secret>"
+
+# Path to IaC terraform state file (relative to this terraform directory)
+# Default: ../../../IaC/terraform.tfstate
+iac_state_path = "../../../IaC/terraform.tfstate"
+
+# AWS region for Flink deployment (must match IaC configuration)
+# Default: us-east-2
+cloud_region = "us-east-2"
+
+# Prefix for Flink statement names
+# Default: dev-usw2-txp
+statement_name_prefix = "dev-usw2-txp"

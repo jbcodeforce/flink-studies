@@ -94,11 +94,13 @@ When latency is a major requirements, like monitoring and alerting, fraud detect
 </figure>
 
 * Each task maintains its state locally to improve latency. For small state, the state backends will use JVM heap, but for larger state RocksDB is used. A [**state backend**](https://nightlies.apache.org/flink/flink-docs-master/docs/ops/state/state_backends/) takes care of checkpointing the state of a task to a remote and persistent storage.
+* When Flink triggers a checkpoint, it doesn't copy the whole database. It identifies which SST files are new since the last successful checkpoint. These new files are uploaded to durable storage (like S3 or HDFS). The checkpoint metadata simply "points" to these files.
 * With stateful distributed processing, scaling stateful operators, enforces state repartitioning and assigning to more or fewer parallel tasks. Keys are organized in key-groups, and key groups are assigned to tasks. Operators with operator list state are scaled by redistributing the list entries. Operators with operator union list state are scaled by broadcasting the full list of state entries to each task.
 
 ???- info "State Backend"
-    * Embedded rockdb will persist on Task manager local data directories. It saves asynchronously. Serializes using bytes. But there is a limit to the size per key and valye of 2^31 bytes. Supports incremental checkpoints
-    * ForStState use tree structured k-v store. May use object storage for remote file systems. Allows Flink to scale the state size beyond the local disk capacity of the TaskManager. 
+    * Embedded Rockdb persists on Task manager local data directories. RocksDB is an embeddable, persistent key-value store based on Log-Structured Merge-Trees (LSM Trees). Flink organizes state into "Key Groups." Each RocksDB instance on a TaskManager handles a specific set of these groups. It saves asynchronously. Serializes using bytes. But there is a limit to the size per key and valye of 2^31 bytes. Supports incremental checkpoints which is key for maintaining performance as state grows into the terabytes.
+    * The process: When an operator updates state, it writes to the RocksDB MemTable and a Write-Ahead Log (WAL). Once the MemTable is full, it is flushed to disk as a static SST file.
+    * ForStState uses tree structured k-v store. May use object storage for remote file systems. Allows Flink to scale the state size beyond the local disk capacity of the TaskManager. 
     * `HashMapStateBackend` use Java heap to keep state, as java object. So unsafe to reuse!.
 
 ## High Availability

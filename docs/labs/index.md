@@ -2,13 +2,13 @@
 
 This section lists the current demonstrations and labs in this git repository or the interesting public repositories about Flink
 
-## Local demonstrations and end to end studies
+## Local demonstrations and end-to-end studies
 
 All the local demonstrations run on local Kubernetes, some on Confluent Cloud. Most of them are still work in progress.
 
 See the [e2e-demos](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos) folder for a set of available demos based on the Flink local deployment or using Confluent Cloud for Flink.
 
-Those demos are not finalized:
+Those demos are not finalized yet:
 
 * [ ] [Record deduplication](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/dedup-demo) using Flink SQL or Table API deployed on Confluent Platform for Flink
 * [ ] [Change Data Capture with Postgresql](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cdc-demo), CDC Debezium, Confluent Platformm v8.0+, Cloud Native for Postgresql Kuberneted Operator
@@ -51,6 +51,7 @@ flowchart LR
     T3 --> Sink
     T4 --> Sink
     Sink --> S3
+    TF --> S3
 ```
 
 * [ ] [e-commerce sale](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale)
@@ -105,6 +106,4 @@ confluent flink compute-pool list
 confluent flink compute-pool use <pool_id>
 ```
 
-* Start one of the Datagen in the Confluent Console. 
-
-TBC
+* Once in Flink Workspace use the markeplace tables

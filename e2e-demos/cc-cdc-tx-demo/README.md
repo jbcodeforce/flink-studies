@@ -1,14 +1,14 @@
-# A Confluent Cloud Demo for Transaction Processing
+# A Confluent Cloud Demo for Transaction Processing using CDC
 
 ## Goals
 
-The demonstration presents a hands-on guidance for the following:
+The demonstration presents a hands-on guidance for the following requirements:
 
-* [x] Integrate with RDS and CDC Debezium v2 Connector on Confluent Cloud 
+* [x] Integrate with AWS RDS Postgres and CDC Debezium v2 Kafka Connector deployed as managed service on Confluent Cloud (CC)
 * [x] Decoding Debezium message envelope using Flink or using the json-debezium-registry setting in CC Flink 
 * [ ] Understanding how to replace existing ETL processes with Flink
 * [ ] Sliding window aggregations over transactions grouped by cardholder (1 minute to 1 day windows)
-* [ ] How to propagate delete operations to sink bucket
+* [ ] How to propagate delete operations to sink bucket [See section](./cc-flink-sql/README.md#propagating-the-operation-delete-too)
 * [ ] Maintain data order for transactional systems
 * [ ] How TableFlow + Flink ensure ordered delivery
 * [ ] Integrate with a [ML scoring service](./tx_scoring/README.md)

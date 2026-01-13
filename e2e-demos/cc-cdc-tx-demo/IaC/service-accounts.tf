@@ -164,6 +164,34 @@ resource "confluent_api_key" "app_manager_flink_key" {
   }
 }
 
+# App Manager - Tableflow API Key
+resource "confluent_api_key" "app_manager_tableflow_key" {
+  count = var.enable_tableflow ? 1 : 0
+
+  display_name = "${var.prefix}-app-manager-tableflow-key"
+  description  = "Tableflow API Key for app-manager service account"
+
+  owner {
+    id          = confluent_service_account.app_manager.id
+    api_version = confluent_service_account.app_manager.api_version
+    kind        = confluent_service_account.app_manager.kind
+  }
+
+  managed_resource {
+    id          = "tableflow"
+    api_version = "tableflow/v1"
+    kind        = "Tableflow"
+  }
+
+  depends_on = [
+    confluent_role_binding.app_manager_env_admin
+  ]
+
+  lifecycle {
+    prevent_destroy = false
+  }
+}
+
 # -----------------------------------------------------------------------------
 # ACLs for Connectors Service Account
 # -----------------------------------------------------------------------------

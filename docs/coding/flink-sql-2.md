@@ -375,7 +375,7 @@ An aggregate function computes a single result from multiple input rows.
 ### Group BY
 
 Classical SQL grouping of records, but with Streaming the state may grow infinitely. The size will depend of the # of groups and the amount of data to keep per group.
-`group by` generate upsert events as it manages key-value and repartition data.
+`group by` generates upsert events as it manages key-value and repartitions data.
 
 ```sql
 EXPLAIN 
@@ -500,9 +500,9 @@ As seen in example above the type within the array can be a row and sub-row. [Se
 
 ### OVER 
 
-[OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) computes an aggregated value for every input row over a range of ordered rows. It does not reduce the number of resulting rows, as GROUP BY does, but produces one result for every input row. 
+[OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) computes an aggregated value for every input row **over a range** of ordered rows. It does not reduce the number of resulting rows, as GROUP BY does, but produces one result for every input row. 
 
-OVER specifies the time window over which the aggregation is performed. A classical example is to get a moving sum or average: the number of orders in the last 10 seconds: 
+OVER specifies the **time window** over which the aggregation is performed. A classical example is to get a moving sum or average: the number of orders in the last 10 seconds: 
 
 ```sql
 SELECT 
@@ -598,11 +598,19 @@ On the left side, the fact table, has high velocity of changes, but the events a
 
 When doing a join, Flink needs to fully materialize both the right and left of the join tables in state, which may cost a lot of memory, because if a row in the left-hand table (LHT), also named the **probe side**, is updated, the operator needs to emit an updated match for all matching rows in the right-hand table (RHT) or **build side**. The cardinality of right side will be mostly bounded at a given point of time, but the left side may vary a lot. A join emits matching rows to downstream operator.
 
+
+
 The key points to keep in mind are:
 
+* Regular joins typically produce a full cross-product of all matching records. However, in streaming scenarios, this behavior is often undesirable, for example if you want to enrich an event with additional information.
 * The order of joins is important, try to get the first join done on table with the lowest update frequency.
 * Cross join makes the query fails
 * When the RHS is an upsert table, the result will be upsert too. Which means a result will be re-emitted if the RHS change. To avoid that we need to take the reference data, RHS, in effect at time of the event on LHS. The result is becoming **time-versioned**.
+
+### Temporal Join
+
+A [temporal join](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html#temporal-joins) joins one table with another table that is updated over time. This join is made possible by linking both tables using a time attribute, which allows the join to consider the historical changes in the table. 
+
     ```sql
     insert into enriched_transactions
     SELECT t.amount, t.order_type, s.name, s.opening_value FROM transactions t
@@ -681,7 +689,7 @@ Here is a list of important tutorials on Joins:
     ON table1.column-name1 = table2.column-name1
     ```
 
-    When enriching a particular `table1`, an event-time temporal join waits until the watermark on the table2 stream reaches the timestamp of that `table1` row, because only then is it reasonable to be confident that the result of the join is being produced with complete knowledge of the relevant `table2` data. This table2 record can be old as the watermark on that table being late.
+    When enriching a particular `table1`, an event-time temporal join waits until the watermark on the table2 stream reaches the timestamp of that `table1` row, because only then, it is reasonable to be confident that the result of the join is being produced with complete knowledge of the relevant `table2` data. This table2 record can be old as the watermark on that table being late.
 
 ???+ info "How to join two tables on a key within a time window using event column as timestamp and store results in a target table?"
     Full example:

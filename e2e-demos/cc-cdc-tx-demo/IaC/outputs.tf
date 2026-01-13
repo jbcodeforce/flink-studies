@@ -167,6 +167,18 @@ output "flink_api_secret" {
   sensitive   = true
 }
 
+output "tableflow_api_key" {
+  description = "Tableflow API Key ID"
+  value       = var.enable_tableflow ? confluent_api_key.app_manager_tableflow_key[0].id : null
+  sensitive   = false
+}
+
+output "tableflow_api_secret" {
+  description = "Tableflow API Secret"
+  value       = var.enable_tableflow ? confluent_api_key.app_manager_tableflow_key[0].secret : null
+  sensitive   = true
+}
+
 # -----------------------------------------------------------------------------
 # CDC Topics
 # -----------------------------------------------------------------------------
@@ -188,6 +200,19 @@ output "cdc_connector_name" {
 output "cdc_connector_id" {
   description = "CDC connector ID"
   value       = confluent_connector.card_tx_cdc_source.id
+}
+
+# -----------------------------------------------------------------------------
+# Tableflow Outputs (Conditional)
+# -----------------------------------------------------------------------------
+output "tableflow_topic_name" {
+  description = "Tableflow-enabled topic name (tx_aggregations)"
+  value       = var.enable_tableflow ? confluent_tableflow_topic.card_tx_aggregations[0].display_name : null
+}
+
+output "tableflow_topic_id" {
+  description = "Tableflow topic ID"
+  value       = var.enable_tableflow ? confluent_tableflow_topic.card_tx_aggregations[0].id : null
 }
 
 # -----------------------------------------------------------------------------

@@ -1,11 +1,10 @@
 # Complex event processing
 
-The goal of CEP is to analyzing pattern relationships between streamed events. Complex processing can be done using Flink using 
-three capabolities: 
+The goal of CEP is to analyzing pattern relationships between streamed events. Complex processing can be done using Flink using three capabilities: 
 
 * Stateful Function
 * [Flink CEP](https://ci.apache.org/projects/flink/flink-docs-release-1.13/dev/libs/cep.html) is a library to assess event pattern within a data stream.
-* Flink SQL 
+* Flink SQL with pattern recognition
 
 ## Use cases
 

@@ -136,6 +136,9 @@ terraform apply -target=confluent_api_key.app_manager_kafka_key \
                 -target=confluent_api_key.app_manager_sr_key \
                 -target=confluent_api_key.app_manager_flink_key
 
+# Tableflow API key (if enable_tableflow = true)
+terraform apply -target=confluent_api_key.app_manager_tableflow_key
+
 # ACLs for connectors
 terraform apply -target=confluent_kafka_acl.connectors_create_topic \
                 -target=confluent_kafka_acl.connectors_write_topic \
@@ -183,7 +186,62 @@ terraform apply -target=confluent_connector.card_tx_cdc_source
      INSERT INTO transactions (txn_id, account_number, amount) VALUES ('txn-001', 'TEST001', 100.00);
      ```
 
-### Step 6: Deploy S3 Infrastructure
+### Step 5.5: Deploy Tableflow (Optional)
+
+**Prerequisites:** 
+- Topics must exist (especially `tx_aggregations` topic)
+- Set `enable_tableflow = true` in `terraform.tfvars` (default is `true`)
+
+Tableflow enables the `tx_aggregations` topic to be accessed as an Iceberg table, providing a unified view between operational data (Kafka) and analytical data (Iceberg).
+
+```bash
+# Deploy Tableflow topic enablement
+terraform apply -target=confluent_tableflow_topic.card_tx_aggregations
+```
+
+**Verify Tableflow is enabled:**
+```bash
+# Check Tableflow topic outputs
+terraform output tableflow_topic_name
+terraform output tableflow_topic_id
+
+# Verify in Confluent Cloud UI:
+# 1. Navigate to Topics → tx-aggregations
+# 2. Check for "Tableflow" tab or indicator
+# 3. Verify Iceberg table format is enabled
+```
+
+**Important Notes:**
+1. **Tableflow requires the topic to exist first** - Make sure `tx_aggregations` topic is created before enabling Tableflow
+2. **Storage**: Uses Confluent-managed storage by default (no additional AWS setup required)
+3. **Table Format**: Configured for Iceberg format
+4. **Topic Name**: Tableflow is enabled on `${var.prefix}-tx-aggregations` topic
+
+**Accessing the Iceberg Table:**
+Once Tableflow is enabled, the `tx_aggregations` topic data is automatically materialized as an Iceberg table. You can:
+- Query the table using analytics tools that support Iceberg (e.g., Spark, Trino, Dremio)
+- Access table metadata and schema from the Confluent Cloud UI
+- Use the table for downstream analytics without additional ETL processes
+
+**Disabling Tableflow:**
+To disable Tableflow, set `enable_tableflow = false` in `terraform.tfvars` and run:
+```bash
+terraform apply
+```
+
+### Step 6: Deploy Topics (if not created by Flink)
+
+If topics are not created automatically by Flink CREATE TABLE statements, deploy them manually:
+
+```bash
+# Topics for enriched transactions and aggregations
+terraform apply -target=confluent_kafka_topic.card_tx_enriched \
+                -target=confluent_kafka_topic.card_tx_aggregations
+```
+
+**Note:** These topics are typically created by Flink SQL statements, but are defined here for use by connectors (like S3 sink) that need them before Flink deployment.
+
+### Step 7: Deploy S3 Infrastructure
 
 ```bash
 # S3 bucket
@@ -200,7 +258,7 @@ terraform apply -target=aws_iam_user.s3_sink_user \
 terraform apply -target=confluent_connector.card_tx_s3_sink
 ```
 
-### Step 7: Deploy ML Inference (Optional)
+### Step 8: Deploy ML Inference (Optional)
 
 ```bash
 # Security group
@@ -228,7 +286,7 @@ terraform apply -target=aws_ecs_task_definition.card_tx_ml_inference_task \
 
 **Note:** You'll need to build and push a Docker image to ECR before the service can start.
 
-### Step 8: Deploy Redshift (Optional)
+### Step 9: Deploy Redshift (Optional)
 
 Only if `enable_redshift = true` in your `terraform.tfvars`:
 
@@ -275,6 +333,8 @@ Key outputs to verify:
 - `schema_registry_endpoint` - Schema Registry endpoint
 - `flink_compute_pool_id` - Flink compute pool ID
 - `s3_bucket_name` - S3 bucket for Iceberg
+- `tableflow_topic_name` - Tableflow-enabled topic name (if `enable_tableflow = true`)
+- `tableflow_topic_id` - Tableflow topic ID (if `enable_tableflow = true`)
 
 **To find which specific subnet RDS is deployed to:**
 ```bash
@@ -349,6 +409,35 @@ aws rds describe-db-parameters \
 - Verify topics exist (created by CDC connector or Flink)
 - Check API keys have correct permissions
 - Verify Flink compute pool is running
+
+### Tableflow not enabled or failing
+
+**Verify Tableflow is enabled:**
+```bash
+# Check if Tableflow topic exists
+terraform output tableflow_topic_name
+
+# Should output: card-tx-tx-aggregations (or your prefix)
+```
+
+**Common issues:**
+1. **Tableflow topic not created** → Verify `enable_tableflow = true` in `terraform.tfvars`
+2. **Topic doesn't exist** → Tableflow requires the topic to exist first. Deploy topics before Tableflow
+3. **API key missing** → Ensure `confluent_api_key.app_manager_tableflow_key` is deployed
+4. **Storage issues** → Check Confluent Cloud UI for storage configuration errors
+
+**Check Tableflow status in Confluent Cloud:**
+- Navigate to Topics → `tx-aggregations` → Tableflow tab
+- Verify materialization status
+- Check for any error messages in the Tableflow UI
+
+**Re-enable Tableflow:**
+If Tableflow was disabled and you want to re-enable it:
+```bash
+# Set enable_tableflow = true in terraform.tfvars
+terraform apply -target=confluent_api_key.app_manager_tableflow_key \
+                -target=confluent_tableflow_topic.card_tx_aggregations
+```
 
 ## Cleanup
 

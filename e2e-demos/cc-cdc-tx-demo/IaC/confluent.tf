@@ -125,3 +125,39 @@ resource "confluent_kafka_topic" "card_tx_aggregations" {
     confluent_role_binding.app_manager_env_admin
   ]
 }
+
+# -----------------------------------------------------------------------------
+# Tableflow Enablement
+# -----------------------------------------------------------------------------
+# Enable Tableflow on tx_aggregations topic for Iceberg table management
+resource "confluent_tableflow_topic" "card_tx_aggregations" {
+  count = var.enable_tableflow ? 1 : 0
+
+  environment {
+    id = confluent_environment.card_tx_env.id
+  }
+
+  kafka_cluster {
+    id = confluent_kafka_cluster.card_tx_cluster.id
+  }
+
+  display_name = confluent_kafka_topic.card_tx_aggregations.topic_name
+  table_formats = ["ICEBERG"]
+
+  # Use Confluent-managed storage
+  managed_storage {}
+
+  credentials {
+    key    = confluent_api_key.app_manager_tableflow_key[0].id
+    secret = confluent_api_key.app_manager_tableflow_key[0].secret
+  }
+
+  depends_on = [
+    confluent_kafka_topic.card_tx_aggregations,
+    confluent_api_key.app_manager_tableflow_key
+  ]
+
+  lifecycle {
+    prevent_destroy = false
+  }
+}

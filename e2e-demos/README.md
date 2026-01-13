@@ -19,3 +19,5 @@ For each demonstrations it should be easy to deploy, have a readme to explain th
 * [To Do](./json-transformation/checklist.md)
 
 ## CC-flink Demonstrations
+
+* [cc-cdc-tx-demo](./cc-cdc-tx-demo/README.md) CDC from Postgresql tables, Debezium envelop processing, deduplication, delete operation propagation, statefule windowing processing. Finance Domain: customer, transaction. Terraform deployment: RDS, kafka cluster, connectors, compute pool, S3, Redshift.

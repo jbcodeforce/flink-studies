@@ -1,11 +1,92 @@
-insert into dim_customers select 
-  account_number,
-  coalesce(if (op = 'd', before.customer_name, after.customer_name), 'NULL') as customer_name,
-  coalesce(if (op = 'd', before.email, after.email), 'NULL') as email,
-  coalesce(if (op = 'd', before.phone_number, after.phone_number), 'NULL') as phone_number,
-  DATE_FORMAT(if (op = 'd', before.date_of_birth, after.date_of_birth), 'YYYY-MM-DD') as date_of_birth,
-  coalesce(if (op = 'd', before.city, after.city), 'NULL') as city,
-  coalesce(if (op = 'd', before.created_at, after.created_at), 'NULL') as created_at,
-  op,
-  TO_TIMESTAMP_LTZ(source.ts_ms, 3) AS ts
-from `card-tx.public.customers` 
+
+-- Enhanced extraction with comprehensive metadata
+-- Note: This requires the dim_customers table to include additional metadata columns
+-- See alternative table definition below
+
+-- Enhanced version with all metadata (if table supports it):
+-- INSERT INTO dim_customers 
+-- SELECT 
+--     -- Business fields
+--     COALESCE(IF(op = 'd', before.account_number, after.account_number), '') AS account_number,
+--     COALESCE(IF(op = 'd', before.customer_name, after.customer_name), 'NULL') AS customer_name,
+--     COALESCE(IF(op = 'd', before.email, after.email), 'NULL') AS email,
+--     COALESCE(IF(op = 'd', before.phone_number, after.phone_number), 'NULL') AS phone_number,
+--     DATE_FORMAT(IF(op = 'd', before.date_of_birth, after.date_of_birth), 'YYYY-MM-DD') AS date_of_birth,
+--     COALESCE(IF(op = 'd', before.city, after.city), 'NULL') AS city,
+--     COALESCE(IF(op = 'd', before.created_at, after.created_at), 'NULL') AS created_at,
+--     
+--     -- CDC operation metadata
+--     op AS cdc_operation,
+--     
+--     -- Source timestamps
+--     source.ts_ms AS source_timestamp_ms,
+--     TO_TIMESTAMP_LTZ(source.ts_ms, 3) AS source_timestamp,
+--     
+--     -- Source information
+--     source.db AS source_database,
+--     source.table AS source_table,
+--     source.schema AS source_schema,
+--     source.name AS source_connector_name,
+--     
+--     -- Snapshot flag (distinguishes initial load vs. incremental changes)
+--     COALESCE(CAST(source.snapshot AS STRING), 'false') AS is_snapshot,
+--     
+--     -- Deleted flag for easier filtering
+--     (op = 'd') AS is_deleted,
+--     
+--     -- Processing metadata
+--     CURRENT_TIMESTAMP AS processed_at
+-- FROM `card-tx.public.customers`
+-- WHERE source.ts_ms IS NOT NULL;
+
+-- Alternative: Enhanced dim_customers table definition with metadata columns
+-- CREATE TABLE IF NOT EXISTS dim_customers_enhanced (
+--     -- Business fields
+--     account_number STRING,
+--     customer_name STRING,
+--     email STRING,
+--     phone_number STRING,
+--     date_of_birth STRING,
+--     city STRING,
+--     created_at STRING,
+--     
+--     -- CDC operation metadata
+--     cdc_operation STRING,
+--     source_timestamp_ms BIGINT,
+--     source_timestamp TIMESTAMP_LTZ(3),
+--     
+--     -- Source information
+--     source_database STRING,
+--     source_table STRING,
+--     source_schema STRING,
+--     source_connector_name STRING,
+--     
+--     -- Flags
+--     is_snapshot STRING,
+--     is_deleted BOOLEAN,
+--     processed_at TIMESTAMP_LTZ(3),
+--     
+--     -- Watermark for event-time processing
+--     WATERMARK FOR source_timestamp AS source_timestamp - INTERVAL '5' SECOND,
+--     
+--     -- Primary key for upsert semantics
+--     PRIMARY KEY (account_number) NOT ENFORCED
+-- ) DISTRIBUTED BY HASH (account_number) INTO 1 BUCKETS WITH (
+--     'changelog.mode' = 'upsert',
+--     'key.avro-registry.schema-context' = '.flink-dev',
+--     'value.avro-registry.schema-context' = '.flink-dev',
+--     'key.format' = 'avro-registry',
+--     'value.format' = 'avro-registry',
+--     'kafka.retention.time' = '0',
+--     'kafka.producer.compression.type' = 'snappy',
+--     'scan.bounded.mode' = 'unbounded',
+--     'scan.startup.mode' = 'earliest-offset',
+--     'value.fields-include' = 'all'
+-- );
+
+-- Use cases for enhanced metadata:
+-- 1. Filter by snapshot vs. incremental: WHERE is_snapshot = 'true'
+-- 2. Filter out deleted records: WHERE is_deleted = FALSE
+-- 3. Track data lineage: Use source_database, source_table for multi-source scenarios
+-- 4. Debug CDC issues: Use source_timestamp_ms and source_connector_name
+-- 5. Audit trail: Track when records were processed with processed_at 
