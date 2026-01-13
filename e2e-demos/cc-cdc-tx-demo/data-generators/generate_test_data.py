@@ -18,6 +18,9 @@ Usage:
     # Delete a customer by account number
     uv run generate_test_data.py --db-host <host> --db-name cardtxdb --db-user postgres --db-password <pass> --delete-customer ACC000001
 
+    # Delete a transaction by transaction ID
+    uv run generate_test_data.py --db-host <host> --db-name cardtxdb --db-user postgres --db-password <pass> --delete-transaction <uuid>
+
     # With environment variables
     export DB_HOST=<host>
     export DB_NAME=cardtxdb
@@ -273,6 +276,48 @@ def delete_customer(conn, account_number: str) -> bool:
         return False
 
 
+def delete_transaction(conn, txn_id: str) -> bool:
+    """
+    Delete a transaction from the database by transaction ID.
+    
+    Args:
+        conn: Database connection
+        txn_id: Transaction ID to delete
+    
+    Returns:
+        True if transaction was deleted, False if not found
+    """
+    cursor = conn.cursor()
+    
+    # First check if transaction exists and get some details
+    cursor.execute(
+        "SELECT txn_id, account_number, amount, merchant FROM transactions WHERE txn_id = %s",
+        (txn_id,)
+    )
+    result = cursor.fetchone()
+    
+    if not result:
+        cursor.close()
+        print(f"⚠️  Transaction not found: {txn_id}")
+        return False
+    
+    txn_id_found, account_number, amount, merchant = result
+    
+    # Delete the transaction
+    cursor.execute("DELETE FROM transactions WHERE txn_id = %s", (txn_id,))
+    rows_deleted = cursor.rowcount
+    conn.commit()
+    cursor.close()
+    
+    if rows_deleted > 0:
+        print(f"✓ Deleted transaction: {txn_id}")
+        print(f"   Account: {account_number}, Amount: ${amount:.2f}, Merchant: {merchant}")
+        return True
+    else:
+        print(f"⚠️  Failed to delete transaction: {txn_id}")
+        return False
+
+
 def generate_initial_data(conn, num_customers: int = 10, num_transactions: int = 10) -> None:
     """Generate initial test data (customers and transactions)."""
     print(f"\n📊 Generating initial test data...")
@@ -438,6 +483,12 @@ def main():
         metavar="ACCOUNT_NUMBER",
         help="Delete a customer by account number (e.g., ACC000001)"
     )
+    parser.add_argument(
+        "--delete-transaction",
+        type=str,
+        metavar="TXN_ID",
+        help="Delete a transaction by transaction ID (UUID)"
+    )
     
     args = parser.parse_args()
     
@@ -463,6 +514,8 @@ def main():
             add_customer(conn)
         elif args.delete_customer:
             delete_customer(conn, args.delete_customer)
+        elif args.delete_transaction:
+            delete_transaction(conn, args.delete_transaction)
         elif args.run_forever:
             generate_continuous_transactions(conn, interval_seconds=args.interval)
         else:

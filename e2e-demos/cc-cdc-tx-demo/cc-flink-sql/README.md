@@ -175,8 +175,27 @@ The usecase to demonstrate is how to extract data from the after or before envel
 
 * At this stage we have 3 use cases: records loaded from the source table snapshot, new record added while the debezium connector is running, and delete an existing record.
 
-* Extracting the payload using SQL
+* Extracting the payload from debezium envelop using SQL - propagating the operation for downstream processing:
     ```sql
+    insert into `dim_customers` select 
+        account_number,
+        coalesce(if (op = 'd', before.customer_name, after.customer_name), 'NULL') as customer_name,
+        coalesce(if (op = 'd', before.email, after.email), 'NULL') as email,
+        coalesce(if (op = 'd', before.phone_number, after.phone_number), 'NULL') as phone_number,
+        DATE_FORMAT(if (op = 'd', before.date_of_birth, after.date_of_birth), 'YYYY-MM-DD') as date_of_birth,
+        coalesce(if (op = 'd', before.city, after.city), 'NULL') as city,
+        coalesce(if (op = 'd', before.created_at, after.created_at), 'NULL') as created_at,
+        op,
+        TO_TIMESTAMP_LTZ(source.ts_ms, 3) AS ts
+    from `card-tx.public.customers` 
+    ```
+
+    For not propagating delete operation add a `where op <> 'd'` condition.
+
+* With upsert mode, Flink will consume and digest CDC delete events.
+    ```sql
+    alter table `card-tx.public.transactions` set ('value.format' = 'avro-debezium-registry');
+    alter table `card-tx.public.transactions` set ('changelog.mode' = 'append');
     ```
 
 

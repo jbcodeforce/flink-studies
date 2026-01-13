@@ -5,14 +5,15 @@
 The demonstration presents a hands-on guidance for the following:
 
 * [x] Integrate with RDS and CDC Debezium v2 Connector on Confluent Cloud 
-* [ ] Decoding Debezium message envelope using Flink or using the json-debezium-registry setting in CC Flink 
+* [x] Decoding Debezium message envelope using Flink or using the json-debezium-registry setting in CC Flink 
 * [ ] Understanding how to replace existing ETL processes with Flink
 * [ ] Sliding window aggregations over transactions grouped by cardholder (1 minute to 1 day windows)
 * [ ] How to propagate delete operations to sink bucket
-* [ ] Maintain data order for transactional systems (CRITICAL)
+* [ ] Maintain data order for transactional systems
 * [ ] How TableFlow + Flink ensure ordered delivery
+* [ ] Integrate with a [ML scoring service](./tx_scoring/README.md)
 * [ ] What monitoring and observability requirements exist?
-* [ ] How to handle microservices that produce/consume Kafka data without going through Debezium? (Outbox pattern)
+* [x] How to handle microservices that produce/consume Kafka data without going through Debezium? ([Outbox pattern](#outbox-pattern))
 
 ### To Do
 
@@ -122,7 +123,11 @@ Financial transaction records with deduplication support (upsert mode).
 
 ### Outbox pattern
 
-[The outbox pattern]() is a classical design pattern for event-driven microservice. Existing code presents this pattern [in this repository]()
+[The outbox pattern](https://jbcodeforce.github.io/eda-studies/patterns/#transactional-outbox) is a classical design pattern for event-driven microservice. The approach is to have a dedicated table to persist business events designed for asynchronous consumers. As the consumers may not be known upfront the approach is to use pub/sub with long persistence, so Kafka as a technology of choice. Existing code sample presents this pattern [in this repository](https://github.com/jbcodeforce/vaccine-order-mgr?tab=readme-ov-file) using Java Quarkus and Debezium outbox extension.
+
+Any microservice that wants to implement the outbox pattern needs to design the business events to represent the change of state of the business entity the service manages. It is recommended to adopt [event-storming](https://jbcodeforce.github.io/eda-studies/methodology/event-storming/)  and [domain-driven design](https://jbcodeforce.github.io/eda-studies/methodology/ddd/) to model the business events and microservice together. 
+
+[Future implementation](./oubox-customer-service/README.md) will demonstrate the method for the customer microservice.
 
 ## Infrastructure as Code
 
@@ -193,24 +198,26 @@ For incremental deployment (e.g., RDS first, then Confluent Cloud), see the deta
 
 1. [Execute the steps in the Flink table analysis](./cc-flink-sql/README.md#table-analysis) to explain the envelop processing. 
 
-```sh
-# Generate transactions continuously (for live demo)
-uv run generate_test_data.py \
-  --db-host <rds-endpoint> \
-  --db-name cardtxdb \
-  --db-user postgres \
-  --db-password <password> \
-  --run-forever \
-  --interval 5
-```
+
+1. Aggregation deployment and 
+    ```sh
+    # Generate transactions continuously (for live demo)
+    uv run generate_test_data.py \
+    --db-host <rds-endpoint> \
+    --db-name cardtxdb \
+    --db-user postgres \
+    --db-password <password> \
+    --run-forever \
+    --interval 5
+    ```
 
 See [data-generators/README.md](./data-generators/README.md) for detailed usage and options.
 
 
-
 ## Sources of knowledge
 
-* [This book for changelog mode explanations]()
+* [This book for changelog mode explanations](https://jbcodeforce.github.io/flink-studies/concepts/flink-sql/#changelog-mode)
 * [confluent networking overview](https://docs.confluent.io/cloud/current/networking/overview.html#cloud-networking)
 * [Connect to RDS using psql](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ConnectToPostgreSQLInstance.psql.html)
 * [Troubleshooting connections to your RDS for PostgreSQL instance](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ConnectToPostgreSQLInstance.Troubleshooting.html)
+* [Event-driven architecture and design patterns - JBoyer's book](https://jbcodeforce.github.io/eda-studies/)

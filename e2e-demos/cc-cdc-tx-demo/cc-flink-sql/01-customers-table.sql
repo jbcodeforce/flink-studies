@@ -10,9 +10,10 @@ CREATE TABLE IF NOT EXISTS dim_customers (
     customer_name STRING,
     email STRING,
     phone_number STRING,
-    date_of_birth TIMESTAMP(3),
+    date_of_birth STRING,
     city STRING,
     created_at STRING,
+    op STRING,
     ts TIMESTAMP_LTZ(3),
     -- Watermark for event-time processing
     WATERMARK FOR ts AS ts - INTERVAL '5' SECOND,

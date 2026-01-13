@@ -99,6 +99,21 @@ This will:
 - Delete the customer record
 - Display confirmation messages for both operations
 
+### Delete a Transaction
+
+Delete a single transaction by transaction ID. Useful for testing CDC delete record processing for transactions.
+
+```bash
+uv run generate_test_data.py \
+  --db-host <rds-endpoint> \
+  --db-name cardtxdb \
+  --db-user postgres \
+  --db-password <password> \
+  --delete-transaction <transaction-uuid>
+```
+
+The transaction ID is a UUID that can be found in the transactions table or in the Kafka messages from Debezium.
+
 ## Options
 
 | Option | Description | Default |
@@ -114,6 +129,7 @@ This will:
 | `--num-transactions` | Number of transactions (one-shot mode) | 10 |
 | `--add-customer` | Add a single customer to the database | False |
 | `--delete-customer` | Delete a customer by account number (e.g., ACC000001) | None |
+| `--delete-transaction` | Delete a transaction by transaction ID (UUID) | None |
 
 ## Generated Data
 
@@ -186,6 +202,17 @@ This will:
 
 ✓ Deleted customer: ACC000001 - Bob Johnson
 ✓ Deleted 5 transaction(s) for this customer
+
+✓ Database connection closed
+```
+
+### Delete Transaction Mode
+```
+🔌 Connecting to database: postgres@card-tx-db-xxxxx.xxxxx.us-east-2.rds.amazonaws.com:5432/cardtxdb
+✓ Connected to database
+
+✓ Deleted transaction: 550e8400-e29b-41d4-a716-446655440000
+   Account: ACC000001, Amount: $125.50, Merchant: Amazon
 
 ✓ Database connection closed
 ```
