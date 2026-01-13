@@ -66,6 +66,39 @@ cd ../data-generators
 uv run generate_test_data.py --run-forever
 ```
 
+### Add a Single Customer
+
+Add a single customer to the database. Useful for testing CDC insert operations.
+
+```bash
+uv run generate_test_data.py \
+  --db-host <rds-endpoint> \
+  --db-name cardtxdb \
+  --db-user postgres \
+  --db-password <password> \
+  --add-customer
+```
+
+The script will automatically generate the next sequential account number (e.g., if `ACC000010` exists, it will create `ACC000011`).
+
+### Delete a Customer
+
+Delete a customer and all their associated transactions. Useful for testing CDC delete record processing.
+
+```bash
+uv run generate_test_data.py \
+  --db-host <rds-endpoint> \
+  --db-name cardtxdb \
+  --db-user postgres \
+  --db-password <password> \
+  --delete-customer ACC000001
+```
+
+This will:
+- Delete all transactions associated with the customer's account number
+- Delete the customer record
+- Display confirmation messages for both operations
+
 ## Options
 
 | Option | Description | Default |
@@ -79,6 +112,8 @@ uv run generate_test_data.py --run-forever
 | `--interval` | Seconds between transaction batches (continuous mode) | 5 |
 | `--num-customers` | Number of customers (one-shot mode) | 10 |
 | `--num-transactions` | Number of transactions (one-shot mode) | 10 |
+| `--add-customer` | Add a single customer to the database | False |
+| `--delete-customer` | Delete a customer by account number (e.g., ACC000001) | None |
 
 ## Generated Data
 
@@ -132,6 +167,27 @@ uv run generate_test_data.py --run-forever
    [2024-01-15 10:30:20] Generated 1 transaction(s) (Total: 3)
    [2024-01-15 10:30:25] Generated 3 transaction(s) (Total: 6)
    ...
+```
+
+### Add Customer Mode
+```
+🔌 Connecting to database: postgres@card-tx-db-xxxxx.xxxxx.us-east-2.rds.amazonaws.com:5432/cardtxdb
+✓ Connected to database
+
+✓ Added customer: ACC000011 - Alice Smith
+
+✓ Database connection closed
+```
+
+### Delete Customer Mode
+```
+🔌 Connecting to database: postgres@card-tx-db-xxxxx.xxxxx.us-east-2.rds.amazonaws.com:5432/cardtxdb
+✓ Connected to database
+
+✓ Deleted customer: ACC000001 - Bob Johnson
+✓ Deleted 5 transaction(s) for this customer
+
+✓ Database connection closed
 ```
 
 ## Notes

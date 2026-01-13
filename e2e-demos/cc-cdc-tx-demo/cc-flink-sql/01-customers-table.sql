@@ -12,9 +12,10 @@ CREATE TABLE IF NOT EXISTS dim_customers (
     phone_number STRING,
     date_of_birth TIMESTAMP(3),
     city STRING,
-    created_at TIMESTAMP_LTZ(3),
+    created_at STRING,
+    ts TIMESTAMP_LTZ(3),
     -- Watermark for event-time processing
-    WATERMARK FOR created_at AS created_at - INTERVAL '5' SECOND,
+    WATERMARK FOR ts AS ts - INTERVAL '5' SECOND,
     -- Primary key for upsert semantics
     PRIMARY KEY (account_number) NOT ENFORCED
 ) DISTRIBUTED BY HASH (account_number) INTO 1 BUCKETS WITH (

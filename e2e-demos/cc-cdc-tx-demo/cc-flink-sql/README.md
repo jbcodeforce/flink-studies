@@ -135,7 +135,12 @@ Once deployed, the messages in the topic have the `after` and `before` in the en
 
     ![](../images/debezium_msgs.png)
 
-    The data type for before and after is Object.
+    The data type for before and after is Object. Example for the before column of the customer table:
+
+    ```sql
+    `before` ROW<`account_number` VARCHAR(2147483647) NOT NULL, `customer_name` VARCHAR(2147483647) NOT NULL, `email` VARCHAR(2147483647), `phone_number` VARCHAR(2147483647), `date_of_birth` TIMESTAMP(3) WITH LOCAL TIME ZONE, `city` VARCHAR(2147483647), `created_at` VARCHAR(2147483647)>,
+  
+    ```
 
 * When update is desired, the changelog mode of the table is set to `retract`. `retract` mode only works if Debezium contains before messages. 
 

@@ -1,4 +1,4 @@
-ter# Step-by-Step Deployment Guide
+# Step-by-Step Deployment Guide
 
 This guide shows how to deploy the infrastructure incrementally using Terraform's `-target` flag.
 

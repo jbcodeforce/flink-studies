@@ -14,6 +14,17 @@ The demonstration presents a hands-on guidance for the following:
 * [ ] What monitoring and observability requirements exist?
 * [ ] How to handle microservices that produce/consume Kafka data without going through Debezium? (Outbox pattern)
 
+### To Do
+
+* [x] Terraform to get VPC, subnets, configure service accounts, role binding,  deploy RDS, create tables, specify inbound rules for security group, Debezium connector, 
+* [ ] Terraform for Redshift and S3 buckets, S3 Sink connector.
+* [x] Add sample data generator code to support the demonstration
+* [x] Create ML inference code with  Docker container and ECS deployment
+* [ ] Add monitoring dashboards (Grafana)
+* [ ] Add end-to-end integration tests
+* [ ] Create Redshift external schema SQL scripts
+
+
 ## Architecture
 
 ![](./images/proposed_arch.drawio.png)
@@ -30,6 +41,16 @@ The demonstration presents a hands-on guidance for the following:
 | S3 Sink Connector | Writes enriched data to S3 in Parquet format | `card-tx-s3-sink` |
 | TableFlow | Automatic Iceberg table management | Enabled on enriched topics |
 | Redshift Serverless | Query layer for S3 Iceberg tables (optional) | `card-tx-workgroup-{id}` |
+
+
+### Topics
+
+| Topic | Owner | Description |
+| ----- | ----- | ----------- |
+| `card-tx.public.customers` | CDC Debezium | customer records consumed from Postgresql DB |
+| `card-tx.public.transactions` |CDC Debezium | transaction records consumed from Postgresql DB |
+| `dim_customers` | Flink | Customer dimension - from debezium envelop - no duplicate |
+| `dim_transactions` | Flink | |
 
 
 ### Project Structure
@@ -50,7 +71,7 @@ cc-cdc-tx-demo/
 │   ├── ml-inference.tf          # ECS cluster, ECR, task definition, service
 │   ├── redshift.tf              # Optional Redshift Serverless
 │   ├── terraform.tfvars.example # Example variables file
-│   └── DEPLOYMENT.md            # Step-by-step deployment guide
+│   └── README.md            # Step-by-step deployment guide
 ├── data-generators/             # Test Data Generation
 │   ├── generate_test_data.py   # CLI tool to generate customers/transactions
 │   ├── pyproject.toml          # Python project config (uv)
@@ -99,6 +120,10 @@ Financial transaction records with deduplication support (upsert mode).
 | `status` | VARCHAR(255) | Transaction status |
 | `transaction_type` | VARCHAR(50) | Type of transaction |
 
+### Outbox pattern
+
+[The outbox pattern]() is a classical design pattern for event-driven microservice. Existing code presents this pattern [in this repository]()
+
 ## Infrastructure as Code
 
 The [IaC](./IaC/) folder includes the Terraform to deploy the solution on AWS and Confluent Cloud.
@@ -119,7 +144,7 @@ The [IaC](./IaC/) folder includes the Terraform to deploy the solution on AWS an
 
 **Option 2: Step-by-Step Deployment**
 
-For incremental deployment (e.g., RDS first, then Confluent Cloud), see the detailed [Deployment Guide](./IaC/DEPLOYMENT.md).
+For incremental deployment (e.g., RDS first, then Confluent Cloud), see the detailed [Deployment Guide](./IaC/README.md).
 
 
 ### Key Terraform Variables
@@ -141,33 +166,34 @@ For incremental deployment (e.g., RDS first, then Confluent Cloud), see the deta
 
 ## Demonstration Script
 
-1. As a preparation deploy all the infrastructure using Terraform in one shot or [step-by-step](./IaC/DEPLOYMENT.md).
+1. As a preparation to the demonstration deploy all the infrastructure using Terraform in one shot:
+    ```sh
+    terraform init
+    terraform plan
+    terraform apply
+    ```
 
-## Test Data Generation
+    or [step-by-step with detail instructions](./IaC/README.md). This is recommended the first time to understand what is done.
 
-A Python CLI tool is provided to generate test customers and transactions for testing the CDC pipeline.
+1. Once RDS in place and Source Connector running, use the data generator to create 10 base customers and transactions. ([See Data Generator readme for more details](./data-generators/README.md))
+    * Getting RDS Endpoint and send 10 records in each table:
+        ```bash
+        cd IaC
+        terraform output rds_address
+        # Install dependencies (using uv)
+        cd ../data-generators
+        uv sync
+        # Generate 10 customers and 10 transactions (one-shot)
+        uv run generate_test_data.py \
+        --db-host <rds-endpoint> \
+        --db-name cardtxdb \
+        --db-user postgres \
+        --db-password <password>
+        ```
 
-### Quick Start
+1. [Execute the steps in the Flink table analysis](./cc-flink-sql/README.md#table-analysis) to explain the envelop processing. 
 
-* Getting RDS Endpoint
-
-```bash
-cd IaC
-terraform output rds_address
-```
-
-```bash
-# Install dependencies (using uv)
-cd data-generators
-uv sync
-
-# Generate 10 customers and 10 transactions (one-shot)
-uv run generate_test_data.py \
-  --db-host <rds-endpoint> \
-  --db-name cardtxdb \
-  --db-user postgres \
-  --db-password <password>
-
+```sh
 # Generate transactions continuously (for live demo)
 uv run generate_test_data.py \
   --db-host <rds-endpoint> \
@@ -181,14 +207,6 @@ uv run generate_test_data.py \
 See [data-generators/README.md](./data-generators/README.md) for detailed usage and options.
 
 
-## To Do
-
-* [x] Add sample data generator script
-* [x] Create ML inference container Dockerfile
-* [ ] Add monitoring dashboards (Grafana/Datadog)
-* [ ] Document VPC peering setup for non-public RDS
-* [ ] Add end-to-end integration tests
-* [ ] Create Redshift external schema SQL scripts
 
 ## Sources of knowledge
 
