@@ -3,11 +3,37 @@ kind: Connect
 metadata:
   name: connect
   namespace: confluent
+  labels:
+    app: connect
 spec:
   replicas: 1
   image:
     application: confluentinc/cp-server-connect:8.1.0
     init: confluentinc/confluent-init-container:3.1.0
+  build:
+    type: onDemand
+    onDemand:
+      plugins:
+        locationType: confluentHub
+        confluentHub:
+          - name: debezium-connector-postgresql
+            owner: debezium
+            version: "2.5.4"
   dependencies:
     kafka:
       bootstrapEndpoint: kafka:9071
+    schemaRegistry:
+      url: http://schemaregistry.confluent.svc.cluster.local:8081
+  configOverrides:
+    server:
+      - config.storage.replication.factor=1
+      - offset.storage.replication.factor=1
+      - status.storage.replication.factor=1
+  podTemplate:
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "2"
+        memory: "2Gi"

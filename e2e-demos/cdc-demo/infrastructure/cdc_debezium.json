@@ -1,16 +1,27 @@
 {
-    "name": "tx-loan-connector",  
-    "config": {  
-      "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
-      "tasks.max": "1",  
-      "database.hostname": "pg-cluster-rw.pgdb.svc.cluster.local",  
-      "database.port": "5432",
-      "database.dbname": "app",
-      "database.user": "app",
-      "database.password": "apppwd",
-      "topic.prefix": "cdc",  
-      "table.include.list": "transactions,loan_applications",  
-      "schema.history.internal.kafka.bootstrap.servers": "kafka:9071",  
-      "schema.history.internal.kafka.topic": "schema-changes.inventory"  
-    }
+  "name": "tx-loan-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+    "database.hostname": "pg-cluster-rw.pgdb.svc.cluster.local",
+    "database.port": "5432",
+    "database.dbname": "app",
+    "database.user": "app",
+    "database.password": "apppwd",
+    "plugin.name": "pgoutput",
+    "slot.name": "debezium_slot",
+    "publication.name": "dbz_publication",
+    "topic.prefix": "cdc",
+    "table.include.list": "public.transactions,public.loan_applications",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+    "schema.history.internal.kafka.bootstrap.servers": "kafka:9071",
+    "schema.history.internal.kafka.topic": "schema-changes.cdc",
+    "publication.autocreate.mode": "filtered",
+    "snapshot.mode": "initial",
+    "decimal.handling.mode": "double",
+    "time.precision.mode": "connect"
   }
+}

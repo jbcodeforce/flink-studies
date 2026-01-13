@@ -212,6 +212,10 @@ select *  FROM (
 
 ### Transformation
 
+Some **important resources:**
+
+* [Transform a Topic with Confluent Cloud for Apache Flink - product doc](https://docs.confluent.io/cloud/current/flink/how-to-guides/transform-topic.html#transform-a-topic-with-af-long) to demonstrate topic transformation from the Data Portal -> Actions -> Transform Topic, which creates a CTAS Flink SQL statment and automatically deploys it to the configured computepool. This is very efficient to do avro to json, field rename, and primary key reallocation.
+
 ???+ question "How to transform a field representing epoch to a timestamp?"
     
     epoch is a BIGINT.
@@ -437,63 +441,61 @@ ARRAY_AGG(DISTINCT user_name) as persons
 
 ### ARRAY_AGG
 
-This [aggregate function](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions) 
+Array aggregation refers to the process of combining multiple data elements into a single array structure. The goal is to regroup multiple data points together. Array aggregation plays a pivotal role in data processing due to its ability to manage and analyze vast amounts of information effectively
 
-???+ question "How to Aggregate a field into an ARRAY - ARRAY_AGG?"
-    Let start by a simple array indexing (the index is between 1 to n_element). Below, the `values array` creates test data into a memory table aliased a `T` with a column named `array_field`:
+This [Flink ARRAY_AGG, aggregate function](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions) is a common function used in a lot of record transformation implementations. The function returns an array with elements coming from multiple rows from the input table. 
 
-    ```sql
-    SELECT array_field[4] FROM ((VALUES ARRAY[5,4,3,2,1])) AS T(array_field)
-    ```
+Let start by a simple array indexing (the index is between 1 to n_element). Below, the `values array` creates test data into a memory table aliased a `T` with a column named `array_field`:
 
-    The following SQL, is creating a view with an [array of aggregates](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions), which in this case, is concatenating the urls for each user_id over a 1 minute tumble window.
+```sql
+SELECT array_field[4] FROM ((VALUES ARRAY[5,4,3,2,1])) AS T(array_field)
+```
 
-    ```sql
-    CREATE VIEW visited_pages_per_minute AS 
-    SELECT 
-        window_time,
-        user_id, 
-        ARRAY_AGG(url) AS urls
-    FROM TABLE(TUMBLE(TABLE `examples.marketplace.clicks`, DESCRIPTOR(`$rowtime`), INTERVAL '1' MINUTE))
-    GROUP BY window_start, window_end, window_time, user_id;
-    -- once the view is created
-    SELECT * from visited_pages_per_minute;
-    
-    -- it is possible to expand an array into multiple rows using cross join unnest
+The following SQL, is creating a view with an [array of aggregates](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions), which in this case, is concatenating the urls for each user_id over a 1 minute tumble window.
 
-    SELECT v.window_time, v.user_id, u.url FROM visited_pages_per_minute AS v
-    CROSS JOIN UNNEST(v.urls) AS u(url)
-    ```
+```sql
+CREATE VIEW visited_pages_per_minute AS 
+SELECT 
+    window_time,
+    user_id, 
+    ARRAY_AGG(url) AS urls
+FROM TABLE(TUMBLE(TABLE `examples.marketplace.clicks`, DESCRIPTOR(`$rowtime`), INTERVAL '1' MINUTE))
+GROUP BY window_start, window_end, window_time, user_id;
+-- once the view is created
+SELECT * from visited_pages_per_minute;
 
-    One thing important is that new clicks for the same user_id with new url, will create a new output record with the aggregated array. See [cc-array-agg study](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/03-nested-row/cc-array-agg)
+-- it is possible to expand an array into multiple rows using cross join unnest
 
-???- info "More Array aggregation behaviors"
-    * The type within the array can be a row. [See SQL examples](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/03-nested-row/cc-array-agg/cc_array_agg_on_row.sql)
-    ```sql
-    select 
-        suite_id, 
-        ARRAY_AGG(ROW (asset_id, asset_name, asset_price_min, asset_price_max)) as asset_data 
-    from suites 
-    group by suite_id;
-    ```
+SELECT v.window_time, v.user_id, u.url FROM visited_pages_per_minute AS v
+CROSS JOIN UNNEST(v.urls) AS u(url)
+```
 
-    * and subrow:
-    ```sql
-    create table suites_agg (
-    suite_id INTEGER,
-    asset_data ARRAY<
-        ROW<
-          asset_id INTEGER, 
-          asset_name STRING, 
-          asset_price_range ROW<
-             asset_price_min DECIMAL(24,4), 
-             asset_price_max DECIMAL(24,4)
-          >
-        >,
-    ts_ltz timestamp_ltz(3),
-    insert_ts_ltz timestamp_ltz(3),
-    PRIMARY KEY(suite_id) NOT ENFORCED
-    ```
+One thing important is that new clicks for the same user_id with new url, will create a new output record with the aggregated array. See [cc-array-agg study](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/03-nested-row/cc-array-agg).
+
+To optimize the processing it is recommended to deduplicate and/or filter records before computing the aggregation, and using Flink View is a good example:
+
+```sql
+create view suites_versioned as 
+select  suite_id, suite_name, asset_id, asset_name, asset_price_min, asset_price_max, ts_ltz
+from (
+    select *,
+       ROW_NUMBER() OVER (PARTITION BY suite_id, asset_id ORDER BY ts_ltz DESC) as rn
+        from suites
+    ) where rn = 1;
+```
+
+Then the array aggregation:
+
+```sql
+select 
+    suite_id,
+    ARRAY_AGG(ROW (asset_id, asset_name,  ROW(asset_price_min, asset_price_max))) as asset_data, 
+    max(ts_ltz) as ts_ltz
+from suites_versioned group by suite_id;
+```
+
+As seen in example above the type within the array can be a row and sub-row. [See SQL examples](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/03-nested-row/cc-array-agg/cc_array_agg_on_row.sql)
+
 
 
 ### OVER 

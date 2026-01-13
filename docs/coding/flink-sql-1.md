@@ -60,6 +60,19 @@ Create table statements do not changes between managed services and standalone F
     CREATE TABLE humans (hid INT PRIMARY KEY NOT ENFORCED, race STRING, gender INT) DISTRIBUTED BY (hid) INTO 2 BUCKETS;
     ```
 
+???- question "How to read all records from topic (at least once)?"
+    Create the table with the property
+    ```sql
+    CREATE TABLE all_tx (
+        ....
+    )
+      WITH(
+        'kafka.consumer.isolation-level'='read-uncommitted',
+        ...)
+    ```
+
+    For exactly once the parameter is set to `'read-committed'`.
+
 ### Flink OSS
 
 ???+ tip "Create a table with csv file as persistence - Flink OSS"
@@ -79,7 +92,7 @@ Create table statements do not changes between managed services and standalone F
 
 
 ???+ question "How to consume from a Kafka topic to a SQL table? -- Flink OSS"
-    On Confluent Cloud for flink, there are already tables created for each topic. For local Flink we need to create table with column definitions that maps to attributes of the record. The `From` right operand proposes the list of topic/table for the catalog and database selected. For Flink OSS or Confluent Platform for Flink the `WITH` statement helps to specify the source topic.
+    On Confluent Cloud for Flink, there are already tables created for each topic. For local Flink we need to create table with column definitions that maps to attributes of the record. The `From` right operand proposes the list of topic/table for the catalog and database selected. For Flink OSS or Confluent Platform for Flink the `WITH` statement helps to specify the source topic.
 
     ```sql
     select .... from TableName 

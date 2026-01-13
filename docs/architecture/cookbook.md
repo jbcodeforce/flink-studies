@@ -79,6 +79,14 @@ For Flink, "Each incoming event affects the final Flink statement results exactl
 
 Flink uses transactions when writing messages into Kafka. Kafka messages are only visible when the transaction is actually committed as part of a Flink checkpoint. `read_committed` consumers will only get the committed messages. `read_uncommitted` consumers see all messages.
 
+Below is an example of creating Flink Table in Confluent Cloud with reading committed only message (opposite property will be: 'kafka.consumer.isolation-level'='read-uncommitted'):
+
+```sql
+CREATE TABLE exactly_once
+  WITH('kafka.consumer.isolation-level'='read-committed')
+  AS SELECT * FROM `transactions`..
+```
+
 As the default checkpoint interval is set to 60 seconds, `read_committed` consumers will see up to one minute latency: a Kafka message sent just before the commit will have few second latency, while older messages will be above 60 seconds.
 
 When multiple Flink statements are chained in a pipeline, the latency may be even bigger, as Flink Kafka source connector uses `read_committed` isolation.

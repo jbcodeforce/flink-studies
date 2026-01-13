@@ -3,3 +3,4 @@ mkdocs-minify-plugin
 mkdocs
 pymdown-extensions
 mkdocstrings
+mkdocs-mermaid2-plugin

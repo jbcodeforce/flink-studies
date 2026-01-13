@@ -1,233 +1,446 @@
-# Demonstration of CDC Debezium with Kafka and Flink
+# CDC Debezium Demo with Kafka and Flink
 
-This demonstration addresses:
+This demonstration shows how to capture database changes from PostgreSQL using Debezium CDC, stream them to Kafka, and consume them with Flink SQL.
 
-* [x] Running Postgresql on Kubernetes to define loan application and transaction tables in default schema. Populate 10 records in each table.
-* [x] Use Confluent for kubernetes operator and a single node kafka cluster to run Confluent Platform for Flink
-* [ ] Deploying CDC Debezium connector on Kafka Connect to watch the Postgresql tables
-* [ ] Use `message.key.columns`  as non-primary key field for the Kafka message key.
-* [ ] 
+## What This Demo Covers
 
-**Sources of information**:
+- [x] Running PostgreSQL on Kubernetes with CloudNativePG operator
+- [x] Defining loan_applications and transactions tables with sample data
+- [x] Deploying Confluent Platform with Kafka Connect
+- [x] Deploying Debezium CDC connector to watch PostgreSQL tables
+- [x] Consuming CDC events with Flink SQL
+- [x] Using `message.key.columns` for custom Kafka message keys
 
-* [Debezium 3.2 CDC](https://debezium.io/documentation/reference/3.2/)
-* [Debezium connector for PostgreSQL](https://debezium.io/documentation/reference/3.3/connectors/postgresql.html#debezium-connector-for-postgresql)
-* [Debezium PostgreSQL Source Connector for Confluent Platform](https://docs.confluent.io/kafka-connectors/debezium-postgres-source/current/overview.html).
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              Kubernetes Cluster                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌─────────────┐     ┌──────────────┐     ┌─────────────┐     ┌───────────┐ │
+│  │  PostgreSQL │────▶│   Debezium   │────▶│    Kafka    │────▶│ Flink SQL │ │
+│  │   (pgdb)    │ WAL │  Connector   │     │ (confluent) │     │           │ │
+│  └──────┬──────┘     └──────────────┘     └──────┬──────┘     └───────────┘ │
+│         │                   │                     │                          │
+│         │            Replication Slot      CDC Topics:                       │
+│         │            Publication           • cdc.public.transactions         │
+│         │                                  • cdc.public.loan_applications    │
+│         │                                  • schema-changes.cdc              │
+│         ▼                                                                    │
+│  ┌──────────────┐                                                            │
+│  │   PGAdmin    │                                                            │
+│  │  (Web UI)    │                                                            │
+│  └──────────────┘                                                            │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### How PostgreSQL CDC Works
+
+Debezium uses PostgreSQL's **logical replication** feature to capture changes:
+
+1. **Write-Ahead Log (WAL)**: PostgreSQL records all changes to the WAL before writing to tables. The `wal_level=logical` setting enables extracting change data from the WAL.
+
+2. **Replication Slot**: Debezium creates a replication slot (`debezium_slot`) that tracks which WAL position has been consumed. This prevents PostgreSQL from purging WAL segments that haven't been read.
+
+3. **Publication**: The `pgoutput` plugin uses PostgreSQL publications to define which tables to capture. Debezium creates a publication (`dbz_publication`) for the monitored tables.
+
+4. **Streaming Protocol**: The connector uses PostgreSQL's streaming replication protocol to receive changes in real-time after the initial snapshot.
+
+### Required Permissions
+
+The database user needs specific privileges for CDC to work:
+
+| Permission | Purpose |
+|------------|---------|
+| `REPLICATION` | Required to create replication slots and stream WAL data |
+| `SELECT` on tables | Required to perform initial snapshot |
+| `CREATE` on schema | Required to create the publication (if using `publication.autocreate.mode=filtered`) |
+
+The demo grants these with:
+```sql
+ALTER USER app REPLICATION;
+```
+
+### Pre-created Kafka Topics
+
+Confluent Platform may have topic auto-creation disabled. The demo pre-creates these topics:
+
+| Topic | Purpose |
+|-------|---------|
+| `cdc.public.transactions` | CDC events for transactions table |
+| `cdc.public.loan_applications` | CDC events for loan_applications table |
+| `schema-changes.cdc` | Internal topic for Debezium schema history |
+
+### Key Debezium Behaviors
+
+- **Initial Snapshot**: When started, Debezium performs a consistent snapshot of all table data before streaming changes.
+- **Eventual Consistency**: Changes are captured at commit time. In-flight transactions are not visible until committed.
+- **WAL Retention**: The replication slot prevents WAL from being purged, which can cause disk space issues if the connector is stopped for extended periods.
+
+## Quick Start
+
+### Prerequisites
+
+1. **OrbStack** installed with Kubernetes enabled
+2. **kubectl** configured to use OrbStack's Kubernetes
+3. **Confluent Platform** deployed (see `deployment/k8s/cfk/`)
+4. **Confluent CLI** for Flink shell access
+5. **uv** Python package manager (for data loading scripts)
+
+### One-Command Setup
+
+```sh
+# From e2e-demos/cdc-demo/
+make demo_setup
+```
+
+This command will:
+1. Start OrbStack Kubernetes
+2. Deploy CloudNativePG operator
+3. Deploy PostgreSQL cluster with logical replication enabled
+4. Deploy PGAdmin web UI
+
+### Deploy Kafka Connect
+
+After Confluent Platform is running:
+
+```sh
+make deploy_connect
+```
+
+### Run the Demo
+
+```sh
+make demo_run
+```
+
+This loads sample data and deploys the Debezium connector.
+
+### Cleanup
+
+```sh
+make demo_cleanup
+```
+
+## Step-by-Step Guide
+
+To really understand what is going-on...
+
+### 1. Start Kubernetes (OrbStack)
+
+```sh
+make start_orbstack
+```
+
+Verify the cluster is running:
+
+```sh
+kubectl get ns
+```
+
+### 2. Deploy PostgreSQL
+
+Deploy the CloudNativePG operator and PostgreSQL cluster:
+
+```sh
+make deploy_postgresql_operator
+make wait_postgresql_operator
+make deploy_postgresql
+make deploy_pgadmin
+```
+
+Verify PostgreSQL is running:
+
+```sh
+make verify_postgresql
+```
+
+Access PGAdmin at [http://localhost:30001](http://localhost:30001):
+- Email: `admin@example.com`
+- Password: `password123`
+
+Connect to the database using:
+- Host: `pg-cluster-rw`
+- Port: `5432`
+- Database: `app`
+- User: `app`
+- Password: `apppwd`
+
+### 3. Deploy Confluent Platform
+
+Follow the instructions in `deployment/k8s/cfk/`:
+
+```sh
+cd ../../deployment/k8s/cfk
+make deploy
+cd -
+```
+
+### 4. Deploy Kafka Connect with Debezium
+
+```sh
+make deploy_connect
+```
+
+Wait for Connect to be ready:
+
+```sh
+kubectl get pods -n confluent -w
+```
+
+### 5. Load Sample Data
+
+```sh
+make port_forward_pg
+# Wait a few seconds for port-forward
+uv run python src/create_loan_applications.py --small
+uv run python src/create_transactions.py --small
+```
+
+Verify the data:
+
+```sh
+make verify_tables
+```
+
+### 6. Deploy Debezium Connector
+
+```sh
+make port_forward_connect
+# Wait a few seconds
+make deploy_connector
+```
+
+Verify the connector is running:
+
+```sh
+make verify_connector
+```
+
+There is a s single tx-loan-connector as it captures changes from both tables:
+* public.transactions → cdc.public.transactions topic
+* public.loan_applications → cdc.public.loan_applications topic
+
+as we can see by running:
+```sh
+curl -s localhost:8083/connectors/tx-loan-connector | jq '.config["table.include.list"]'
+# returns
+# public.transactions,public.loan_applications
+```
+
+This is the standard Debezium pattern - one connector per database (or logical grouping), capturing multiple tables. Each table's changes go to a separate topic named {topic.prefix}.{schema}.{table}.
+
+### 7. Verify CDC Topics
+
+```sh
+make list_cdc_topics
+```
+
+You should see:
+- `cdc.public.loan_applications`
+- `cdc.public.transactions`
+
+Consume some messages:
+
+```sh
+make consume_loan_applications
+make consume_transactions
+```
+
+### 8. Query with Flink SQL
+
+There are two options for running Flink SQL queries:
+
+#### Option A: Apache Flink OSS
+
+Deploy the open-source Apache Flink session cluster:
+
+```sh
+# Deploy Flink cluster with Kafka connectors
+make deploy_flink
+
+# Wait for pods to be ready
+make verify_flink
+
+# Open Flink Web UI (optional)
+make port_forward_flink_ui
+# Access at http://localhost:8081
+
+# Open Flink SQL client
+make flink_sql_client
+```
+
+In the SQL client, create the CDC tables:
+
+```sql
+-- Create loan_applications table
+CREATE TABLE loan_applications (
+    application_id STRING,
+    customer_id STRING,
+    loan_type STRING,
+    loan_amount_requested DOUBLE,
+    loan_status STRING,
+    fraud_flag BOOLEAN,
+    PRIMARY KEY (application_id) NOT ENFORCED
+) WITH (
+    'connector' = 'kafka',
+    'topic' = 'cdc.public.loan_applications',
+    'properties.bootstrap.servers' = 'kafka.confluent.svc.cluster.local:9071',
+    'properties.group.id' = 'flink-cdc-loan-consumer',
+    'scan.startup.mode' = 'earliest-offset',
+    'format' = 'debezium-json'
+);
+
+-- Query the data
+SELECT application_id, customer_id, loan_type, loan_amount_requested, loan_status 
+FROM loan_applications;
+```
+
+#### Option B: Confluent Manager for Flink (CMF)
+
+Requires a valid Confluent Platform license.
+
+```sh
+# Port-forward CMF
+make port_forward_cmf
+
+# Open Flink shell via Confluent CLI
+confluent flink shell --environment dev-env --url http://localhost:8084
+```
+
+#### Full DDL Files
+
+The complete table definitions are in `src/flink-sql/`:
+- `ddl.loan_applications.sql` - Loan applications CDC table
+- `ddl.transactions.sql` - Transactions CDC table
+- `query.sample.sql` - Sample queries
+
+View them with:
+```sh
+make show_flink_ddl
+```
+
+## Make Targets Reference
+
+| Target | Description |
+|--------|-------------|
+| `make help` | Show all available targets |
+| `make demo_setup` | Complete demo setup |
+| `make demo_run` | Load data and deploy connector |
+| `make demo_cleanup` | Clean up all resources |
+| `make start_orbstack` | Start OrbStack Kubernetes |
+| `make deploy_postgresql` | Deploy PostgreSQL cluster |
+| `make deploy_connect` | Deploy Kafka Connect |
+| `make deploy_connector` | Deploy Debezium connector |
+| `make verify_connector` | Check connector status |
+| `make list_cdc_topics` | List CDC topics in Kafka |
+| `make show_flink_ddl` | Display Flink SQL DDLs |
+| `make deploy_flink` | Deploy Apache Flink OSS cluster |
+| `make flink_sql_client` | Open Flink SQL client |
+| `make port_forward_flink_ui` | Access Flink Web UI |
+| `make undeploy_flink` | Remove Flink cluster |
+
+## File Structure
+
+```
+cdc-demo/
+├── Makefile                 # Demo automation
+├── Readme.md                # This file
+├── pyproject.toml           # Python dependencies
+├── infrastructure/
+│   ├── pg-cluster.yaml      # PostgreSQL cluster config
+│   ├── pg-admin.yaml        # PGAdmin deployment
+│   ├── kconnect.yaml        # Kafka Connect with Debezium
+│   ├── cdc_debezium.json    # Debezium connector config
+│   ├── debezium.yaml        # Secrets and RBAC
+│   └── flink/               # Apache Flink OSS deployment
+│       ├── namespace.yaml
+│       ├── flink-config.yaml
+│       ├── jobmanager.yaml
+│       └── taskmanager.yaml
+├── datasets/
+│   ├── loan_applications_small.csv   # 15 sample records
+│   ├── transactions_small.csv        # 15 sample records
+│   ├── loan_applications.csv         # Full dataset (50K)
+│   └── transactions.csv              # Full dataset (50K)
+└── src/
+    ├── create_loan_applications.py   # Data loading script
+    ├── create_transactions.py        # Data loading script
+    ├── config.py                     # DB config helper
+    ├── local_db.ini                  # DB connection settings
+    └── flink-sql/
+        ├── ddl.loan_applications.sql # Flink table DDL
+        ├── ddl.transactions.sql      # Flink table DDL
+        └── query.sample.sql          # Sample queries
+```
+
+## Debezium Configuration
+
+The connector configuration in `infrastructure/cdc_debezium.json` includes:
+
+- **plugin.name**: `pgoutput` - PostgreSQL native logical decoding
+- **slot.name**: `debezium_slot` - Replication slot name
+- **publication.name**: `dbz_publication` - Publication for filtered tables
+- **topic.prefix**: `cdc` - Prefix for Kafka topics
+- **table.include.list**: `public.transactions,public.loan_applications`
+
+## PostgreSQL Configuration
+
+The CloudNativePG cluster is configured with logical replication enabled:
+
+```yaml
+postgresql:
+  parameters:
+    wal_level: logical
+    max_replication_slots: 4
+    max_wal_senders: 4
+```
+
+## Troubleshooting
+
+### Connector fails to start
+
+Check connector status and logs:
+
+```sh
+make verify_connector
+kubectl logs connect-0 -n confluent
+```
+
+### No CDC events in Kafka
+
+1. Verify tables exist in PostgreSQL:
+   ```sh
+   make verify_tables
+   ```
+
+2. Check replication slot:
+   ```sh
+   kubectl exec -it pg-cluster-1 -n pgdb -- psql -U app -d app -c "SELECT * FROM pg_replication_slots;"
+   ```
+
+3. Verify publication:
+   ```sh
+   kubectl exec -it pg-cluster-1 -n pgdb -- psql -U app -d app -c "SELECT * FROM pg_publication_tables;"
+   ```
+
+### Connect pod not starting
+
+Ensure Confluent Platform is fully deployed:
+
+```sh
+kubectl get pods -n confluent
+```
+
+The Connect pod may take several minutes to download and install the Debezium plugin.
+
+## References
+
+- [Debezium Documentation](https://debezium.io/documentation/reference/3.2/)
+- [Debezium PostgreSQL Connector](https://debezium.io/documentation/reference/3.3/connectors/postgresql.html)
+- [Confluent Platform Debezium Connector](https://docs.confluent.io/kafka-connectors/debezium-postgres-source/current/overview.html)
+- [CloudNativePG Documentation](https://cloudnative-pg.io/documentation/current/)
+- [Flink SQL Debezium Format](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/connectors/table/formats/debezium/)
 * [Debezium mySQL tutorial](https://debezium.io/documentation/reference/3.2/tutorial.html) with the [matching code in my db-play repo](https://github.com/jbcodeforce/db-play/tree/master/code/debezium-tutorial), [the notes](https://jbcodeforce.github.io/db-play/debezium/) and [github debezium examples](https://github.com/debezium/debezium-examples)
-
-
-## Debezium PostgreSQL specifics
-
-* The connector as a `logical decoding` capability to allow the extraction of the changes that were committed to the transaction log. This feature is in the output-plugin.
-* Kafka connector uses the PG streaming replication protocol.
-* Because of the regular purging of the Write-Ahead Log, the connector does not have the complete history of all changes that have been made to the database.
-* When the connector is started, it builds a consistent snapshot of each of the database schemas, then it streams the changes per table.
-* Changes are done dugin commit, and not post-commit. So inconsistency may happen.
-* Need to create a replication user with specific privileges to access table, schemas...
-
-## Pre-requisites:
-
-* Colima or Orbstack installed and running: ensure you have the Kubernetes cluster set up. (`./start_colima.sh` under `deployment/k8s` or `make start_orbstack`)
-* kubectl configured: your kubectl should be configured to interact with your k8s cluster.
-  ```sh
-  kubectl get ns
-  ```
-
-* Be sure to have [Confluent Platform running with Kafka brokers, Connector, Schema registry, Console, Flink operators...](../../deployment/k8s/cmf/README.md)
-
-## Setup
-
-The steps are:
-
-1. [Install the Postgresql cloud native cnpg plugin for kubectl](https://cloudnative-pg.io/documentation/current/kubectl-plugin/)
-1. Deploying a PostgreSQL Cluster using CloudNativePG, specifying multiple DB instances to support replication.
-1. Connecting to the PostgreSQL admin console to work on the database
-1. Install Debezium Connector
-
-### Postgresql operator and cluster
-
-There is a kubernetes operator for postgresql: [CloudNativePG](https://cloudnative-pg.io/) which needs to be installed. See [which version to install in this note](https://cloudnative-pg.io/documentation/current/installation_upgrade/) and modify the Makefile `deploy_postgresql_operator` target to reflect the selected version.
-
-* Deploy the operator, in the cnpg-system namespacem with the needed roles, SA, and CRDs
-  ```sh
-  # in e2e-demos/cdc-demo/
-  make deploy_postgresql_operator
-  # The makefile target will do the following commands:
-  kubectl apply --server-side -f \
-    https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.25/releases/cnpg-1.25.1.yaml
-  ```
-
-* Verify the installation, as it may take time for the first deployment: 
-
-```sh
-make verify_postgresql_operator
-# same as
-kubectl describe deployment -n cnpg-system cnpg-controller-manager
-# or use
-kubectl get deployment -n cnpg-system cnpg-controller-manager
-```
-
-The default configuration of the CloudNativePG operator comes with a Deployment of a single replica, which is suitable for most demonstrations.
-
-* Create the PG Cluster and the PGadmin webapp
-  ```sh
-  make deploy_postgresql
-  # this make target is the same as: 
-  k apply -f infrastructure/pg-cluster.yaml
-  # using cnpg plugin
-  kubectl cnpg status pg-cluster -n pgdb
-  ```
-
-* Deploy pgadmin4 with yaml
-  ```sh
-  make deploy_pgadmin
-  # this make target is the same as:
-  kubectl apply -f infrastructure/pg-admin.yaml
-  # or using cnpg plugin
-  kubectl cnpg pgadmin4 --mode desktop pg-cluster
-  # It automatically connects to the app database as the app user, making it ideal for quick demos
-  ```
-
-* Verify postgresql version by looking at the image element in:
-
-```sh
-k describe cluster pg-cluster -n pgdb  
-kubectl get cluster pg-cluster-ro -n pgdb
-```
-
-* Verify the Postgresql database: `app` user's password
-
-```sh
-kubectl get secret app-secret -n pgdb -o=jsonpath='{.data.password}' | base64 -d
-```
-
-* Verify pg cluster services
-CloudNativePG automatically creates three Kubernetes Services for your cluster:
-
-  * pg-cluster-rw: Points to the primary instance (read-write).
-  * pg-cluster-ro: Points to one of the replica instances (read-only, round-robin). This is the service you should use for your read-only applications.
-  * pg-cluster-r: Points to any instance (primary or replica, round-robin) for general read operations.
-
-```sh
-kubectl get svc -l cnpg.io/cluster=pg-cluster -n pgdb
-```
-
-* Connect with psql:
-```sh
-k exec -ti -n pgdb pg-cluster-1 -c postgres  -- bash
-# inside the pod
-psql "host=pg-cluster-rw user=app dbname=app password=apppwd"
-# in the psql shell create tables or sql queries
-```
-
-* The best option is to create tables, insert basic data with a k8s job. See config maps and job in the src/postgresql folder
-
-```sh
-k apply -f src/postgresql/create_cars_cm.yaml -n pgdb
-k apply -f src/postgresql/create_car_table_job.yaml -n pgdb
-```
-
-* The PG admin web app is at [http://localhost:30001/](http://localhost:30001/) The user is admin@example.com / password123, and once logged, add a server with the user `app/apppwd` to connect `pg-cluster-rw` server the app database for read-write access. With the `pg-cluster-rw` server we can create tables inside PGadmin user interface.
-
-* To create database we need jobs or remote exec to postgresql pod.
-
-    ```sh
-    k get pods -n pgdb
-    k exec -ti pg-cluster-1 -n pgdb -- bash
-    > psql -U postgres
-    \c app
-    \d
-    create table .... 
-    \dt
-    ```
-
-* Use python code to create loan_applications and transactions database and tables.
-
-```sh
-uv run python  src/create_loan_applications.py
-uv run python  src/create_transactions.py
-```
-
-### Deploy Confluent Platform Connect
-
-* [See last Kafka Connector descriptor and tags](https://docs.confluent.io/platform/current/connect/confluent-hub/index.html)
-* [See Postgresql Source Connector](https://docs.confluent.io/kafka-connectors/debezium-postgres-source/current/overview.html)
-* [Debezium connector for Postgresql](https://debezium.io/documentation/reference/3.3/connectors/postgresql.html)
-
-* Deploy Kafka Connect with Confluent Platform
-  ```sh
-  k apply -f infrastructure/kconnect.yaml -n confluent
-  ```
-
-* Validate the Kafka connect services are visible
-  ```sh
-  k get  svc -n confluent
-  ```
-
-* Verify the topics and Kafka cluster
-  ```sh
-  kubectl get pods -n confluent  -w 
-  ```
-  
-* Access to the console: [http://controlcenter-ng.confluent.svc.cluster.local:9021/home](http://controlcenter-ng.confluent.svc.cluster.local:9021/home)
-
-### Deploy Postgresql CDC Debezium connector
-
-
-#### 1. Enable Logical Replication on PostgreSQL
-
-Debezium requires PostgreSQL logical replication. Update the pg-cluster.yaml to include:
-
-
-To deploy a Debezium connector, you need to deploy a Kafka Connect cluster with the required connector plug-in(s), before instantiating the actual connector itself.
-
-* Perform a port forward to access to the Connect REST API
-
-```sh
-k port-forward connect-0 8083:8083 -n confluent
-```
-
-* Test list of connectors
-
-```sh
-curl -H "Accept:application/json" localhost:8083/connectors/
-```
-
-
-* Deploy the connector
-```
-curl -X POST -H "Content-Type: application/json" \
-  --data @infrastructure/cdc_debezium.json \
-  http://localhost:8083/connectors#### 5. Verify Connector Status
-```
-
-* Check connector status
-```
-curl localhost:8083/connectors/tx-loan-connector/status
-```
-
-* List created topics
-```
-kubectl exec -it kafka-0 -n confluent -- kafka-topics --list --bootstrap-server localhost:9092 | grep cdc#### 6. Test CDC Events
-```
-
-* Insert test data and verify events appear in Kafka topics
-
-```
-kubectl exec -it kafka-0 -n confluent -- kafka-console-consumer \
-  --bootstrap-server localhost:9092 \
-  --topic cdc.public.loan_applications \
-  --from-beginning
-
-```
-
-* [Debezium Product documentation](https://debezium.io/documentation/reference/stable/connectors/postgresql.html#debezium-connector-for-postgresql). 
-* [Confluent Cloud Kafka Connector Postgresql CDC v2 Debezium](https://docs.confluent.io/cloud/current/connectors/cc-postgresql-cdc-source-v2-debezium/cc-postgresql-cdc-source-v2-debezium.html).
-* [Confluent Platform connector](https://docs.confluent.io/kafka-connectors/debezium-postgres-source/current/overview.html)
-
-To summarize here are the important steps to proceed:
-
-
-
-```
-```

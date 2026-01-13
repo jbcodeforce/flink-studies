@@ -322,7 +322,7 @@ You must create an API key to authenticate your requests to the Metrics API.
 
 ### Statement monitoring
 
-Once the Flink SQL statement runs, Data Engineers may use the Console, (Environment > Flink > Flink page > Flink statements) to assess the list of statements and their state of processing. 
+Once the Flink SQL statement runs, Data Engineers may use the Console, (Environment > Flink > Flink page > Flink statements) to assess the list of statements and their state of processing. The [product documentation - Monitoring and manage Flink SQL statements](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html) goes into the details of it.
 
 <figure markdown="span">
 ![](./images/statement_list.png)
@@ -353,6 +353,16 @@ The `flink/pending.records` is the most important metrics to consider. It corres
 At the Statement level we can get the following metrics, over time:
 
 ![](./images/statement_metrics.png)
+
+### Degraded Statement
+
+[In degraded mode, statement could not make progress.](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html#degraded-statements).
+
+For internal system error, this may be linked to resources issue. [See standard resolution approaches:](https://docs.confluent.io/cloud/current/flink/how-to-guides/resolve-common-query-problems.html#flink-sql-statement-problems)
+
+* run your query with the EXPLAIN 
+* Access Queery Profiler to look for bottlenexts, data flow issue at the operator level.
+* Verify CFU usage
 
 ### Query Profiler
 
@@ -392,7 +402,7 @@ In Confluent Cloud, Flink uses kafka topic/partition as sources and sinks. The t
      Query profiler is dynamic with data metrics. It helps developers to diagnose performance issues during or after statement execution.
 
 
-[See the product demonstration for an example](https://docs.confluent.io/cloud/current/flink/how-to-guides/profile-query.html#flink-sql-profile-query) to analyze a temporal join with EXPLAIN and Query profiler. To avoid statement to stop change the SQL as:
+[See the product demonstration - how to guide](https://docs.confluent.io/cloud/current/flink/how-to-guides/profile-query.html#flink-sql-profile-query) to analyze a temporal join with EXPLAIN and Query profiler. To avoid statement to stop change the SQL as:
 ```sql
 create table last_orders(
   order_id VARCHAR(2147483647) NOT NULL PRIMARY KEY not enforced,
@@ -433,7 +443,8 @@ WHERE o.`$rowtime` >= CURRENT_TIMESTAMP - INTERVAL '1' HOUR;
 
 ### Compute pool monitoring
 
-See [Grafana integration](https://docs.confluent.io/cloud/current/monitoring/third-party-integration.html#troubleshoot-grafana)
+See [Grafana integration](https://docs.confluent.io/cloud/current/monitoring/third-party-integration.html#troubleshoot-grafana).
+
 
 ### Some common errors
 

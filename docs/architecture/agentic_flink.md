@@ -48,9 +48,10 @@ One of the key aspects of adopting real-time middleware like Kafka and real-time
 
 Try to assess the following requirements:
 
-* Analytics data needed by end-user process
-* Event-driven architectures to automate operational tasks as a response to events, like anomlay detection
-* Next best action to take in real-time 
+* Analytics data needed by end-user process for feature engineering and inference use cases
+* Event-driven architectures to automate operational tasks as a response to events, like anomaly detection
+* Next best action to take in real-time
+* Exactly-once semantic or at least once
 * Assess which business processes need real-time data? What processes could become more proactive?
 * what batch processing will perform better with real-time data?
 * Does AI Agents need real-time stream to take decision?
@@ -84,6 +85,22 @@ Confluent builds its AI strategy on three functional layers:
 * Flink paired with Kafka is purpose-built for real-time data processing and event-driven microservices. [Confluent AI with Flink SQL](https://docs.confluent.io/cloud/current/ai/overview.html) helps decouple AI agents.
 * Agent communication protocols are available to define agent interations: [Agent to Agent from Google](https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/) and [ACP from IBM/ Linux foundations](https://agentcommunicationprotocol.dev/introduction/welcome)
 * Agent integrate with IT applications and services via [Model Context Protocol from Anthropic](https://www.anthropic.com/news/model-context-protocol)
+
+#### Quick demonstration
+
+* CREATE MODEL: Register a remote AI model (e.g., OpenAI, AWS Bedrock) using Confluent Console or CLI.
+* CREATE TOOL: Encapsulate local Flink UDFs or external MCP server connections into reusable tool resources
+
+```sql
+CREATE AGENT my_agent 
+USING MODEL my_model 
+USING TOOLS my_tool 
+USING PROMPT 'You are a helpful assistant ...' WITH ( 'max_iterations' = '10' , 'request_timeout' = '60', 'handle_exception' = 'continue' , 'max_consecutive_failures' = '3' , 'max_iterations' = '15' , 'max_tokens_threshold' = '100000' 'request_timeout' = '300' , 'summarization_prompt' = 'concise' , 'tokens_management_strategy' = 'summarize' );
+```
+
+### MCP
+
+[]()
 
 ## Assessment
 

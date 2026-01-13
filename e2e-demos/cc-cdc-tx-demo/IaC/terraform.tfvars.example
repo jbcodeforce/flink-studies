@@ -1,0 +1,49 @@
+# -----------------------------------------------------------------------------
+# Example Terraform Variables
+# Card Transaction Processing Demo
+# -----------------------------------------------------------------------------
+# Copy this file to terraform.tfvars and fill in your values
+
+# General Settings
+prefix      = "card-tx"
+owner_email = "your-email@example.com"
+
+# AWS Configuration
+cloud_region    = "us-east-2"
+existing_vpc_id = "vpc-xxxxxxxxxxxxxxxxx"  # Your existing VPC ID
+
+# Optional: Specify subnet IDs (leave empty to auto-discover)
+# existing_subnet_ids = ["subnet-xxx", "subnet-yyy"]
+
+# RDS PostgreSQL
+db_username = "postgres"
+db_password = "YourSecurePassword123!"  # Change this!
+create_tables_automatically = true  # Set to false if psql is not installed
+
+# Security: RDS Access Control
+# Confluent Cloud IPs are automatically included for CDC connector access
+# Add your own IPs for direct database access (optional)
+# Get your IP: curl ifconfig.me
+# db_allowed_cidr_blocks = ["<your-ip>/32"]  # e.g., ["203.0.113.0/32"]
+
+# WARNING: Only set to true for testing. For production, use specific IPs above.
+# allow_all_cidr_blocks = false  # Set to true to allow 0.0.0.0/0 (INSECURE - testing only)
+
+# Confluent Cloud IPs (default list included, update if needed)
+# confluent_cloud_cidr_blocks = [
+#   "35.80.209.50/32",
+#   "44.224.191.248/32",
+#   # ... see variables.tf for full list
+# ]
+
+# Confluent Cloud
+confluent_cloud_api_key    = "XXXXXXXXXXXXXXXXXX"
+confluent_cloud_api_secret = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# Optional: ML Inference
+# ml_inference_image = "your-account.dkr.ecr.us-east-2.amazonaws.com/ml-model:latest"
+local_architecture = "amd64"  # or "arm64" for Apple Silicon
+
+# Optional Features
+enable_tableflow = true
+enable_redshift  = false
