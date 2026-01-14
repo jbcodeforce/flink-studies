@@ -18,6 +18,14 @@ locals {
   dml_script_path = "../sql-scripts/dml.${local.table_name}.sql"
   dml_properties_path = "../sql-scripts/dml.${local.table_name}.properties"
   
+  # Service account ID: use variable if provided, otherwise try remote state
+  # This allows step-by-step building without applying IaC changes first
+  # If neither is available, this will cause a validation error
+  app_manager_service_account_id = coalesce(
+    var.app_manager_service_account_id != "" ? var.app_manager_service_account_id : null,
+    try(data.terraform_remote_state.iac.outputs.app_manager_service_account_id, null)
+  )
+  
   # Parse properties file if it exists and has content
   # Properties file format: key=value (one per line, comments start with #)
   dml_properties_raw = try(file(local.dml_properties_path), "")
@@ -60,11 +68,9 @@ resource "confluent_flink_statement" "ddl_txp_dim_customers" {
     id = data.terraform_remote_state.iac.outputs.flink_compute_pool_id
   }
   
-  # Principal is inferred from the API key credentials owner
-  # If you need to explicitly set it, add the service account ID to IaC outputs
-  # principal {
-  #   id = "<service-account-id>"
-  # }
+  principal {
+    id = local.app_manager_service_account_id
+  }
   
   rest_endpoint = data.confluent_flink_region.flink_region.rest_endpoint
   
@@ -99,11 +105,9 @@ resource "confluent_flink_statement" "dml_txp_dim_customers" {
     id = data.terraform_remote_state.iac.outputs.flink_compute_pool_id
   }
   
-  # Principal is inferred from the API key credentials owner
-  # If you need to explicitly set it, add the service account ID to IaC outputs
-  # principal {
-  #   id = "<service-account-id>"
-  # }
+  principal {
+    id = local.app_manager_service_account_id
+  }
   
   rest_endpoint = data.confluent_flink_region.flink_region.rest_endpoint
   

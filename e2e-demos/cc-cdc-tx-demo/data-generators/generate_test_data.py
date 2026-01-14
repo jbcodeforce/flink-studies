@@ -114,10 +114,18 @@ def generate_transaction(account_number: str, txn_id: str = None) -> Tuple:
     else:
         amount = round(random.uniform(1, 500), 2)
     
-    currency = random.choice(CURRENCIES)
+    # Currency distribution: 80% USD, 10% EUR, 10% GBP
+    currency = random.choices(
+        CURRENCIES,
+        weights=[80, 10, 10]  # USD, EUR, GBP
+    )[0]
     merchant = random.choice(MERCHANTS)
     location = random.choice(CITIES)
-    status = random.choice(STATUSES)
+    # Status distribution: 2% PENDING, 3% FAILED, 10% CANCELLED, 85% COMPLETED
+    status = random.choices(
+        STATUSES,
+        weights=[2, 85, 3, 10]  # PENDING, COMPLETED, FAILED, CANCELLED
+    )[0]
     transaction_type = random.choice(TRANSACTION_TYPES)
     
     # Timestamp within last 7 days, or now for continuous mode

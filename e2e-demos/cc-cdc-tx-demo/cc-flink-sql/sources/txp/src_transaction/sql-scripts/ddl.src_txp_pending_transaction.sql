@@ -1,21 +1,22 @@
-CREATE TABLE IF NOT EXISTS txp_dim_customers (
+CREATE TABLE IF NOT EXISTS src_txp_pending_transaction (
+    txn_id STRING,
     account_number STRING,
-    customer_name STRING,
-    email STRING,
-    phone_number STRING,
-    date_of_birth STRING,
-    city STRING,
-    created_at STRING,
-    src_op STRING,
-    is_deleted BOOLEAN,
-    src_timestamp TIMESTAMP_LTZ(3),
+    `timestamp` TIMESTAMP_LTZ(3),
+    amount DECIMAL(10, 2),
+    currency STRING,
+    merchant STRING,
+    location STRING,
+    status STRING,
+    transaction_type STRING,
+    -- Metadata from Kafka
     src_partition INT,
     src_offset BIGINT,
     -- Watermark for event-time processing
-    WATERMARK FOR src_timestamp AS src_timestamp - INTERVAL '5' SECOND,
+    WATERMARK FOR `timestamp` AS `timestamp` - INTERVAL '5' SECOND,
     -- Primary key for upsert semantics
-    PRIMARY KEY (account_number) NOT ENFORCED
-) DISTRIBUTED BY HASH (account_number) INTO 1 BUCKETS WITH (
+    PRIMARY KEY (txn_id) NOT ENFORCED
+) DISTRIBUTED BY HASH(txn_id) INTO 1 BUCKETS
+WITH (
   'changelog.mode' = 'upsert',
   'key.avro-registry.schema-context' = '.flink-dev',
   'value.avro-registry.schema-context' = '.flink-dev',

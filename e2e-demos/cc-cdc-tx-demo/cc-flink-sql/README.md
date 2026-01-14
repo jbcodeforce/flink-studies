@@ -1,5 +1,13 @@
 # Flink SQL Processing
 
+This section goes into the details of:
+
+* [x] Debezium messages with envelop decoding
+* [x] Debezium messages flatten with CC Flink capability: ('value.format' = 'avro-debezium-registry')
+* [x] Deduplication
+* [x] Accessing kafka metadata
+* [x] Data transformation, filtering and fanout
+
 ## Pipeline Overview
 
 ```mermaid
@@ -175,6 +183,86 @@ The usecase to demonstrate is how to extract data from the after or before envel
 
 * At this stage we have 3 use cases: records loaded from the source table snapshot, new record added while the debezium connector is running, and delete an existing record.
 
+## Deduplication and Flatten Table
+
+For the  `card-tx.public.transactions` the approach is to do the following settings:
+
+```
+alter table `card-tx.public.transactions` add ( `partition` INT METADATA VIRTUAL);
+alter table `card-tx.public.transactions` add ( `offset` BIGINT METADATA VIRTUAL);
+alter table `card-tx.public.transactions` SET ('value.format' = 'avro-debezium-registry');
+alter table `card-tx.public.transactions` SET ('changelog.mode' = 'append');
+```
+
+With this approach, the table has no more Debezium envelop.
+
+Then to remove duplicates, using the upsert model, will do so. Create a source table that will have deduplication and maybe some light transformation and filtering.
+
+As an example there is a string date transformation to a datetime:
+
+```sql
+  TO_TIMESTAMP(REGEXP_REPLACE(COALESCE(`timestamp`, '2000-01-01T00:00:00.000000Z'),'T|Z',' '), 'yyyy-MM-dd HH:mm:SSSSSS') AS `timestamp`,
+```
+
+
+[DDL is here](./sources/txp/src_transaction/sql-scripts/ddl.src_txp_transaction.sql) and [DML](./sources/txp/src_transaction/sql-scripts/dml.src_txp_transaction.sql)
+
+### Another pattern for deduplication
+
+While Confluent Cloud Flink with the upsert changelog will keep the last record per key, the time will be the $rowtime so the kafka event time. We could imaging applying  multi-level deduplication strategies to ensure idempotency.
+
+1. By transaction ID
+2. By source timestamp
+3. Use Kafka offset when timestamps are identical
+
+It may be relevant to handle cases where the same record appears multiple times because of CDC connector reload. Or to handle some events that arrive out of order related to the source timestamp. The goal is to ensure only the most recent version of each record is processed. The row_number() function is used for that.
+
+```sql
+WITH ranked_by_timestamp AS (
+    SELECT *,
+        ROW_NUMBER() OVER (
+            PARTITION BY account_number
+            ORDER BY source_timestamp DESC
+        ) AS deduplication_rank
+    FROM customers_staging
+)
+SELECT * FROM ranked_by_timestamp WHERE deduplication_rank = 1;
+```
+
+## Accessing kafka metadata
+
+To propagate metadata like partition and offset from a source Kafka topic to a downstream Flink SQL table, we need to declare the metadata in the source,
+
+```sql
+alter table `card-tx.public.transactions` add ( `partition` INT METADATA VIRTUAL)
+alter table `card-tx.public.transactions` add ( `offset` INT METADATA VIRTUAL)
+```
+
+and then explicitly select it into a standard column in the sink.
+
+```sh
+select *,`partition`, `offset` from `card-tx.public.transactions`
+```
+
+So a downstream table can keep this metadata for future processing:
+
+```sql
+CREATE TABLE IF NOT EXISTS src_txp_transactions (
+    -- ...
+    src_timestamp TIMESTAMP_LTZ(3),
+    src_partition INT,
+    src_offset BIGINT,
+```
+
+and 
+
+```sql
+select *,   
+  `partition` AS src_partition,
+  `offset` AS src_offset 
+from  `card-tx.public.transactions`
+```
+
 ## Propagating the operation (delete too)
 
 The common use cases for this behavior include: 
@@ -250,74 +338,6 @@ The demo implements multiple window sizes for transaction analysis:
 ## Advanced CDC Patterns
 
 The demo includes several advanced CDC processing patterns adapted from production ETL pipelines:
-
-### CDC Metadata Extraction (`07-cdc-metadata-extraction.sql`)
-
-Comprehensive extraction of CDC metadata from Debezium envelopes for audit trails, debugging, and data lineage tracking.
-
-**Key Features:**
-- Source timestamps (`source.ts_ms`) - Track when changes occurred at the source
-- Transaction metadata - Track transaction boundaries (if available)
-- Kafka metadata - Partition, offset, and key information
-- Source information - Database, table, schema, connector name
-- Snapshot flags - Distinguish initial load vs. incremental changes
-- Operation type tracking - Track all CDC operations (c, u, d, r)
-
-**Use Cases:**
-- **Audit Trails**: Track all changes with full metadata for compliance
-- **Debugging**: Identify source of issues using source timestamps and connector information
-- **Data Lineage**: Track which source database/table each record came from
-- **Snapshot Detection**: Filter or handle initial snapshot data differently from incremental changes
-
-**Example:**
-```sql
-SELECT 
-    account_number,
-    customer_name,
-    op AS cdc_operation,
-    source.ts_ms AS source_timestamp_ms,
-    TO_TIMESTAMP_LTZ(source.ts_ms, 3) AS source_timestamp,
-    source.db AS source_database,
-    source.table AS source_table,
-    COALESCE(CAST(source.snapshot AS STRING), 'false') AS is_snapshot,
-    (op = 'd') AS is_deleted
-FROM `card-tx.public.customers`;
-```
-
-### Multi-level Deduplication (`08-deduplication-pattern.sql`)
-
-Handle duplicate CDC records using multi-level deduplication strategies to ensure idempotency.
-
-**Strategy:**
-1. **First-level deduplication**: By transaction ID and position (if available)
-2. **Second-level deduplication**: By source timestamp
-3. **Tie-breaker**: Use Kafka offset when timestamps are identical
-
-**Use Cases:**
-- **CDC Replay Scenarios**: Handle cases where the same record appears multiple times
-- **Idempotency**: Ensure downstream processing is idempotent
-- **Out-of-order Events**: Handle events that arrive out of order
-- **Data Quality**: Ensure only the most recent version of each record is processed
-
-**Pattern:**
-```sql
-WITH ranked_by_timestamp AS (
-    SELECT *,
-        ROW_NUMBER() OVER (
-            PARTITION BY account_number
-            ORDER BY source_timestamp DESC, kafka_offset DESC
-        ) AS deduplication_rank
-    FROM customers_staging
-)
-SELECT * FROM ranked_by_timestamp WHERE deduplication_rank = 1;
-```
-
-**Best Practices:**
-- Always include `source_timestamp` in deduplication logic
-- Use Kafka offset as tie-breaker when timestamps are identical
-- Consider transaction boundaries if available
-- For upsert sinks, primary key handles some deduplication automatically
-- For append-only sinks, explicit deduplication is required
 
 
 

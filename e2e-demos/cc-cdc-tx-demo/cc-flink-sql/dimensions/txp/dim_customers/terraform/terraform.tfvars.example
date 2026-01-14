@@ -11,8 +11,7 @@ confluent_cloud_api_key    = "<your-confluent-cloud-api-key>"
 confluent_cloud_api_secret = "<your-confluent-cloud-api-secret>"
 
 # Path to IaC terraform state file (relative to this terraform directory)
-# Default: ../../../IaC/terraform.tfstate
-iac_state_path = "../../../IaC/terraform.tfstate"
+iac_state_path = "../../../../../IaC/terraform.tfstate"
 
 # AWS region for Flink deployment (must match IaC configuration)
 # Default: us-east-2
@@ -21,3 +20,8 @@ cloud_region = "us-east-2"
 # Prefix for Flink statement names
 # Default: dev-usw2-txp
 statement_name_prefix = "dev-usw2-txp"
+
+# App Manager service account ID (optional - will try to get from IaC remote state if not set)
+# Get this value by running: cd ../../../../IaC && terraform output -raw app_manager_service_account_id
+# Or find it in the Confluent Cloud UI: Service Accounts -> app-manager
+app_manager_service_account_id = ""

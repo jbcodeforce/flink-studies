@@ -10,7 +10,7 @@ data "terraform_remote_state" "iac" {
   backend = "local"
 
   config = {
-    path = var.iac_state_path
+    path = abspath(var.iac_state_path)
   }
 }
 

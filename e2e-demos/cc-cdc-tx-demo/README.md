@@ -5,11 +5,12 @@
 The demonstration presents a hands-on guidance for the following requirements:
 
 * [x] Integrate with AWS RDS Postgres and CDC Debezium v2 Kafka Connector deployed as managed service on Confluent Cloud (CC)
-* [x] Decoding Debezium message envelope using Flink or using the json-debezium-registry setting in CC Flink 
-* [ ] Understanding how to replace existing ETL processes with Flink
+* [x] Decoding Debezium message envelope using Flink or using the json-debezium-registry setting in CC Flink. [See Flink processing](./cc-flink-sql/README.md)
+* [x] Understanding how to replace existing ETL processes with Flink. [Explanation in this section.](#from-etl-to-flink)
 * [ ] Sliding window aggregations over transactions grouped by cardholder (1 minute to 1 day windows)
-* [ ] How to propagate delete operations to sink bucket [See section](./cc-flink-sql/README.md#propagating-the-operation-delete-too)
-* [ ] Maintain data order for transactional systems
+* [x] How to propagate delete operations to sink bucket [See section](./cc-flink-sql/README.md#propagating-the-operation-delete-too)
+* [x] Maintain data order for transactional systems. [See below section on end to end ordering](#end-to-end-ordering).
+* [ ] Fanout to different topics using statement set.
 * [ ] How TableFlow + Flink ensure ordered delivery
 * [ ] Integrate with a [ML scoring service](./tx_scoring/README.md)
 * [ ] What monitoring and observability requirements exist?
@@ -51,6 +52,7 @@ The demonstration presents a hands-on guidance for the following requirements:
 | `card-tx.public.customers` | CDC Debezium | customer records consumed from Postgresql DB |
 | `card-tx.public.transactions` |CDC Debezium | transaction records consumed from Postgresql DB |
 | `dim_customers` | Flink | Customer dimension - from debezium envelop - no duplicate |
+| `src_transaction` | Flink | Transaction filtering, dedup, transformed |
 | `dim_transactions` | Flink | |
 
 
@@ -77,13 +79,7 @@ cc-cdc-tx-demo/
 │   ├── generate_test_data.py   # CLI tool to generate customers/transactions
 │   ├── pyproject.toml          # Python project config (uv)
 │   └── README.md                # Usage instructions
-└── cc-flink-sql/                # Flink SQL Statements
-    ├── 01-customers-table.sql   # Customers table definition
-    ├── 02-transactions-table.sql # Transactions table definition
-    ├── 03-sliding-aggregations.sql # Sliding window aggregations
-    ├── 04-ml-enrichment.sql     # ML inference integration
-    ├── 05-enriched-transactions.sql # Customer + transaction joins
-    └── 06-delete-propagation.sql # Delete handling patterns
+└── cc-flink-sql/                # Flink SQL Statements organized as Kimball structure
 ```
 
 
@@ -128,6 +124,30 @@ Financial transaction records with deduplication support (upsert mode).
 Any microservice that wants to implement the outbox pattern needs to design the business events to represent the change of state of the business entity the service manages. It is recommended to adopt [event-storming](https://jbcodeforce.github.io/eda-studies/methodology/event-storming/)  and [domain-driven design](https://jbcodeforce.github.io/eda-studies/methodology/ddd/) to model the business events and microservice together. 
 
 [Future implementation](./oubox-customer-service/README.md) will demonstrate the method for the customer microservice.
+
+## From ETL to Flink
+
+When ETL processing is done with ANSI SQL, Spark and even in some way Snowflake SQL, it is possible to run the same processing as a medaillon architecture. The approach is to build analytics data product. We recommend [reading this chapter](https://jbcodeforce.github.io/flink-studies/methodology/data_as_a_product/) and may use [this tool]() to jump start your project. 
+
+In this demonstration the [](./cc-flink-sql/) folder has the Kimball structure.
+
+## End to end ordering
+
+Debezium ensures that all changes for a single database row are sent to the same Kafka partition. Debezium uses the table's Primary Key as the Kafka message key. Kafka guarantees total order of messages within a single partition.
+
+All updates to the account_number = 'ACC0005' go to the same kafka partition. With one partition, Flink will have one source operator and order will be kept. Flink partitioning use the key defined for the sink table, or the joins condition.
+
+Flink uses a set of internal mechanisms to ensure that the logical order of database changes is preserved, even when performing complex operations like joins or windowing. As input streams are upserts, Flink maintains a materialized state and uses retraction logic to keep state per key.
+
+CDC streams contain INSERT, UPDATE (often split into UPDATE_BEFORE and UPDATE_AFTER), and DELETE operations. If a record in the left table is updated, Flink sends a "retraction" (a -D or -U message) to the join operator to "undo" the previous join result before emitting the new one.
+
+Flink often inserts a hidden operator called ChangelogNormalize. This operator keeps the latest state of each primary key in memory. If Debezium sends updates out of order (due to a rare Kafka retry), this operator can reconcile them to ensure only the "latest" version is joined.
+
+For time window, ordering may not be that critical. Still, Flink may use the timestamp of the source.ts_ms or the kafka $rowtime. Flink reorders record internally based on the used timestamp before putting them into a window. A late event may go out of the window. The watermark settings are important. 
+
+A watermark is a "marker" in the stream that tells Flink: "I am confident no more messages with a timestamp earlier than X will arrive." Flink waits for the watermark to pass the end of a window before it calculates and emits the result.
+
+Flink 1.19+ introduced direct support for Changelog Window Aggregation. This allows the window to subtract the "old" values and add the "new" values if an update arrives for a record already counted in a window.
 
 ## Infrastructure as Code
 

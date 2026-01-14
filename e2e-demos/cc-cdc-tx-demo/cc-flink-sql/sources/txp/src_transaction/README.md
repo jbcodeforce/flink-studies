@@ -1,10 +1,7 @@
-## Fact Table: txp_dim_customers
+## Fact Table: src_txp_transaction
 
-Status date:
+From the src transaction CDC topic use, avro-debezium-registry  a primary key and upsert to  remove duplicates.
 
-Context:
-
--- Process file: 
 
 ## DDL and DML for fact table status
 

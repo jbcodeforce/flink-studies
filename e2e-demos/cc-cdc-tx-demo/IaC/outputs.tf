@@ -128,6 +128,11 @@ output "flink_compute_pool_id" {
   value       = confluent_flink_compute_pool.card_tx_flink_pool.id
 }
 
+output "app_manager_service_account_id" {
+  description = "App Manager service account ID (owns Flink API key)"
+  value       = confluent_service_account.app_manager.id
+}
+
 # -----------------------------------------------------------------------------
 # API Keys (Sensitive)
 # -----------------------------------------------------------------------------

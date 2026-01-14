@@ -20,7 +20,7 @@ variable "confluent_cloud_api_secret" {
 variable "iac_state_path" {
   description = "Path to the IaC terraform state file (relative to this terraform directory)"
   type        = string
-  default     = "../../../IaC/terraform.tfstate"
+  default     = "../../../../../IaC/terraform.tfstate"
 }
 
 variable "cloud_region" {
@@ -33,4 +33,10 @@ variable "statement_name_prefix" {
   description = "Prefix for Flink statement names"
   type        = string
   default     = "dev-usw2-txp"
+}
+
+variable "app_manager_service_account_id" {
+  description = "App Manager service account ID (owns Flink API key). Can be set manually or will try to get from IaC remote state."
+  type        = string
+  default     = ""
 }

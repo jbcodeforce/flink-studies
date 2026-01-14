@@ -59,9 +59,41 @@ terraform destroy
 
 - `confluent_cloud_api_key`: Confluent Cloud API Key
 - `confluent_cloud_api_secret`: Confluent Cloud API Secret
-- `iac_state_path`: Path to IaC terraform state file (default: `../../../IaC/terraform.tfstate`)
-- `cloud_region`: AWS region for Flink deployment (default: `us-west-2`)
-- `statement_name_prefix`: Prefix for Flink statement names (default: `dev-txp`)
+- `iac_state_path`: Path to IaC terraform state file (default: `../../../../../IaC/terraform.tfstate`)
+- `cloud_region`: AWS region for Flink deployment (default: `us-east-2`)
+- `statement_name_prefix`: Prefix for Flink statement names (default: `dev-usw2-txp`)
+- `app_manager_service_account_id`: App Manager service account ID (optional - will try to get from IaC remote state if not set)
+
+### Getting the Service Account ID
+
+You can get the service account ID in one of these ways:
+
+1. **From IaC outputs** (if IaC has been applied with the new output):
+   ```bash
+   cd ../../../../IaC
+   terraform output -raw app_manager_service_account_id
+   ```
+
+2. **From Confluent Cloud UI**:
+   - Go to Confluent Cloud → Access Management → Service Accounts
+   - Find the service account with name pattern `card-tx-app-manager-*`
+   - Copy the service account ID (format: `sa-xxxxxxx`)
+
+3. **From IaC state file** (if you haven't applied the new output yet):
+   ```bash
+   cd ../../../../IaC
+   terraform state list | grep service_account
+   terraform state show <service_account_resource_name> | grep "^id"
+   ```
+
+4. **From the Flink API Key** (the API key owner is the service account):
+   - The Flink API key is owned by the app_manager service account
+   - You can find the service account ID in the Confluent Cloud UI by looking at the API key details
+
+Then set it in your `terraform.tfvars`:
+```hcl
+app_manager_service_account_id = "sa-xxxxxxx"
+```
 
 ### Resources Created
 
