@@ -7,14 +7,16 @@ The demonstration presents a hands-on guidance for the following requirements:
 * [x] Integrate with AWS RDS Postgres and CDC Debezium v2 Kafka Connector deployed as managed service on Confluent Cloud (CC)
 * [x] Decoding Debezium message envelope using Flink or using the json-debezium-registry setting in CC Flink. [See Flink processing](./cc-flink-sql/README.md)
 * [x] Understanding how to replace existing ETL processes with Flink. [Explanation in this section.](#from-etl-to-flink)
-* [ ] Sliding window aggregations over transactions grouped by cardholder (1 minute to 1 day windows)
+* [x] Sliding window aggregations over transactions grouped by cardholder (1 minute to 1 day windows). [See chapter](./cc-flink-sql/README.md#sliding-window-aggregations)
 * [x] How to propagate delete operations to sink bucket [See section](./cc-flink-sql/README.md#propagating-the-operation-delete-too)
 * [x] Maintain data order for transactional systems. [See below section on end to end ordering](#end-to-end-ordering).
-* [ ] Fanout to different topics using statement set.
+* [x] Fanout to different topics using statement set. []()
+* [ ] Data enrichment with joins.
 * [ ] How TableFlow + Flink ensure ordered delivery
 * [ ] Integrate with a [ML scoring service](./tx_scoring/README.md)
 * [ ] What monitoring and observability requirements exist?
 * [x] How to handle microservices that produce/consume Kafka data without going through Debezium? ([Outbox pattern](#outbox-pattern))
+* [ ] Flink statement deployment with Terraform
 
 ### To Do
 

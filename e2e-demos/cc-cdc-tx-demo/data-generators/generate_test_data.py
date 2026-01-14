@@ -103,8 +103,17 @@ def generate_customer(account_number: str) -> Tuple:
     )
 
 
-def generate_transaction(account_number: str, txn_id: str = None) -> Tuple:
-    """Generate a single transaction record."""
+def generate_transaction(account_number: str, txn_id: str = None, base_timestamp: datetime = None) -> Tuple:
+    """
+    Generate a single transaction record.
+    
+    Args:
+        account_number: Account number for the transaction
+        txn_id: Optional transaction ID (generated if not provided)
+        base_timestamp: Optional base timestamp. If provided, generates transaction
+                       within 60 minutes of this timestamp. Otherwise, generates
+                       timestamp within last 7 days or now for continuous mode.
+    """
     if txn_id is None:
         txn_id = str(uuid.uuid4())
     
@@ -128,12 +137,26 @@ def generate_transaction(account_number: str, txn_id: str = None) -> Tuple:
     )[0]
     transaction_type = random.choice(TRANSACTION_TYPES)
     
-    # Timestamp within last 7 days, or now for continuous mode
-    timestamp = datetime.now() - timedelta(
-        days=random.randint(0, 7),
-        hours=random.randint(0, 23),
-        minutes=random.randint(0, 59)
-    )
+    # Generate timestamp
+    if base_timestamp is not None:
+        # Normalize base_timestamp to timezone-naive if it's timezone-aware
+        if base_timestamp.tzinfo is not None:
+            base_timestamp = base_timestamp.replace(tzinfo=None)
+        
+        # Generate timestamp within 60 minutes of base_timestamp (can be before or after)
+        # This allows multiple transactions for the same account within 60 minutes
+        minutes_offset = random.randint(-60, 60)
+        timestamp = base_timestamp + timedelta(minutes=minutes_offset)
+        # Ensure timestamp is not in the future
+        if timestamp > datetime.now():
+            timestamp = datetime.now() - timedelta(minutes=random.randint(0, 60))
+    else:
+        # Timestamp within last 7 days, or now for continuous mode
+        timestamp = datetime.now() - timedelta(
+            days=random.randint(0, 7),
+            hours=random.randint(0, 23),
+            minutes=random.randint(0, 59)
+        )
     
     return (
         txn_id,
@@ -344,10 +367,23 @@ def generate_initial_data(conn, num_customers: int = 10, num_transactions: int =
     insert_customers(conn, customers)
     
     # Generate transactions
+    # Track last transaction timestamp per account to enable multiple transactions within 60 minutes
+    account_last_txn = {}  # account_number -> last transaction timestamp
     transactions = []
+    
     for i in range(num_transactions):
         account_number = random.choice(account_numbers)
-        transactions.append(generate_transaction(account_number))
+        
+        # 30% chance to generate transaction within 60 minutes of previous transaction for same account
+        if account_number in account_last_txn and random.random() < 0.3:
+            base_timestamp = account_last_txn[account_number]
+            txn = generate_transaction(account_number, base_timestamp=base_timestamp)
+        else:
+            txn = generate_transaction(account_number)
+        
+        transactions.append(txn)
+        # Update last transaction timestamp for this account
+        account_last_txn[account_number] = txn[2]  # timestamp is at index 2
     
     insert_transactions(conn, transactions)
     
@@ -378,6 +414,16 @@ def generate_continuous_transactions(conn, interval_seconds: int = 5) -> None:
     
     print(f"   Using {len(account_numbers)} existing customers\n")
     
+    # Query database for most recent transaction per account to enable multiple transactions within 60 minutes
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT DISTINCT ON (account_number) account_number, timestamp
+        FROM transactions
+        ORDER BY account_number, timestamp DESC
+    """)
+    account_last_txn = {row[0]: row[1] for row in cursor.fetchall()}
+    cursor.close()
+    
     transaction_count = 0
     
     try:
@@ -388,7 +434,17 @@ def generate_continuous_transactions(conn, interval_seconds: int = 5) -> None:
             
             for _ in range(num_txns):
                 account_number = random.choice(account_numbers)
-                transactions.append(generate_transaction(account_number))
+                
+                # 30% chance to generate transaction within 60 minutes of previous transaction for same account
+                if account_number in account_last_txn and random.random() < 0.3:
+                    base_timestamp = account_last_txn[account_number]
+                    txn = generate_transaction(account_number, base_timestamp=base_timestamp)
+                else:
+                    txn = generate_transaction(account_number)
+                
+                transactions.append(txn)
+                # Update last transaction timestamp for this account
+                account_last_txn[account_number] = txn[2]  # timestamp is at index 2
             
             insert_transactions(conn, transactions)
             transaction_count += len(transactions)

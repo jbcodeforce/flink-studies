@@ -25,3 +25,5 @@ e2e-demos/cdc-demo/datasets/
 **/variables.tfvars
 **/set_env.sh
 e2e-demos/config.yaml
+**/queries_etl.sql
+**/run_forever.sh

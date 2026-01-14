@@ -1,7 +1,7 @@
 include ../../../common.mk
 
 # --- txp_fct_hourly_tx_metrics
-TABLE_NAME=txp_fct_hourly_tx_metrics
+TABLE_NAME=txp_fct_daily_tx_metrics
 SCRIPT_PRE_KEBAB=dev-usw2-txp
 SCRIPT_POST_KEBAB=$(subst _,-,$(TABLE_NAME))
 
@@ -14,7 +14,7 @@ DML_PROPERTIES=./sql-scripts/dml.$(TABLE_NAME).properties
 DML_TESTS_SCRIPT=./tests/dml.$(TABLE_NAME).sql
 
 # --- Entry point
-create_txp_fct_hourly_tx_metrics: create_flink_ddl  create_flink_dml
+create_txp_fct_daily_tx_metrics: create_flink_ddl  create_flink_dml
 
 
 # --- Topic used as source

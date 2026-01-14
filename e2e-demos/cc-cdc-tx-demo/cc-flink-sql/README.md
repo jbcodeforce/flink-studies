@@ -7,6 +7,7 @@ This section goes into the details of:
 * [x] Deduplication
 * [x] Accessing kafka metadata
 * [x] Data transformation, filtering and fanout
+* [ ] Time window aggregation
 
 ## Pipeline Overview
 
@@ -335,27 +336,89 @@ The demo implements multiple window sizes for transaction analysis:
 | 1_HOUR | 1 hour | 15 min | Hourly spending limits |
 | 1_DAY | 1 day | N/A (tumbling) | Daily transaction summaries |
 
-## Advanced CDC Patterns
 
-The demo includes several advanced CDC processing patterns adapted from production ETL pipelines:
+```sql
+-- 1-Minute Sliding Window (slide every 30 seconds)
+with completed_tx as (
+  select * from `src_txp_transaction` where status = 'COMPLETED'
+)
+SELECT 
+    account_number,
+    window_start,
+    window_end,
+    '1_MINUTE' AS window_type,
+    COUNT(*) AS tx_count,
+    SUM(amount) AS total_amount,
+    AVG(amount) AS avg_amount,
+    MIN(amount) AS min_amount,
+    MAX(amount) AS max_amount
+FROM TABLE(
+    HOP(TABLE completed_tx, DESCRIPTOR(`timestamp`), INTERVAL '30' SECOND, INTERVAL '1' MINUTE)
+)
+GROUP BY account_number, window_start, window_end;
+```
 
+```sql
+-- 15-Minute Sliding Window (slide every 5 minutes)
+with completed_tx as (
+  select * from `src_txp_transaction` where status = 'COMPLETED'
+)
+SELECT 
+    account_number,
+    window_start,
+    window_end,
+    '15_MINUTE' AS window_type,
+    COUNT(*) AS tx_count,
+    SUM(amount) AS total_amount,
+    AVG(amount) AS avg_amount,
+    MIN(amount) AS min_amount,
+    MAX(amount) AS max_amount
+FROM TABLE(
+    HOP(TABLE completed_tx, DESCRIPTOR(`timestamp`), INTERVAL '5' MINUTE, INTERVAL '15' MINUTE)
+)
+GROUP BY account_number, window_start, window_end;
+```
 
+```sql
+-- 1-Hour Sliding Window (slide every 15 minutes)
+with completed_tx as (
+  select * from `src_txp_transaction` where status = 'COMPLETED'
+)
+SELECT 
+    account_number,
+    window_start,
+    window_end,
+    '1_HOUR' AS window_type,
+    COUNT(*) AS tx_count,
+    SUM(amount) AS total_amount,
+    AVG(amount) AS avg_amount,
+    MIN(amount) AS min_amount,
+    MAX(amount) AS max_amount
+FROM TABLE(
+    HOP(TABLE completed_tx, DESCRIPTOR(`timestamp`), INTERVAL '15' MINUTE, INTERVAL '1' HOUR)
+)
+GROUP BY account_number, window_start, window_end;
+```
 
-### Enhanced Customer Envelope Processing (`02-customer-envelop.sql`)
+```sql
+-- 1-Day Tumbling Window
+with completed_tx as (
+  select * from `src_txp_transaction` where status = 'COMPLETED'
+)
+SELECT 
+    account_number,
+    window_start,
+    window_end,
+    '1_DAY' AS window_type,
+    COUNT(*) AS tx_count,
+    SUM(amount) AS total_amount,
+    AVG(amount) AS avg_amount,
+    MIN(amount) AS min_amount,
+    MAX(amount) AS max_amount
+FROM TABLE(
+    TUMBLE(TABLE completed_tx, DESCRIPTOR(`timestamp`), INTERVAL '1' DAY)
+)
+GROUP BY account_number, window_start, window_end;
+```
 
-Enhanced version of basic envelope extraction with comprehensive metadata.
-
-**Enhancements:**
-- Comprehensive metadata extraction (source timestamps, Kafka offsets, etc.)
-- `is_deleted` boolean flag for easier filtering
-- Snapshot flag to distinguish initial load vs. incremental changes
-- Source database/table information for multi-source scenarios
-
-**When to Use Each Pattern:**
-
-| Pattern | When to Use |
-|---------|-------------|
-| **CDC Metadata Extraction** | - Need audit trails<br>- Debugging CDC issues<br>- Multi-source scenarios<br>- Data lineage tracking |
-| **Deduplication** | - CDC replay scenarios<br>- Out-of-order events<br>- Append-only sinks<br>- Ensuring idempotency |
-| **Soft Delete Handling** | - Audit requirements<br>- Data retention policies<br>- Recovery scenarios<br>- Downstream systems need delete awareness |
-| **Enhanced Envelope Processing** | - Need metadata alongside business data<br>- Filtering by snapshot vs. incremental<br>- Multi-source CDC pipelines |
+This last query is implemeted as [fact table](./facts/txp/hourly_tx_metrics/sql-scripts/dml.txp_fct_hourly_tx_metrics.sql)
