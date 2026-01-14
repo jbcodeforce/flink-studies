@@ -89,9 +89,7 @@ cc-cdc-tx-demo/
 
 The transaction processing domain consists of two core source tables:
 
-#### Entities
-
-##### customers
+#### customers
 Customer master data with deduplication support (upsert mode).
 
 | Column | Type | Description |
@@ -104,7 +102,7 @@ Customer master data with deduplication support (upsert mode).
 | `city` | VARCHAR | Customer city location |
 | `created_at` | TIMESTAMP_LTZ(3) | Record creation timestamp (watermark) |
 
-##### transactions
+#### transactions
 Financial transaction records with deduplication support (upsert mode).
 
 | Column | Type | Description |
@@ -155,6 +153,17 @@ Flink 1.19+ introduced direct support for Changelog Window Aggregation. This all
 
 The [IaC](./IaC/) folder includes the Terraform to deploy the solution on AWS and Confluent Cloud.
 
+1. Confluent Cloud Infrastructure components:
+   1. Environment
+   2. Cluster
+   3. Topics and Schemas
+   4. RBAC role-bindings
+   5. Debezium CDC Connector and Data Quality Rules.
+2. AWS Infrastructure components:
+   1. Redshift Cluster
+   > Note: only if Amazon Redshift is selected as a data warehouse
+   2. Amazon RDS for PostgreSQL Database - holds information about Product, Orders and Customers
+   
 ### Deployment Flow
 
 **Option 1: Deploy Everything at Once**

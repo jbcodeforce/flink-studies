@@ -27,3 +27,4 @@ e2e-demos/cdc-demo/datasets/
 e2e-demos/config.yaml
 **/queries_etl.sql
 **/run_forever.sh
+e2e-demos/cc-cdc-tx-demo/cc-flink-sql/staging/ 

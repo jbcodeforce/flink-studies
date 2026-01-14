@@ -1,8 +1,8 @@
 include ../../../common.mk
 
-# --- mqta
-TABLE_NAME=mqta
-SCRIPT_PRE_KEBAB=dev-usw2-default
+# --- txp_dim_enriched_tx
+TABLE_NAME=txp_dim_enriched_tx
+SCRIPT_PRE_KEBAB=dev-usw2-txp
 SCRIPT_POST_KEBAB=$(subst _,-,$(TABLE_NAME))
 
 DDL_STATEMENT=$(SCRIPT_PRE_KEBAB)-ddl-$(SCRIPT_POST_KEBAB)
@@ -14,7 +14,7 @@ DML_PROPERTIES=./sql-scripts/dml.$(TABLE_NAME).properties
 DML_TESTS_SCRIPT=./tests/dml.$(TABLE_NAME).sql
 
 # --- Entry point
-create_mqta: create_flink_ddl  create_flink_dml
+create_txp_dim_enriched_tx: create_flink_ddl  create_flink_dml
 
 
 # --- Topic used as source

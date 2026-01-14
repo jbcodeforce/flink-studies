@@ -1,0 +1,185 @@
+# -----------------------------------------------------------------------------
+# Flink Statements
+# All DDL and DML statements for dimensions, facts, and sources
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# Local Values - Table Definitions
+# -----------------------------------------------------------------------------
+locals {
+  # Service account ID: use variable if provided, otherwise try remote state
+  # This allows step-by-step building without applying IaC changes first
+  app_manager_service_account_id = coalesce(
+    var.app_manager_service_account_id != "" ? var.app_manager_service_account_id : null,
+    try(data.terraform_remote_state.iac.outputs.app_manager_service_account_id, null)
+  )
+  
+  # Base properties for Flink statements
+  # Use display names (not IDs) for catalog and database
+  base_properties = {
+    "sql.current-catalog"  = data.confluent_environment.env.display_name
+    "sql.current-database" = data.confluent_kafka_cluster.cluster.display_name
+  }
+  
+  # Define all tables with their paths and properties
+  tables = {
+    # Dimensions
+    "txp_dim_customers" = {
+      category     = "dimensions"
+      ddl_path     = "../dimensions/txp/dim_customers/sql-scripts/ddl.txp_dim_customers.sql"
+      dml_path     = "../dimensions/txp/dim_customers/sql-scripts/dml.txp_dim_customers.sql"
+      properties_path = "../dimensions/txp/dim_customers/sql-scripts/dml.txp_dim_customers.properties"
+      has_dml      = true
+    }
+
+  "txp_dim_enriched_tx" = {
+      category     = "dimensions"
+      ddl_path     = "../dimensions/txp/dim_enriched_tx/sql-scripts/ddl.txp_dim_enriched_tx.sql"
+      dml_path     = "../dimensions/txp/dim_enriched_tx/sql-scripts/dml.txp_dim_enriched_tx.sql"
+      properties_path = "../dimensions/txp/dim_enriched_tx/sql-scripts/dml.txp_dim_enriched_tx.properties"
+      has_dml      = true
+    }
+  
+    
+    # Facts
+    "txp_fct_customer_tx" = {
+      category     = "facts"
+      ddl_path     = "../facts/txp/customer_tx/sql-scripts/ddl.txp_fct_customer_tx.sql"
+      dml_path     = "../facts/txp/customer_tx/sql-scripts/dml.txp_fct_customer_tx.sql"
+      properties_path = "../facts/txp/customer_tx/sql-scripts/dml.txp_fct_customer_tx.properties"
+      has_dml      = true
+    }
+    
+    "txp_fct_hourly_tx_metrics" = {
+      category     = "facts"
+      ddl_path     = "../facts/txp/hourly_tx_metrics/sql-scripts/ddl.txp_fct_hourly_tx_metrics.sql"
+      dml_path     = "../facts/txp/hourly_tx_metrics/sql-scripts/dml.txp_fct_hourly_tx_metrics.sql"
+      properties_path = "../facts/txp/hourly_tx_metrics/sql-scripts/dml.txp_fct_hourly_tx_metrics.properties"
+      has_dml      = true
+    }
+    
+    # Sources
+    "src_txp_transaction" = {
+      category     = "sources"
+      ddl_path     = "../sources/txp/src_transaction/sql-scripts/ddl.src_txp_transaction.sql"
+      dml_path     = "../sources/txp/src_transaction/sql-scripts/dml.src_txp_transaction.sql"
+      properties_path = null  # No properties file exists
+      has_dml      = true
+    }
+    
+    "src_txp_pending_transaction" = {
+      category     = "sources"
+      ddl_path     = "../sources/txp/src_transaction/sql-scripts/ddl.src_txp_pending_transaction.sql"
+      dml_path     = null
+      properties_path = null
+      has_dml      = false
+    }
+  }
+  
+  # Helper function to parse properties file
+  parse_properties = {
+    for table_name, table_config in local.tables : table_name => (
+      table_config.properties_path != null && table_config.has_dml ? (
+        merge(
+          local.base_properties,
+          {
+            for line in [
+              for l in split("\n", try(file(table_config.properties_path), "")) :
+              trimspace(l)
+              if length(trimspace(l)) > 0 && !startswith(trimspace(l), "#")
+            ] :
+            split("=", line)[0] => try(split("=", line)[1], "")
+            if length(split("=", line)) == 2
+          }
+        )
+      ) : local.base_properties
+    )
+  }
+}
+
+# -----------------------------------------------------------------------------
+# DDL Statements: Create Tables
+# -----------------------------------------------------------------------------
+resource "confluent_flink_statement" "ddl" {
+  for_each = local.tables
+  
+  organization {
+    id = data.confluent_organization.org.id
+  }
+  
+  environment {
+    id = data.terraform_remote_state.iac.outputs.confluent_environment_id
+  }
+  
+  compute_pool {
+    id = data.terraform_remote_state.iac.outputs.flink_compute_pool_id
+  }
+  
+  principal {
+    id = local.app_manager_service_account_id
+  }
+  
+  rest_endpoint = data.confluent_flink_region.flink_region.rest_endpoint
+  
+  credentials {
+    key    = data.terraform_remote_state.iac.outputs.flink_api_key
+    secret = data.terraform_remote_state.iac.outputs.flink_api_secret
+  }
+  
+  statement      = file(each.value.ddl_path)
+  statement_name = "${var.statement_name_prefix}-ddl-${replace(each.key, "_", "-")}"
+  
+  properties = local.base_properties
+  
+  lifecycle {
+    prevent_destroy = false
+  }
+}
+
+# -----------------------------------------------------------------------------
+# DML Statements: Insert Into (only for tables with DML)
+# -----------------------------------------------------------------------------
+resource "confluent_flink_statement" "dml" {
+  for_each = {
+    for table_name, table_config in local.tables :
+    table_name => table_config
+    if table_config.has_dml && table_config.dml_path != null
+  }
+  
+  organization {
+    id = data.confluent_organization.org.id
+  }
+  
+  environment {
+    id = data.terraform_remote_state.iac.outputs.confluent_environment_id
+  }
+  
+  compute_pool {
+    id = data.terraform_remote_state.iac.outputs.flink_compute_pool_id
+  }
+  
+  principal {
+    id = local.app_manager_service_account_id
+  }
+  
+  rest_endpoint = data.confluent_flink_region.flink_region.rest_endpoint
+  
+  credentials {
+    key    = data.terraform_remote_state.iac.outputs.flink_api_key
+    secret = data.terraform_remote_state.iac.outputs.flink_api_secret
+  }
+  
+  statement      = file(each.value.dml_path)
+  statement_name = "${var.statement_name_prefix}-dml-${replace(each.key, "_", "-")}"
+  
+  properties = local.parse_properties[each.key]
+  
+  # DML statement depends on DDL being created first
+  depends_on = [
+    confluent_flink_statement.ddl
+  ]
+  
+  lifecycle {
+    prevent_destroy = false
+  }
+}

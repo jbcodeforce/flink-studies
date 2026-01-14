@@ -1,6 +1,8 @@
 # Terraform Configuration for txp_dim_customers Flink Statements
 
-This Terraform configuration deploys Flink SQL statements (DDL and DML) for the `txp_dim_customers` dimension table.
+This Terraform configuration deploys Flink SQL statements (DDL and DML) for the following statements:
+
+1.
 
 ## Overview
 

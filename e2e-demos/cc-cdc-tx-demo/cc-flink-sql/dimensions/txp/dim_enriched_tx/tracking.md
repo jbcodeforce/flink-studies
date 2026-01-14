@@ -1,4 +1,4 @@
-## Fact Table: mqta
+## Fact Table: txp_dim_enriched_tx
 
 Status date:
 
