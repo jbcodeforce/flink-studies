@@ -296,30 +296,3 @@ resource "null_resource" "create_tables" {
   }
 }
 
-# -----------------------------------------------------------------------------
-# S3 Bucket for Iceberg Sink
-# -----------------------------------------------------------------------------
-resource "aws_s3_bucket" "card_tx_iceberg" {
-  bucket = "${var.prefix}-iceberg-sink-${random_id.env_display_id.hex}"
-
-  tags = {
-    Name = "${var.prefix}-iceberg-sink"
-  }
-}
-
-resource "aws_s3_bucket_versioning" "card_tx_iceberg_versioning" {
-  bucket = aws_s3_bucket.card_tx_iceberg.id
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-resource "aws_s3_bucket_server_side_encryption_configuration" "card_tx_iceberg_encryption" {
-  bucket = aws_s3_bucket.card_tx_iceberg.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}

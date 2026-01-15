@@ -2,6 +2,94 @@
 
 This guide shows how to deploy the infrastructure incrementally using Terraform's `-target` flag.
 
+## AWS Infrastructure Overview
+
+The following diagram shows all AWS resources created by this Terraform configuration:
+
+AWS  resources:
+
+```mermaid
+graph TB
+    subgraph VPC["Existing VPC"]
+        subgraph Subnets["Existing Subnets"]
+            Subnet1[Subnet 1]
+            Subnet2[Subnet 2]
+            SubnetN[Subnet N]
+        end
+
+        
+        subgraph ECS["ECS/Fargate ML Inference"]
+            ECSCluster[ECS Cluster]
+            ECSTask[ECS Task Definition]
+            ECSService[ECS Service]
+            ECSSG[Security Group<br/>Ports 8080, 443]
+            ECRRepo[ECR Repository<br/>ML Inference Container]
+            CloudWatchLogs[CloudWatch Log Group]
+        end
+        
+        subgraph Redshift["Redshift Serverless (Optional)"]
+            RedshiftNS[Redshift Namespace]
+            RedshiftWG[Redshift Workgroup]
+            RedshiftSG[Security Group<br/>Port 5439]
+        end
+    end
+    
+    subgraph S3["S3 Storage"]
+        S3Bucket[(S3 Bucket<br/>Iceberg Sink)]
+        S3Versioning[S3 Versioning]
+        S3Encryption[S3 Encryption<br/>AES256]
+    end
+    
+    subgraph IAM["IAM Resources"]
+        S3User[IAM User<br/>S3 Sink User]
+        S3AccessKey[IAM Access Key]
+        S3UserPolicy[IAM User Policy<br/>S3 Access]
+        ECSTaskExecRole[ECS Task Execution Role]
+        ECSTaskRole[ECS Task Role<br/>S3 Access]
+        RedshiftSpectrumRole[Redshift Spectrum Role<br/>S3 & Glue Access]
+    end
+    
+    
+    %% ECS relationships
+    Subnet1 --> ECSService
+    Subnet2 --> ECSService
+    SubnetN --> ECSService
+    ECSSG --> ECSService
+    ECRRepo --> ECSTask
+    ECSTask --> ECSService
+    ECSCluster --> ECSService
+    CloudWatchLogs --> ECSTask
+    ECSTaskExecRole --> ECSTask
+    ECSTaskRole --> ECSTask
+    
+    %% Redshift relationships
+    Subnet1 --> RedshiftWG
+    Subnet2 --> RedshiftWG
+    SubnetN --> RedshiftWG
+    RedshiftSG --> RedshiftWG
+    RedshiftNS --> RedshiftWG
+    RedshiftSpectrumRole --> RedshiftNS
+    
+    %% S3 relationships
+    S3Versioning --> S3Bucket
+    S3Encryption --> S3Bucket
+    S3UserPolicy --> S3User
+    S3AccessKey --> S3User
+    S3User --> S3Bucket
+    ECSTaskRole --> S3Bucket
+    RedshiftSpectrumRole --> S3Bucket
+    
+    %% External connections
+    ConfluentCloud[Confluent Cloud<br/>CDC Connector] -.->|Connects via<br/>Security Group| RDSSG
+    Flink[Flink SQL<br/>Statements] -.->|HTTP/HTTPS| ECSSG
+    
+    style RDSInstance fill:#e1f5ff
+    style S3Bucket fill:#fff4e1
+    style ECSCluster fill:#e8f5e9
+    style RedshiftNS fill:#f3e5f5
+    style IAM fill:#fff9c4
+```
+
 ## Prerequisites
 
 1. Copy `terraform.tfvars.example` to `terraform.tfvars` and fill in your values
@@ -31,6 +119,35 @@ terraform apply -target=random_id.env_display_id \
 ### Step 2: Deploy RDS Infrastructure
 
 Deploy the RDS database and its dependencies:
+
+```mermaid
+graph LR
+    subgraph Subnets["Existing Subnets"]
+        Subnet1[Subnet 1]
+        Subnet2[Subnet 2]
+        SubnetN[Subnet N]
+     end
+    subgraph RDS["RDS PostgreSQL"]
+        RDSInstance[(RDS PostgreSQL Instance<br/>PostgreSQL 17.4)]
+        RDSSubnetGroup[DB Subnet Group]
+        RDSParamGroup[DB Parameter Group<br/>Logical Replication Enabled]
+        RDSSG[Security Group<br/>Port 5432]
+    end
+    %% External connections
+    ConfluentCloud[Confluent Cloud<br/>CDC Connector] -.->|Connects via<br/>Security Group| RDSSG
+
+    %% External connections
+    ConfluentCloud[Confluent Cloud<br/>CDC Connector] -.->|Connects via<br/>Security Group| RDSSG
+
+    %% RDS relationships
+    Subnet1 --> RDSSubnetGroup
+    Subnet2 --> RDSSubnetGroup
+    SubnetN --> RDSSubnetGroup
+    RDSSubnetGroup --> RDSInstance
+    RDSParamGroup --> RDSInstance
+    RDSSG --> RDSInstance
+    style RDSInstance fill:#e1f5ff
+```
 
 ```bash
 # Security groups first
@@ -93,6 +210,31 @@ If you get "connection timed out" errors, check:
 See [NETWORKING.md](./NETWORKING.md) for detailed networking troubleshooting.
 
 ### Step 3: Deploy Confluent Cloud Infrastructure
+
+
+```mermaid
+graph LR
+    subgraph CC["Confluent Cloud"]
+            subgraph Env["Environment: card_tx_env"]
+                subgraph SR["SchemaRegistry"]
+                    schema["schemas*"]
+                end
+                subgraph Kafka["KafkaCluster"]
+                    topic["Topics*"]
+                end
+                CDCConnector["CDC Connectors"]
+                subgraph ComputePool_1["ComputePool"]
+                    flinks["Flink Statements*"]
+                end
+            end
+    end
+    %% confluent relationships
+    CDCConnector --> topic
+    CDCConnector -.-> SR
+    flinks  -.-> SR
+    topic <--> flinks
+
+```
 
 Deploy Confluent Cloud resources (can be done in parallel with RDS):
 
@@ -189,39 +331,94 @@ terraform apply -target=confluent_connector.card_tx_cdc_source
 ### Step 5.5: Deploy Tableflow (Optional)
 
 **Prerequisites:** 
-- Topics must exist (especially `tx_aggregations` topic)
+- Topics must exist (especially `txp_fct_hourly_tx_metrics` and `txp_dim_enriched_tx` topics). They will be created by Flink create tables, or created upfront.
 - Set `enable_tableflow = true` in `terraform.tfvars` (default is `true`)
+- Set `create_tableflow_topics = true` if you want Terraform to create topics, or `false` if topics are created by Flink (default is `true`)
 
-Tableflow enables the `tx_aggregations` topic to be accessed as an Iceberg table, providing a unified view between operational data (Kafka) and analytical data (Iceberg).
+Tableflow enables topics to be accessed as Iceberg tables, providing a unified view between operational data (Kafka) and analytical data (Iceberg).
+
+**Tableflow-enabled topics:**
+- `txp_fct_hourly_tx_metrics` - Hourly transaction metrics fact table
+- `txp_dim_enriched_tx` - Enriched transactions dimension table
+
+**Configuration Options:**
+
+1. **If topics are created by Flink** (recommended):
+   ```hcl
+   enable_tableflow = true
+   create_tableflow_topics = false  # Topics created by Flink DDL statements
+   ```
+
+2. **If you want Terraform to create topics**:
+   ```hcl
+   enable_tableflow = true
+   create_tableflow_topics = true  # Terraform will create topics
+   ```
+
+**Deploy Tableflow:**
 
 ```bash
-# Deploy Tableflow topic enablement
-terraform apply -target=confluent_tableflow_topic.card_tx_aggregations
+# Option 1: If topics are created by Flink (create_tableflow_topics = false)
+# Just deploy Tableflow - topics should already exist
+terraform apply -target=confluent_tableflow_topic.txp_fct_hourly_tx_metrics \
+                -target=confluent_tableflow_topic.txp_dim_enriched_tx
+
+# Option 2: If Terraform creates topics (create_tableflow_topics = true)
+# Deploy Kafka topics first, then Tableflow
+terraform apply -target=confluent_kafka_topic.txp_fct_hourly_tx_metrics \
+                -target=confluent_kafka_topic.txp_dim_enriched_tx
+
+terraform apply -target=confluent_tableflow_topic.txp_fct_hourly_tx_metrics \
+                -target=confluent_tableflow_topic.txp_dim_enriched_tx
 ```
+
+**Note:** If topics already exist (created by Flink), Terraform will handle them gracefully. The `create_tableflow_topics` variable controls whether Terraform attempts to create the topics or assumes they already exist.
 
 **Verify Tableflow is enabled:**
 ```bash
-# Check Tableflow topic outputs
+# Check Tableflow topic outputs (shows both topics)
+terraform output tableflow_topic_names
+terraform output tableflow_topic_ids
+
+# Legacy outputs (for backward compatibility)
 terraform output tableflow_topic_name
 terraform output tableflow_topic_id
 
 # Verify in Confluent Cloud UI:
-# 1. Navigate to Topics → tx-aggregations
+# 1. Navigate to Topics → txp_fct_hourly_tx_metrics
 # 2. Check for "Tableflow" tab or indicator
 # 3. Verify Iceberg table format is enabled
+# 4. Repeat for txp_dim_enriched_tx topic
 ```
 
 **Important Notes:**
-1. **Tableflow requires the topic to exist first** - Make sure `tx_aggregations` topic is created before enabling Tableflow
-2. **Storage**: Uses Confluent-managed storage by default (no additional AWS setup required)
-3. **Table Format**: Configured for Iceberg format
-4. **Topic Name**: Tableflow is enabled on `${var.prefix}-tx-aggregations` topic
+1. **Tableflow requires the topic to exist first** - Make sure topics are created before enabling Tableflow. Topics can be created by:
+   - Terraform (via `confluent_kafka_topic` resources when `create_tableflow_topics = true`)
+   - Flink (when the table DDL statements are executed - set `create_tableflow_topics = false`)
+2. **Handling Existing Topics**: 
+   - **If topics already exist** (created by Flink): Set `create_tableflow_topics = false` in `terraform.tfvars`. Terraform will use the existing topics and won't attempt to create them.
+   - **If topics don't exist yet**: Set `create_tableflow_topics = true` to have Terraform create them.
+   - **If you get errors about topics already existing**: You can import existing topics into Terraform state:
+     ```bash
+     # Get cluster ID
+     CLUSTER_ID=$(terraform output -raw kafka_cluster_id)
+     
+     # Import existing topics
+     terraform import confluent_kafka_topic.txp_fct_hourly_tx_metrics[0] ${CLUSTER_ID}/txp_fct_hourly_tx_metrics
+     terraform import confluent_kafka_topic.txp_dim_enriched_tx[0] ${CLUSTER_ID}/txp_dim_enriched_tx
+     ```
+     Then set `create_tableflow_topics = true` to manage them with Terraform.
+3. **Storage**: Uses Confluent-managed storage by default (no additional AWS setup required)
+4. **Table Format**: Configured for Iceberg format
+5. **Topic Names**: Tableflow is enabled on:
+   - `txp_fct_hourly_tx_metrics` - Fact table for hourly metrics
+   - `txp_dim_enriched_tx` - Dimension table for enriched transactions
 
-**Accessing the Iceberg Table:**
-Once Tableflow is enabled, the `tx_aggregations` topic data is automatically materialized as an Iceberg table. You can:
-- Query the table using analytics tools that support Iceberg (e.g., Spark, Trino, Dremio)
+**Accessing the Iceberg Tables:**
+Once Tableflow is enabled, the topic data is automatically materialized as Iceberg tables. You can:
+- Query the tables using analytics tools that support Iceberg (e.g., Spark, Trino, Dremio)
 - Access table metadata and schema from the Confluent Cloud UI
-- Use the table for downstream analytics without additional ETL processes
+- Use the tables for downstream analytics without additional ETL processes
 
 **Disabling Tableflow:**
 To disable Tableflow, set `enable_tableflow = false` in `terraform.tfvars` and run:
@@ -243,8 +440,10 @@ terraform apply -target=confluent_kafka_topic.card_tx_enriched \
 
 ### Step 7: Deploy S3 Infrastructure
 
+**Deploy S3 bucket and IAM resources independently:**
+
 ```bash
-# S3 bucket
+# S3 bucket with versioning and encryption
 terraform apply -target=aws_s3_bucket.card_tx_iceberg \
                 -target=aws_s3_bucket_versioning.card_tx_iceberg_versioning \
                 -target=aws_s3_bucket_server_side_encryption_configuration.card_tx_iceberg_encryption
@@ -253,8 +452,23 @@ terraform apply -target=aws_s3_bucket.card_tx_iceberg \
 terraform apply -target=aws_iam_user.s3_sink_user \
                 -target=aws_iam_access_key.s3_sink_access_key \
                 -target=aws_iam_user_policy.s3_sink_policy
+```
 
-# S3 sink connector
+**Or deploy all S3 resources at once:**
+
+```bash
+# Deploy all S3 resources (bucket, versioning, encryption, IAM)
+terraform apply -target=aws_s3_bucket.card_tx_iceberg \
+                -target=aws_s3_bucket_versioning.card_tx_iceberg_versioning \
+                -target=aws_s3_bucket_server_side_encryption_configuration.card_tx_iceberg_encryption \
+                -target=aws_iam_user.s3_sink_user \
+                -target=aws_iam_access_key.s3_sink_access_key \
+                -target=aws_iam_user_policy.s3_sink_policy
+```
+
+**Deploy S3 sink connector (requires S3 bucket and IAM user to exist first):**
+
+```bash
 terraform apply -target=confluent_connector.card_tx_s3_sink
 ```
 
@@ -427,16 +641,18 @@ terraform output tableflow_topic_name
 4. **Storage issues** → Check Confluent Cloud UI for storage configuration errors
 
 **Check Tableflow status in Confluent Cloud:**
-- Navigate to Topics → `tx-aggregations` → Tableflow tab
+- Navigate to Topics → `txp_fct_hourly_tx_metrics` → Tableflow tab
 - Verify materialization status
 - Check for any error messages in the Tableflow UI
+- Repeat for `txp_dim_enriched_tx` topic
 
 **Re-enable Tableflow:**
 If Tableflow was disabled and you want to re-enable it:
 ```bash
 # Set enable_tableflow = true in terraform.tfvars
 terraform apply -target=confluent_api_key.app_manager_tableflow_key \
-                -target=confluent_tableflow_topic.card_tx_aggregations
+                -target=confluent_tableflow_topic.txp_fct_hourly_tx_metrics \
+                -target=confluent_tableflow_topic.txp_dim_enriched_tx
 ```
 
 ## Cleanup

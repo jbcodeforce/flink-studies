@@ -85,6 +85,22 @@ output "s3_bucket_arn" {
   value       = aws_s3_bucket.card_tx_iceberg.arn
 }
 
+output "confluent_tableflow_role_arn" {
+  description = "IAM role ARN for Confluent Cloud Tableflow provider integration"
+  value       = aws_iam_role.confluent_tableflow_role.arn
+}
+
+output "tableflow_provider_integration_id" {
+  description = "Confluent provider integration ID for Tableflow"
+  value       = var.enable_tableflow && var.tableflow_provider_integration_id == "" ? confluent_provider_integration.tableflow_aws[0].id : var.tableflow_provider_integration_id
+}
+
+output "tableflow_provider_integration_external_id" {
+  description = "External ID from Confluent provider integration. Use this to update the IAM role trust policy with: terraform output -raw tableflow_provider_integration_external_id"
+  value       = var.enable_tableflow && var.tableflow_provider_integration_id == "" ? try(confluent_provider_integration.tableflow_aws[0].aws[0].external_id, null) : null
+  sensitive   = false
+}
+
 output "ecr_repository_url" {
   description = "ECR repository URL for ML inference container"
   value       = aws_ecr_repository.card_tx_ml_inference_repo.repository_url
@@ -207,18 +223,6 @@ output "cdc_connector_id" {
   value       = confluent_connector.card_tx_cdc_source.id
 }
 
-# -----------------------------------------------------------------------------
-# Tableflow Outputs (Conditional)
-# -----------------------------------------------------------------------------
-output "tableflow_topic_name" {
-  description = "Tableflow-enabled topic name (tx_aggregations)"
-  value       = var.enable_tableflow ? confluent_tableflow_topic.card_tx_aggregations[0].display_name : null
-}
-
-output "tableflow_topic_id" {
-  description = "Tableflow topic ID"
-  value       = var.enable_tableflow ? confluent_tableflow_topic.card_tx_aggregations[0].id : null
-}
 
 # -----------------------------------------------------------------------------
 # Connection Strings

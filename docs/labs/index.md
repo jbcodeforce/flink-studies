@@ -65,6 +65,130 @@ flowchart LR
 * [ ] GitOps with Openshift, ArgoCD and Tekton
 
 
+```mermaid
+graph TB
+    subgraph VPC["Existing VPC"]
+        subgraph Subnets["Existing Subnets"]
+            Subnet1[Subnet 1]
+            Subnet2[Subnet 2]
+            SubnetN[Subnet N]
+        end
+        
+        subgraph RDS["RDS PostgreSQL"]
+            RDSInstance[(RDS PostgreSQL Instance<br/>PostgreSQL 17.4)]
+            RDSSubnetGroup[DB Subnet Group]
+            RDSParamGroup[DB Parameter Group<br/>Logical Replication Enabled]
+            RDSSG[Security Group<br/>Port 5432]
+        end
+        
+        subgraph ECS["ECS/Fargate ML Inference"]
+            ECSCluster[ECS Cluster]
+            ECSTask[ECS Task Definition]
+            ECSService[ECS Service]
+            ECSSG[Security Group<br/>Ports 8080, 443]
+            ECRRepo[ECR Repository<br/>ML Inference Container]
+            CloudWatchLogs[CloudWatch Log Group]
+        end
+        
+        subgraph Redshift["Redshift Serverless (Optional)"]
+            RedshiftNS[Redshift Namespace]
+            RedshiftWG[Redshift Workgroup]
+            RedshiftSG[Security Group<br/>Port 5439]
+        end
+    end
+    
+    subgraph S3["S3 Storage"]
+        S3Bucket[(S3 Bucket<br/>Iceberg Sink)]
+        S3Versioning[S3 Versioning]
+        S3Encryption[S3 Encryption<br/>AES256]
+    end
+    
+    subgraph IAM["IAM Resources"]
+        S3User[IAM User<br/>S3 Sink User]
+        S3AccessKey[IAM Access Key]
+        S3UserPolicy[IAM User Policy<br/>S3 Access]
+        ECSTaskExecRole[ECS Task Execution Role]
+        ECSTaskRole[ECS Task Role<br/>S3 Access]
+        RedshiftSpectrumRole[Redshift Spectrum Role<br/>S3 & Glue Access]
+    end
+    
+    %% VPC relationships
+    Subnet1 --> RDSSubnetGroup
+    Subnet2 --> RDSSubnetGroup
+    SubnetN --> RDSSubnetGroup
+    RDSSubnetGroup --> RDSInstance
+    RDSParamGroup --> RDSInstance
+    RDSSG --> RDSInstance
+    
+    %% ECS relationships
+    Subnet1 --> ECSService
+    Subnet2 --> ECSService
+    SubnetN --> ECSService
+    ECSSG --> ECSService
+    ECRRepo --> ECSTask
+    ECSTask --> ECSService
+    ECSCluster --> ECSService
+    CloudWatchLogs --> ECSTask
+    ECSTaskExecRole --> ECSTask
+    ECSTaskRole --> ECSTask
+    
+    %% Redshift relationships
+    Subnet1 --> RedshiftWG
+    Subnet2 --> RedshiftWG
+    SubnetN --> RedshiftWG
+    RedshiftSG --> RedshiftWG
+    RedshiftNS --> RedshiftWG
+    RedshiftSpectrumRole --> RedshiftNS
+    
+    %% S3 relationships
+    S3Versioning --> S3Bucket
+    S3Encryption --> S3Bucket
+    S3UserPolicy --> S3User
+    S3AccessKey --> S3User
+    S3User --> S3Bucket
+    ECSTaskRole --> S3Bucket
+    RedshiftSpectrumRole --> S3Bucket
+    
+    %% External connections
+    ConfluentCloud[Confluent Cloud<br/>CDC Connector] -.->|Connects via<br/>Security Group| RDSSG
+    Flink[Flink SQL<br/>Statements] -.->|HTTP/HTTPS| ECSSG
+    
+    style RDSInstance fill:#e1f5ff
+    style S3Bucket fill:#fff4e1
+    style ECSCluster fill:#e8f5e9
+    style RedshiftNS fill:#f3e5f5
+    style IAM fill:#fff9c4
+```
+
+
+
+
+```mermaid
+graph LR
+    subgraph Subnets["Existing Subnets"]
+        Subnet1[Subnet 1]
+        Subnet2[Subnet 2]
+        SubnetN[Subnet N]
+     end
+    subgraph RDS["RDS PostgreSQL"]
+        RDSInstance[(RDS PostgreSQL Instance<br/>PostgreSQL 17.4)]
+        RDSSubnetGroup[DB Subnet Group]
+        RDSParamGroup[DB Parameter Group<br/>Logical Replication Enabled]
+        RDSSG[Security Group<br/>Port 5432]
+    end
+    %% External connections
+    ConfluentCloud[Confluent Cloud<br/>CDC Connector] -.->|Connects via<br/>Security Group| RDSSG
+
+    %% RDS relationships
+    Subnet1 --> RDSSubnetGroup
+    Subnet2 --> RDSSubnetGroup
+    SubnetN --> RDSSubnetGroup
+    RDSSubnetGroup --> RDSInstance
+    RDSParamGroup --> RDSInstance
+    RDSSG --> RDSInstance
+    style RDSInstance fill:#e1f5ff
+```
+
 ## Public repositories with valuable demonstrations
 
 

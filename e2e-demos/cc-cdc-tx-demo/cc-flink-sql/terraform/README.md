@@ -1,6 +1,8 @@
-# Terraform Configuration for txp_dim_customers Flink Statements
+# Terraform Configuration Flink Statements Deployment
 
 This Terraform configuration deploys Flink SQL statements (DDL and DML) for the following statements:
+
+[]()
 
 1.
 
@@ -14,8 +16,11 @@ The configuration:
 
 ## Prerequisites
 
-1. The parent IaC infrastructure must be deployed first (in `../../../IaC/`)
-2. Terraform state file must exist at the path specified in `variables.tf` (default: `../../../IaC/terraform.tfstate`)
+1. **The parent IaC infrastructure MUST be deployed first** (in `../../IaC/`)
+   - Run `terraform apply` in the `../../IaC/` directory before running this configuration
+   - The IaC state file must exist at `../../IaC/terraform.tfstate`
+   - If the state file doesn't exist, you'll get an error: "Unable to find remote state"
+2. Terraform state file must exist at the path specified in `variables.tf` (default: `../../IaC/terraform.tfstate`)
 3. Confluent Cloud API credentials must be available
 
 ## Setup
@@ -61,7 +66,7 @@ terraform destroy
 
 - `confluent_cloud_api_key`: Confluent Cloud API Key
 - `confluent_cloud_api_secret`: Confluent Cloud API Secret
-- `iac_state_path`: Path to IaC terraform state file (default: `../../../../../IaC/terraform.tfstate`)
+- `iac_state_path`: Path to IaC terraform state file (default: `../../IaC/terraform.tfstate`)
 - `cloud_region`: AWS region for Flink deployment (default: `us-east-2`)
 - `statement_name_prefix`: Prefix for Flink statement names (default: `dev-usw2-txp`)
 - `app_manager_service_account_id`: App Manager service account ID (optional - will try to get from IaC remote state if not set)
@@ -140,11 +145,30 @@ Properties are merged with base Flink properties. If the file doesn't exist or i
 
 ### State File Not Found
 
-If you get an error about the state file not being found:
+If you get an error: "Unable to find remote state" or "No stored state was found":
 
-1. Verify the IaC infrastructure has been deployed
-2. Check the `iac_state_path` variable matches the actual state file location
-3. Use an absolute path if needed
+1. **First, deploy the IaC infrastructure:**
+   ```bash
+   cd ../../IaC
+   terraform init
+   terraform apply
+   ```
+   This creates the `terraform.tfstate` file that this configuration needs.
+
+2. **Verify the state file exists:**
+   ```bash
+   ls -la ../../IaC/terraform.tfstate
+   ```
+
+3. **Check the `iac_state_path` variable:**
+   - Default path: `../../IaC/terraform.tfstate` (relative to `cc-flink-sql/terraform/`)
+   - Verify this matches your actual directory structure
+   - You can use an absolute path if needed: `iac_state_path = "/full/path/to/IaC/terraform.tfstate"`
+
+4. **If using a different path, update `terraform.tfvars`:**
+   ```hcl
+   iac_state_path = "../../IaC/terraform.tfstate"
+   ```
 
 ### Statement Creation Fails
 

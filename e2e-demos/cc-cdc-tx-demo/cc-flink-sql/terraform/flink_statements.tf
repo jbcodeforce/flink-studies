@@ -42,14 +42,6 @@ locals {
   
     
     # Facts
-    "txp_fct_customer_tx" = {
-      category     = "facts"
-      ddl_path     = "../facts/txp/customer_tx/sql-scripts/ddl.txp_fct_customer_tx.sql"
-      dml_path     = "../facts/txp/customer_tx/sql-scripts/dml.txp_fct_customer_tx.sql"
-      properties_path = "../facts/txp/customer_tx/sql-scripts/dml.txp_fct_customer_tx.properties"
-      has_dml      = true
-    }
-    
     "txp_fct_hourly_tx_metrics" = {
       category     = "facts"
       ddl_path     = "../facts/txp/hourly_tx_metrics/sql-scripts/ddl.txp_fct_hourly_tx_metrics.sql"

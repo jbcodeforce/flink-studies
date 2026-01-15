@@ -10,8 +10,8 @@ The demonstration presents a hands-on guidance for the following requirements:
 * [x] Sliding window aggregations over transactions grouped by cardholder (1 minute to 1 day windows). [See chapter](./cc-flink-sql/README.md#sliding-window-aggregations)
 * [x] How to propagate delete operations to sink bucket [See section](./cc-flink-sql/README.md#propagating-the-operation-delete-too)
 * [x] Maintain data order for transactional systems. [See below section on end to end ordering](#end-to-end-ordering).
-* [x] Fanout to different topics using statement set. []()
-* [ ] Data enrichment with joins.
+* [x] Fanout to different topics using statement set. [See statement set of tx](./cc-flink-sql/sources/txp/src_transaction/sql-scripts/dml.src_txp_transaction.sql)
+* [x] Data enrichment with joins.
 * [ ] How TableFlow + Flink ensure ordered delivery
 * [ ] Integrate with a [ML scoring service](./tx_scoring/README.md)
 * [ ] What monitoring and observability requirements exist?
@@ -127,11 +127,11 @@ Any microservice that wants to implement the outbox pattern needs to design the 
 
 ## From ETL to Flink
 
-When ETL processing is done with ANSI SQL, Spark and even in some way Snowflake SQL, it is possible to run the same processing as a medaillon architecture. The approach is to build analytics data product. We recommend [reading this chapter](https://jbcodeforce.github.io/flink-studies/methodology/data_as_a_product/) and may use [this tool]() to jump start your project. 
+When ETL processing is done with ANSI SQL, Spark and even in some way Snowflake SQL, it is possible to run the same processing as a medaillon architecture. The approach is to build analytics data product. We recommend [reading this chapter](https://jbcodeforce.github.io/flink-studies/methodology/data_as_a_product/) and may use [this tool](https://github.com/jbcodeforce/shift_left_utils/tree/main) to jump start your Kimball Flink project. 
 
-In this demonstration the [](./cc-flink-sql/) folder has the Kimball structure.
+In this demonstration the [./cc-flink-sql/](./cc-flink-sql/) folder has the Kimball structure built with 'shift_left' CLI.
 
-## End to end ordering
+## End-to-end ordering
 
 Debezium ensures that all changes for a single database row are sent to the same Kafka partition. Debezium uses the table's Primary Key as the Kafka message key. Kafka guarantees total order of messages within a single partition.
 
@@ -149,9 +149,9 @@ A watermark is a "marker" in the stream that tells Flink: "I am confident no mor
 
 Flink 1.19+ introduced direct support for Changelog Window Aggregation. This allows the window to subtract the "old" values and add the "new" values if an update arrives for a record already counted in a window.
 
-## Infrastructure as Code
+## Infrastructure as Code (Expect around 10 minutes deployment)
 
-The [IaC](./IaC/) folder includes the Terraform to deploy the solution on AWS and Confluent Cloud.
+The [IaC](./IaC/) folder includes the Terraform to deploy the infractructure of the solution on AWS and Confluent Cloud. 
 
 1. Confluent Cloud Infrastructure components:
    1. Environment
@@ -163,7 +163,17 @@ The [IaC](./IaC/) folder includes the Terraform to deploy the solution on AWS an
    1. Redshift Cluster
    > Note: only if Amazon Redshift is selected as a data warehouse
    2. Amazon RDS for PostgreSQL Database - holds information about Product, Orders and Customers
-   
+
+### Prerequisites
+
+* **Confluent Cloud API Keys** - [Cloud resource management API Keys](https://docs.confluent.io/cloud/current/security/authenticate/workload-identities/service-accounts/api-keys/overview.html#resource-scopes) with Organisation Admin permissions are needed by Terraform to deploy the necessary Confluent resources.
+* **Terraform (v1.14.3+)** - The demo resources are automatically created using [Terraform](https://www.terraform.io). Besides having Terraform installed locally, will need to provide your cloud provider credentials so Terraform can create and manage the resources for you.
+* **AWS account** - This demo runs on AWS
+* **AWS CLI** - Terraform script uses AWS CLI to manage AWS resources
+* **PSQL** - Make sure psql is installed locally.
+* **Confluent CLI** - Used in the destroy script to delete resources created outside terraform. Run `brew install confluent`.
+* **Unix machine** - The Terraform script requires a Unix environment. If you're using a Windows machine, consider deploying an EC2 instance with CentOS and run the deployment steps from there.
+
 ### Deployment Flow
 
 **Option 1: Deploy Everything at Once**
@@ -171,12 +181,13 @@ The [IaC](./IaC/) folder includes the Terraform to deploy the solution on AWS an
 1. Configure terraform.tfvars
 2. terraform init
 3. terraform plan
-4. terraform apply]
-5. Wait for RDS + CDC
+4. terraform apply
+5. Wait for RDS + CDC to be provisioned
 6. Insert sample data using [Data Generator](./data-generators/README.md)
-7. Run Flink SQL statements [Flink SQL](./cc-flink-sql/README.md)
-8. Verify enriched topics
-9. Query S3/Redshift
+7. Deploy Flink SQL statements using another set of terraform for [Flink SQLs](./cc-flink-sql/terraform/README.md)
+7. Can validate in Confluent Cloud User Interface the state of the Flink Statements
+8. Verify enriched transactions and hourly_aggregate topics
+9. Query Iceberg tables with Redshift
 
 **Option 2: Step-by-Step Deployment**
 
@@ -198,12 +209,13 @@ For incremental deployment (e.g., RDS first, then Confluent Cloud), see the deta
 
 ## Flink Processing
 
-[See dedicated note](./cc-flink-sql/README.md) for the processing of Debezium envelop, addressing deduplication, sliding window aggregation...
+[See dedicated note](./cc-flink-sql/README.md) for the details on how to process Debezium envelop, addressing deduplication, sliding window aggregation, ML Scoring calls...
 
 ## Demonstration Script
 
 1. As a preparation to the demonstration deploy all the infrastructure using Terraform in one shot:
     ```sh
+    # under IaC folder
     terraform init
     terraform plan
     terraform apply
@@ -244,6 +256,12 @@ For incremental deployment (e.g., RDS first, then Confluent Cloud), see the deta
 
 See [data-generators/README.md](./data-generators/README.md) for detailed usage and options.
 
+## Clean Up
+
+> [!WARNING]
+> **Don't skip this!**
+>
+> Avoid unexpected charges by cleaning up when you're done.
 
 ## Sources of knowledge
 

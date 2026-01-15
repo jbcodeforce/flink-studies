@@ -6,6 +6,11 @@
 # -----------------------------------------------------------------------------
 # Remote State from IaC
 # -----------------------------------------------------------------------------
+# NOTE: The IaC infrastructure must be deployed first and the state file must exist.
+# If you get an error about state not found, ensure:
+# 1. The IaC has been applied: cd ../../IaC && terraform apply
+# 2. The state file exists at the path specified in iac_state_path variable
+# 3. The path is correct (default: ../../IaC/terraform.tfstate from this directory)
 data "terraform_remote_state" "iac" {
   backend = "local"
 

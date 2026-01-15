@@ -78,86 +78,28 @@ data "confluent_flink_region" "card_tx_flink_region" {
 }
 
 # -----------------------------------------------------------------------------
-# Kafka Topics
+# Provider Integration for Tableflow BYOB AWS
 # -----------------------------------------------------------------------------
-# NOTE: Most topics are created automatically by Flink CREATE TABLE statements.
-# However, we create topics here that are needed by connectors (like S3 sink)
-# before Flink statements are deployed.
-
-# Topic for enriched transactions (needed by S3 sink connector)
-resource "confluent_kafka_topic" "card_tx_enriched" {
-  kafka_cluster {
-    id = confluent_kafka_cluster.card_tx_cluster.id
-  }
-
-  topic_name    = "${var.prefix}-enriched-transactions"
-  partitions_count = 6
-
-  rest_endpoint = confluent_kafka_cluster.card_tx_cluster.rest_endpoint
-
-  credentials {
-    key    = confluent_api_key.app_manager_kafka_key.id
-    secret = confluent_api_key.app_manager_kafka_key.secret
-  }
-
-  depends_on = [
-    confluent_role_binding.app_manager_env_admin
-  ]
-}
-
-# Topic for aggregations (needed by S3 sink connector)
-resource "confluent_kafka_topic" "card_tx_aggregations" {
-  kafka_cluster {
-    id = confluent_kafka_cluster.card_tx_cluster.id
-  }
-
-  topic_name    = "${var.prefix}-tx-aggregations"
-  partitions_count = 6
-
-  rest_endpoint = confluent_kafka_cluster.card_tx_cluster.rest_endpoint
-
-  credentials {
-    key    = confluent_api_key.app_manager_kafka_key.id
-    secret = confluent_api_key.app_manager_kafka_key.secret
-  }
-
-  depends_on = [
-    confluent_role_binding.app_manager_env_admin
-  ]
-}
-
-# -----------------------------------------------------------------------------
-# Tableflow Enablement
-# -----------------------------------------------------------------------------
-# Enable Tableflow on tx_aggregations topic for Iceberg table management
-resource "confluent_tableflow_topic" "card_tx_aggregations" {
-  count = var.enable_tableflow ? 1 : 0
+# Create provider integration if tableflow_provider_integration_id is not provided
+resource "confluent_provider_integration" "tableflow_aws" {
+  count = var.enable_tableflow && var.tableflow_provider_integration_id == "" ? 1 : 0
 
   environment {
     id = confluent_environment.card_tx_env.id
   }
 
-  kafka_cluster {
-    id = confluent_kafka_cluster.card_tx_cluster.id
+  display_name = "${var.prefix}-tableflow-provider-integration-${random_id.env_display_id.hex}"
+
+  aws {
+    customer_role_arn = aws_iam_role.confluent_tableflow_role.arn
   }
-
-  display_name = confluent_kafka_topic.card_tx_aggregations.topic_name
-  table_formats = ["ICEBERG"]
-
-  # Use Confluent-managed storage
-  managed_storage {}
-
-  credentials {
-    key    = confluent_api_key.app_manager_tableflow_key[0].id
-    secret = confluent_api_key.app_manager_tableflow_key[0].secret
-  }
-
-  depends_on = [
-    confluent_kafka_topic.card_tx_aggregations,
-    confluent_api_key.app_manager_tableflow_key
-  ]
 
   lifecycle {
     prevent_destroy = false
   }
+}
+
+# Use created provider integration or provided one
+locals {
+  tableflow_provider_integration_id = var.tableflow_provider_integration_id != "" ? var.tableflow_provider_integration_id : (var.enable_tableflow ? confluent_provider_integration.tableflow_aws[0].id : "")
 }

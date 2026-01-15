@@ -142,7 +142,7 @@ resource "confluent_connector" "card_tx_cdc_source" {
     "database.server.name" = var.prefix
 
     # Topic configuration
-    # NOTE: Let Debezium create topics automatically to avoid schema compatibility issues
+    # Topics will be created automatically by the connector when using AVRO format
     # Topics will be created as: {prefix}.public.customers and {prefix}.public.transactions
     "topic.prefix" = var.prefix
 
@@ -150,9 +150,18 @@ resource "confluent_connector" "card_tx_cdc_source" {
     "after.state.only"  = "false"  # Only emit the 'after' state, not full envelope
     "plugin.name"       = "pgoutput"  # PostgreSQL native logical replication
 
-    # Output format
+    # Output format - AVRO format automatically creates topics and schemas
     "output.data.format" = "AVRO"
     "output.key.format"  = "AVRO"
+
+    # Schema Registry configuration
+    # Use '.flink-dev' schema context for both key and value schemas
+    # This ensures schemas are registered with the specified context
+    "key.converter.schema.registry.context"   = ".flink-dev"
+    "value.converter.schema.registry.context" = ".flink-dev"
+    
+    # Schema creation - enabled by default with AVRO format
+    # Schemas will be automatically created in Schema Registry with the '.flink-dev' context
 
     # Table filtering - only capture customers and transactions
     "table.include.list" = "public.customers,public.transactions"
@@ -335,103 +344,4 @@ EOF
 
   # Note: depends_on is not needed for destroy-time provisioners
   # The triggers capture the values at creation time
-}
-
-# -----------------------------------------------------------------------------
-# S3 Sink Connector (for Iceberg/Parquet output)
-# -----------------------------------------------------------------------------
-resource "confluent_connector" "card_tx_s3_sink" {
-  environment {
-    id = confluent_environment.card_tx_env.id
-  }
-
-  kafka_cluster {
-    id = confluent_kafka_cluster.card_tx_cluster.id
-  }
-
-  config_sensitive = {
-    "aws.access.key.id"     = aws_iam_access_key.s3_sink_access_key.id
-    "aws.secret.access.key" = aws_iam_access_key.s3_sink_access_key.secret
-  }
-
-  config_nonsensitive = {
-    # Connector identification
-    "connector.class" = "S3_SINK"
-    "name"            = "${var.prefix}-s3-sink"
-
-    # Authentication
-    "kafka.auth.mode"          = "SERVICE_ACCOUNT"
-    "kafka.service.account.id" = confluent_service_account.connectors.id
-
-    # Topics to sink
-    "topics" = "${var.prefix}-enriched-transactions,${var.prefix}-tx-aggregations"
-
-    # S3 configuration
-    "s3.bucket.name" = aws_s3_bucket.card_tx_iceberg.bucket
-    "s3.region"      = var.cloud_region
-
-    # Output format - Parquet for Iceberg compatibility
-    "output.data.format" = "PARQUET"
-    "input.data.format"  = "AVRO"
-
-    # Partitioning
-    "time.interval"       = "HOURLY"
-    "path.format"         = "'year'=YYYY/'month'=MM/'day'=dd/'hour'=HH"
-    "rotate.schedule.interval.ms" = "3600000"  # 1 hour
-
-    # Performance
-    "tasks.max"   = "1"
-    "flush.size"  = "1000"
-  }
-
-  depends_on = [
-    confluent_kafka_topic.card_tx_enriched,
-    confluent_kafka_topic.card_tx_aggregations,
-    confluent_kafka_acl.connectors_read_topic,
-    aws_s3_bucket.card_tx_iceberg
-  ]
-
-  lifecycle {
-    prevent_destroy = false
-  }
-}
-
-# -----------------------------------------------------------------------------
-# IAM User and Access Key for S3 Sink Connector
-# -----------------------------------------------------------------------------
-resource "aws_iam_user" "s3_sink_user" {
-  name = "${var.prefix}-s3-sink-user-${random_id.env_display_id.hex}"
-
-  tags = {
-    Name = "${var.prefix}-s3-sink-user"
-  }
-}
-
-resource "aws_iam_access_key" "s3_sink_access_key" {
-  user = aws_iam_user.s3_sink_user.name
-}
-
-resource "aws_iam_user_policy" "s3_sink_policy" {
-  name = "${var.prefix}-s3-sink-policy"
-  user = aws_iam_user.s3_sink_user.name
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:PutObject",
-          "s3:GetObject",
-          "s3:DeleteObject",
-          "s3:ListBucket",
-          "s3:GetBucketLocation"
-        ]
-        Resource = [
-          aws_s3_bucket.card_tx_iceberg.arn,
-          "${aws_s3_bucket.card_tx_iceberg.arn}/*"
-        ]
-      }
-    ]
-  })
 }

@@ -184,6 +184,25 @@ variable "enable_tableflow" {
   default     = true
 }
 
+variable "tableflow_provider_integration_id" {
+  description = "Confluent provider integration ID for Tableflow BYOB AWS storage. Leave empty to create via Terraform."
+  type        = string
+  default     = ""
+}
+
+variable "confluent_external_id" {
+  description = "External ID for Confluent Cloud to assume the IAM role. Get this from Confluent Cloud when setting up provider integration, or use a secure random string."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "create_tableflow_topics" {
+  description = "Create Kafka topics for Tableflow if they don't exist. Set to false if topics are created by Flink."
+  type        = bool
+  default     = true
+}
+
 variable "enable_redshift" {
   description = "Deploy Redshift Serverless for querying Iceberg tables"
   type        = bool

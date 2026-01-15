@@ -1,6 +1,6 @@
 # Confluent Tableflow
 
-This chapter is based to public knowledge and customer engagements experience. 
+This chapter is based to public knowledge, product documentation, and customer engagements experiences. 
 
 The first level of information is the [product blog](https://www.confluent.io/blog/introducing-tableflow/), and the [main product page](https://www.confluent.io/product/tableflow/) as well as the [product documentation](https://docs.confluent.io/cloud/current/topics/tableflow/get-started/overview.html) for Confluent Cloud.
 
@@ -8,11 +8,14 @@ The first level of information is the [product blog](https://www.confluent.io/bl
 
 ## Goals
 
-TableFlow allows to represent a Kafka topic as a table in [Apache Iceberg](https://iceberg.apache.org/) or Delta Lake format. It becomes the mediation layer between operational data and analytical data zone. It is using the schema registry to get the schema definition of the table.  It addresses a unified storage view on top of object storage.
+TableFlow allows to represent a Kafka topic and associated schema as a table in [Apache Iceberg](https://iceberg.apache.org/) or Delta Lake format. It becomes the mediation layer between operational data and analytical data zone. It is using the schema registry to get the schema definition of the table.  It addresses a unified storage view on top of object storage.
 
-Kafka topic is the source of truth of the data. Tableflow supports the open table format: a table and catalog for analytics. It is part of the [data as a product](../methodology/data_as_a_product.md) architecture.
+Kafka topic is the source of truth of the data. Tableflow supports the [open table]() format: a table and catalog for analytics. It is part of the [data as a product](../methodology/data_as_a_product.md) architecture.
 
 For Data engineers in data lakehouse environment, kafka topic is seen as table.
+
+???- info "open table format"
+    Open table formats are an open-source technology for storing tabular data that builds on top of existing file formats like Parquet or CSV files. It adresses the needs for query performance and reliability of data lake tables, by adding metadata on top of the tabular data. It was developed to bring ACID guarantees, on write operations.
 
 ### Pain
 
@@ -45,8 +48,7 @@ The classical high level view to move data from Kafka topics to lake house often
 
 * DLQ not supported yet
 * Iceberg format is not supported in Databricks
-* No support of json-registry
-* Catalog integration through private link
+* Catalog integration through private link, one catalog per cluster.
 * Debezium CDC support
 
 ## Architecture
@@ -68,6 +70,13 @@ The classical high level view to move data from Kafka topics to lake house often
 ## Persisted Data in S3
 
 * Keep metadata of records in original topic like topic name, timestamp and offset.
+
+The integration process includes:
+
+* Getting a S3 bucket
+* Creating an IAM Role with policy to read, putobject,.. on S3 bucket
+* Creating a Confluent Provider Integration to grant CC access to the S3 bucket. It uses IAM Roles based authorization. The  provider integration to act-as a trusted identity. [See step by step instructions](https://docs.confluent.io/cloud/current/integrations/provider-integrations/create-provider-integration-aws.html#create-provider-integration-aws-steps). 
+* Getting access rights from a IAM policy
 
 ## External query
 

@@ -17,7 +17,7 @@ with ml_results as (
             WHEN t.amount > 1000 THEN 'HIGH'
             WHEN t.amount > 500 THEN 'MEDIUM'
             ELSE 'LOW'
-        END AS risk_level,
+        END AS risk_level
     from src_txp_transaction t
 )
 SELECT 
@@ -40,9 +40,9 @@ SELECT
     COALESCE(m.risk_level, 'UNKNOWN') AS risk_level,
     -- Metadata
     CURRENT_TIMESTAMP AS enriched_at
-FROM transactions t
+FROM src_txp_transaction t
 -- Join with customers using temporal join (latest version)
-LEFT JOIN txp_dim_customers FOR SYSTEM_TIME AS OF t.`timestamp` AS c
+LEFT JOIN txp_dim_customers as c
     ON t.account_number = c.account_number
 -- Join with ML results
 LEFT JOIN ml_results AS m

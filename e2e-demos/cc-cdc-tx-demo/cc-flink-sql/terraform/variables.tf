@@ -20,7 +20,7 @@ variable "confluent_cloud_api_secret" {
 variable "iac_state_path" {
   description = "Path to the IaC terraform state file (relative to this terraform directory)"
   type        = string
-  default     = "../../../../../IaC/terraform.tfstate"
+  default     = "../../IaC/terraform.tfstate"
 }
 
 variable "cloud_region" {

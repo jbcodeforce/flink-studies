@@ -46,4 +46,7 @@ local_architecture = "amd64"  # or "arm64" for Apple Silicon
 
 # Optional Features
 enable_tableflow = true
+# Set to false if topics are created by Flink DDL statements
+# Set to true if you want Terraform to create the topics
+create_tableflow_topics = true
 enable_redshift  = false

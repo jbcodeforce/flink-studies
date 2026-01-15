@@ -4,7 +4,8 @@
     * Created November 2024
     * Updated January 2026
 
-This guide covers using Terraform to deploy and manage Confluent Cloud infrastructure for Flink applications.
+This guide covers using Terraform to deploy and manage Confluent Cloud infrastructure for Flink applications. Terraform is well suited for managing the following components:
+
 
 ## Overview
 
