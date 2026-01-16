@@ -1,5 +1,13 @@
 # A Confluent Cloud Demo for Transaction Processing using CDC
 
+This is a demonstration of simple transaction processing with customer joins. From RDS Postgres, to Confluent Cloud Kafka and Flink to Iceberg tables in lake house.
+
+The high level flow is presented in this high-level architecture:
+
+![](./images/proposed_arch.drawio.png)
+
+Audiance: Developer and SRE to understand a classical Data Steaming Processing implementation and deployment.
+
 ## Goals
 
 The demonstration presents a hands-on guidance for the following requirements:
@@ -16,7 +24,7 @@ The demonstration presents a hands-on guidance for the following requirements:
 * [x] Tableflow Catalog in sync with AWS Glue Catalog
 * [x] AWS Athena integrated with AWS Glue Catalog for the Kafka Cluster defined and then being able to see and query the Iceberg tables. 
 * [x] Integrate with a [ML scoring service](./tx_scoring/README.md). The scoring is deployed as a task in AWS ECS. Docker image in ECR.
-* [ ] What monitoring and observability requirements exist? [See specific section below.](#monitoring)
+* [x] What monitoring and observability requirements exist? [See specific section below.](#monitoring)
 * [x] How to handle microservices that produce/consume Kafka data without going through Debezium? ([Outbox pattern](#outbox-pattern))
 * [x] Flink statement deployment with Terraform. [See the terraform folder](./cc-flink-sql/terraform/README.md)
 
@@ -93,7 +101,8 @@ Which, once the Terraform deployment is completed and the Flink Statements are e
 ![](./images/cc-k-topics.png)
 
 
-### Project Structure
+<details>
+<summary>Project Structure</summary>
 
 The folder `cc-flink-sql` includes all the Flink Statements organized by using the Kimball architecture and [star schema](https://jbcodeforce.github.io/flink-studies/concepts/#the-star-schema).
 
@@ -179,9 +188,10 @@ The folder `cc-flink-sql` includes all the Flink Statements organized by using t
     ├── README.md
     └── requirements.txt
 ```
+</details>
 
-
-### Domain Data Model
+<details>
+<summary> Domain Data Model</summary>
 
 The transaction processing domain consists of two core source tables:
 
@@ -212,6 +222,7 @@ Financial transaction records with deduplication support (upsert mode).
 | `location` | VARCHAR(255) | Transaction location |
 | `status` | VARCHAR(255) | Transaction status |
 | `transaction_type` | VARCHAR(50) | Type of transaction |
+</details>
 
 ### Outbox pattern
 
