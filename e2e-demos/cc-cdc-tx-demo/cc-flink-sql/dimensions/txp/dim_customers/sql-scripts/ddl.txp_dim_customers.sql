@@ -9,8 +9,6 @@ CREATE TABLE IF NOT EXISTS txp_dim_customers (
     src_op STRING,
     is_deleted BOOLEAN,
     src_timestamp TIMESTAMP_LTZ(3),
-    src_partition INT,
-    src_offset BIGINT,
     -- Watermark for event-time processing
     WATERMARK FOR src_timestamp AS src_timestamp - INTERVAL '5' SECOND,
     -- Primary key for upsert semantics

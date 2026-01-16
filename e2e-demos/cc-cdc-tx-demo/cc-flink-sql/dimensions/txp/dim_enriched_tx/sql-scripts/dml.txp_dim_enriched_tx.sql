@@ -39,7 +39,7 @@ SELECT
     COALESCE(m.fraud_category, 'PENDING') AS fraud_category,
     COALESCE(m.risk_level, 'UNKNOWN') AS risk_level,
     -- Metadata
-    CURRENT_TIMESTAMP AS enriched_at
+    t.`$rowtime` AS enriched_at
 FROM src_txp_transaction t
 -- Join with customers using temporal join (latest version)
 LEFT JOIN txp_dim_customers as c

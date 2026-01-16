@@ -26,6 +26,35 @@ Some **limitations**:
 * No support for DataStream apps.
 * No support or Flink connectors, only Kafka
 
+## Comparaison with Apache Flink
+
+The following table is current January 2026. Roadmap changes and product features are delivered on a weekly basis.
+
+| Apache Flink | Confluent Cloud Flink |
+| ------------ | ---------------------|
+| Self managed clusters, versions, state backends, checkpointing, security, connectors, and integration with Kafka and other systems | Serverless Flink service fully managed by Confluent, tightly integrated with Confluent Cloud Kafka, Schema Registry, security, and governance |
+| | Create compute pools (regional, elastic resource pools) and run SQL/Table API statements against them | 
+| | Always on the latest Flink runtime; security patches and minor upgrades are applied automatically to running statements |
+|Tune parallelism | Automatically scale up or down to meet the demands of the most complex workloads without overprovisioning |
+| DataStream,  SQL/Table API |  SQL/Table API | 
+| Define catalogs/databases/tables, schemas, provision Kafka topic yourself. | Environments, clusters, topics, and schemas become catalogs, databases, tables, and table schemas automatically. `Create table` provision topics and schemas | 
+| Must define watermark strategies for event‑time processing by code | System column $rowtime mapped to Kafka record timestamp with default watermark strategy.|
+| Multiple Kafka connectors, and other sources/sinks | One Kafka connector with support to append/upsert mode from table configuration, Other system is via Confluent Cloud managed connectors | 
+| Full SQL surface | Limitation on Database and Catalog actions |
+| Integrate with your own IAM, ACLs, encryption, auditing, governance tooling | Inherits Confluent Cloud IAM, RBAC, audit logs, and governance; Flink defines dedicated roles like FlinkDeveloper and FlinkAdmin layered on top of existing Kafka RBAC |
+| Support your networking integration |NSame private networking and networking controls as Confluent Cloud Kafka (VPC peering / Private Link / CC | 
+| Integrate metrics and logs into your own stack. Per cluster dashboard | Confluent UI has built‑in Flink statements view, lag/throughput metrics, and error states. Native integration with Prometheus/Datadog via Confluent Cloud Metrics API and Notifications | 
+
+Pay attention that most Flink managed services are cloud-hosted and not cloud-native: only the infrastructure layer is fully managed and there’s still a lot of manual tasks for day 2 operations. 
+
+**References:**
+
+* Introducing Confluent Cloud for Apache Flink [https://www.confluent.io/blog/introducing-flink-on-confluent-cloud/](https://www.confluent.io/blog/introducing-flink-on-confluent-cloud/)
+* Stream Processing with Confluent Cloud for Apache Flink | [Confluent Documentation](https://docs.confluent.io/cloud/current/flink/overview.html)
+* Comparing Apache Flink with Confluent Cloud for Apache Flink | [Confluent Documentation](https://docs.confluent.io/cloud/current/flink/concepts/comparison-with-apache-flink.html)
+* Manage Flink Compute Pools in Confluent Cloud for Apache Flink | [Confluent Documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/create-compute-pool.html)
+* Monitor and Manage Flink SQL Statements in Confluent Cloud for Apache Flink | [Confluent Documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html)
+
 ## Key Concepts
 
 * This is a **regional service**, in one of the three major cloud providers. It is defined in a context of a Confluent's environment.
