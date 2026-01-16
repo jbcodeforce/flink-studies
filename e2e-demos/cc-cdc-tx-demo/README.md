@@ -6,7 +6,7 @@ The high level flow is presented in this high-level architecture:
 
 ![](./images/proposed_arch.drawio.png)
 
-Audiance: Developer and SRE to understand a classical Data Steaming Processing implementation and deployment.
+**Audience:** Developer and SRE to understand a classical Data Steaming Processing implementation and deployment.
 
 ## Goals
 
@@ -28,19 +28,7 @@ The demonstration presents a hands-on guidance for the following requirements:
 * [x] How to handle microservices that produce/consume Kafka data without going through Debezium? ([Outbox pattern](#outbox-pattern))
 * [x] Flink statement deployment with Terraform. [See the terraform folder](./cc-flink-sql/terraform/README.md)
 
-### To Do
-
-* [x] Terraform to get VPC, subnets, configure service accounts, role binding,  deploy RDS, create tables, specify inbound rules for security group, Debezium connector, 
-* [x] Terraform for S3 bucket, iam role and access policy
-* [x] Athena, Glue Catalog
-* [x] Add sample data generator code to support the demonstration
-* [x] Create ML inference code with  Docker container and ECS deployment
-* [ ] Add monitoring dashboards (Grafana)
-* [ ] Add end-to-end integration tests
-
-
-
-## Architecture
+## From ETL to Flink
 
 Classical context for data transformation is to move, transform and load data from operational data plane to analytical data plane
 
@@ -56,9 +44,15 @@ The classical high level view to move data from Kafka topics to lake house often
 
 At the ingestion layer the type conversion, schematization, synchronize metadata to catalog, perform tables management
 The bronze landing zone will have raw tables with Iceberg Metadata.
-At the data preparation layer the ELT batch processing addresses deduplication, business metric creations, enforcing business rules and constraints.
+At the data preparation layer the ELT batch processing addresses deduplication, business metric creations, enforcing business rules and constraints. When ETL processing is done with ANSI SQL, Spark and even in some way Snowflake SQL, it is possible to run the same processing as a medaillon architecture. The approach is to build analytics data product. We recommend [reading this chapter](https://jbcodeforce.github.io/flink-studies/methodology/data_as_a_product/) and may use [this tool](https://github.com/jbcodeforce/shift_left_utils/tree/main) to jump start your Kimball Flink project. 
 
-As the Data is already in Kafka it is more efficient in term of cost to do transformation, enrichment, filtering from bronze to gold in real-time processing. The architecture combines query engine on top of lake house tables for final consumers such as BI dashboard or ML team. To illustrate this approach this demonstration implements the following architecture.
+As the Data is already in Kafka it is more efficient in term of cost to do transformation, enrichment, filtering from bronze to gold in real-time processing. The architecture combines query engine on top of lake house tables for final consumers such as BI dashboard or ML team.
+
+In this demonstration the [./cc-flink-sql/](./cc-flink-sql/) folder has the Kimball structure built with 'shift_left' CLI.
+
+## Architecture
+
+To illustrate the move to real-time streaming approach, this demonstration implements the following architecture.
 
 ![](./images/proposed_arch.drawio.png)
 
@@ -106,7 +100,7 @@ Which, once the Terraform deployment is completed and the Flink Statements are e
 
 The folder `cc-flink-sql` includes all the Flink Statements organized by using the Kimball architecture and [star schema](https://jbcodeforce.github.io/flink-studies/concepts/#the-star-schema).
 
-```
+```sh
 ├── cc-flink-sql
 │   ├── common.mk
 │   ├── dimensions
@@ -236,11 +230,6 @@ Any microservice that wants to implement the outbox pattern needs to design the 
 
 [Future implementation](./oubox-customer-service/README.md) will demonstrate the method for the customer microservice.
 
-## From ETL to Flink
-
-When ETL processing is done with ANSI SQL, Spark and even in some way Snowflake SQL, it is possible to run the same processing as a medaillon architecture. The approach is to build analytics data product. We recommend [reading this chapter](https://jbcodeforce.github.io/flink-studies/methodology/data_as_a_product/) and may use [this tool](https://github.com/jbcodeforce/shift_left_utils/tree/main) to jump start your Kimball Flink project. 
-
-In this demonstration the [./cc-flink-sql/](./cc-flink-sql/) folder has the Kimball structure built with 'shift_left' CLI.
 
 ## End-to-end ordering
 
