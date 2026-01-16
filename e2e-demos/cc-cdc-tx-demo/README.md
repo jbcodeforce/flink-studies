@@ -12,11 +12,11 @@ The demonstration presents a hands-on guidance for the following requirements:
 * [x] Maintain data order for transactional systems. [See below section on end to end ordering](#end-to-end-ordering).
 * [x] Fanout to different topics using statement set. [See statement set of tx](./cc-flink-sql/sources/txp/src_transaction/sql-scripts/dml.src_txp_transaction.sql)
 * [x] Data enrichment with joins. [See joins transaction and customer](./cc-flink-sql/dimensions/txp/dim_enriched_tx/sql-scripts/dml.txp_dim_enriched_tx.sql)
-* [x] Tableflow set up for aggregation and enriched_transaction topics - Messages in S3 Buckets and Iceberg Tables
+* [x] Tableflow set up for aggregation and enriched_transaction topics - Messages in S3 Buckets and Iceberg Tables [See section below](#tableflow)
 * [x] Tableflow Catalog in sync with AWS Glue Catalog
 * [x] AWS Athena integrated with AWS Glue Catalog for the Kafka Cluster defined and then being able to see and query the Iceberg tables. 
 * [x] Integrate with a [ML scoring service](./tx_scoring/README.md). The scoring is deployed as a task in AWS ECS. Docker image in ECR.
-* [x] What monitoring and observability requirements exist? (#monitoring)
+* [ ] What monitoring and observability requirements exist? [See specific section below.](#monitoring)
 * [x] How to handle microservices that produce/consume Kafka data without going through Debezium? ([Outbox pattern](#outbox-pattern))
 * [x] Flink statement deployment with Terraform. [See the terraform folder](./cc-flink-sql/terraform/README.md)
 
@@ -24,12 +24,12 @@ The demonstration presents a hands-on guidance for the following requirements:
 
 * [x] Terraform to get VPC, subnets, configure service accounts, role binding,  deploy RDS, create tables, specify inbound rules for security group, Debezium connector, 
 * [x] Terraform for S3 bucket, iam role and access policy
-* [ ] Athena, Glue Catalog
+* [x] Athena, Glue Catalog
 * [x] Add sample data generator code to support the demonstration
 * [x] Create ML inference code with  Docker container and ECS deployment
 * [ ] Add monitoring dashboards (Grafana)
 * [ ] Add end-to-end integration tests
-* [ ] Create Athena SQL scripts
+
 
 
 ## Architecture
@@ -42,7 +42,7 @@ The medallion architecture, a three-layered approach, is a common framework for 
 
 ![](https://jbcodeforce.github.io/flink-studies/methodology/diagrams/medallion_arch.drawio.png)
 
-Most of the transformation, enrichment, filtering from bronze to gold can be done in real-time processing, combined with query engine on lake house capabilties. To illustrate this appraoch the demonstration illustrates the following architecture.
+Most of the transformation, enrichment, filtering from bronze to gold can be done in real-time processing, combined with a query engine on top of lake house tables. To illustrate this approach this demonstration implements the following architecture.
 
 ![](./images/proposed_arch.drawio.png)
 
@@ -50,22 +50,25 @@ Most of the transformation, enrichment, filtering from bronze to gold can be don
 
 | Component | Description | Resource Naming |
 |-----------|-------------|-----------------|
-| RDS PostgreSQL | Database with customers and transactions tables | `card-tx-db-{id}` |
+| RDS PostgreSQL | OLTP Database with customers and transactions tables | `card-tx-db-{id}` |
 | VPC | Existing VPC (passed via terraform variable) | N/A |
-| CDC Debezium v2 | Source connector capturing changes from PostgreSQL | `card-tx-cdc-source` |
+| CDC Debezium v2 | Source connector capturing changes from PostgreSQL, running on Confluent Cloud | `card-tx-cdc-source` |
 | Flink Compute Pool | Processing Debezium messages, enrichment, aggregations | `card-tx-compute-pool-{id}` |
 | ML Inference | ECS/Fargate container for fraud scoring | `card-tx-ml-inference-service` |
 | TableFlow | Automatic Iceberg table management | Enabled on enriched tx and aggregates topics |
 | TableFlow Catalog | Source of truth for all tables sync to object storage | |
+| S3 Bucket | Data lake persistence layer for Iceberg Tables | |
 | AWS Glue Catalog | Catalog in Cloud Provider | |
 | AWS Athena | Query Engine on Iceberg Table | |
 
 
 ### Topics
 
-The following figure presents the Flink pipeline, including CDC connectors and tableflow.
+The following figure presents the Flink pipeline, including CDC connectors and tableflow enabled on the Sink Topics.
 
 ![](./images/pipeline.drawio.png)
+
+The ownership columns means who dictates the data schema evolution.
 
 | Topic | Owner | Description |
 | ----- | ----- | ----------- |
@@ -77,12 +80,14 @@ The following figure presents the Flink pipeline, including CDC connectors and t
 | `dim_enriched_tx` | Flink | Transaction enriched with customer data |
 | `hourly_tx_metrics` | Flink | Compute stateful aggregates for the transactions |
 
-Which once the Terraform deployment and the Flink Statements are executed will look like:
+Which, once the Terraform deployment is completed and the Flink Statements are executed, will look like:
 
 ![](./images/cc-k-topics.png)
 
 
 ### Project Structure
+
+The folder `cc-flink-sql` includes all the Flink Statements organized by using the Kimball architecture and [star schema](https://jbcodeforce.github.io/flink-studies/concepts/#the-star-schema).
 
 ```
 ├── cc-flink-sql
@@ -439,6 +444,16 @@ For incremental deployment (e.g., RDS first, then Confluent Cloud), see the deta
 
     ![](./images/iceberg-tx-metrics.png)
 
+## Tableflow 
+
+Tableflow is enabled at the topic level. It may be done via User interface, CLI or terraform. For IaC dependency, tableflow needs to be enabled when the topic is created, which means for Flink deployment, when the DDL of the sink topics are completed. This is why Tableflow is part of the Flink deployment.
+
+![](./images/tableflow-screen.png)
+
+Once Tableflow activated we can see the connection with a link to the topics enabled, and the External catalog integration with Glue.
+
+![](./images/tableflow-topics.png)
+
 
 ## ML Scoring
 
@@ -463,7 +478,13 @@ The scoring service may be exposed as a web service deployed as a container on K
 
 ## Monitoring
 
-TBC 
+* Compute pool metrics
+    ![](./images/computepool_metrics.png)
+
+* Statement level metrics
+    ![](./images/statement_metrics.png)
+
+It is possible to enable Prometheus scrapping and build Grafana Dashboard. [See this repository](https://github.com/confluentinc/confluent-cloud-flink-workshop/tree/master/flink-monitoring)
 
 ## Clean Up
 
