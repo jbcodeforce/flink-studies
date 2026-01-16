@@ -49,7 +49,7 @@ variable "db_instance_class" {
 variable "db_allocated_storage" {
   description = "Allocated storage in GB"
   type        = number
-  default     = 30
+  default     = 100
 }
 
 variable "db_username" {
@@ -173,6 +173,24 @@ variable "local_architecture" {
   description = "Local machine architecture for Docker builds (amd64 or arm64)"
   type        = string
   default     = "amd64"
+}
+
+variable "enable_ml_inference_alb" {
+  description = "Enable Application Load Balancer for ML inference service (recommended for production)"
+  type        = bool
+  default     = false
+}
+
+variable "ml_inference_certificate_arn" {
+  description = "ACM certificate ARN for HTTPS on ML inference ALB. Leave empty for HTTP-only. Certificate must be in the same region as the ALB."
+  type        = string
+  default     = ""
+}
+
+variable "ml_inference_redirect_http_to_https" {
+  description = "Redirect HTTP to HTTPS when certificate is provided"
+  type        = bool
+  default     = true
 }
 
 # -----------------------------------------------------------------------------

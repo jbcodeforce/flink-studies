@@ -14,45 +14,6 @@ Those demos are not finalized yet:
 * [ ] [Change Data Capture with Postgresql](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cdc-demo), CDC Debezium, Confluent Platformm v8.0+, Cloud Native for Postgresql Kuberneted Operator
 * [ ] [CDC from RDS Postgresql, CC Debezium v2, Flink processing](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cc-cdc-tx-demo) with ML scoring:
 
-```mermaid
-flowchart LR
-    subgraph VPC [Existing AWS VPC]
-        RDS[(RDS PostgreSQL<br/>customers + transactions)]
-        ML[ML Inference<br/>ECS/Fargate]
-        S3[(S3 Iceberg<br/>Parquet)]
-    end
-    
-    subgraph CC [Confluent Cloud]
-        CDC[CDC Debezium v2<br/>PostgresCdcSourceV2]
-        
-        subgraph Topics [Kafka Topics]
-            T1[card-tx.public.customers]
-            T2[card-tx.public.transactions]
-            T3[card-tx-enriched-transactions]
-            T4[card-tx-tx-aggregations]
-            T5[card-tx-ml-results]
-        end
-        
-        Flink[Flink Compute Pool]
-        TF[TableFlow]
-        Sink[S3 Sink Connector]
-    end
-    
-    RDS --> CDC
-    CDC --> T1
-    CDC --> T2
-    T1 --> Flink
-    T2 --> Flink
-    Flink --> T3
-    Flink --> T4
-    Flink --> T5
-    Flink -.->|HTTP| ML
-    T3 --> TF
-    T3 --> Sink
-    T4 --> Sink
-    Sink --> S3
-    TF --> S3
-```
 
 * [ ] [e-commerce sale](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale)
 * [ ] [Transform json records](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/json-transformation)

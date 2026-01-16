@@ -1,11 +1,11 @@
 # Transaction Scoring Service
 
-FastAPI-based ML inference service for real-time transaction fraud scoring. This service provides HTTP endpoints that can be called by Flink SQL jobs to enrich transactions with fraud risk scores.
+FastAPI-based ML inference service for real-time transaction fraud scoring. This service provides HTTP endpoints that can be called by Flink SQL jobs to enrich transactions with fraud risk scores. It is NOT using ML serialized model (pickle) as of now but this will be a future extension.
 
 ## Overview
 
 The Transaction Scoring Service is a containerized FastAPI application that:
-- Accepts transaction data (txn_id, amount, merchant, location)
+- Accepts transaction data (txn_id, account_number, amount, merchant, location, tx_time)
 - Returns fraud scores, categories, and risk levels
 - Provides health check endpoints for ECS monitoring
 - Currently uses rule-based scoring (placeholder for future ML model integration)
@@ -40,15 +40,20 @@ Returns service health status. Used by ECS health checks.
 POST /predict
 ```
 
-Scores a transaction for fraud risk.
+Scores a transaction for fraud risk. **Requires Bearer token authentication.**
+
+**Headers:**
+- `Authorization: Bearer <token>` - Required bearer token for authentication
 
 **Request:**
 ```json
 {
   "txn_id": "txn-12345",
+  "account_number": "1234567890",
   "amount": 150.50,
   "merchant": "AMAZON",
-  "location": "ONLINE"
+  "location": "ONLINE",
+  "tx_time": "2021-01-01T00:00:00Z"
 }
 ```
 
@@ -103,30 +108,38 @@ uvicorn main:app --host 0.0.0.0 --port 8080 --reload
 
 3. **Test the service:**
 ```bash
-# Health check
+# Set bearer token (optional for local dev if BEARER_TOKEN not set)
+export BEARER_TOKEN="your-secret-token"
+
+# Health check (no auth required)
 curl http://localhost:8080/health
 
-# Score a transaction
+# Score a transaction (with authentication)
 curl -X POST http://localhost:8080/predict \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${BEARER_TOKEN}" \
   -d '{
     "txn_id": "txn-12345",
+    "account_number": "1234567890",
     "amount": 150.50,
     "merchant": "AMAZON",
-    "location": "ONLINE"
+    "location": "ONLINE",
+    "tx_time": "2021-01-01T00:00:00Z"
   }'
 ```
+
+**Note:** If `BEARER_TOKEN` environment variable is not set, authentication is disabled (warning logged). For production, always set a secure bearer token.
 
 ## Docker Build
 
 ### Build the image:
 ```bash
-docker build -t tx-scoring:latest .
+docker build -t jbcodeforce/tx-scoring:latest .
 ```
 
 ### Run the container:
 ```bash
-docker run -p 8080:8080 tx-scoring:latest
+docker run -p 8080:8080 jbcodeforce/tx-scoring:latest
 ```
 
 ### Test in container:
@@ -172,7 +185,7 @@ Replace `<region>` and `<account-id>` with your values.
 docker build -t tx-scoring:latest .
 
 # Tag for ECR
-ECR_REPO=$(cd ../IaC && terraform output -raw ecr_repository_url)
+ECR_REPO=$(terraform output -raw ecr_repository_url)
 docker tag tx-scoring:latest ${ECR_REPO}:latest
 docker tag tx-scoring:latest ${ECR_REPO}:$(date +%Y%m%d-%H%M%S)
 ```
@@ -265,6 +278,8 @@ The service is designed to be called from Flink SQL jobs. See `../cc-flink-sql/0
 
 ### Example Flink SQL (when HTTP_REQUEST is available):
 
+**Note:** When using HTTPS and bearer token authentication, include the Authorization header in the HTTP request.
+
 ```sql
 INSERT INTO ml_results
 SELECT 
@@ -277,13 +292,16 @@ SELECT
     CAST(JSON_VALUE(
         HTTP_REQUEST(
             'POST',
-            'http://<ecs-service-endpoint>:8080/predict',
+            'https://<ecs-service-endpoint>:8080/predict',
             JSON_OBJECT(
                 'txn_id' VALUE t.txn_id,
+                'account_number' VALUE t.account_number,
                 'amount' VALUE t.amount,
                 'merchant' VALUE t.merchant,
-                'location' VALUE t.location
-            )
+                'location' VALUE t.location,
+                'tx_time' VALUE CAST(t.`timestamp` AS STRING)
+            ),
+            'Authorization', 'Bearer <your-bearer-token>'
         ),
         '$.fraud_score'
     ) AS DOUBLE) AS fraud_score,
@@ -303,6 +321,34 @@ FROM transactions t;
 | `HOST` | Bind host | `0.0.0.0` |
 | `LOG_LEVEL` | Logging level | `INFO` |
 | `APP_ENV` | Application environment | `production` |
+| `BEARER_TOKEN` | Bearer token for authentication | `""` (disabled if not set) |
+| `SSL_KEYFILE` | Path to SSL private key file for HTTPS | `None` (HTTP if not set) |
+| `SSL_CERTFILE` | Path to SSL certificate file for HTTPS | `None` (HTTP if not set) |
+
+### Authentication
+
+The service uses Bearer token authentication for the `/predict` endpoint. The `/health` endpoint does not require authentication for monitoring purposes.
+
+**Setting Bearer Token:**
+```bash
+export BEARER_TOKEN="your-secure-token-here"
+```
+
+**Using Bearer Token:**
+```bash
+curl -H "Authorization: Bearer your-secure-token-here" ...
+```
+
+### HTTPS Configuration
+
+To enable HTTPS, provide SSL certificate and key files:
+
+```bash
+export SSL_KEYFILE="/path/to/key.pem"
+export SSL_CERTFILE="/path/to/cert.pem"
+```
+
+The service will automatically use HTTPS when both `SSL_KEYFILE` and `SSL_CERTFILE` are set. In production environments (e.g., AWS ECS behind ALB), HTTPS termination is typically handled by the load balancer, so the service may run on HTTP internally.
 
 ## Future Enhancements
 
@@ -311,8 +357,11 @@ FROM transactions t;
 - [ ] Implement request caching for performance
 - [ ] Add metrics and observability (Prometheus, CloudWatch)
 - [ ] Support batch scoring endpoint
-- [ ] Add authentication/authorization
+- [x] Add authentication/authorization (Bearer token implemented)
+- [x] HTTPS support (implemented via SSL configuration)
 - [ ] Implement rate limiting
+- [ ] Support multiple bearer tokens or token rotation
+- [ ] JWT token validation
 
 ## Troubleshooting
 

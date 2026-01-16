@@ -6,6 +6,11 @@
 # -----------------------------------------------------------------------------
 # AWS Outputs
 # -----------------------------------------------------------------------------
+output "cloud_region" {
+  description = "AWS region where resources are deployed"
+  value       = var.cloud_region
+}
+
 output "rds_endpoint" {
   description = "RDS PostgreSQL endpoint"
   value       = aws_db_instance.card_tx_db.endpoint
@@ -109,6 +114,77 @@ output "ecr_repository_url" {
 output "ecs_cluster_name" {
   description = "ECS cluster name"
   value       = aws_ecs_cluster.card_tx_ecs_cluster.name
+}
+
+output "ml_inference_service_name" {
+  description = "ECS service name for ML inference"
+  value       = aws_ecs_service.card_tx_ml_inference_service.name
+}
+
+output "ml_inference_service_arn" {
+  description = "ECS service ARN for ML inference"
+  value       = aws_ecs_service.card_tx_ml_inference_service.id
+}
+
+output "ml_inference_task_definition_arn" {
+  description = "ECS task definition ARN for ML inference"
+  value       = aws_ecs_task_definition.card_tx_ml_inference_task.arn
+}
+
+output "ml_inference_log_group" {
+  description = "CloudWatch log group name for ML inference"
+  value       = aws_cloudwatch_log_group.card_tx_ml_inference_logs.name
+}
+
+output "ml_inference_service_url" {
+  description = "URL to access the ML inference service (ALB DNS name if ALB is enabled, otherwise use ECS task IP)"
+  value = var.enable_ml_inference_alb ? (
+    var.ml_inference_certificate_arn != "" ? "https://${aws_lb.card_tx_ml_inference_alb[0].dns_name}" : "http://${aws_lb.card_tx_ml_inference_alb[0].dns_name}"
+  ) : null
+}
+
+output "ml_inference_direct_access_info" {
+  description = "Information about direct ECS access (when ALB is disabled)"
+  value = var.enable_ml_inference_alb ? null : <<-EOT
+    To get the direct ECS access URL, use the helper script:
+    
+      cd IaC
+      ./get-ecs-task-url.sh
+    
+    Or manually get the task IP:
+    
+      CLUSTER=$(terraform output -raw ecs_cluster_name)
+      SERVICE=$(terraform output -raw ml_inference_service_name)
+      REGION=$(terraform output -raw cloud_region)
+      
+      TASK_ARN=$(aws ecs list-tasks --cluster $CLUSTER --service-name $SERVICE --region $REGION --query 'taskArns[0]' --output text)
+      ENI_ID=$(aws ecs describe-tasks --cluster $CLUSTER --tasks $TASK_ARN --region $REGION --query 'tasks[0].attachments[0].details[?name==`networkInterfaceId`].value' --output text)
+      PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $ENI_ID --region $REGION --query 'NetworkInterfaces[0].Association.PublicIp' --output text)
+      
+      echo "http://$PUBLIC_IP:8080"
+    
+    Note: The task IP changes when tasks are restarted. Use the ALB for a stable URL.
+  EOT
+}
+
+output "ml_inference_alb_dns" {
+  description = "Application Load Balancer DNS name for ML inference (if enabled)"
+  value       = try(aws_lb.card_tx_ml_inference_alb[0].dns_name, null)
+}
+
+output "ml_inference_alb_arn" {
+  description = "Application Load Balancer ARN for ML inference (if enabled)"
+  value       = try(aws_lb.card_tx_ml_inference_alb[0].arn, null)
+}
+
+output "ml_inference_https_url" {
+  description = "HTTPS URL for ML inference service (if certificate is configured)"
+  value       = var.enable_ml_inference_alb && var.ml_inference_certificate_arn != "" ? "https://${aws_lb.card_tx_ml_inference_alb[0].dns_name}" : null
+}
+
+output "ml_inference_certificate_configured" {
+  description = "Whether HTTPS certificate is configured for ML inference ALB"
+  value       = var.enable_ml_inference_alb && var.ml_inference_certificate_arn != ""
 }
 
 # -----------------------------------------------------------------------------
@@ -232,15 +308,3 @@ output "psql_connection_string" {
   value       = "postgresql://${var.db_username}@${aws_db_instance.card_tx_db.address}:${aws_db_instance.card_tx_db.port}/${aws_db_instance.card_tx_db.db_name}"
 }
 
-# -----------------------------------------------------------------------------
-# Redshift Outputs (Conditional)
-# -----------------------------------------------------------------------------
-output "redshift_endpoint" {
-  description = "Redshift Serverless endpoint"
-  value       = var.enable_redshift ? aws_redshiftserverless_workgroup.card_tx_workgroup[0].endpoint[0].address : null
-}
-
-output "redshift_database" {
-  description = "Redshift database name"
-  value       = var.enable_redshift ? aws_redshiftserverless_namespace.card_tx_namespace[0].db_name : null
-}

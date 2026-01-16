@@ -1,3 +1,5 @@
+-- demonstration a simple fan out pattern between pending and other transactions
+-- the debezium envelop was removed via the to SET ('value.format' = 'avro-debezium-registry');
 EXECUTE STATEMENT SET
 BEGIN
 INSERT INTO
@@ -5,6 +7,7 @@ INSERT INTO
 SELECT
   COALESCE(txn_id, 'NULL') AS txn_id,
   COALESCE(account_number, 'NULL') AS account_number,
+  -- CDC date has the format 2026-01-15T12:00:00.000000Z
   TO_TIMESTAMP(REGEXP_REPLACE(COALESCE(`timestamp`, '2000-01-01T00:00:00.000000Z'),'T|Z',' '), 'yyyy-MM-dd HH:mm:SSSSSS') AS `timestamp`,
   COALESCE(amount, 0) AS amount,
   COALESCE(currency, 'NULL') AS currency,
@@ -18,6 +21,8 @@ FROM
   `card-tx.public.transactions`
 WHERE
   status <> 'PENDING';
+
+-- Second table/topic for pending transactions
 INSERT INTO
   src_txp_pending_transaction
 SELECT
