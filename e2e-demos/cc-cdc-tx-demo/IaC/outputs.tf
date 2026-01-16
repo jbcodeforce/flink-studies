@@ -91,8 +91,8 @@ output "s3_bucket_arn" {
 }
 
 output "confluent_tableflow_role_arn" {
-  description = "IAM role ARN for Confluent Cloud Tableflow provider integration"
-  value       = aws_iam_role.confluent_tableflow_role.arn
+  description = "IAM role ARN for Confluent Cloud Tableflow provider integration (uses existing role if provided, otherwise created role)"
+  value       = local.tableflow_role_arn
 }
 
 output "tableflow_provider_integration_id" {
@@ -185,6 +185,34 @@ output "ml_inference_https_url" {
 output "ml_inference_certificate_configured" {
   description = "Whether HTTPS certificate is configured for ML inference ALB"
   value       = var.enable_ml_inference_alb && var.ml_inference_certificate_arn != ""
+}
+
+# -----------------------------------------------------------------------------
+# Glue and Athena Outputs
+# -----------------------------------------------------------------------------
+output "glue_database_name" {
+  description = "Glue database name for Iceberg tables"
+  value       = aws_glue_catalog_database.card_tx_iceberg_db.name
+}
+
+output "glue_database_arn" {
+  description = "Glue database ARN"
+  value       = aws_glue_catalog_database.card_tx_iceberg_db.arn
+}
+
+output "athena_workgroup_name" {
+  description = "Athena workgroup name for querying Iceberg tables"
+  value       = aws_athena_workgroup.card_tx_workgroup.name
+}
+
+output "athena_workgroup_arn" {
+  description = "Athena workgroup ARN"
+  value       = aws_athena_workgroup.card_tx_workgroup.arn
+}
+
+output "athena_query_results_location" {
+  description = "S3 location for Athena query results"
+  value       = "s3://${aws_s3_bucket.card_tx_iceberg.bucket}/athena-results/"
 }
 
 # -----------------------------------------------------------------------------

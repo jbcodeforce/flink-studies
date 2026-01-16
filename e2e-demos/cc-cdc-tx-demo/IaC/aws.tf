@@ -296,3 +296,53 @@ resource "null_resource" "create_tables" {
   }
 }
 
+# -----------------------------------------------------------------------------
+# AWS Glue Data Catalog
+# -----------------------------------------------------------------------------
+
+# Glue Database for Iceberg tables (Tableflow will create tables here)
+resource "aws_glue_catalog_database" "card_tx_iceberg_db" {
+  name        = "${var.prefix}-iceberg-${random_id.env_display_id.hex}"
+  description = "Glue database for Card Transaction Iceberg tables from Tableflow"
+
+  catalog_id = data.aws_caller_identity.current.account_id
+
+  tags = {
+    Name = "${var.prefix}-iceberg-database"
+  }
+}
+
+# -----------------------------------------------------------------------------
+# AWS Athena
+# -----------------------------------------------------------------------------
+
+# Athena Workgroup for querying Iceberg tables
+resource "aws_athena_workgroup" "card_tx_workgroup" {
+  name        = "${var.prefix}-athena-workgroup-${random_id.env_display_id.hex}"
+  description = "Athena workgroup for querying Card Transaction Iceberg tables"
+
+  configuration {
+    enforce_workgroup_configuration    = true
+    publish_cloudwatch_metrics_enabled = true
+
+    result_configuration {
+      output_location = "s3://${aws_s3_bucket.card_tx_iceberg.bucket}/athena-results/"
+
+      encryption_configuration {
+        encryption_option = "SSE_S3"
+      }
+    }
+
+    engine_version {
+      selected_engine_version = "Athena engine version 3"
+    }
+  }
+
+  tags = {
+    Name = "${var.prefix}-athena-workgroup"
+  }
+}
+
+# Athena Data Catalog (uses Glue by default, but we can configure it explicitly)
+# Note: Athena uses Glue Data Catalog by default, so no separate resource needed
+# The Glue database created above will be accessible from Athena

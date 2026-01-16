@@ -82,8 +82,7 @@ resource "aws_iam_user_policy" "s3_sink_policy" {
 # IAM Role for Confluent Cloud Provider Integration
 # -----------------------------------------------------------------------------
 # This role allows Confluent Cloud to assume it for Tableflow BYOB access
-# NOTE: After creating the provider integration, update this role's trust policy
-# with the external_id from the provider integration output.
+# Can use an existing role (via tableflow_iam_role_arn) or create a new one
 
 # Get current AWS account ID
 data "aws_caller_identity" "current" {}
@@ -92,10 +91,29 @@ data "aws_caller_identity" "current" {}
 # Common account ID: 197857026523
 locals {
   confluent_cloud_account_id = "197857026523"
+  
+  # Determine S3 bucket name - use provided or created bucket
+  tableflow_s3_bucket = var.tableflow_s3_bucket_name != "" ? var.tableflow_s3_bucket_name : aws_s3_bucket.card_tx_iceberg.bucket
+  tableflow_s3_bucket_arn = var.tableflow_s3_bucket_name != "" ? "arn:aws:s3:::${var.tableflow_s3_bucket_name}" : aws_s3_bucket.card_tx_iceberg.arn
+  
+  # Determine Glue account ID - use provided or current account
+  glue_account_id = var.tableflow_glue_account_id != "" ? var.tableflow_glue_account_id : data.aws_caller_identity.current.account_id
+  
+  # Determine which role ARN to use - existing or created
+  tableflow_role_arn = var.tableflow_iam_role_arn != "" ? var.tableflow_iam_role_arn : aws_iam_role.confluent_tableflow_role[0].arn
 }
 
+# Data source for existing IAM role if provided
+# Extract role name from ARN (format: arn:aws:iam::ACCOUNT:role/ROLE_NAME)
+data "aws_iam_role" "existing_tableflow_role" {
+  count = var.tableflow_iam_role_arn != "" ? 1 : 0
+  name  = try(split("/", var.tableflow_iam_role_arn)[length(split("/", var.tableflow_iam_role_arn)) - 1], "")
+}
+
+# Create IAM role only if not using existing role
 resource "aws_iam_role" "confluent_tableflow_role" {
-  name = "${var.prefix}-confluent-tableflow-role-${random_id.env_display_id.hex}"
+  count = var.tableflow_iam_role_arn == "" ? 1 : 0
+  name  = "${var.prefix}-confluent-tableflow-role-${random_id.env_display_id.hex}"
 
   # Trust policy: Allow Confluent Cloud to assume this role
   # The external_id will be provided by Confluent Cloud when creating the provider integration
@@ -123,9 +141,20 @@ resource "aws_iam_role" "confluent_tableflow_role" {
   }
 }
 
-resource "aws_iam_role_policy" "confluent_tableflow_s3_policy" {
-  name = "${var.prefix}-confluent-tableflow-s3-policy"
-  role = aws_iam_role.confluent_tableflow_role.id
+# Combined S3 and Glue policy
+# If creating new role: attach policy with default name
+# If using existing role: attach policy with specified name (or default if not specified)
+locals {
+  tableflow_policy_name = var.tableflow_iam_role_arn != "" ? (
+    var.tableflow_iam_policy_name != "" ? var.tableflow_iam_policy_name : "${var.prefix}-tableflow-combined-policy"
+  ) : "${var.prefix}-confluent-tableflow-combined-policy"
+  
+  tableflow_role_id = var.tableflow_iam_role_arn != "" ? data.aws_iam_role.existing_tableflow_role[0].id : aws_iam_role.confluent_tableflow_role[0].id
+}
+
+resource "aws_iam_role_policy" "confluent_tableflow_combined_policy" {
+  name = local.tableflow_policy_name
+  role = local.tableflow_role_id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -133,19 +162,50 @@ resource "aws_iam_role_policy" "confluent_tableflow_s3_policy" {
       {
         Effect = "Allow"
         Action = [
-          "s3:PutObject",
-          "s3:GetBucketLocation",
-          "s3:ListBucketMultipartUploads",
+          "s3:ListAllMyBuckets"
+        ]
+        Resource = [
+          "arn:aws:s3:::*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
           "s3:ListBucket",
+          "s3:GetBucketLocation",
+          "s3:ListBucketMultipartUploads"
+        ]
+        Resource = [
+          local.tableflow_s3_bucket_arn
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
           "s3:PutObjectTagging",
           "s3:GetObject",
-          "s3:DeleteObject",
           "s3:AbortMultipartUpload",
           "s3:ListMultipartUploadParts"
         ]
         Resource = [
-          aws_s3_bucket.card_tx_iceberg.arn,
-          "${aws_s3_bucket.card_tx_iceberg.arn}/*"
+          "${local.tableflow_s3_bucket_arn}/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "glue:GetTable",
+          "glue:GetDatabase",
+          "glue:DeleteTable",
+          "glue:DeleteDatabase",
+          "glue:CreateTable",
+          "glue:CreateDatabase",
+          "glue:UpdateTable",
+          "glue:UpdateDatabase"
+        ]
+        Resource = [
+          "arn:aws:glue:${var.cloud_region}:${local.glue_account_id}:*"
         ]
       }
     ]

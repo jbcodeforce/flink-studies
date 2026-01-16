@@ -91,7 +91,7 @@ resource "confluent_provider_integration" "tableflow_aws" {
   display_name = "${var.prefix}-tableflow-provider-integration-${random_id.env_display_id.hex}"
 
   aws {
-    customer_role_arn = aws_iam_role.confluent_tableflow_role.arn
+    customer_role_arn = local.tableflow_role_arn
   }
 
   lifecycle {

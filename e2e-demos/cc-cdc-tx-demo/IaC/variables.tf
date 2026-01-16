@@ -226,3 +226,30 @@ variable "enable_redshift" {
   type        = bool
   default     = false
 }
+
+# -----------------------------------------------------------------------------
+# IAM Role Configuration for Tableflow/Glue
+# -----------------------------------------------------------------------------
+variable "tableflow_iam_role_arn" {
+  description = "Existing IAM role ARN for Tableflow/Glue access. If provided, this role will be used instead of creating a new one. The role must have S3 and Glue permissions."
+  type        = string
+  default     = ""
+}
+
+variable "tableflow_s3_bucket_name" {
+  description = "S3 bucket name for Tableflow access. If empty, uses the created bucket name."
+  type        = string
+  default     = ""
+}
+
+variable "tableflow_glue_account_id" {
+  description = "AWS account ID for Glue access. If empty, uses current account ID."
+  type        = string
+  default     = ""
+}
+
+variable "tableflow_iam_policy_name" {
+  description = "Name of the IAM policy to attach to the role. If using an existing role, this policy will be created/updated with S3 and Glue permissions."
+  type        = string
+  default     = ""
+}

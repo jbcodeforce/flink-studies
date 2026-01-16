@@ -42,7 +42,15 @@ The medallion architecture, a three-layered approach, is a common framework for 
 
 ![](https://jbcodeforce.github.io/flink-studies/methodology/diagrams/medallion_arch.drawio.png)
 
-Most of the transformation, enrichment, filtering from bronze to gold can be done in real-time processing, combined with a query engine on top of lake house tables. To illustrate this approach this demonstration implements the following architecture.
+The classical high level view to move data from Kafka topics to lake house often rely on complex ETL pipelines, manual data wrangling, and custom governance processes. It is error prone work to map each one into an Iceberg table by hand.
+
+![](https://jbcodeforce.github.io/flink-studies/techno/diagrams/tf_hl_current_flow.drawio.png)
+
+At the ingestion layer the type conversion, schematization, synchronize metadata to catalog, perform tables management
+The bronze landing zone will have raw tables with Iceberg Metadata.
+At the data preparation layer the ELT batch processing addresses deduplication, business metric creations, enforcing business rules and constraints.
+
+As the Data is already in Kafka it is more efficient in term of cost to do transformation, enrichment, filtering from bronze to gold in real-time processing. The architecture combines query engine on top of lake house tables for final consumers such as BI dashboard or ML team. To illustrate this approach this demonstration implements the following architecture.
 
 ![](./images/proposed_arch.drawio.png)
 
@@ -412,9 +420,9 @@ For incremental deployment (e.g., RDS first, then Confluent Cloud), see the deta
 
     ![](./images/flink-statements.png)
 
-    While the DML are continusouly running:
+    While the DML are continuously running:
 
-    ![]()
+    ![](./images/running-statements.png)
 
 1. Start the data generator with infinite loop
     ```sh
@@ -448,12 +456,28 @@ For incremental deployment (e.g., RDS first, then Confluent Cloud), see the deta
 
 Tableflow is enabled at the topic level. It may be done via User interface, CLI or terraform. For IaC dependency, tableflow needs to be enabled when the topic is created, which means for Flink deployment, when the DDL of the sink topics are completed. This is why Tableflow is part of the Flink deployment.
 
+### The Key Steps
+
+1. Create an S3 Bucket: Set up an S3 bucket to store Iceberg tables.
+1. Configure Provider Integration: Establish a secure connection between Confluent Cloud and your AWS account.
+1. Create IAM Policies and Roles: Define permissions for S3 access and create an IAM role that Confluent Cloud can assume.
+1. Enable Tableflow: Activate Tableflow for specific Kafka topics to begin syncing data to your S3 bucket.
+
+[See this lab](https://github.com/confluentinc/confluent-cloud-flink-workshop/blob/master/tableflow-labs/lab3.md) for step by step instruction using the AWS and Confluent consoles.
+
+In this demonstration the Terraform [IaC/aws.tf](./IaC/aws.tf) has created the S3 bucket.
+
 ![](./images/tableflow-screen.png)
 
 Once Tableflow activated we can see the connection with a link to the topics enabled, and the External catalog integration with Glue.
 
 ![](./images/tableflow-topics.png)
 
+### Integrate TableFlow Catalog with AWS Glue Catalog and then Query with Athena
+
+1. Create a Glue Provider Integration: Set up a separate IAM role and permissions for Glue access.
+1. Configure Catalog Integration: Link Confluent Cloud to AWS Glue Data Catalog to register Iceberg tables.
+1. Query with Athena: Use Athena to run SQL queries on the Iceberg tables synced by Tableflow.
 
 ## ML Scoring
 

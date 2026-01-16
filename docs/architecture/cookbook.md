@@ -362,7 +362,13 @@ SET `sql.tables.scan.startup.mode`= "earliest"
 
 #### Materialized Table
 
-[FLIP 435](https://cwiki.apache.org/confluence/display/FLINK/FLIP-435%3A+Introduce+a+New+Materialized+Table+for+Simplifying+Data+Pipelines) presents a new table construct to simplify streaming and batchin pipeline. Users can define a data transformation with a single declarative CREATE MATERIALIZED TABLE ... AS SELECT ... statement and specify a desired FRESHNESS interval. Flink then automatically creates and manages the underlying data refresh pipeline, intelligently choosing between a continuous streaming job for low-latency updates or a scheduled batch job for less frequent refreshes. This eliminates the need for separate codebases, manual job orchestration, and complex parameter tuning. The entire lifecycle of the data pipeline, including pausing, resuming, manual backfills, and altering data freshness, can be managed through simple SQL commands, allowing developers to focus on business logic rather than the complexities of stream and batch execution.
+[FLIP 435](https://cwiki.apache.org/confluence/display/FLINK/FLIP-435%3A+Introduce+a+New+Materialized+Table+for+Simplifying+Data+Pipelines) presents a new table construct to simplify streaming and batch pipelines. Users can define a data transformation with a single declarative
+
+```sql 
+CREATE MATERIALIZED TABLE ... AS SELECT ... 
+```
+
+statement and specify a desired FRESHNESS interval. Flink then automatically creates and manages the underlying data refresh pipeline, intelligently choosing between a continuous streaming job for low-latency updates or a scheduled batch job for less frequent refreshes. This eliminates the need for separate codebases, manual job orchestration, and complex parameter tuning. The entire lifecycle of the data pipeline, including pausing, resuming, manual backfills, and altering data freshness, can be managed through simple SQL commands, allowing developers to focus on business logic rather than the complexities of stream and batch execution.
 
 See the [Flink 2.x documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/materialized-table/overview/).
 
@@ -373,7 +379,7 @@ See the [Flink 2.x documentation](https://nightlies.apache.org/flink/flink-docs-
     REFRESH_MODE = FULL
     AS SELECT * FROM source_table;
   ```
-* Alter mateterialized table allows developer to suspend and resume refresh pipeline. When suspending a table in CONTINUOUS mode, the job will be paused using STOP WITH SAVEPOINT by default.
+* Alter materialized table allows developer to suspend and resume refresh pipeline. When suspending a table in CONTINUOUS mode, the job will be paused using STOP WITH SAVEPOINT by default.
 * Altering an existing materialized table, schema evolution currently only supports adding nullable columns to the end of the original materialized table’s schema.
 * Materialized Tables must be created through SQL Gateway,
 
