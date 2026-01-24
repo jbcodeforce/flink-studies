@@ -62,6 +62,7 @@ resource "aws_security_group" "card_tx_ecs_sg" {
 resource "aws_ecr_repository" "card_tx_ml_inference_repo" {
   name                 = "${var.prefix}-ml-inference-${random_id.env_display_id.hex}"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true

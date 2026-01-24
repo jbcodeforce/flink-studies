@@ -2,14 +2,13 @@
     "apiVersion": "cmf.confluent.io/v1",
     "kind": "ComputePool",
     "metadata": {
-      "name": "pool1",
-      "namespace": "confluent"
+      "name": "pool1"
     },
     "spec": {
       "type": "DEDICATED",
       "clusterSpec": {
         "flinkVersion": "v1_19",
-        "image": "confluentinc/cp-flink-sql:1.19-cp2",
+        "image": "confluentinc/cp-flink-sql:1.19-cp5",
         "flinkConfiguration": {
           "pipeline.operator-chaining.enabled": "false",
           "execution.checkpointing.interval": "30s",
@@ -23,7 +22,7 @@
         },
         "jobManager": {
           "resource": {
-            "cpu": 1,
+            "cpu": 0.5,
             "memory": "1024m"
           }
         }

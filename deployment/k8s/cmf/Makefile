@@ -1,12 +1,14 @@
 CFNT_NS=confluent
 FLCK_NS=confluent
 NS_LIST=$(FLCK_NS),el-demo,rental
-CMF_VERSION="~2.1.0"
+CMF_VERSION="~2.2.0"
 #CMF_VERSION="~2.0.0"
 CONFLUENT_CMF_URL=http://localhost:8084
 ENV_NAME=dev-env
 FKO_VERSION="~1.130.0"
 #FKO_VERSION="~1.120.0"
+CATALOG_NAME=dev-catalog
+DATABASE_NAME=kafka-db
 # Colors for output
 BLUE := \033[0;34m
 GREEN := \033[0;32m
@@ -103,30 +105,40 @@ port_forward_cmf:
 	@osascript -e 'tell app "Terminal" to do script "kubectl port-forward svc/cmf-service 8084:80 -n $(FLCK_NS)"' -e 'tell application "Terminal" to set current settings of front window to settings set "Grass"'
 
 create_flink_env:
-	@confluent flink environment list --url $(CONFLUENT_CMF_URL) 2>/dev/null | grep -q "$(ENV_NAME)" && \
+	@curl -H "Content-type: application/yaml"  $(CONFLUENT_CMF_URL)/cmf/api/v1/environments  2>/dev/null | jq . |grep -q "$(ENV_NAME)" && \
 		echo "$(YELLOW)Environment $(ENV_NAME) already exists$(NC)" || \
-		(confluent flink environment create $(ENV_NAME) --url $(CONFLUENT_CMF_URL) --kubernetes-namespace $(FLCK_NS) && \
-		echo "$(GREEN)Environment $(ENV_NAME) created$(NC)")
+		(curl -v -H "Content-Type: application/json" -X POST $(CONFLUENT_CMF_URL)/cmf/api/v1/environments -d @./$(ENV_NAME).json) && \
+		echo "$(GREEN)Environment $(ENV_NAME) created$(NC)"
 
 
 create_compute_pool:
-	@confluent flink compute-pool create ../cmf/compute_pool.json --environment $(ENV_NAME) --url $(CONFLUENT_CMF_URL)
+	@curl -v -H "Content-Type: application/json" -X POST  $(CONFLUENT_CMF_URL)/cmf/api/v1/environments/$(ENV_NAME)/compute-pools -d @./compute_pool.json
 
 list_compute_pools:
-	@confluent flink compute-pool list --environment $(ENV_NAME) --url $(CONFLUENT_CMF_URL)
+	@curl -v -H "Content-Type: application/json"  $(CONFLUENT_CMF_URL)/cmf/api/v1/environments/$(ENV_NAME)/compute-pools | jq .
 
 delete_compute_pool:
-	@confluent flink compute-pool delete pool1 --environment $(ENV_NAME) --url $(CONFLUENT_CMF_URL)
+	@curl -v -H "Content-Type: application/json"  $(CONFLUENT_CMF_URL)/cmf/api/v1/environments/$(ENV_NAME)/compute-pools/pool1 -X DELETE
 
 create_kafka_catalog:
-	@confluent flink catalog create ./kafka_catalog.json --url $(CONFLUENT_CMF_URL)
+	@curl -v -H "Content-Type: application/json" -X POST $(CONFLUENT_CMF_URL)/cmf/api/v1/catalogs/kafka -d@./dev_catalog.json
 
 list_kafka_catalogs:
-	@confluent flink catalog list --url $(CONFLUENT_CMF_URL)
+	@curl -X GET $(CONFLUENT_CMF_URL)/cmf/api/v1/catalogs/kafka | jq .
+
 	@echo "$(GREEN) Kafka catalogs verified$(NC)"
 
 delete_kafka_catalog:
-	@confluent flink catalog delete demo-cat --url $(CONFLUENT_CMF_URL)
+	@curl -v -H "Content-Type: application/json" -X DELETE  $(CONFLUENT_CMF_URL)/cmf/api/v1/catalogs/kafka/dev-catalog
+
+create_database:
+	@curl -v -H "Content-Type: application/json" -X POST $(CONFLUENT_CMF_URL)/cmf/api/v1/catalogs/kafka/$(CATALOG_NAME)/databases -d@./dev_database.json
+
+list_databases:
+	@curl -X GET $(CONFLUENT_CMF_URL)/cmf/api/v1/catalogs/kafka/$(CATALOG_NAME)/databases | jq .
+
+delete_database:
+	@curl -v -H "Content-Type: application/json" -X DELETE  $(CONFLUENT_CMF_URL)/cmf/api/v1/catalogs/kafka/$(CATALOG_NAME)/databases/$(DATABASE_NAME)
 
 create_kafka_secret:
 	@curl -v -H "Content-Type: application/json" -X POST ${CONFLUENT_CMF_URL}/cmf/api/v1/secrets -d@../cmf/kafka_secret.json

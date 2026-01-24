@@ -5,7 +5,7 @@
     "name": "kafka-reader-writer-example"
   },
   "spec": {
-    "image": "confluentinc/cp-flink:2.1.0-cp1-java21",
+    "image": "confluentinc/cp-flink:2.1.1-cp1-java21",
     "flinkVersion": "v2_1",
     "serviceAccount": "flink",
     "podTemplate": {

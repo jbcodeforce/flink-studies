@@ -28,11 +28,13 @@ The Makefile in this folder defines commands for Colima, minio, certificat manag
 
 Each component directory contains its own README or documentation with specific setup instructions.
 
-## Starting from a brand new collima VM
+## Starting from a brand new collima VM or orbstack
 
 Here are the getting started:
-1. [Optional] Delete previous default VM: `colima delete default`
-1. Start a new default VM: `make start_colima` -> The created ns are `default, kube-node-lease, kube-public, kube-system`
+1. [Optional] Delete previous default VM: `colima delete default` or `orb delete k8s`
+1. Start a new default VM: 
+    * `make start_colima` -> The created ns are `default, kube-node-lease, kube-public, kube-system`
+    * `make start_orbstack` -> The created ns are `default, kube-node-lease, kube-public, kube-system`
 1. Deploy Certificat manager, minio and other: `make deploy`
 1. Deploy Confluent Platform. It will take few minutes to get all pods up and running
     ```sh
@@ -44,8 +46,8 @@ Here are the getting started:
 1. Deploy Confluent Manager for Flink. As the deployment of the operator implies to reference namespace where applications may be deployed, modify the Makefile to change the variable: NS_LIST
     ```sh
     # Create the needed namespace
-    kubectl create rental
-    kubectl create el-demo
+    kubectl create ns rental
+    kubectl create ns el-demo
     # within cmf folder
     make deploy
     ```

@@ -112,7 +112,7 @@ DataStream<Row> changelogStream = tableEnv.toChangelogStream(anyTable)
   flink run -c j9r.flink.MyJob myapp.jar
   ```
 
-With the open source version, we have access to a lot of different connectors, for example to load data from csv file. This is convenient to do local testing. or batch processing.
+With the open source version, we have access to a lot of different connectors, for example to load data from csv file. This is convenient to do local testing or batch processing.
 
 ???- info "Create a Quarkus Flink java app"
     * Create a Quarkus app: `quarkus create app -DprojectGroupId=jbcodeforce -DprojectArtifactId=my-flink`. See code examples under `flink-java/my-flink` folder and `jbcodeforce.p1` package.
@@ -136,6 +136,14 @@ docker exec -ti $JMC flink run -d -c $CNAME /home/my-flink/target/my-flink-1.0.0
 flink run -d -c jbcodeforce.p1.WordCountMain /home/my-flink/target/my-flink-
 1.0.0-runner.jar --input file:///home/my-flink/data/wc.txt --output file:///home/my-flink/data/out.csv
 ```
+
+#### Using FlinkDeployment and K8S Operator
+
+* Create FlinkDeployment manifest with the JobSpec
+* Deploy with Kubectl
+    ```sh
+    kubectl apply -f app_deploy.yaml -n flink-oss
+    ```
 
 ## Best Practices
 

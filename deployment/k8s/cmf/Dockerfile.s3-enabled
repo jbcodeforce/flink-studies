@@ -2,7 +2,7 @@
 # This Dockerfile adds the necessary S3 filesystem plugin for checkpointing to MinIO
 
 # Use Confluent Flink image as base (adjust version as needed)
-FROM confluentinc/cp-flink:2.1.0-cp1-java21
+FROM confluentinc/cp-flink:2.2.0-cp2-java21
 
 # Switch to root to install plugins
 USER root
@@ -13,7 +13,7 @@ RUN mkdir -p /opt/flink/plugins/s3-fs-hadoop
 # Download and install flink-s3-fs-hadoop plugin
 # This provides S3A filesystem support for MinIO
 # Version should match your Flink version (1.20.x)
-ARG FLINK_VERSION=2.1.0
+ARG FLINK_VERSION=2.2.0
 RUN wget -P /opt/flink/plugins/s3-fs-hadoop/ \
     https://repo.maven.apache.org/maven2/org/apache/flink/flink-s3-fs-hadoop/${FLINK_VERSION}/flink-s3-fs-hadoop-${FLINK_VERSION}.jar
 

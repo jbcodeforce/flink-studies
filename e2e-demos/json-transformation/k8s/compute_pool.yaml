@@ -10,7 +10,7 @@ spec:
   type: DEDICATED
   clusterSpec:
     flinkVersion: v1_19
-    image: confluentinc/cp-flink-sql:1.19.1-cp1
+    image: confluentinc/cp-flink-sql:2.1.1-cp1-java21
     flinkConfiguration:
       pipeline.operator-chaining.enabled: "false"
       execution.checkpointing.interval: "10s"

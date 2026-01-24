@@ -1,5 +1,7 @@
 CFNT_NS=confluent
 DEMO_NS=el-demo,rental
+LICENSE_SECRET_NAME=confluent-license
+LICENSE_FILE=$(HOME)/.license.txt
 
 # ---------------------- Confluent Platform  --------------------------------
 # Colors for output
@@ -28,7 +30,7 @@ help: ## Show this help message
 	@awk 'BEGIN {FS = ":.*##"; printf ""} /^[a-zA-Z_-]+:.*?##/ { printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 # ------- Common elements to install -------------
-deploy: create_ns update_helm_confluent_repo upgrade_crds  deploy_cp_cfk verify_cp_cfk deploy_cp_cluster use_confluent_ns ## Deploy the Confluent Platform.
+deploy: create_ns update_helm_confluent_repo create_license_secret upgrade_crds  deploy_cp_cfk verify_cp_cfk deploy_cp_cluster use_confluent_ns ## Deploy the Confluent Platform.
 
 use_confluent_ns: ## Use the confluent namespace	
 	@kubectl config set-context --current --namespace=$(CFNT_NS)
@@ -44,6 +46,19 @@ port_forward_cp_console: ## Port forward the Confluent Platform console.
 
 port_forward_schema_registry: ## Port forward the Schema Registry
 	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/schemaregistry 8081:8081"' -e 'tell application "Terminal" to set custom title of selected tab of the front window to "Schemma Registry"'
+
+create_license_secret: ## Create Kubernetes secret for Confluent license
+	@if [ ! -f $(LICENSE_FILE) ]; then \
+		echo "$(RED)Error: License file not found at $(LICENSE_FILE)$(NC)"; \
+		exit 1; \
+	fi
+	@kubectl get secret $(LICENSE_SECRET_NAME) -n $(CFNT_NS) >/dev/null 2>&1; \
+	if [ $$? -eq 0 ]; then \
+		echo "$(YELLOW)Secret $(LICENSE_SECRET_NAME) already exists in namespace $(CFNT_NS). Deleting existing secret...$(NC)"; \
+		kubectl delete secret $(LICENSE_SECRET_NAME) -n $(CFNT_NS); \
+	fi
+	@kubectl create secret generic $(LICENSE_SECRET_NAME) --from-file=$(LICENSE_FILE) -n $(CFNT_NS)
+	@echo "$(GREEN)Created license secret $(LICENSE_SECRET_NAME) in namespace $(CFNT_NS)$(NC)"
 
 # ---- private commands ------------
 create_ns:

@@ -4,14 +4,13 @@
     * Created November 2024
     * Updated January 2026
 
-This guide covers using Terraform to deploy and manage Confluent Cloud infrastructure for Flink applications. Terraform is well suited for managing the following components:
-
+This guide covers using Terraform to deploy and manage [Confluent Cloud](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs) infrastructure for Kafka and Flink applications. 
 
 ## Overview
 
 The [Confluent Terraform Provider](https://docs.confluent.io/cloud/current/clusters/terraform-provider.html) enables infrastructure-as-code management for Confluent Cloud resources including environments, Kafka clusters, Schema Registry, Flink compute pools, and Flink SQL statements.
 
-???+ info "Core Principles"
+???+ info "Terraform Core Principles"
     When running `terraform apply`, Terraform calculates differences between the current state (tracked in its state file) and the desired state, then applies only necessary changes. This enables incremental building of infrastructure.
 
     The `terraform plan` command performs the following steps by default: 
@@ -19,6 +18,7 @@ The [Confluent Terraform Provider](https://docs.confluent.io/cloud/current/clust
     * It first runs a refresh operation to update its in-memory state with the actual, current configuration of your remote infrastructure by making API calls to the provider.
     * It then compares this updated state with the desired state defined in your local Terraform configuration files (.tf files).
     * Finally, it outputs a set of proposed changes (add, change, or destroy) required to make the running infrastructure match your configuration files. 
+    * States are saved in a file (not commited to git) named: `terraform.tfstate`.
 
     For Confluent Cloud, start with an environment, service account, and role binding, then add resources over time. Terraform automatically determines the correct order of operations based on resource dependencies.
 
@@ -65,70 +65,67 @@ Do not commit `terraform.tfstate` or environment variable files to git.
 
 ## Provider Configuration
 
-Create `main.tf` with the Confluent provider:
-
-```terraform
-terraform {
-  required_providers {
-    confluent = {
-      source  = "confluentinc/confluent"
-      version = "2.57.0"
+* Create `main.tf` with the Confluent provider:
+  ```terraform
+  terraform {
+    required_providers {
+      confluent = {
+        source  = "confluentinc/confluent"
+        version = "2.57.0"
+      }
     }
   }
-}
 
-provider "confluent" {
-  cloud_api_key    = var.confluent_cloud_api_key
-  cloud_api_secret = var.confluent_cloud_api_secret
-}
+  provider "confluent" {
+    cloud_api_key    = var.confluent_cloud_api_key
+    cloud_api_secret = var.confluent_cloud_api_secret
+  }
 
-data "confluent_organization" "my_org" {}
+  data "confluent_organization" "my_org" {}
 
-data "confluent_flink_region" "flink_region" {
-  cloud  = var.cloud_provider
-  region = var.cloud_region
-}
-```
+  data "confluent_flink_region" "flink_region" {
+    cloud  = var.cloud_provider
+    region = var.cloud_region
+  }
+  ```
 
-Define variables in `variables.tf`:
+* Define variables in `variables.tf` that will be available to all .tf files in the same folder:
+  ```terraform
+  variable "confluent_cloud_api_key" {
+    description = "Confluent Cloud API Key"
+    type        = string
+    sensitive   = true
+  }
 
-```terraform
-variable "confluent_cloud_api_key" {
-  description = "Confluent Cloud API Key"
-  type        = string
-  sensitive   = true
-}
+  variable "confluent_cloud_api_secret" {
+    description = "Confluent Cloud API Secret"
+    type        = string
+    sensitive   = true
+  }
 
-variable "confluent_cloud_api_secret" {
-  description = "Confluent Cloud API Secret"
-  type        = string
-  sensitive   = true
-}
+  variable "cloud_provider" {
+    description = "Cloud provider (AWS, GCP, AZURE)"
+    type        = string
+    default     = "AWS"
+  }
 
-variable "cloud_provider" {
-  description = "Cloud provider (AWS, GCP, AZURE)"
-  type        = string
-  default     = "AWS"
-}
+  variable "cloud_region" {
+    description = "Cloud region"
+    type        = string
+    default     = "us-west-2"
+  }
 
-variable "cloud_region" {
-  description = "Cloud region"
-  type        = string
-  default     = "us-west-2"
-}
+  variable "prefix" {
+    description = "Prefix for resource names"
+    type        = string
+    default     = "j9r"
+  }
+  ```
 
-variable "prefix" {
-  description = "Prefix for resource names"
-  type        = string
-  default     = "j9r"
-}
-```
-
-Initialize Terraform:
-
-```sh
-terraform init
-```
+* Initialize Terraform:
+  ```sh
+  terraform init
+  ```
 
 ## Resource Definitions
 
@@ -160,9 +157,7 @@ resource "confluent_role_binding" "env-admin" {
 }
 ```
 
-**Importing existing resources:**
-
-For existing environments, use an `imports.tf` file:
+**Importing existing resources:** It is relevant to reuse an existing environment and different resources. For existing environments, use an `imports.tf` file that link values to variables like (this import file may be .gitignore):
 
 ```terraform
 import {
@@ -212,15 +207,15 @@ resource "confluent_api_key" "kafka-api-key" {
 }
 ```
 
-Import existing Kafka cluster:
+Import existing Kafka cluster definition
 
 ```sh
 terraform import confluent_kafka_cluster.standard env-abc123/lkc-xyz789
 ```
 
-### Schema Registry Layer
+### Schema Registry
 
-Schema Registry is auto-provisioned with the environment. Reference it as a data source:
+Schema Registry is auto-provisioned with the environment. Reference it as a data source using `data` construct:
 
 ```terraform
 data "confluent_schema_registry_cluster" "essentials" {
@@ -333,7 +328,9 @@ resource "confluent_flink_compute_pool" "default" {
 
 ## Deploying Flink Statements
 
-Flink SQL statements can be deployed using the `confluent_flink_statement` resource. See the [Flink Statement Resource Documentation](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs/resources/confluent_flink_statement).
+Flink SQL statements can be deployed using the `confluent_flink_statement` resource. See the [Flink Statement Resource Documentation](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs/resources/confluent_flink_statement). We recommend to separate the deployment from the infrastructure but reference the terraform state from to get definitions from already deployed resources. 
+
+See [e2e-demos/cc-cdc-tx-demo/cc-flink-sql/terraform](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cc-cdc-tx-demo/cc-flink-sql/terraform) folder for such approach.
 
 ### Single Compute Pool Configuration
 
@@ -416,7 +413,7 @@ resource "confluent_flink_statement" "streaming_job" {
 }
 ```
 
-For complex deployments with many statements and canary releases, consider using [shift_left_utils](https://jbcodeforce.github.io/shift_left_utils/).
+For complex deployments with many statements, blue/green releases, consider using [shift_left_utils](https://jbcodeforce.github.io/shift_left_utils/).
 
 ## Workflow Commands
 
@@ -569,8 +566,7 @@ Build Terraform manifests incrementally:
 3. Review outputs and add dependent resources
 4. Repeat
 
-This approach provides clear understanding of dependencies and makes troubleshooting straightforward.
-
+This approach provides clear understanding of dependencies and makes troubleshooting easier.
 
 ## Adding Flink to an Existing Environment
 

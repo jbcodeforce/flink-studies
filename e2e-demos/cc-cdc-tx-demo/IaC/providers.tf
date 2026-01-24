@@ -9,7 +9,7 @@ terraform {
   required_providers {
     confluent = {
       source  = "confluentinc/confluent"
-      version = "~> 2.5"
+      version = "~> 2.58"
     }
     aws = {
       source  = "hashicorp/aws"
@@ -52,6 +52,11 @@ provider "aws" {
 provider "confluent" {
   cloud_api_key    = var.confluent_cloud_api_key
   cloud_api_secret = var.confluent_cloud_api_secret
+  flink_rest_endpoint = var.flink_rest_endpoint
+  flink_compute_pool_id = var.flink_compute_pool_id
+  flink_api_key         = var.flink_api_key
+  flink_api_secret      =  var.flink_api_secret
+  flink_principal_id  = var.flink_principal_id
 }
 
 # -----------------------------------------------------------------------------

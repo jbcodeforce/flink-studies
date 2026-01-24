@@ -1,0 +1,21 @@
+{
+    "apiVersion": "cmf.confluent.io/v1",
+    "kind": "Statement",
+    "metadata": {
+      "name": "stmt-1"
+    },
+    "spec": {
+      "statement": "SELECT url FROM clicks WHERE url like '%a%';",
+      "properties": {
+        "sql.current-catalog": "examples",
+        "sql.current-database": "marketplace"
+      },
+      "flinkConfiguration": {
+        "state.backend.type": "hashmap",
+        "execution.checkpointing.interval": "60 s"
+      },
+      "computePoolName": "pool1",
+      "parallelism": 4,
+      "stopped": false
+    }
+  }

@@ -1,0 +1,48 @@
+{
+    "name": "staging",
+    "kubernetesNamespace": "confluent",
+    "flinkApplicationDefaults": {
+        "spec": {
+            "flinkConfiguration": {
+                "taskmanager.numberOfTaskSlots": "2"
+            },
+            "jobManager": {
+                "resource": {
+                    "memory": "1024m",
+                    "cpu": 0.5
+                }
+            },
+            "taskManager": {
+                "resource": {
+                    "memory": "2048m",
+                    "cpu": "1.5"
+                }
+            }
+        }
+    },
+    "computePoolDefaults": {
+        "clusterSpec": {
+            "image": "confluentinc/cp-flink-sql:2.1.1-cp1-java21",
+            "flinkVersion": "v2_1", 
+            "jobManager": {
+                "resource": {
+                    "memory": "1024m",
+                    "cpu": "1500m"
+                }
+            },
+            "taskManager": {
+                "resource": {
+                    "memory": "2048m",
+                    "cpu": "400m"
+                }
+            }
+        }
+    },
+    "statementDefaults": {
+        "detached": {
+            "flinkConfiguration": {
+                "state.backend.type": "rocksdb"
+            }
+        }
+    }
+}

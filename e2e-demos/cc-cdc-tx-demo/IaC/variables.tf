@@ -221,12 +221,6 @@ variable "create_tableflow_topics" {
   default     = true
 }
 
-variable "enable_redshift" {
-  description = "Deploy Redshift Serverless for querying Iceberg tables"
-  type        = bool
-  default     = false
-}
-
 # -----------------------------------------------------------------------------
 # IAM Role Configuration for Tableflow/Glue
 # -----------------------------------------------------------------------------

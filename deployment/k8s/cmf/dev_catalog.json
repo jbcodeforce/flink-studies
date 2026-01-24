@@ -2,21 +2,13 @@
     "apiVersion": "cmf.confluent.io/v1",
     "kind": "KafkaCatalog",
     "metadata": {
-      "name": "demo-cat"
+      "name": "dev-catalog"
     },
     "spec": {
       "srInstance": {
         "connectionConfig": {
           "schema.registry.url": "http://schemaregistry.confluent.svc.cluster.local:8081"
         }
-      },
-      "kafkaClusters": [
-        {
-          "databaseName": "cluster-1",
-          "connectionConfig": {
-            "bootstrap.servers": "kafka.confluent.svc.cluster.local:9071"
-          }
-        }
-      ]
+      }
     }
   }

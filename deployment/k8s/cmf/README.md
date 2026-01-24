@@ -2,7 +2,7 @@
 
 This folder includes different deployment manifests for Confluent Manager for Flink. The approach is to encapsulate some of the kubectl commands using `make` targets. The code and/or instructions here are NOT intended for production usage.
 
-See the [Flink Kubernets Operator - open source documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/) and the [Confluent platform for flink operator](https://docs.confluent.io/platform/current/flink/get-started.html) for details.
+See the [Flink Kubernetes Operator - open source documentation](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/resource-providers/standalone/kubernetes/) and the [Confluent platform for flink operator](https://docs.confluent.io/platform/current/flink/get-started.html) for details.
 
 Read also the analysis of Kubernetes deployment for Flink in [this chapter](https://github.com/jbcodeforce/flink-studies/coding/k8-deploy).
 
@@ -20,9 +20,11 @@ Read also the analysis of Kubernetes deployment for Flink in [this chapter](http
 * Access to a Kubernetes cluster using Colima VM (see k8s/Makefile):
     ```sh
     make start_colima
+    #
+    make start_orbstack
     ```
 * Verify certification manager and may upgrade it (see k8s/Makefile):
-* As most of the demonstration in this git repository use Kafka, Schema registry, and the Confluent Console, it is recommended to install Confluent Plaform. (see cfk/Makefile and readme.)
+* As most of the demonstration in this git repository use Kafka, Schema registry, and the Confluent Console, it is recommended to install Confluent Plaform. (see [cfk/Makefile](../cfk/Makefile) and [readme](../cfk/README.md).
 * Create `flink` and `confluent` namespaces: `make create_ns` - 10/01/2025 To simplify the deployment, we use one namespace: `confluent`
 
 
