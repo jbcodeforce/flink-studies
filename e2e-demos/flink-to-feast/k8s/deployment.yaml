@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-feast-consumer
+  labels:
+    app: kafka-feast-consumer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kafka-feast-consumer
+  template:
+    metadata:
+      labels:
+        app: kafka-feast-consumer
+    spec:
+      containers:
+      - name: consumer
+        image: jbcodeforce/kafka-feast-consumer:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: health
+          protocol: TCP
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-feast-consumer-config
+              key: kafka.bootstrap.servers
+        - name: KAFKA_TOPIC
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-feast-consumer-config
+              key: kafka.topic
+        - name: KAFKA_CONSUMER_GROUP
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-feast-consumer-config
+              key: kafka.consumer.group
+        - name: KAFKA_AUTO_OFFSET_RESET
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-feast-consumer-config
+              key: kafka.auto.offset.reset
+        - name: SCHEMA_REGISTRY_URL
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-feast-consumer-config
+              key: schema.registry.url
+        - name: FEAST_REPO_PATH
+          value: "/app/feature_repo"
+        - name: HEALTH_CHECK_PORT
+          value: "8080"
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-feast-consumer-config
+              key: log.level
+        - name: BATCH_SIZE
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-feast-consumer-config
+              key: batch.size
+        - name: MAX_RETRIES
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-feast-consumer-config
+              key: max.retries
+        # Schema Registry credentials (if needed)
+        - name: SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO
+          valueFrom:
+            secretKeyRef:
+              name: kafka-feast-consumer-secrets
+              key: schema.registry.auth
+              optional: true
+        # Kafka credentials (if needed)
+        - name: KAFKA_SASL_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: kafka-feast-consumer-secrets
+              key: kafka.sasl.username
+              optional: true
+        - name: KAFKA_SASL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: kafka-feast-consumer-secrets
+              key: kafka.sasl.password
+              optional: true
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: feature-repo
+          mountPath: /app/feature_repo
+          readOnly: true
+      volumes:
+      - name: feature-repo
+        configMap:
+          name: feast-feature-repo
+      terminationGracePeriodSeconds: 30

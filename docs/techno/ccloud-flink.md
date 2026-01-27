@@ -312,7 +312,7 @@ Kafka clusters have the following properties:
 * Flink Private Networking requires a [PrivateLink Attachment](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/private-networking.html#create-a-pla-overview) (PLATT) to access Kafka clusters with private networking. It is used to connect clients such as confluent CLI, the console, the rest api or terraform with Flink. Flink-to-Kafka is routed internally within Confluent Cloud.
 
 <figure markdown="span">
-![](https://docs.confluent.io/cloud/current/_images/flink-private-networking.svg)
+![](./images/flink-private-networking.svg)
 </figure>
 
 * PLATT is independant of the network type: PrivateLink, VPC peering or transit GTW.

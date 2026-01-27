@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: model-serving
+  labels:
+    app: model-serving
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: model-serving
+  template:
+    metadata:
+      labels:
+        app: model-serving
+    spec:
+      containers:
+      - name: model-serving
+        image: jbcodeforce/model-serving:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        env:
+        - name: FEAST_REPO_PATH
+          value: "/app/feature_repo"
+        - name: FEAST_FEATURE_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: model-serving-config
+              key: feast.feature.service
+        - name: MODEL_TYPE
+          valueFrom:
+            configMapKeyRef:
+              name: model-serving-config
+              key: model.type
+        - name: MODEL_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: model-serving-config
+              key: model.version
+        - name: SERVER_HOST
+          value: "0.0.0.0"
+        - name: SERVER_PORT
+          value: "8000"
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: model-serving-config
+              key: log.level
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: feature-repo
+          mountPath: /app/feature_repo
+          readOnly: true
+      volumes:
+      - name: feature-repo
+        configMap:
+          name: feast-feature-repo
+      terminationGracePeriodSeconds: 30

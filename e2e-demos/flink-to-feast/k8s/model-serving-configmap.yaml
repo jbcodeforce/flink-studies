@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: model-serving-config
+  labels:
+    app: model-serving
+data:
+  feast.feature.service: "driver_activity_v3"
+  model.type: "rule_based"
+  model.version: "1.0.0"
+  log.level: "INFO"

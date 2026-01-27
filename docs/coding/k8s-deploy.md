@@ -445,7 +445,7 @@ Updated 1.10.2026: For CFK version 2.2.0 and CP v8.1.1
     kubectl apply -f cmf-rest-class.yaml
     ```
 
-Next to deploy an application see [deploy application section for SQL or Java app deployment](#flink-application-deployment)
+Next to deploy an application see [deploy application section for SQL or Java app deployment](#5--next-deploy-flink-applications-or-flink-sql-statements)
 
 ### Security
 
@@ -754,13 +754,13 @@ COPY /path/of/my-flink-job-*.jar $FLINK_HOME/usrlib/my-flink-job.jar
     ```
 
 * Cleanup
-
     ```sh
     # the Flink app
     confluent flink application delete kafka-reader-writer-example --environment development --url http://localhost:8080
     # the Kafka cluster
     # the operators
     ```
+
 ---
 
 To REWORK  --- To REWORK  --- To REWORK --- To REWORK  --- To REWORK

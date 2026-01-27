@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-feast-consumer-config
+  labels:
+    app: kafka-feast-consumer
+data:
+  kafka.bootstrap.servers: "kafka:9071"
+  kafka.topic: "driver-stats"
+  kafka.consumer.group: "feast-consumer-group"
+  kafka.auto.offset.reset: "earliest"
+  schema.registry.url: "http://schema-registry:8081"
+  log.level: "INFO"
+  batch.size: "1"
+  max.retries: "3"
