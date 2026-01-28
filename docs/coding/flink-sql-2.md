@@ -598,8 +598,6 @@ On the left side, the fact table, has high velocity of changes, but the events a
 
 When doing a join, Flink needs to fully materialize both the right and left of the join tables in state, which may cost a lot of memory, because if a row in the left-hand table (LHT), also named the **probe side**, is updated, the operator needs to emit an updated match for all matching rows in the right-hand table (RHT) or **build side**. The cardinality of right side will be mostly bounded at a given point of time, but the left side may vary a lot. A join emits matching rows to downstream operator.
 
-
-
 The key points to keep in mind are:
 
 * Regular joins typically produce a full cross-product of all matching records. However, in streaming scenarios, this behavior is often undesirable, for example if you want to enrich an event with additional information.
@@ -664,6 +662,17 @@ We can combine the LATERAL TABLE with different join types to control which rows
 | LEFT JOIN LATERAL | Returns all rows from the outer table, even if the UDTF produces zero rows.|
 
 The Lateral Table allows to dynamically transform stream records in a row-by-row fashion, which is often difficult with standard joins.
+
+### Multi way joins
+
+[See Confluent Flink SQL documentation](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html#enabling-multi-way-joins) for multi-way joins as part of optimizing the flink state. Need to add annotations:
+    ```sql
+    SELECT /*+ MULTI_JOIN(o, c, a) */ 
+    * FROM orders o
+    JOIN customers c ON o.customer_id = c.id
+    JOIN addresses a ON c.id = a.customer_id;
+    ```
+
 
 ### References
 
