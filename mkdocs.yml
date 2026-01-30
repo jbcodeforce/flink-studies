@@ -87,7 +87,6 @@ markdown_extensions:
   - codehilite
   - footnotes
   - pymdownx.blocks.caption
-  - pymdownx.smartsymbols
   - pymdownx.arithmatex:
       generic: true
   - pymdownx.superfences:

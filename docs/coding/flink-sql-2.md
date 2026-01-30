@@ -615,10 +615,45 @@ A [temporal join](https://docs.confluent.io/cloud/current/flink/reference/querie
     LEFT JOIN stocks s FOR SYSTEM_TIME AS OF t.purchase_ts
     ON t.stockid = s.id
     ```
-* The above query is a Temporal join. Temporal joins help to reduce the state size, as we need to keep recent records on both side. The time will be linked to the watermark progress. If the opening_value of the stock change over time, it will not trigger update to the prevuously generated enriched transactions.  
+* The above query is a Temporal join. Temporal joins help to reduce the state size, as we need to keep only recent records on both side. The time will be linked to the watermark progress. If the opening_value of the stock change over time, it will not trigger update to the previously generated enriched transactions.  
+* Temporal JOINs must include all of the PRIMARY KEY columns of the versioned (right-side) table: the ON conditions need to include exactly the same primary key columns:
+    ```sql
+    create table dim_rule_config(
+       tenant_id STRING NOT NULL,
+       rule_id BIGINT NOT NULL,
+       rule_name STRING NOT NULL,
+       parameter_id BIGINT NOT NULL,
+       paremeter_value BIGINT,
+       primary key (tenant_id, rule_id, parameter_id) not enforced
+    )
+    # joining in a separate DML
+    ...
+    from extended_sensors s
+    left join dim_rule_config for system as of s.event_ts as rule
+    ON  s.tenant_id = rule.tenant_id
+       AND s.rule_id = rule.rule_id 
+       AND s.parameter_id = rule.parameter_id
+    ```
+
+    The extended_sensors is a CTE to add specific constant columns, as the ON conditions need to apply to columns on on the LHS. So to be able to search for specific rule id and parameter id, the approach is to create a CTE:
+    ```sql
+    with extended_sensors (
+        select
+        ... all sensors attributes
+        10 as rule_id,
+        1 as parameter_id
+        from sensors
+    ) select ... 
+    ```
+
+    [See also this code sample for an example of rule based control](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/04-joins/rule_match_on_sensors/README.md) with temporal joins and contant columns.
+
+* When the LHS of the temporal join is upsert then the sink table needs to be retract. While if it is an append changelog then the sink should be append too.
 * INNER JOIN is a cartesian product.
 * OUTER joins like left, right or full, may generate records with empty columns for non-matching row.
-* Interval joins are particularly useful when working with unbounded data streams. Here is an example for orders and payments, whetre 
+
+### Interval Join 
+* Interval joins are particularly useful when working with unbounded data streams. Here is an example for orders and payments, where 
     ```sql
     CREATE TABLE valid_orders (
         order_id STRING,
@@ -698,7 +733,7 @@ Here is a list of important tutorials on Joins:
     ON table1.column-name1 = table2.column-name1
     ```
 
-    When enriching a particular `table1`, an event-time temporal join waits until the watermark on the table2 stream reaches the timestamp of that `table1` row, because only then, it is reasonable to be confident that the result of the join is being produced with complete knowledge of the relevant `table2` data. This table2 record can be old as the watermark on that table being late.
+    When enriching a particular `table1`, an event-time temporal join waits until the watermark on the table2 stream reaches the timestamp of that `table1` row, because only then, it is reasonable to be confident that the result of the join is being produced with complete knowledge of the relevant `table2` data. This table2 records can be old as the watermark on that table being late.
 
 ???+ info "How to join two tables on a key within a time window using event column as timestamp and store results in a target table?"
     Full example:

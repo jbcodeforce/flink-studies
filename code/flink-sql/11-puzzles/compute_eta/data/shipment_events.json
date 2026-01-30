@@ -1,0 +1,3 @@
+{"shipment_id": "SHP001", "package_id": "PKG-123", "event_ts": "2025-01-30T10:00:00Z", "event_type": "dispatched", "current_location": "WH-A", "delivery_address": "123 Main St, City"}
+{"shipment_id": "SHP001", "package_id": "PKG-123", "event_ts": "2025-01-30T14:30:00Z", "event_type": "in_transit", "current_location": "HUB-B", "delivery_address": "123 Main St, City"}
+{"shipment_id": "SHP001", "package_id": "PKG-123", "event_ts": "2025-01-31T09:15:00Z", "event_type": "delivered", "current_location": "123 Main St, City", "delivery_address": "123 Main St, City"}

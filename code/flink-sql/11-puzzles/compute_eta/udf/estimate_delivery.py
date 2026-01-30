@@ -1,0 +1,35 @@
+"""
+Mock table function estimate_delivery(current_location, delivery_address, event_ts).
+Returns one row: eta_window_start, eta_window_end, risk_score, confidence.
+Used in compute_eta puzzle via LATERAL join in dml.shipment_history.sql.
+"""
+from datetime import datetime, timedelta
+
+from pyflink.table import DataTypes
+from pyflink.table.udf import udtf
+
+
+@udtf(
+    result_types=[
+        DataTypes.TIMESTAMP(3),
+        DataTypes.TIMESTAMP(3),
+        DataTypes.DOUBLE(),
+        DataTypes.DOUBLE(),
+    ]
+)
+def estimate_delivery(current_location: str, delivery_address: str, event_ts):
+    """
+    Mock ETA: 2h window starting 1 day after event_ts, fixed risk and confidence.
+    event_ts is datetime-like from Flink (e.g. datetime.datetime).
+    """
+    if event_ts is None:
+        event_ts = datetime.utcnow()
+    if hasattr(event_ts, "timestamp"):
+        base = datetime.utcfromtimestamp(event_ts.timestamp())
+    else:
+        base = event_ts
+    eta_window_start = base + timedelta(days=1)
+    eta_window_end = eta_window_start + timedelta(hours=2)
+    risk_score = 0.5
+    confidence = 0.8
+    yield eta_window_start, eta_window_end, risk_score, confidence
