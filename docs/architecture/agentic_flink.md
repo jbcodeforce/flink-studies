@@ -1,8 +1,8 @@
-# Agentic applications cross systems
+# Agentic Applications Cross Systems
 
 AI agentic applications, at scale will not only be triggered by users, but by **systems** using asynchronous events. It is assumed that AI Agents are becoming experts to certain tasks within a business workflow using domain-specific knowledge, and acts on direct user's queries or from events coming from other systems.
 
-As humen collaborate in a business function and process, AI Agents will collaborate with AI Agents and humen.
+As humans collaborate in a business function and process, AI Agents will collaborate with AI Agents and humans.
 
 The vision is to have a fleet of streaming agents—background "teammates" that constantly monitor data to:
 
@@ -60,9 +60,9 @@ Try to assess the following requirements:
 
 Extending the [Agentic reference architecture](https://jbcodeforce.github.io/ML-studies/genAI/agentic/#introduction), introduced by Lilian Weng, which defines how agents should be designed, it is important to leverage the experience acquired during microservice implementations to start adopting an event-driven AI agent architecture, which may be represented by the following high-level figure:
 
-![]()
+![](./diagrams/eda_agents.drawio.png)
 
-Because it’s built on Kafka, developers can "replay" production data streams to test why a probabilistic AI model gave a certain answer—making debugging much easier than in traditional batch systems.
+Because it’s built on Kafka, developers can "replay" production data streams to test why a probabilistic AI model gave a certain answer—making, debugging much easier than in traditional batch systems.
 
 ## Technologies
 

@@ -2,21 +2,15 @@
 
 Mock PyFlink table function for the compute_eta puzzle. The UDF takes `(current_location, delivery_address, event_ts)` and returns one row: `eta_window_start`, `eta_window_end`, `risk_score`, `confidence`. It is invoked once per shipment via a LATERAL join in `dml.shipment_history.sql`.
 
+[See Confluent UDF in Python product documnetation](https://docs.confluent.io/cloud/current/flink/how-to-guides/create-udf.html) and [flink OSS UDF in python](https://nightlies.apache.org/flink/flink-docs-release-2.0/docs/dev/python/table/udfs/overview/).
+
+Add a dependency on apache-flink to have access to the PyFlink UDF API. 
+
 ## Install
 
-From this directory or the repo root:
+From this directory (uv project):
 
 ```sh
-pip install -r requirements.txt
+uv sync
 ```
 
-## Run end-to-end
-
-Run with working directory = `compute_eta` so paths `data/shipment_events.json` and `data/shipment_history` resolve:
-
-```sh
-cd compute_eta
-python udf/run_eta_poc.py
-```
-
-The runner registers the UDF, executes DDL (shipment_events, shipment_history), runs the INSERT that populates shipment_history (calling the UDF), then runs the ETA join query and prints the result.

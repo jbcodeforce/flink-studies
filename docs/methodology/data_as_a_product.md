@@ -1,4 +1,4 @@
-# Moving to a data as a product architecture
+# Moving to a Data as a Product Architecture
 
 ???- info "Version"
     Created 01/2025
@@ -25,7 +25,7 @@ The medallion architecture, a three-layered approach, is a common framework for 
 
 <figure markdown="span">
 ![](./diagrams/medallion_arch.drawio.png){ width=700 }
-<figcaption>Medaillion Architecture</figcaption>
+<figcaption>Medallion Architecture</figcaption>
 </figure>
 
 * Leveraging cloud object storage to accommodate large volumes of both structured and unstructured data.
@@ -139,7 +139,7 @@ Data products are not data applications, data warehouses, PDF reports, dashboard
 
 The following elements are part of a data product owner to develop and manage, with application developers:
 
-* Metadata of what the data product is, human readable, parseable for tool to build and deploy data product to orchestration layer. This includes using naming convention, and poliglot definition. 
+* Metadata of what the data product is, human readable, parseable for tool to build and deploy data product to orchestration layer. This includes using naming convention, and polyglot definition. 
 * API definition for request-response consumptions
 * Event model definition for asynch consumptions
 * Storage definition, service account, roles and access policies

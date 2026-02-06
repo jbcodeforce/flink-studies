@@ -1,0 +1,9 @@
+[project]
+name = "compute-eta-udf"
+version = "0.1.0"
+description = "Mock PyFlink table function estimate_delivery for the compute_eta puzzle"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "apache-flink>=2.0.0",
+]
