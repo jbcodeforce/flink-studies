@@ -485,6 +485,19 @@ See [Grafana integration](https://docs.confluent.io/cloud/current/monitoring/thi
 
 [The product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/flink-rbac.html) goes into sufficient details on how RBAC works for Flink. 
 
+* Remember some inport facts:
+    * When registering to CC, one org is created with the user who registered. Other users are invited.
+
+
+The following table list some classical use case and expected role:
+| Use Case | Least privilege role needed |
+| -------- | ----------- |
+| Create environment  |  EnvironmentAdmin | 
+| Create compute pool | FlinkAdmin scoped at environment level |
+| Deploy flink statement | FlinkDeveloper (FlinkAdmin too) | 
+| Create R/W Schemas in SR | DataSteward |
+| Admin the org | OrganizationAdmin |  
+
 Examples of Terraform definitions for service accounts, roles, and role binding [cc-terraform for my env](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/cc-terraform).
 
 ## Understanding pricing
