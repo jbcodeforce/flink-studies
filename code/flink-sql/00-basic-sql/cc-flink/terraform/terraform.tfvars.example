@@ -1,0 +1,16 @@
+# Copy to terraform.tfvars and set values. All resources must already exist.
+# Provider auth can be set here or via CONFLUENT_CLOUD_API_KEY / CONFLUENT_CLOUD_API_SECRET.
+
+# confluent_cloud_api_key    = ""
+# confluent_cloud_api_secret = ""
+
+environment_id        = "env-xxxxx"
+kafka_cluster_id      = "lkc-xxxxx"
+flink_compute_pool_id = "lfcp-xxxxx"
+principal_id          = "sa-xxxxx"
+
+flink_api_key    = ""
+flink_api_secret = ""
+flink_rest_endpoint = "https://flink.us-east4.gcp.confluent.cloud"
+
+# statement_name_prefix = "basic-sql"

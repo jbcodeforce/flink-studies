@@ -14,8 +14,9 @@ To make it fun, here is the book cover! Very imaginative for a book that will ne
     * Updates 10/2024: Reorganized content, separated SQL vs Java, added Confluent Cloud/Platform integration
     * Updates 01/25: Added Terraform deployment examples, expanded SQL samples
     * Updates 07/25: Added e2e demos, Flink estimator webapp, Data mesh
-    * update 09/2025: Work on new demonstration, code samples, improve deployment for Confluent Platform for Flink
-    * update 10/2025: k8s chapter, json xform and external lookup demos
+    * Update 09/2025: Work on new demonstration, code samples, improve deployment for Confluent Platform for Flink
+    * Update 10/2025: k8s chapter, json xform and external lookup demos
+    * Update 02/2026: New event-driven agentic chapter, new e2e demos, SQL examples 
 
 ## What You'll Discover
 

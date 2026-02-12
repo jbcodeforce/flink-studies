@@ -73,6 +73,55 @@ Create table statements do not changes between managed services and standalone F
 
     For exactly once the parameter is set to `'read-committed'`.
 
+???- question "How to pass comment from table creation to schema definition doc field?"
+    Using `COMMENT` at the column level will populate the doc field. Here is an example:
+    ```sql
+    create table person (
+        lastname STRING COMMENT 'the last name of the person',
+        firstname STRING COMMENT 'the first name of the person',
+        dob STRING COMMENT 'the date of birth'
+    )
+    ```
+
+    And the schema has the doc populated for each field
+    
+    ```json
+    {
+    "fields": [
+        {
+        "default": null,
+        "doc": "the last name of the person",
+        "name": "lastname",
+        "type": [
+            "null",
+            "string"
+        ]
+        },
+        {
+        "default": null,
+        "doc": "the first name of the person",
+        "name": "firstname",
+        "type": [
+            "null",
+            "string"
+        ]
+        },
+        {
+        "default": null,
+        "doc": "the date of birth",
+        "name": "dob",
+        "type": [
+            "null",
+            "string"
+        ]
+        }
+    ],
+    "name": "person_value",
+    "namespace": "org.apache.flink.avro.generated.record",
+    "type": "record"
+    }
+    ```
+
 ### Flink OSS
 
 ???+ tip "Create a table with csv file as persistence - Flink OSS"

@@ -8,6 +8,6 @@
   PRIMARY KEY (customer_id) NOT ENFORCED
 )  WITH ( 
     'connector' = 'filesystem',
-    'path' = '/Users/jerome/Documents/Code/flink-studies/code/flink-sql/data/customers.csv',
+    'path' = '../../data/customers.csv',
     'format' = 'csv'
 );

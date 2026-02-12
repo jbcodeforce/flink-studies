@@ -3,11 +3,14 @@
 #### Versions
     Created from Flink Study 2021
     Updated 1/2025 from Confluent Flink studies
-    Updated 12/2025 Getting started by using SQL client - Add deduplicate for OSS
+    Updated 12/2025 Getting started by using Flink SQL client - Add deduplicate for Apache Flink OSS
 
-This folder includes some basic SQL examples to be used with local Flink OSS or Confluent Platform for Flink running locally.
+This folder includes some basic SQL examples to be used with local Flink OSS or Confluent Platform for Flink running locally or Confluent Cloud.
 
-* [Process employee data from csv](#employees-demo) to count the  number of employees per department,
+* The approach is to [process employee data from csv](#employees-demo) to count the  number of employees per department.
+
+* [Confluent Cloud Deployment and validation](#confluent-cloud-flink)
+* []()
 
 ## SQL Client
 ### Apache Flink OSS Binary
@@ -195,9 +198,16 @@ set 'sql-client.execution.result-mode' = 'changelog';
 select count(*) AS `count` from bounded_pageviews;
 ```
 
-## Examples for Confluent Cloud Flink
+## Confluent Cloud Flink
 
-The `cc-flink/ddl.customers.sql` create a simple customers table. Running this query inside the Confluent Cloud Console -> Flink -> Workspace. This will create the `customers` topic, the -key and -value schemas.
+The `cc-flink/ddl.customers.sql` creates a simple customers table. Running this query inside the Confluent Cloud Console -> Flink -> Workspace. This will create the `customers` topic, the -key and -value schemas.
+
+Use the terraform to deploy it. 
+
+**Prerequisites:** Environment, Kafka cluster, Flink compute pool, and a service account with an API key scoped to the Flink region must already exist. Set all IDs and credentials in `terraform.tfvars`.
+
+1. Copy `terraform.tfvars.example` to `terraform.tfvars` and fill in values.
+2. From this directory: `terraform init`, `terraform plan`, `terraform apply`.
 
 ### Deduplication example
 
