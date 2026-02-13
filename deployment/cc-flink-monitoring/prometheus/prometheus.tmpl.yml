@@ -8,16 +8,14 @@ scrape_configs:
         - api.telemetry.confluent.cloud
     scheme: https
     basic_auth:
-      username: VN5Q46CTTS3VGFVL
-      password: cnAzYRciWdkWvh1WI0dHFp1NgZgcOHFmCjshg/A//Jp/gHcEyshswV75+kHzceC5
+      username: # Add your Confluent Cloud API Key here
+      password: # Add your Confluent Cloud API Secret here
     metrics_path: /v2/metrics/cloud/export
     params:
       "resource.kafka.id":
-        - lkc-3mnm0m
+        - # Add your Kafka cluster ID here
       "resource.schema_registry.id":
-        - lsrc-vz1zrz
+        - # Add your Schema Registry ID
       "resource.compute_pool.id":
-        - lfcp-xvrvmz
-        - lfcp-279od2
-        - lfcp-oo6doo
-        - lfcp-r80731
+        - # Add your Flink compute pool ID here 
+        # Add additional compute pool IDs if you have multiple pools

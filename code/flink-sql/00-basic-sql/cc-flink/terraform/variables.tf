@@ -45,8 +45,9 @@ variable "flink_api_secret" {
 }
 
 variable "flink_rest_endpoint" {
-  description = "Flink REST endpoint URL (e.g. https://flink.us-east4.gcp.confluent.cloud)"
+  description = "Flink REST endpoint URL"
   type        = string
+  default = ' https://flink.us-west-2.aws.confluent.cloud'
 }
 
 variable "statement_name_prefix" {

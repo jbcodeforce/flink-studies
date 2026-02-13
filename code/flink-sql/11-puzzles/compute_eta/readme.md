@@ -1,15 +1,14 @@
 # Compute time to arrival of shipment
 
-A company shipping goods between warehouses to end-buyer wants to compute the estimated time arrival, or ETA from the different shipment events received over the time of the travel.
+A company shipping goods between warehouses to end-buyers wants to compute the estimated time arrival, or ETA, from the different shipment events received over the time of the travel.
 
 At each intermediate locations, a shipment event is created and from there and previous shipment estimates, a new estimation is computed.
-
 
 ## Approach
 
 The source table is ShipmentEvent. 
 
-ETA is computed with a User Defined Function to take current time, location and target address. The second SQL table, `shipment_history`, holds per-shipment key (`shipment_id`), an array of event infos (`event_history`), and ETA-related fields computed. A second SQL statement fills `shipment_history` from `shipment_events` (GROUP BY shipment_id, ARRAY_AGG). A third statement joins `shipment_events` and `shipment_history` on `shipment_id` to compute ETA.
+ETA is computed with a User Defined Function to take current time, location and target address. The second SQL table, `shipment_history`, holds per-shipment key (`shipment_id`), an array of event infos (`event_history`), and ETA-related fields. A second SQL statement fills `shipment_history` from `shipment_events` (GROUP BY shipment_id, ARRAY_AGG). A third statement joins `shipment_events` and `shipment_history` on `shipment_id` to compute ETA.
 
 ETA fields in `shipment_history`: `ETA_2h_time_window_start`, `ETA_2h_time_window_end`, `ETA_day`, `shipment_status`, `previous_ETA_2h_time_window_start`, `previous_ETA_2h_time_window_end`, `risk_score`, `confidence`. These are computed in `dml.shipment_history.sql` using the UDF below.
 

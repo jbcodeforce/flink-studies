@@ -10,7 +10,7 @@ nav:
     - Getting started: coding/getting-started.md
     - Flink Architecture: architecture/index.md
     - Fit for purpose: architecture/fitforpurpose.md
-    - Labs-Demos: labs/index.md
+    - Code&Demos: labs/index.md
     - Agentic applications: architecture/agentic_flink.md
   - Recipes:
     - Flink SQL coding:

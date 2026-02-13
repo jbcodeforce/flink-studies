@@ -29,3 +29,4 @@ e2e-demos/config.yaml
 **/run_forever.sh
 **/run.sh
 e2e-demos/cc-cdc-tx-demo/cc-flink-sql/staging/ 
+**/prometheus.yml

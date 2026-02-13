@@ -7,6 +7,6 @@ CREATE TABLE orders (
   PRIMARY KEY (order_id) NOT ENFORCED
 ) WITH ( 
     'connector' = 'filesystem',
-    'path' = '/Users/jerome/Documents/Code/flink-studies/flink-sql/data/orders.csv',
+    'path' = '../../data/orders.csv',
     'format' = 'csv'
 );

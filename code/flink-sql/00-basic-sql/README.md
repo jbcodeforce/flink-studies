@@ -4,72 +4,29 @@
     Created from Flink Study 2021
     Updated 1/2025 from Confluent Flink studies
     Updated 12/2025 Getting started by using Flink SQL client - Add deduplicate for Apache Flink OSS
+    Update 2/2026: Clean readme and automate demonstration. Add REST client in python to management statement and rund demonstration.
 
-This folder includes some basic SQL examples to be used with local Flink OSS or Confluent Platform for Flink running locally or Confluent Cloud.
+This folder includes some basic SQL examples to be used with one of the following environments:
 
-* The approach is to [process employee data from csv](#employees-demo) to count the  number of employees per department.
-
+* [Local Apache Flink cluster with SQL Client](#apache-flink-oss)
 * [Confluent Cloud Deployment and validation](#confluent-cloud-flink)
-* []()
+* [Local Confluent Platform for Flink on Kubernetes](#confluent-platform-for-flink-on-kubernetes)
 
-## SQL Client
-### Apache Flink OSS Binary
+What is demonstrated:
+* Table creation, loading from CSV file and writing results to CSV file, when running with Apache Flink locally
+* Deduplication within CTE, grouping and aggregates
+* Snapshot Query
+* Running Confluent Cloud deployment using a REST client in python.
 
-* [See this readme to get last Apache Flink OSS image](../../../deployment/product-tar/README.md)
-* Start Flink SQL Client:
-    ```sh
-    # under deployment/product-tar
-    export FLINK_HOME=$(pwd)/flink-2.1.1
-    export PATH=$PATH:$FLINK_HOME/bin
-    # Start the cluster
-    $FLINK_HOME/bin/start-cluster.sh
-    # Then sql client
-    $FLINK_HOME/bin/sql-client.sh
-    ```
+## First Use Case
 
-### Docker image
-1. Use docker images and docker-compose. See the docker compose in deployment/docker folder of this project. The docker engine mounts a project folder in `/home`, so content of the data will be in `/home/flink-sql/data`. 
-1. Start SQL client
-  ```sh
-  docker exec -it sql-client bash
-  ```
-
-### Kubernetes
-
-1. Kubernetes with  [Orbstack](../../../deployment/k8s)
-    ```sh
-    make start_orbstack
-    ```
-1. Start SQL client
-  ```sh
-  kubectl exec -ti <flink-pod> -- bash
-  # then in the container shell
-  sql-client.sh
-  ```
-
-## Employees demo 
+The common example to run in all environment is to [process employee data from csv](#employees-demo) to count the  number of employees per department. This is basic but let see how one problem can be executed in different Flink flavors.
 
 This demonstration is based on the SQL getting started [Flink 2.1 documentation](https://nightlies.apache.org/flink/flink-docs-release-2.1/docs/dev/table/sql/gettingstarted/).
 
 The [data/employee.csv](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-sql/00-basic-sql/data/employes.csv) has 15 records.
 
-* Once connected set default catalog and db.
-
-```sh
-show catalogs;
-use catalog default_catalog;
-show databases;
-use <yourdatabase>
-use default_database;
-show tables;
-show functions;
-```
-
-Should get an empty set.
-
-### Read from CSV mounted in current container
-
-* The following job is a batch processing and uses a DDL to create a table matching the column of a employee csv file.
+* The following job is a batch processing and uses a DDL to create a table matching the column of a employee csv file. It used Flink file system source connector:
 
 ```sql
 CREATE TABLE employees (
@@ -78,7 +35,7 @@ CREATE TABLE employees (
     dept_id INT
 ) WITH (
     'connector' = 'filesystem',
-    'path' = '/Users/jerome/Documents/Code/flink-studies/code/flink-sql/00-basic-sql/data/employees.csv',
+    'path' = './data/employees.csv',
     'format' = 'csv'
 );
 ```
@@ -90,7 +47,8 @@ SELECT * from employees WHERE dept_id = 102;
 ```
 
 **Potential Error**:
-* "The jobGraphFileName field must not be omitted or be null." This could be done because of running diffent version between client and cluster.
+* "The jobGraphFileName field must not be omitted or be null." This could be done because of running different version between client and cluster.
+
 
 ### Deduplication
 
@@ -104,7 +62,7 @@ select *  FROM (
             ORDER BY emp_id DESC
         ) AS row_num
     FROM employees
-) WHERE row_num = 1
+) WHERE row_num = 1;
 ```
 
 Element 10 is present only one time.
@@ -116,6 +74,17 @@ Count the  number of employees per department, with this query:
 ```sql
 select dept_id, count(*) as employees_dept from employees group by dept_id;
 ```
+The expected results are:
+
+```sh
+dept_id       employees_dept
+    104            1
+    103            4
+    102            6
+    101            5
+```
+
+The results are wrong, so we need to combine deduplication and aggregation using CTE. See the [first_use_case.sql](./oss-flink/first_use_case.sql).
 
 ### Streaming consumption, grouping records and aggregation by group
 
@@ -135,33 +104,113 @@ CREATE TABLE department_counts (
     emp_count BIGINT NOT NULL
 ) WITH ( 
     'connector' = 'filesystem',
-    'path' = '/Users/jerome/Documents/Code/flink-studies/code/flink-sql/00-basic-sql/data/dept_count',
+    'path' = './data/dept_count',
     'format' = 'csv'
 );
 ```
 
-Once created the following query will create the file under the folder: `flink-sql/00-basic-sql/data/dept_count`
+See [first_use_case.sql](./oss-flink/first_use_case.sql) for the end to end solution.
+
+### Snapshot Query
+
+On Confluent Cloud, it is possible to run a query with bounded stream, bounded by the current time. The CC Flink demonstration illustrates this query.
 
 ```sql
-INSERT INTO department_counts
-SELECT 
-   dept_id,
-   COUNT(*) as emp_count 
-FROM employees
-GROUP BY dept_id;
+set "sql.snapshot.mode": "now";
+SELECT * FROM employee_count;
 ```
 
-* Terminate the SQL client session
+See [the example from Confluent tutorials](https://docs.confluent.io/cloud/current/flink/how-to-guides/run-snapshot-query.html). 
 
-```sql
-exit();
+## Apache Flink OSS
+
+* [See the deployment readme](../../../deployment/product-tar/README.md) in this repository to get last Apache Flink OSS image.
+* Once Flink cluster started, run the Flink SQL Client:
+    ```sh
+    # under deployment/product-tar
+    export FLINK_HOME=$(pwd)/flink-2.1.1
+    export PATH=$PATH:$FLINK_HOME/bin
+    # Start the cluster
+    $FLINK_HOME/bin/start-cluster.sh
+    # Then sql client in interactive mode
+    $FLINK_HOME/bin/sql-client.sh embedded -i ./oss-flink/init_session.sql
+    ```
+
+    The above commands are in one shell: `./start_flink_oss.sh`
+
+* Once connected set default catalog and db.
+
+```sh
+show catalogs;
+use catalog j9r_catalog;
+show databases;
+use j9r_db
+show tables;
+show functions;
 ```
+
+Should get an empty set. 
+
+* For all interactive demonstration, copy past the previous SQL statements
+* Exit the shell
+
+* Run the employee count per department demonstration in one file, using a session cluster:
+  ```sh
+  $FLINK_HOME/bin/sql-client.sh -i ./oss-flink/init_session.sql -f ./oss-flink/first_use_case.sql
+  ```
+
+  The results are in tableau format with the log operation, the results are correct and visible in the `./data/dept_count` folder, as the SQL has a sink connector to filesystem.
 
 * If needed terminate the cluster
 ```
 $FLINK_HOME/bin/stop-cluster.sh 
 ```
-## Using Datagen faker
+
+## Confluent Cloud Flink
+
+To deploy the same SQL scripts to Confluent Cloud for Flink we need to have some environment defined. The terraform in [deployment/cc-terraform](../../../deployment/cc-terraform/) can be used to prepare such environment.
+
+Deploying SQL queries can be done using `confluent cli`. 
+
+* The demonstration is controlled by a python code:
+  ```sh
+  cd ..
+  uv run  python 00-basic-sql/cc_flink_employees_demo.py
+  ```
+
+* In case you need to rerun the snapshot query do:
+  ```sh
+  uv run python 00-basic-sql/cc_flink_employees_demo.py --snapshot-query-only
+  ```
+  
+  See [the example from Confluent tutorials](https://docs.confluent.io/cloud/current/flink/how-to-guides/run-snapshot-query.html). 
+
+
+* To clean up
+  ```sh
+  uv run  python 00-basic-sql/cc_flink_employees_demo.py --delete-only
+  ```
+
+## Confluent Platform for Flink on Kubernetes
+
+1. Start Kubernetes with [Orbstack](../../../deployment/k8s).
+    ```sh
+    make start_orbstack
+    ```
+
+1. Start SQL client
+  ```sh
+  kubectl get pods
+  kubectl exec -ti <flink-pod> -- bash
+  # then in the container shell
+  sql-client.sh
+  ```
+
+
+--- 
+## Second use case
+
+Use Faker to generate synthetic data.
 
 --- ! this does not work with Flink 2.1.1
 
@@ -193,7 +242,6 @@ WITH (
 
 ```sql
 set 'sql-client.execution.result-mode' = 'changelog';
-
 
 select count(*) AS `count` from bounded_pageviews;
 ```
@@ -258,7 +306,7 @@ as select * from `customers_dedup` where customer_segment = 'Premium'
 
 Last we want to modify CUST001 again by changing the customer_segment to Standard, but to make it working and pass the dedup, we also need to change the registration_date to be later than the creation of the first CUST001.
 ```sql
-nsert into `customers` values ('CUST001', 'John', 'Smith', 'john.smith@email.com', '555-0101', DATE '1985-03-15', 'M', TIMESTAMP '2024-01-25 10:23:45.123', 'Standard', 'Email', '123 3nd Oak Street', 'New York', 'NY', '10001', 'USA')
+insert into `customers` values ('CUST001', 'John', 'Smith', 'john.smith@email.com', '555-0101', DATE '1985-03-15', 'M', TIMESTAMP '2024-01-25 10:23:45.123', 'Standard', 'Email', '123 3nd Oak Street', 'New York', 'NY', '10001', 'USA')
 ```
 
 If the `select * from customers_filtered` is still running we can see the CUST001 is no more in the Premium list, and in the `customers_filtered` topic a tombstone record is present:
@@ -269,7 +317,7 @@ If the `select * from customers_filtered` is still running we can see the CUST00
 
 ### Snapshot Query
 
-See [the example from Confluent tutorials](https://docs.confluent.io/cloud/current/flink/how-to-guides/run-snapshot-query.html). 
+
 The most important thing is to set the mode and read from append model only table.
 
 ```sql
