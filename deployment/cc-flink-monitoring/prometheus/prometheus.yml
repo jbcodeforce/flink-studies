@@ -8,8 +8,8 @@ scrape_configs:
         - api.telemetry.confluent.cloud
     scheme: https
     basic_auth:
-      username: VN5Q46CTTS3VGFVL
-      password: cnAzYRciWdkWvh1WI0dHFp1NgZgcOHFmCjshg/A//Jp/gHcEyshswV75+kHzceC5
+      username: 
+      password:
     metrics_path: /v2/metrics/cloud/export
     params:
       "resource.kafka.id":
