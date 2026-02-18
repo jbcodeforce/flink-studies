@@ -1,7 +1,7 @@
--- Confluent Cloud: shipment_history as Kafka-backed table (upsert by shipment_id).
+-- Confluent Cloud: shipment_history as Kafka-backed table (upsert by package_id).
 -- Use with deploy_flink_statements.py --confluent-cloud.
 CREATE TABLE IF NOT EXISTS shipment_history (
-    shipment_id STRING,
+    package_id STRING,
     event_history ARRAY<ROW<event_ts TIMESTAMP(3), event_type STRING, current_location STRING, delivery_address STRING>>,
     ETA_2h_time_window_start TIMESTAMP(3),
     ETA_2h_time_window_end TIMESTAMP(3),
@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS shipment_history (
     previous_ETA_2h_time_window_end TIMESTAMP(3),
     risk_score DOUBLE,
     confidence DOUBLE,
-    PRIMARY KEY (shipment_id) NOT ENFORCED
-) DISTRIBUTED BY HASH(shipment_id) INTO 1 BUCKETS
+    PRIMARY KEY (package_id) NOT ENFORCED
+) DISTRIBUTED BY HASH(package_id) INTO 1 BUCKETS
 WITH (
     'changelog.mode' = 'upsert',
     'key.avro-registry.schema-context' = '.compute-eta',

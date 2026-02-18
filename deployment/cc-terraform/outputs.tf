@@ -85,19 +85,8 @@ output "schema_registry_api_key_secret" {
 }
 
 # ------------------------------------------------------
-# Flink Service Accounts
+# Flink Resources
 # ------------------------------------------------------
-
-output "flink_app_sa_id" {
-  description = "Flink app service account ID (runtime principal)"
-  value       = confluent_service_account.flink-app.id
-}
-
-output "flink_developer_sa_id" {
-  description = "Flink developer service account ID (deploys statements)"
-  value       = confluent_service_account.flink-developer-sa.id
-}
-
 output "flink_api_key_id" {
   description = "Flink API key ID (owned by flink-developer-sa)"
   value       = confluent_api_key.flink-developer-sa-flink-api-key.id

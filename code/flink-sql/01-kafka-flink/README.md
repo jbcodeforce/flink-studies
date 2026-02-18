@@ -1,15 +1,18 @@
 # Local Flink with Local or Remote Kafka and some Flink SQL examples 
 
+
+When moving to data streaming, aggregations need to store aggregated results continuously during the execution of the query. Therefore the query needs to maintain the most up-to-date count for each department to output results as new rows are processed. Flink’s advanced fault-tolerance mechanism maintains internal state and consistency, so queries always return the correct result, even in the face of hardware failure. Running streaming processing, obviously means integrating Flink with streaming platform like Kafka. 
+
 ## Goal
 
-Getting started on running Flink and Apache OSS locally, or Confluent Platform Flink and Kafka on local k8s, or Flink OSS local with Confluent Cloud Kafka. 
+This folder includes a set of examples to run Flink and  Kafka 
+* [Apache Flink and Kafka OSS locally]() using docker compose or [binary on local host]()
+* Confluent Platform Flink and Kafka running on a local kubernetes
+* Apache Flink OSS local with Confluent Cloud Kafka as managed Kafka SaaS model. 
 
-Following configurations are addressed:
+## Use Case
 
-* Docker compose with Flink and Kafka OSS
-* Apache Flink and Apache Kafka binary on local disk
-* Confluent Platform
-
+This is the basic counting the frequency of word from text messages, by using time windowing too. This use case can be extended to do classification or entity extraction over chat conversation content, to assess what are the current hot subjects. 
 
 ## Docker compose with Kafka latest image and flink 1.20
 

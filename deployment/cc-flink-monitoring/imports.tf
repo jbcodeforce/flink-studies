@@ -26,11 +26,6 @@ import {
   id = "sa-3oy222"
 }
 
-# Flink App Service Account (runtime principal)
-import {
-  to = confluent_service_account.flink-app
-  id = "sa-111z1z"
-}
 
 # Flink Developer Service Account
 import {

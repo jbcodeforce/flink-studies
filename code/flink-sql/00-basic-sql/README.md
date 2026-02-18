@@ -84,11 +84,7 @@ dept_id       employees_dept
     101            5
 ```
 
-The results are wrong, so we need to combine deduplication and aggregation using CTE. See the [first_use_case.sql](./oss-flink/first_use_case.sql).
-
-### Streaming consumption, grouping records and aggregation by group
-
-When moving to data streaming, aggregations need to store aggregated results continuously during the execution of the query. Therefore the query needs to maintain the most up-to-date count for each department to output results as new rows are processed. Flink’s advanced fault-tolerance mechanism maintains internal state and consistency, so queries always return the correct result, even in the face of hardware failure.
+The results are wrong, so we need to combine deduplication and aggregation using CTE. 
 
 As we work from file content, which is bounded, we need to specify the runtime mode to be batch:
 
@@ -96,7 +92,7 @@ As we work from file content, which is bounded, we need to specify the runtime m
 SET 'execution.runtime-mode' = 'batch';
 ```
 
-To get the analytic results to external applications, we need to define a sink table like below:
+To get the analytic results to external applications, we need to define a sink table, saved to file system for example:
 
 ```sql
 CREATE TABLE department_counts (
@@ -206,6 +202,7 @@ Deploying SQL queries can be done using `confluent cli`.
   sql-client.sh
   ```
 
+To Be Continued
 
 --- 
 ## Second use case

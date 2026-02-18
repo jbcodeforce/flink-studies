@@ -54,11 +54,12 @@ Under code/flink-sql folder
 |--------|------|-------------|
 | **Schema refactoring (products → discounts)** | [flink-sql/07-schema-refactoring](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/07-schema-refactoring/) | PostgreSQL products table refactored: discount moved to `discounts` table. Flink join products + discounts, support old (inline discount) and new (discount_id) schema. `alter_product.sql`, `pd_discounts.sql`, `ps_products_v1.sql`. |
 
-### 1.7 Snapshot Query
+### 1.7 Snapshot Query & Search External Tables
 
 | Sample | Path | Description |
 |--------|------|-------------|
-| **Snapshot query** | [flink-sql/08-snapshot-query](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/08-snapshot-query/) | Confluent Cloud snapshot query: Datagen connector, `SET sql.snapshot.mode = 'now'`, count on append-only table. |
+| **Snapshot query** | [flink-sql/08-snapshot-external-query](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/08-snapshot-external-query/) | Confluent Cloud snapshot query: Datagen connector, `SET sql.snapshot.mode = 'now'`, count on append-only table. |
+| **External table lookup** | [flink-sql/08-snapshot-external-query](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/08-snapshot-external-query/) | Use KEY_SEARCH_AGG with external table deployed on AWS RDS Postgresql |
 
 ### 1.8 Temporal Joins
 
@@ -170,6 +171,7 @@ Full Confluent Cloud demo: AWS RDS PostgreSQL → Debezium CDC → Kafka → Fli
 * [Confluent Flink how to](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#)
 * [Confluent demonstration scene](https://github.com/confluentinc/demo-scene): a lot of Kafka, Connect, and ksqlDB demos
 * [Confluent developer SQL training](https://developer.confluent.io/courses/flink-sql/overview/)
+* [Flink Confluent Cloud for Apache Flink Online Store Workshop](https://github.com/confluentinc/confluent-cloud-flink-workshop/blob/master/flink-getting-started/lab1.md), support Confluent enablement Tours.
 * [Confluent Quick start with streaming Agents](https://github.com/confluentinc/quickstart-streaming-agents)
 * [lab 3- Agentic Fleet Management Using Confluent Intelligence](https://github.com/confluentinc/quickstart-streaming-agents/blob/master/LAB3-Walkthrough.md)
 

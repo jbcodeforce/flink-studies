@@ -10,9 +10,7 @@ CREATE TABLE IF NOT EXISTS shipment_events (
     WATERMARK FOR event_ts AS event_ts - INTERVAL '1' SECOND
 ) WITH (
     'changelog.mode' = 'append',
-    'key.avro-registry.schema-context' = '.compute-eta',
     'value.avro-registry.schema-context' = '.compute-eta',
-    'key.format' = 'avro-registry',
     'value.format' = 'avro-registry',
     'scan.startup.mode' = 'earliest-offset',
     'value.fields-include' = 'all'

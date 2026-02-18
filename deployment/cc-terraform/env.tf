@@ -5,20 +5,18 @@ resource "confluent_environment" "env" {
   display_name = "${var.prefix}-env"
 
   stream_governance {
-    package = "ADVANCED"
+    package = "ESSENTIALS"
   }
 }
 
-resource "confluent_service_account" "env-manager" {
+# Reference existing env-manager service account (e.g. j9r-env-manager) by display name.
+# To import into Terraform state instead, use: terraform import confluent_service_account.env-manager <sa-id>
+data "confluent_service_account" "env-manager" {
   display_name = "${var.prefix}-env-manager"
-  description  = "Service account to manage ${var.prefix} environment"
-  depends_on = [
-    confluent_environment.env
-  ]
 }
 
 resource "confluent_role_binding" "env-admin" {
-  principal   = "User:${confluent_service_account.env-manager.id}"
+  principal   = "User:${data.confluent_service_account.env-manager.id}"
   role_name   = "EnvironmentAdmin"
   crn_pattern = confluent_environment.env.resource_name
 }

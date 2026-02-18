@@ -15,9 +15,9 @@ resource "confluent_api_key" "schema-registry-api-key" {
   display_name = "env-manager-schema-registry-api-key"
   description  = "Schema Registry API Key that is owned by 'env-manager' service account"
   owner {
-    id          = confluent_service_account.env-manager.id
-    api_version = confluent_service_account.env-manager.api_version
-    kind        = confluent_service_account.env-manager.kind
+    id          = data.confluent_service_account.env-manager.id
+    api_version = data.confluent_service_account.env-manager.api_version
+    kind        = data.confluent_service_account.env-manager.kind
   }
 
   managed_resource {
@@ -31,7 +31,7 @@ resource "confluent_api_key" "schema-registry-api-key" {
   }
 
   depends_on = [
-    confluent_service_account.env-manager
+    data.confluent_service_account.env-manager
   ]
 }
 

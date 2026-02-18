@@ -4,7 +4,7 @@
 
 [Based on the Confluent's blog: 'How to join a stream and a stream'](https://developer.confluent.io/tutorials/join-a-stream-to-a-stream/flinksql.html) but adapted for Confluent Cloud.
 
-1. Create orders and shipments tables in CC, use cc_s2s_ddl_orders.sql and cc_s2__ddl_shipments.sql
+1. Create orders and shipments tables in CC folder, use cc_s2s_ddl_orders.sql and cc_s2s_ddl_shipments.sql
 
     ```sh
     make create_orders
@@ -237,4 +237,4 @@ Improve the ValidateProductName UDF to not only return whether product name is v
 
 ## Data Skew
 
-[See problem and solution statement](https://jbcodeforce.github.io/flink-studies/concepts/#data-skew) and the demo code is in the [./data_skew/](./data_skew/) folder.
+[See problem and solution statements](https://jbcodeforce.github.io/flink-studies/concepts/#data-skew) and the demo code in the [./data_skew/](./data_skew/) folder.
