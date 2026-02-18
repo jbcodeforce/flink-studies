@@ -45,7 +45,7 @@ start_colima:
 stop_colima: 
 	@colima stop
 
-set_docker_context: ## Set Docker context to Colima
+set_docker_context: ## Set Docker context to orbstack
 	@docker context use orb
 
 # Common deployment commands ----------------------

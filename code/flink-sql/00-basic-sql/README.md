@@ -13,21 +13,51 @@ This folder includes some basic SQL examples to be used with one of the followin
 * [Local Confluent Platform for Flink on Kubernetes](#confluent-platform-for-flink-on-kubernetes)
 
 What is demonstrated:
-* Table creation, loading from CSV file and writing results to CSV file, when running with Apache Flink locally
+* Process employees data to aggregate by department id.
+* Table creation, loading from CSV file and writing results to CSV file
 * Deduplication within CTE, grouping and aggregates
-* Snapshot Query
-* Running Confluent Cloud deployment using a REST client in python.
 
-## First Use Case
 
-The common example to run in all environment is to [process employee data from csv](#employees-demo) to count the  number of employees per department. This is basic but let see how one problem can be executed in different Flink flavors.
+# Employees Aggregation
 
-This demonstration is based on the SQL getting started [Flink 2.1 documentation](https://nightlies.apache.org/flink/flink-docs-release-2.1/docs/dev/table/sql/gettingstarted/).
+The goal is to process employee data and  to count the  number of employees per department. This is basic but let see how one problem can be executed in different Flink flavors.
 
-The [data/employee.csv](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-sql/00-basic-sql/data/employes.csv) has 15 records.
+This demonstration is based on the SQL getting started from the [Apache Flink 2.1 documentation](https://nightlies.apache.org/flink/flink-docs-release-2.1/docs/dev/table/sql/gettingstarted/). The [data/employee.csv](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-sql/00-basic-sql/data/employes.csv) has 15 records.
 
-* The following job is a batch processing and uses a DDL to create a table matching the column of a employee csv file. It used Flink file system source connector:
 
+## Apache Flink OSS
+
+* The following job is a batch processing and uses a DDL to create a table matching the columns of a employee csv file. It uses Apache Flink file system source connector:
+
+
+* [See the deployment readme](../../../deployment/product-tar/README.md) in this repository to get last Apache Flink OSS image and then start it.
+* Once Flink cluster is started, run the Apache Flink SQL Client:
+    ```sh
+    # under deployment/product-tar
+    export FLINK_HOME=$(pwd)/flink-2.1.1
+    export PATH=$PATH:$FLINK_HOME/bin
+    # Start the cluster
+    $FLINK_HOME/bin/start-cluster.sh
+    # Then sql client in interactive mode
+    $FLINK_HOME/bin/sql-client.sh embedded -i ./oss-flink/init_session.sql
+    ```
+
+    The above commands are in one shell: `./start_flink_oss.sh`
+
+* Once connected set default catalog and db.
+
+```sh
+show catalogs;
+use catalog j9r_catalog;
+show databases;
+use j9r_db
+show tables;
+show functions;
+```
+
+Should get an empty set. 
+
+* Create the employee table:
 ```sql
 CREATE TABLE employees (
     emp_id INT,
@@ -40,7 +70,7 @@ CREATE TABLE employees (
 );
 ```
 
-* Using the SQL client, we can select some data from this table: 
+* We can select some data from this table: 
 
 ```sql
 SELECT * from employees WHERE dept_id = 102;
@@ -105,73 +135,38 @@ CREATE TABLE department_counts (
 );
 ```
 
-See [first_use_case.sql](./oss-flink/first_use_case.sql) for the end to end solution.
+See [./oss-flink/first_use_case.sql](./oss-flink/first_use_case.sql) for the end to end solution.
 
-### Snapshot Query
-
-On Confluent Cloud, it is possible to run a query with bounded stream, bounded by the current time. The CC Flink demonstration illustrates this query.
-
-```sql
-set "sql.snapshot.mode": "now";
-SELECT * FROM employee_count;
-```
-
-See [the example from Confluent tutorials](https://docs.confluent.io/cloud/current/flink/how-to-guides/run-snapshot-query.html). 
-
-## Apache Flink OSS
-
-* [See the deployment readme](../../../deployment/product-tar/README.md) in this repository to get last Apache Flink OSS image.
-* Once Flink cluster started, run the Flink SQL Client:
-    ```sh
-    # under deployment/product-tar
-    export FLINK_HOME=$(pwd)/flink-2.1.1
-    export PATH=$PATH:$FLINK_HOME/bin
-    # Start the cluster
-    $FLINK_HOME/bin/start-cluster.sh
-    # Then sql client in interactive mode
-    $FLINK_HOME/bin/sql-client.sh embedded -i ./oss-flink/init_session.sql
-    ```
-
-    The above commands are in one shell: `./start_flink_oss.sh`
-
-* Once connected set default catalog and db.
-
-```sh
-show catalogs;
-use catalog j9r_catalog;
-show databases;
-use j9r_db
-show tables;
-show functions;
-```
-
-Should get an empty set. 
-
-* For all interactive demonstration, copy past the previous SQL statements
 * Exit the shell
 
-* Run the employee count per department demonstration in one file, using a session cluster:
+* You can also run the employee count per department demonstration in one file, using a session cluster:
   ```sh
   $FLINK_HOME/bin/sql-client.sh -i ./oss-flink/init_session.sql -f ./oss-flink/first_use_case.sql
   ```
 
   The results are in tableau format with the log operation, the results are correct and visible in the `./data/dept_count` folder, as the SQL has a sink connector to filesystem.
 
-* If needed terminate the cluster
+* When needed, terminate the cluster
 ```
 $FLINK_HOME/bin/stop-cluster.sh 
 ```
 
 ## Confluent Cloud Flink
 
-To deploy the same SQL scripts to Confluent Cloud for Flink we need to have some environment defined. The terraform in [deployment/cc-terraform](../../../deployment/cc-terraform/) can be used to prepare such environment.
+To deploy the same SQL scripts to Confluent Cloud for Flink we need to have some environment defined. The terraform in [deployment/cc-terraform](../../../deployment/cc-terraform/) can be used to prepare such environment, get a kafka cluster, schema registry and two Flink compute pools.
 
 Deploying SQL queries can be done using `confluent cli`. 
 
-* The demonstration is controlled by a python code:
+* The demonstration is controlled by one python code:
   ```sh
   cd ..
   uv run  python 00-basic-sql/cc_flink_employees_demo.py
+  ```
+
+* On Confluent Cloud, it is possible to run a query with bounded stream, bounded by the current time. The CC Flink demonstration illustrates this query.
+  ```sql
+  set "sql.snapshot.mode": "now";
+  SELECT * FROM employee_count;
   ```
 
 * In case you need to rerun the snapshot query do:
@@ -179,7 +174,7 @@ Deploying SQL queries can be done using `confluent cli`.
   uv run python 00-basic-sql/cc_flink_employees_demo.py --snapshot-query-only
   ```
   
-  See [the example from Confluent tutorials](https://docs.confluent.io/cloud/current/flink/how-to-guides/run-snapshot-query.html). 
+  See [the snapshot query example from Confluent tutorials](https://docs.confluent.io/cloud/current/flink/how-to-guides/run-snapshot-query.html). 
 
 
 * To clean up
@@ -189,18 +184,31 @@ Deploying SQL queries can be done using `confluent cli`.
 
 ## Confluent Platform for Flink on Kubernetes
 
+The approach may be identical as the Apache Flink OSS, except that 
 1. Start Kubernetes with [Orbstack](../../../deployment/k8s).
-    ```sh
-    make start_orbstack
-    ```
-
-1. Start SQL client
   ```sh
-  kubectl get pods
-  kubectl exec -ti <flink-pod> -- bash
-  # then in the container shell
-  sql-client.sh
+  # under deployemt/k8s folder
+  ./start_orbstack.sh
   ```
+1. Set kubectl context and see current pods
+  ```sql
+  kubectl config set-context --current --namespace=confluent
+  kubectl get pods
+  ```
+
+  Expected results:
+  ```sh
+  NAME                                                 READY   STATUS    RESTARTS        AGE
+  confluent-manager-for-apache-flink-c55f76d7c-6582b   1/1     Running   1 (2m58s ago)   25d
+  confluent-operator-56c587c984-jgnd9                  1/1     Running   0               26d
+  controlcenter-ng-0                                   3/3     Running   0               24d
+  flink-kubernetes-operator-5658c5d8c4-2xq2l           2/2     Running   0               25d
+  kafka-0                                              1/1     Running   0               24d
+  kraftcontroller-0                                    1/1     Running   0               26d
+  schemaregistry-0                                     1/1     Running   0               26d
+  ```
+
+1. The approach is to package the SQL and execute them. [See product documentation]()
 
 To Be Continued
 

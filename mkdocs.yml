@@ -3,16 +3,23 @@ repo_url: https://github.com/jbcodeforce/flink-studies.git
 site_url: https://jeromeboyer.net/flink-studies
 copyright: Copyright &copy; 2018 - 2026 Jerome Boyer
 nav:
-  - Home: 
+  - Foundations: 
     - Introduction: index.md
+    - Flink Architecture: architecture/index.md
+    - Getting started: coding/getting-started.md
     - Flink Key Concepts: concepts/index.md
     - Flink SQL concepts: concepts/flink-sql.md
-    - Getting started: coding/getting-started.md
-    - Flink Architecture: architecture/index.md
-    - Fit for purpose: architecture/fitforpurpose.md
     - Code&Demos: labs/index.md
     - Agentic applications: architecture/agentic_flink.md
-  - Recipes:
+  - Cookbook:
+    - Introduction: cookbook/index.md
+    - Considerations: cookbook/considerations.md
+    - Cluster management: cookbook/cluster_mgt.md
+    - Job Lifecycle: cookbook/job_lifecycle.md
+    - FKO & CMF Deployment: coding/k8s-deploy.md
+    - Confluent Cloud Terraform: cookbook/terraform.md
+    - Monitoring: techno/fk-k8s-monitor.md
+  - Flink_App_Coding:
     - Flink SQL coding:
       - SQL Clients: coding/flink-sql-clients.md
       - Create Table (SQL): coding/flink-sql-1.md
@@ -20,24 +27,19 @@ nav:
     - Java - Python:
       - Table API: coding/table-api.md
       - DataStreams API: coding/datastream.md
-      - UDFs & PTFs: coding/udf_sql.md
+    - UDFs & PTFs: coding/udf_sql.md
     - Deployment: 
-      - Sizing: techno/sizing.md
-      - Kubernetes Deployment (FKO, CMF): coding/k8s-deploy.md
-      - IaC wt Terraform: coding/terraform.md
-      - Flink on k8s - Monitoring: techno/fk-k8s-monitor.md
       - Manage CC Flink projects: https://jbcodeforce.github.io/shift_left_utils/
     - More advanced topics:
       - Stateful function: coding/stateful-func.md
       - Complex Event Processing: coding/cep.md
-      - Flink Cookbook: architecture/cookbook.md
   - Methodology:
     - Data as a product: methodology/data_as_a_product.md
     - Event Storming: https://jbcodeforce.github.io/eda-studies/methodology/event-storming/
     - Migrate to real-time processing tools: https://jbcodeforce.github.io/shift_left_utils/
     - Center of Excellence: methodology/coe.md
     - A C360 data product demo: https://jbcodeforce.github.io/flink_project_demos/c360/spark_project/
-  - Related Technologies:
+  - Related_Technologies:
     - Confluent Cloud Flink: techno/ccloud-flink.md 
     - Confluent Platform for Flink: techno/cp-flink.md 
     - Kafka Integration: architecture/kafka.md

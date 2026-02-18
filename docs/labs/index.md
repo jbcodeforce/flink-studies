@@ -167,6 +167,7 @@ Full Confluent Cloud demo: AWS RDS PostgreSQL → Debezium CDC → Kafka → Fli
 
 ## Public repositories with valuable demonstrations
 
+* [apache flink 2.x Playground](https://github.com/apache/flink-playgrounds.git)
 * [Personal Flink demo repository](https://jbcodeforce.github.io/flink_project_demos/) for Data as a product, ksql to Flink or Spark to Flink automatic migration test sets.
 * [Confluent Flink how to](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#)
 * [Confluent demonstration scene](https://github.com/confluentinc/demo-scene): a lot of Kafka, Connect, and ksqlDB demos

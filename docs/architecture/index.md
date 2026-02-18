@@ -4,17 +4,19 @@
     * Created 2018 
     * Updated 11/2024 - review done.
     * 12/2024: move fault tolerance in this chapter
+    * 2/2026: Refactor content as part of the new cookbok chapter
 
 ## Runtime architecture
 
 Flink consists of a **Job Manager** and `n` **Task Managers** deployed on `k` hosts. 
 
 <figure markdown="span">
-![1](https://ci.apache.org/projects/flink/flink-docs-release-1.20/fig/distributed-runtime.svg)
+![1](./diagrams/flink_basic_arch.drawio.png)
 <figcaption>Main Flink Components</figcaption>
 </figure>
 
-The **JobManager** controls the execution of a single application. Developers submit their application (jar file or SQL statements) via CLI, or k8s manifest. Job Manager receives the Flink application for execution and builds a Task Execution Graph from the defined **JobGraph**. It manages job submission which parallelizes the job and distributes slices of [the Data Stream](https://ci.apache.org/projects/flink/flink-docs-stable/dev/datastream_api.html) flow, the developers have defined. Each parallel slice of the job is a task that is executed in a **task slot**.  
+Client applications compile batch or streaming applications into a dataflow graph, which it then submits to the JobManager. 
+The **JobManager** controls the execution of one or more application. Developers submit their application (jar file or SQL statements) via CLI, or k8s manifest. Job Manager receives the Flink application for execution and builds a Task Execution Graph from the defined **JobGraph**. It manages job submission which parallelizes the job and distributes slices of [the Data Stream](https://ci.apache.org/projects/flink/flink-docs-stable/dev/datastream_api.html) flow, the developers have defined. Each parallel slice of the job is a task that is executed in a **task slot**.  
 
 Once the job is submitted, the **Job Manager** is scheduling the job to different task slots within the **Task Manager**. The Job manager may create resources from a computer pool, or when deployed on kubernetes, it creates pods. 
 
