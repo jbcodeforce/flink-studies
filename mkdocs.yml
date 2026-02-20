@@ -5,9 +5,8 @@ copyright: Copyright &copy; 2018 - 2026 Jerome Boyer
 nav:
   - Foundations: 
     - Introduction: index.md
-    - Flink Architecture: architecture/index.md
-    - Getting started: coding/getting-started.md
     - Flink Key Concepts: concepts/index.md
+    - Getting started: coding/getting-started.md
     - Flink SQL concepts: concepts/flink-sql.md
     - Code&Demos: labs/index.md
     - Agentic applications: architecture/agentic_flink.md

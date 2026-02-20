@@ -4,7 +4,7 @@
 
 This is a simple demo using Confluent Platform with Flink, or Confluent Cloud for Flink and Kafka to demonstrate a json schema mapping, with join and an aggregation using Flink SQL queries. 
 
-The example is about a fictitious mover truck rental company, in 2190. This demonstration covers all the components to create and deploy for a Flink application consuming records from 2 Kafka topics and generating records to one topic.
+The example is about a fictitious mover truck rental company, in 2190. This demonstration covers all the components to create and deploy for a Flink application consuming records from 2 Kafka topics and generating records to one sink topic.
 
 The processing logic, we need to implement, has the following basic data pipeline architecture:
 

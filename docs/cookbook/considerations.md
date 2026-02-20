@@ -291,6 +291,123 @@ Flink OSS uses Zookeeper to manage multiple JobManagers and select the leader to
 Application's tasks checkpoints and other states are saved in a local and remote storages, but metadata are saved in Zookeeper. When a JobManager fails, all tasks that belong to its application are automatically cancelled. A new JobManager that takes over the work by getting information of the storage from Zookeeper, and then restarts the process with the JobManager.
 
 
+### Fault Tolerance
+The central part of Flink’s fault tolerance mechanism is drawing consistent snapshots of the distributed data stream and operator state. The two major Flink features to support fault tolerance are the checkpoints and savepoints. 
+
+#### Checkpointing
+
+[Checkpoints](https://nightlies.apache.org/flink/flink-docs-release-2.2/docs/concepts/stateful-stream-processing/#checkpointing) are snapshots of the input data stream, capturing the state of each operator, of the DAG, at a specific point in time. They are created automatically and periodically by Flink. The saved states are used to recover from failures, and checkpoints are optimized for quick recovery.
+
+**Checkpoints** allow maintaining consistency through exactly-once processing semantics, when the data stream source is able to support rewind to a defined recent point. When a failure occurs, Flink can restore the state of the operators and replay the records starting from the checkpoint.
+
+In the event of a failure in a parallel execution, Flink halts the stream flow and restarts the operators from the most recent checkpoints. During data partition reallocation for processing, the associated states are also reallocated. States are stored in distributed file systems, and when Kafka is used as the data source, the committed read offsets are included in the checkpoint data.
+
+Checkpointing is coordinated by the Job Manager, it knows the location of the latest completed checkpoint which will get important later on. This checkpointing and recovery mechanism can provide exactly-once consistency for application state, given that all operators checkpoint and restore all of their states and that all input streams are reset to the position up to which they were consumed when the checkpoint was taken. This will work perfectly with Kafka, but not with sockets or queues where messages are lost once consumed. Therefore exactly-once state consistency can be ensured only if all input streams are from reset-able data sources.
+
+During the recovery and depending on the sink operators of an application, some result records might be emitted multiple times to downstream systems. Downstream systems need to be idempotent.
+
+Flink utilizes the concept of **Checkpoint Barriers** to delineate records. These barriers separate records so that those received after the last snapshot are included in the next checkpoint, ensuring a clear and consistent state transition.
+
+Barrier can be seen as a mark, a tag, in the data stream and aims to close a snapshot. 
+
+<figure markdown="span">
+ ![Checkpoints](./images/checkpoints.png){ width=600 }
+<figcaption>Checkpointing concepts</figcaption>
+</figure>
+
+Checkpoint barriers flow with the stream, allowing them to be distributed across the system. When a sink operator — located at the end of a streaming Directed Acyclic Graph (DAG) — receives `barrier n` from all its input streams, it acknowledges `snapshot n` to the checkpoint coordinator.
+
+Once all sink operators have acknowledged a snapshot, it is considered completed. After `snapshot n` is finalized, the job will not request any records from the source prior to that snapshot, ensuring data consistency and integrity.
+
+State snapshots are stored in a [state backend](https://nightlies.apache.org/flink/flink-docs-master/docs/ops/state/state_backends/), which can include options such as in-memory storage, HDFS, object storage or RocksDB. This flexibility allows for optimal performance and scalability based on the application’s requirements.
+
+When Flink triggers a checkpoint, it doesn't copy the whole database. It identifies which SST files are new since the last successful checkpoint. These new files are uploaded to durable storage (like S3 or HDFS). The checkpoint metadata simply "points" to these files.
+
+With stateful distributed processing, scaling stateful operators, enforces state repartitioning and assigning to more or fewer parallel tasks. Keys are organized in key-groups, and key groups are assigned to tasks. Operators with operator list state are scaled by redistributing the list entries. Operators with operator union list state are scaled by broadcasting the full list of state entries to each task.
+
+In the context of a KeyedStream, Flink functions as a key-value store where the key corresponds to the key in the stream. State updates do not require transactions, simplifying the update process.
+
+For Batch processing there is no checkpoint, so in case of failure the stream is replayed from the beginning.
+
+#### Savepoints
+
+Savepoints are user triggered snapshot at a specific point in time. It is used during system operations like product upgrades. The Flink operator for kubernetes has [custom resource definition](../coding/k8s-deploy.md#ha-configuration) to support the savepoint process. See also the end to end demo for savepoint in [this folder.](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/savepoint-demo)
+
+
+
+#### Checkpoints impact throughput
+
+* The persistence to remote storage is done asynchronously, but at the level of a task. So too frequent checkpointing will impact throughput. Now it also depends if the tasks are compute or IO intensive. 
+
+#### Interuption while writing checkpoints
+
+* The processing will restart from the last persisted checkpoints so no data loss. Specially true when source of the data are coming from Kafka topics. The checkpoint points to last read-commited offset within topic/partition so Flink will reload from there
+
+#### When Flink cluster has 10 nodes what happen in one node failure
+
+It will depend of the operator allocation to the task to the task manager and what the operator needs (as state). At worse case the full DAG needs to be restored, every operator needs to rebuild their state so multiple task managers in the cluster.
+
+It can take sometime to recover. Reread data and reprocess it, will take many seconds, or minutes. 
+
+With hot-hot deployment, it is possible to get the same running application running in parallel, and then switch the output sink / topic for the consumer. For real-time payment we can achieve around 3 to 7 seconds recovery time, with million of records per second.  
+
+#### Can we set one task manager one task to run all a DAG to make it simple?
+
+It will depend of the application state size and logic to operate. If all state stays in memory, yes this is a common pattern to use. If state are bigger than physical memory of the computer running the task manager, then the processing needs more computers, so more task managers and need to distribute data. Then it needs distributed storage to persist states. 
+
+### Eactly-once processing
+
+When addressing exactly once processing, it is crucial to consider the following steps:
+
+* **Read Operation from the Source**: Ensuring that the data is read exactly once is foundational. Flink's source connectors are designed to handle this reliably through mechanisms like checkpointing.
+* **Apply Processing Logic** which involves operations such as window aggregation or other transformations, which can also be executed with exactly-once semantics when properly configured.
+* **Generate Results to a Sink** introduces more complexity. While reading from the source and applying processing logic can be managed to ensure exactly-once semantics, generating a unique result to a sink depends on the target technology and its capabilities. Different sink technologies may have varying levels of support for exactly-once processing, requiring additional strategies such as idempotent writes or transactional sinks to achieve the desired consistency.
+
+<figure markdown="span">
+![](./images/e2e-1.png){ width=800 }
+<figcaption>End-to-end exactly once</figcaption>
+</figure>
+
+After reading records from Kafka, processing them, and generating results, if a failure occurs, Flink will revert to the last committed read offset. This means it will reload the records from Kafka and reprocess them. As a result, this can lead to duplicate entries being generated in the sink:
+
+<figure markdown="span">
+![](./images/e2e-2.png){ width=800 }
+<figcaption>End-to-end recovery</figcaption>
+</figure>
+
+Since duplicates may occur, it is crucial to assess how downstream applications handle idempotence. Many distributed key-value stores are designed to provide consistent results even after retries, which can help manage duplicate entries effectively.
+
+To achieve end-to-end exactly-once delivery, it is essential to utilize a sink that supports transactions and implements a two-phase commit protocol. In the event of a failure, this allows for the rollback of any output generated, ensuring that only successfully processed data is committed. However, it's important to note that implementing transactional outputs can impact overall latency.
+
+Flink takes checkpoints periodically — typically every 10 seconds — which establishes the minimum latency we can expect at the sink level. This periodic checkpointing is a critical aspect of maintaining state consistency while balancing the need for timely data processing.
+
+For Kafka Sink connector, as kafka producer, we need to set the `transactionId`, and the delivery guarantee type:
+
+```java
+new KafkaSinkBuilder<String>()
+    .setBootstrapServers(bootstrapURL)
+    .setDeliverGuarantee(DeliveryGuarantee.EXACTLY_ONCE)
+    .setTransactionalIdPrefix("store-sol")
+```
+
+With transaction ID, a sequence number is sent by the Kafka producer API to the broker, and so the partition leader will be able to remove duplicate retries.
+
+<figure markdown="span">
+![](./images/e2e-3.png){ width=800 }
+<figcaption>End-to-end with Kafka transaction id</figcaption>
+</figure>
+
+When the checkpointing period is set, we need to also configure `transaction.max.timeout.ms` of the Kafka broker and `transaction.timeout.ms` for the producer (sink connector) to a higher timeout than the checkpointing interval plus the max expected Flink downtime. If not the Kafka broker will consider the connection has failed and will remove its state management.
+
+???- info "Event-driven microservice"
+    The evolution of microservice is to become more event-driven, which are stateful streaming applications that ingest event streams and process the events with application-specific business logic. This logic can be done in flow defined in Flink and executed in the clustered runtime.
+
+    <figure markdown="span">
+    ![](./images/evt-app.png)
+    <figcaption>Event-driven application as a sequence of Flink apps</figcaption>
+    </figure>
+
+
 ## State Backends and Storage
 
 ## SLOs

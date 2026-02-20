@@ -1,13 +1,15 @@
 windowing# Apache Flink - Core Concepts
 
 ???- "Version"
-    Update 07/2025 - Review done with simplification and avoid redundancies.
-    Update - revision 11/23/25
+    * Update 07/2025 - Review done with simplification and avoid redundancies.
+    * Update - revision 11/23/25
+     * 2/2026: Refactor content as part of the new cookbok chapter
 
 ## Quick Reference
 
 - [Core Concepts](#overview-of-apache-flink)
 - [Stream Processing](#stream-processing-concepts)
+- [Architecture](#runtime-architecture)
 - [State Management](#state-management)
 - [Time Handling](#event-time)
 
@@ -72,6 +74,15 @@ A Stream is a sequence of events, bounded or unbounded:
 </figure>
 
 
+Apache Flink supports batch processing by processing all the data in one job with bounded dataset. It is used when we need all the data, to assess trend, develop AI model, and with a focus on throughput instead of latency. Jobs are run when needed, on input that can be pre-sorted by time or by any other key.
+
+The results are reported at the end of the job execution. Any failure means to do of full restart of the job.
+
+Hadoop was designed to do batch processing. Flink has capability to replace the Hadoop map-reduce processing.
+
+When latency is a major requirements, like monitoring and alerting, fraud detection then streaming is the only choice.
+
+
 ### Dataflow
 
 
@@ -112,28 +123,143 @@ GROUP BY key;
 ```
 
 
+## Runtime architecture
+
+Flink consists of a **Job Manager** and `n` **Task Managers** deployed on `k` hosts. 
+
+<figure markdown="span">
+![1](./diagrams/flink_basic_arch.drawio.png)
+<figcaption>Main Flink Components</figcaption>
+</figure>
+
+Client applications compile batch or streaming applications into a dataflow graph. Client submits the DAG to the JobManager. The **JobManager** controls the execution of one or more applications. Developers submit their application (jar file or SQL statements) via CLI, REST call or k8s manifest. Job Manager receives the Flink application for execution and builds a Task Execution Graph from the defined **JobGraph**. It manages job submission which parallelizes the job and distributes slices of [the Data Stream](https://ci.apache.org/projects/flink/flink-docs-stable/dev/datastream_api.html) flow, the developers have defined. Each parallel slice of the job is a task that is executed in a **task slot**.  
+
+Once the job is submitted, the **Job Manager** is scheduling the job to different task slots within the **Task Manager**. The Job manager may create resources from a computer pool, or when deployed on kubernetes, it creates pods. 
+
+The **Resource Manager** manages Task Slots and leverages an underlying orchestrator, like Kubernetes or Yarn (deprecated).
+
+A **Task slot** is the unit of work executed on CPU.
+The **Task Managers** execute the actual stream processing logic. There are multiple task managers running in a cluster. The number of slots limits the number of tasks a TaskManager can execute. After it has been started, a TaskManager registers its slots to the ResourceManager:
+
+<figure markdown="span">
+![2](./images/flink-components.png)
+<figcaption>Sequence flow from job submission</figcaption>
+</figure>
+
+The **Dispatcher** exposes API to submit applications for execution. It hosts the user interface too.
+
+Once the job is running, the Job Manager is responsible to coordinate the activities of the Flink cluster, like checkpointing, and restarting task manager that may have failed.
+
+Tasks are loading the data from sources, do their own processing and then send data among themselves for repartitioning and rebalancing, to finally push results out to the sinks.
+
+When Flink is not able to process a real-time event, it may have to buffer it, until other necessary data has arrived. This buffer has to be persisted in longer storage, so data are not lost if a task manager fails and has to be restarted. In batch mode, the job can reload the data from the beginning. In batch the results are computed once the job is done (count the number of record like `select count(*) AS `count` from bounded_pageviews;` return one result), while in streaming mode, each event may be the last one received, so results are produced incrementally, after every events or after a certain period of time based on timers.
+
+
+???- "Parameters"
+    *  taskmanager.numberOfTaskSlots: 2
+
+Only one Job Manager is active at a given point of time, and there may be `n` Task Managers. It is a single point of failure, but it startes quickly and can leverage the checkpoints data to restart its processing.
+
+There are different [deployment models](https://ci.apache.org/projects/flink/flink-docs-release-1.20/ops/deployment/): 
+
+* Deploy on executing cluster, this is the **session mode**. Use **session** cluster to run multiple jobs: we need a separate JobManager container for that. 
+* **Per job** mode: spin up a cluster per job submission. This provides better resource isolation. 
+* **Application mode**: creates a cluster per app with the `main()` function executed on the JobManager. It can include multiple jobs but they run inside the app. It allows for saving the required CPU cycles, but also save the bandwidth required for downloading the dependencies locally.
+
+Flink can run on any common resource manager like Hadoop Yarn, Mesos, or Kubernetes. For development purpose, we can use docker images to deploy a **Session** or **Job cluster**.
+
+See also [deployment to Kubernetes](../coding/k8s-deploy.md)
+
+The new K8s operator, deploys and monitors Flink Application and Session deployments.
+
+
 ## State Management
 
-Flink keep state of its processing for Fault tolerance. State can grow over time. Local state persistence improves latency while remote checkpointing ensures fault tolerance.
+In Flink, [state](https://nightlies.apache.org/flink/flink-docs-release-2.2/docs/concepts/stateful-stream-processing/) consists of information that an operator remembers about past events, which is used to influence the processing of future events.
+
+### Core Concept of State
+* Stateful operations are required for many common use cases, such as:
+    * **Windowing:** Aggregating events over time (e.g., sum of sales per minute).
+    * **Pattern Detection:** Tracking a sequence of events to find specific patterns.
+    * **Machine Learning:** Updating model parameters based on a stream of data.
+    * **Analytics:** Maintaining counters or profiles for unique users.
+
+* We can dissociate different type of operations:
+    * **Stateless Operations** process each event independently without retaining information:
+        - Basic operations: `INSERT`, `SELECT`, `WHERE`, `FROM` 
+        - Scalar/table functions, projections, filters
+    * **Stateful Operations** maintain state across events for complex processing:
+        - `JOIN` operations (except `CROSS JOIN UNNEST`)
+        - `GROUP BY` aggregations (windowed/non-windowed)
+        - `OVER` aggregations and `MATCH_RECOGNIZE` patterns
+
+### Types of State
+
+Flink distinguishes between two main categories of state:
+
+* **Managed State:** Handled by the Flink runtime. Flink manages the storage, rescaling, and fault tolerance of this state.
+* **Raw State:** Handled by the user in their own data structures. It is generally not recommended as Flink cannot automatically manage it during rescaling.
+
+
+Within Managed State, there are several sub-types:
+
+* **Keyed State:** Tied to a specific key (e.g., a user ID). It is partitioned across the cluster so that each key's state is handled by exactly one parallel task. Flink maintains one state instance per key value and Flink partitions all records with the same key to the operator task that maintains the state for this key. The key-value map is sharded across all parallel tasks:
+
+    <figure markdown="span">
+    ![](./images/key-state.png){ width=600 }
+    <figcaption>Keyes states</figcaption>
+    </figure>
+
+    Each task maintains its state locally to improve latency. For small state, the state backends will use JVM heap, but for larger state RocksDB is used. A [**state backend**](https://nightlies.apache.org/flink/flink-docs-master/docs/ops/state/state_backends/) takes care of checkpointing the state of a task to a remote and persistent storage.
+
+* **Operator State:** Tied to a parallel operator instance rather than a key. It is often used for source/sink connectors (e.g., tracking Kafka offsets).
+* **Broadcast State**: A special type of operator state where the state is duplicated across all parallel tasks of an operator.
+
+Flink keeps state of its processing for Fault tolerance. It fact, Flink uses stream replay and checkpointing. 
+
+All data maintained by a task and used to compute the results of a function belong to the state of the task. Function may use <k,V> pairs to store values, and may implement the ChekpointedFunctions to make local state fault tolerant.
+
+While processing the data, the task can read and update its state and computes its results based on its input data and state.
+
+State management may address very large states, and no state is lost in case of failures.
+
+Within a DAG, each operator needs to register its state. **Operator state** is scoped to an operator task: all records processed by the same parallel task have access to the same state.
+
+State can grow over time. Local state persistence improves latency while remote checkpointing ensures fault tolerance.
 
 <figure markdown="span">
 ![7](./diagrams/flink-rt-processing.drawio.png){ width=600 }
 <figcaption>Flink and Kafka integration with state management</figcaption>
 </figure>
 
-We can dissociate different type of operations:
-
-* **Stateless Operations** process each event independently without retaining information:
-    - Basic operations: `INSERT`, `SELECT`, `WHERE`, `FROM` 
-    - Scalar/table functions, projections, filters
-
-* **Stateful Operations** maintain state across events for complex processing:
-    - `JOIN` operations (except `CROSS JOIN UNNEST`)
-    - `GROUP BY` aggregations (windowed/non-windowed)
-    - `OVER` aggregations and `MATCH_RECOGNIZE` patterns
 
 Flink ensures fault tolerance through [checkpoints and savepoints](../architecture/index.md#checkpointing) that persistently store application state.
 
+### Fault Tolerance and Consistency
+
+* **Checkpoints:** Flink periodically takes distributed snapshots of the state and stores them in durable storage.
+
+* **Exactly-once Semantics:** By combining checkpoints with replayable data sources, Flink guarantees that each event affects the state exactly once, even in the event of a failure.
+
+* **Savepoints:** These are manually triggered snapshots used for operational tasks like application upgrades, A/B testing, or migrating to a different cluster.
+
+[See deeper explanations in the cookbook chapter](../cookbook/considerations.md#high-availability)
+
+### State Backends
+State backends determine how the state is physically stored. Options typically include:
+
+* **HashMap State Backend:** Stores state as objects on the JVM heap (very fast, but limited by memory).
+* **Embedded RocksDB:** Stores state in an embedded database on local disk. [RocksDB](https://rocksdb.org/) is a key-value store based on Log-Structured Merge-Trees (LSM Trees). Flink organizes state into "Key Groups." Each RocksDB instance on a TaskManager handles a specific set of these groups. It saves asynchronously. Serializes using bytes. But there is a limit to the size per key and valye of 2^31 bytes. Supports incremental checkpoints which is key for maintaining performance as state grows into the terabytes.
+    * The process: When an operator updates state, it writes to the RocksDB MemTable and a Write-Ahead Log (WAL). Once the MemTable is full, it is flushed to disk as a static SST file.
+    * ForStState uses tree structured k-v store. May use object storage for remote file systems. Allows Flink to scale the state size beyond the local disk capacity of the TaskManager. 
+    * `HashMapStateBackend` use Java heap to keep state, as java object. So unsafe to reuse!.
+* **ForSt (Disaggregated):** The 2.x preference for cloud-native scaling and fast recovery, by using Distributed File Systems (DFS).
+
+### Sources of knowledge
+
+* [Stateful processing - Apache Flink documentation](https://nightlies.apache.org/flink/flink-docs-release-2.2/docs/concepts/stateful-stream-processing/).
+* [Confluent state management documentation.](https://docs.confluent.io/cloud/current/flink/concepts/overview.html#id2)
+* [See 'working with state' from Flink documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream/fault-tolerance/state/).
 ## Windowing
 
 [Windows](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/stream/operators/windows.html) group stream events into finite buckets for processing. Flink provides window table-valued functions (TVF): Tumbling, Hop, Cumulate, Session.
