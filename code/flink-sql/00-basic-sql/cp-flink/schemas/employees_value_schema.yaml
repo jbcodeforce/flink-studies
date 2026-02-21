@@ -1,0 +1,13 @@
+apiVersion: platform.confluent.io/v1beta1
+kind: Schema
+metadata:
+  name: employees-value
+  namespace: confluent
+spec:
+  schemaRegistryClusterRef:
+    name: schemaregistry
+    namespace: confluent
+  data:
+    configRef: employees-value
+    format: json
+  compatibilityLevel: BACKWARD

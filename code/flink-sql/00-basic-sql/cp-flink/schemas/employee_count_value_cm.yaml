@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: employee-count-value
+  namespace: confluent
+data:
+  # JSON Schema for employee_count table: dept_id INT, emp_count BIGINT
+  # Load from file with: kubectl create configmap employee-count-value --from-file=schema=employee_count_schema.json -n confluent --dry-run=client -o yaml | kubectl apply -f -
+  schema: |
+    {"type":"object",
+     "properties":
+      {"dept_id":{"type":"integer"},
+       "emp_count":{"type":"integer"}},
+       "required":["dept_id"]}

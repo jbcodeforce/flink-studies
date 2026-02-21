@@ -184,35 +184,115 @@ Deploying SQL queries can be done using `confluent cli`.
 
 ## Confluent Platform for Flink on Kubernetes
 
-The approach may be identical as the Apache Flink OSS, except that 
-1. Start Kubernetes with [Orbstack](../../../deployment/k8s).
-  ```sh
-  # under deployemt/k8s folder
-  ./start_orbstack.sh
-  ```
-1. Set kubectl context and see current pods
-  ```sql
-  kubectl config set-context --current --namespace=confluent
-  kubectl get pods
-  ```
+Here we have two approaches: 
+* one using kafka topics as sources and sink of the SQL statmeent. This is the current approach for CP-Flink with SQL catalog and database being Kafka and tables being topics. This means topics and schemas need to be created with Yaml files
+* Package the SQL as done with Apache Flink and deploy using FKO
 
-  Expected results:
-  ```sh
-  NAME                                                 READY   STATUS    RESTARTS        AGE
-  confluent-manager-for-apache-flink-c55f76d7c-6582b   1/1     Running   1 (2m58s ago)   25d
-  confluent-operator-56c587c984-jgnd9                  1/1     Running   0               26d
-  controlcenter-ng-0                                   3/3     Running   0               24d
-  flink-kubernetes-operator-5658c5d8c4-2xq2l           2/2     Running   0               25d
-  kafka-0                                              1/1     Running   0               24d
-  kraftcontroller-0                                    1/1     Running   0               26d
-  schemaregistry-0                                     1/1     Running   0               26d
-  ```
 
-1. The approach is to package the SQL and execute them. [See product documentation]()
+One Python script deploys the same employee SQLs to Confluent Platform Flink (CMF) and validates execution end-to-end. 
+The SQL ddls are modified to use filesystems connectors and as CP Flink (2/2026) does not support CTAS yet.
 
-To Be Continued
+**Prerequisites**
 
---- 
+1. Start Kubernetes (e.g. [Orbstack](../../../deployment/k8s)) and deploy CP Flink (see [deployment/k8s/cmf](../../../deployment/k8s/cmf) and [k8s-deploy](../../../docs/coding/k8s-deploy)).
+2. Ensure pods are Running in the `confluent` namespace:
+   ```sh
+   kubectl get pods -n confluent
+   ```
+   Expected: `confluent-manager-for-apache-flink`, `kafka-*`, `schemaregistry-*` (and optionally `flink-kubernetes-operator`, `controlcenter-ng-*`).
+3. CMF REST API must be reachable. Either run port-forward in another terminal:
+   ```sh
+   cd deployment/k8s/cmf && make port_forward_cmf
+   ```
+   Or let the script start it (unless `--no-port-forward` is set).
+4. Create Flink environment, Kafka catalog, and compute pool (one-time):
+   ```sh
+   cd deployment/k8s/cmf
+   make deploy
+   make create_flink_env create_kafka_catalog create_compute_pool
+   ```
+
+**Config (optional env)**
+
+- `CMF_BASE_URL` (default `http://localhost:8084`)
+- `CMF_ENV_NAME` (default `dev-env`), `CMF_COMPUTE_POOL_NAME` (default `pool1`)
+- `CMF_CATALOG_NAME` (default `dev-catalog`), `CMF_DATABASE_NAME` (default `kafka-db`)
+- `KUBECTL_NAMESPACE` (default `confluent`)
+
+**Run full validation**
+
+From repo root or `code/flink-sql`:
+
+```sh
+uv run python 00-basic-sql/cp_flink_employees_demo.py
+```
+
+The script checks pods, ensures CMF is reachable, verifies environment and catalog exist, deploys DDL (employees table), inserts data, runs the CTAS (employee_count), runs a snapshot query, and asserts department counts (101->5, 102->6, 103->4, 104->1).
+
+**Options**
+
+- `--skip-kubectl`: Skip pod check (e.g. when port-forward is from another machine).
+- `--no-port-forward`: Do not start port-forward; fail if CMF is unreachable.
+- `--delete-only`: Drop tables and delete statements only.
+- `--ddl-only`: Deploy only the employees DDL.
+- `--validate-only`: Run snapshot query and assert counts (tables must already exist).
+
+**Cleanup**
+
+```sh
+uv run python 00-basic-sql/cp_flink_employees_demo.py --delete-only
+```
+
+**Send employee data to the employees Kafka topic**
+
+After port-forwarding Kafka, from `code/flink-sql` or `00-basic-sql`:
+
+```sh
+uv run python 00-basic-sql/cp-flink/send_employees_to_kafka.py
+```
+
+For the kraft cluster ([deployment/k8s/cfk/kraft-cluster.yaml](../../../deployment/k8s/cfk/kraft-cluster.yaml)) with listener on 9092, forward the same port:
+
+```sh
+kubectl port-forward svc/kafka 9092:9092 -n confluent
+```
+
+The script uses `KAFKA_BOOTSTRAP_SERVERS` (default `localhost:9092`). If port-forward fails with "Connection refused", the service port may not match the pod listener; run `kubectl get svc kafka -n confluent` and forward to the pod port (e.g. if the pod listens on 9071, use `9092:9071` and keep bootstrap `localhost:9092`). Records are read from `00-basic-sql/data/employees.csv` and produced as JSON to the `employees` topic.
+
+**Run DML (e.g. employee_count) in "SQL client" against CP Flink in Kubernetes**
+
+CP Flink in Kubernetes is driven by the CMF REST API. There is no bundled Flink `sql-client.sh` that connects to CMF. To run [cp-flink/dml.employee_count.sql](cp-flink/dml.employee_count.sql) (or any SQL) you can:
+
+1. **Use the demo script (recommended)**  
+   After Kafka topics/schemas exist and the `employees` table is available (Kafka catalog + topic/schema), run the full flow; it submits the DML via the REST API and waits for the statement to be RUNNING or COMPLETED:
+   ```sh
+   uv run python 00-basic-sql/cp_flink_kafka_employees_demo.py
+   ```
+   That creates Kafka tables (kubectl apply), then runs the employee_count DML from `cp-flink/dml.employee_count.sql`.
+
+2. **Submit the SQL via the REST API (curl)**  
+   Port-forward CMF so the API is reachable at `http://localhost:8084`:
+   ```sh
+   kubectl port-forward svc/cmf-service 8084:80 -n confluent
+   ```
+   Then POST a Statement (replace the `statement` value with the contents of your SQL file, or a one-liner):
+   ```sh
+   ENV_NAME=dev-env
+   CMF_URL=http://localhost:8084
+   # Single line of SQL for the request body (escape quotes if needed)
+   SQL='WITH deduplicated_employees AS (SELECT *, ROW_NUMBER() OVER (PARTITION BY emp_id ORDER BY emp_id DESC) AS row_num FROM employees WHERE row_num = 1) SELECT COALESCE(dept_id, 0) AS dept_id, COUNT(*) AS emp_count FROM deduplicated_employees GROUP BY dept_id'
+   curl -s -X POST "${CMF_URL}/cmf/api/v1/environments/${ENV_NAME}/statements" \
+     -H "Content-Type: application/json" \
+     -d "{\"apiVersion\":\"cmf.confluent.io/v1\",\"kind\":\"Statement\",\"metadata\":{\"name\":\"employee-count\"},\"spec\":{\"statement\":\"${SQL}\",\"computePoolName\":\"pool1\",\"properties\":{\"sql.current-catalog\":\"dev-catalog\",\"sql.current-database\":\"kafka-db\"}}}"
+   ```
+   Check status: `curl -s "${CMF_URL}/cmf/api/v1/environments/${ENV_NAME}/statements/employee-count" | jq .status`
+
+   The exact SQL in the request must match what your Flink catalog expects (e.g. table names, schema). For the full `dml.employee_count.sql` content (including any `ALTER TABLE` / `CREATE` if present), read the file and put it into the `statement` field (as a single line or escaped).
+
+3. **Confluent Flink UI / CLI**  
+   If your Confluent Platform or CMF deployment exposes a Flink SQL UI or the Confluent CLI for Flink, you can run SQL from there after reaching the UI (e.g. via the same CMF port-forward or a dedicated port). See Confluent documentation for your version.
+
+---
 ## Second use case
 
 Use Faker to generate synthetic data.

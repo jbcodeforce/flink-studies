@@ -1,14 +1,52 @@
 # Job Lifecycle & State Management (App Owners + Platform)
 
+
 ## 1- Deploying New Jobs
-From zero to running: required configs, resource requests, restart strategies.
+
+*From zero to running: required configs, resource requests, restart strategies.*
+
+There two types of Jobs/Flink application to consider for deployment: 
+* the java/python application (DataStream or TableAPI)
+* the SQL Statements. 
+
+Then the target platform will have different mechanism and packaging depending if it is:
+
+* Confluent Cloud for Flink
+* Confluent Platform for Flink
+* Apache Flink OSS
+
+### 1.1 Packaged Application Deployment (OSS or CP-Flink)
+
 #### Context
+The deployment of java packaging is the same between OpenSource and Confluent Platform Flink. So any existing DataStream application will run the same way.
+
+There is only yaml manifest to deploy application that will take into account environment, as applications are grouped within environment.
+
+### 1.2 SQL Query Deployment on CP-Flink
+
+#### Context
+
+
 #### Preconditions / Checklist
+
+* Be sure to have access to the CMF REST end point: [could be localhost](http://localhost:8084/cmf/api/v1/environments)
+* An environment is defined. ([See this note](../coding/k8s-deploy.md/#4-create-an-environment-for-flink))
+* A Catalog is defined - [See this note](../coding/k8s-deploy.md/#5-define-a-sql-catalog), and [see example from this repository]()
+
 #### Inputs / Parameters
+
 #### Procedure
+
+* Define a database - A database is created within a catalog and references a Kafka cluster. [See product documentation](https://docs.confluent.io/platform/current/flink/configure/catalog.html#create-a-database)
+
+
 #### Rollback
 #### Gotchas
+
+* For end-to-end validation of CP Flink with the employee demo, see [code/flink-sql/00-basic-sql](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/00-basic-sql#readme.md#confluent-platform-for-flink-on-kubernetes) and run `cp_flink_employees_demo.py`.
+
 ## 2- Upgrading Jobs Safely
+
 With compatible changes (resume from savepoint).
 #### Context
 #### Preconditions / Checklist

@@ -233,7 +233,7 @@ State can grow over time. Local state persistence improves latency while remote 
 </figure>
 
 
-Flink ensures fault tolerance through [checkpoints and savepoints](../architecture/index.md#checkpointing) that persistently store application state.
+Flink ensures fault tolerance through checkpoints and savepoints that persistently store application state.
 
 ### Fault Tolerance and Consistency
 

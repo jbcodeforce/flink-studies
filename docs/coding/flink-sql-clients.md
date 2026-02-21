@@ -82,7 +82,7 @@ There is already a lot of tutorials and videos on how to use the Workspace. Thin
 * Run in a cell, a query 'inserting into', will run forever and it is easy, while developing queries, to forget about them.
 * Use the left navigation tree to access list of tables, views, models, external datasources..
 
-See also the Terraform to create Confluent Cloud resources in [this note](terraform.md).
+See also the Terraform to create Confluent Cloud resources in [this note](../cookbook/terraform.md).
 
 All the SQL studies in [code/flink-sql folder](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql) include SQL queries for Confluent Cloud or CP Flink.
 

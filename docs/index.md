@@ -101,9 +101,9 @@ This book is structured to support both **linear reading** and **focused deep-di
 
 
 === "**Foundation Track** (3-4 weeks)""
-    1. [Architecture Deep Dive](architecture/index.md) - Understanding Flink internals
-    2. [State Management](architecture/index.md#state-management) - Stateful stream processing
-    3. [Fault Tolerance](architecture/index.md#fault-tolerance) - Exactly-once guarantees
+    1. [Architecture Deep Dive](concepts/index.md) - Understanding Flink internals
+    2. [State Management](concepts/index.md#state-management) - Stateful stream processing
+    3. [Fault Tolerance](concepts/index.md#fault-tolerance-and-consistency) - Exactly-once guarantees
 
 === "**Advanced Track** (4-6 weeks)"
     1. [DataStream Programming](coding/datastream.md) - Complex stream processing logic

@@ -67,10 +67,10 @@ The **Confuent Flink images** and Helm chart references:
 
 ## Deployment architecture
 
-* A Flink cluster always needs to run in one K8s cluster in one region, as the Flink nodes are typically exchanging a lot of data, requiring low latency network. See [K8S deployment architecture - chapter](../coding/k8s-deploy.md/#confluent-for-kubernetes-operator-cfk)
+* A Flink cluster always needs to run in one K8s cluster in one region, as the Flink nodes are typically exchanging a lot of data, requiring low latency network. See [K8S deployment architecture - chapter](../cookbook/considerations.md#apache-flink-within-kubernetes)
 
 <figure markdown="span">
-![](../coding/diagrams/cp-cmf-k8s-deploy.drawio.png)
+![](../cookbook/diagrams/cp-cmf-k8s-deploy.drawio.png)
 </figure>
 
 * For failover between data centers, the approach if to share durable storage (HDFS, S3, Minio) accessible between data centers, get Kafka topic replicated by keeping offset numbers, and being able to restart Flink Application from checkpoints.

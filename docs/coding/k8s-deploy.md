@@ -78,7 +78,7 @@ Any Kubernetes deployment should include the following pre-requisites:
   kubectl describe crd cmfrestclasses.platform.confluent.io      
   ```
 
-### 1- Install External Components
+### 1 Install External Components
 
 The certificate manager and minio operator may be deployed. There is one make target under `deployment/k8s` to do so:
 ```sh
@@ -145,14 +145,14 @@ MinIO is an object storage solution that provides an Amazon Web Services S3-comp
 
 Network file system, SAN and any distributed storage can be used to persist Flink checkpoints and savepoints. The storage class needs to be defined.
 
-### 2- Confluent For Kubernetes Installation
+### 2 Confluent For Kubernetes Installation
 
 [See the Confluent Platform product installation documentation](https://docs.confluent.io/operator/current/overview.html) for details, which is summarized as: 
 
 * The deployment leverages Kubernetes native API to configure, deploy, and manage Kafka cluster, Connect workers, Schema Registry, Confluent Control Center, Confluent REST Proxy and application resources such as topics.
 * The following diagram illustrates those components in one namespace.
     <figure markdown="span">
-    ![8](./diagrams/cp-comps-k8s.drawio.png)
+    ![8](../cookbook/diagrams/cp-comps-k8s.drawio.png)
     <caption>Confluent Platform Components - k8s deployment</caption>
     </figure>
 
@@ -191,7 +191,7 @@ Network file system, SAN and any distributed storage can be used to persist Flin
 * See also the [Confluent Platform releases information, for product interopability.](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
 
 
-### 3- [Confluent Manager for Flink (CMF)](https://docs.confluent.io/operator/current/co-deploy-cp.html#co-deploy-cp)
+### 3 [Confluent Manager for Flink (CMF)](https://docs.confluent.io/operator/current/co-deploy-cp.html#co-deploy-cp)
 
 Updated 1.10.2026: For CFK version 2.2.0 and CP v8.1.1
 
@@ -221,15 +221,15 @@ Updated 1.10.2026: For CFK version 2.2.0 and CP v8.1.1
     kubectl apply -f cmf-rest-class.yaml
     ```
 
-Next to deploy an application see [deploy application section for SQL or Java app deployment](#5--next-deploy-flink-applications-or-flink-sql-statements)
+Next to deploy an application see [deploy application section for SQL or Java app deployment](../cookbook/job_lifecycle.md#1-deploying-new-jobs)
 
 ### Security
 
 Confluent Platform Flink security principals are summarized [in this section](../techno/cp-flink.md/#authentication-and-authorization).
 
-### 4- Create an [Environment for Flink](https://docs.confluent.io/platform/current/flink/configure/environments.html)
+### 4 Create an [Environment for Flink](https://docs.confluent.io/platform/current/flink/configure/environments.html)
 
-Flink environment is used as the scope to control access, and to group Flink applications
+Flink environment is used to control access, and to group Flink applications
 
 Normally running `make deploy` under `cmf folder` will create a dev environment. The creation of an environment can be done via the confluent cli
 
@@ -266,10 +266,21 @@ Now we have two environments
 ![11](./images/environments-ui.png)
 </figure>
 
-### 5- Next Deploy Flink Applications or Flink SQL Statements
+### 5 Define a SQL Catalog
 
-* [Deploy a DataStream / TableAPI app]()
-* [Deploy a Flink SQL statement]() with [catalog]()
+
+A `KafkaCatalog` exposes Kafka topics as tables and derives their schema from Schema Registry. Define a Flink Catalog as json file: (see [cmf/dev_catalog.json](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cmf/dev_catalog.json)). The catalog is configured with connection properties to the Schema Registry clients.
+
+```sh
+# under deployment/k8s/cmf
+make create_kafka_catalog
+# OR using curl
+curl -v -H "Content-Type: application/json" -X POST http://localhost:8084/cmf/api/v1/catalogs/kafka -d@./dev_catalog.json
+```
+
+<figure markdown="span">
+![](./images/catalogs.png)
+</figure>
 
 ### Documentations
 
@@ -282,9 +293,9 @@ Now we have two environments
 
 ## Apache Flink OSS 
 
-As seen in previous section, Apache Flink has implemented a [Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) with the [stable versions](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/)
+As seen in previous section, Apache Flink has implemented a [Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/) for managing application. You can get the [list of stable versions here](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/).
 
-* The prerequisites includes getting Certificat Manager deployed. (Optional with Minio).
+* The prerequisites include getting Certificat Manager deployed. (Optional with Minio for local Object Storage - S3 protocol).
 * Get the [list of Apache Flink releases and tags here](https://downloads.apache.org/flink/) 
 * Add the Apache Flink **Helm** repositories: 
     ```sh
@@ -317,8 +328,7 @@ As seen in previous section, Apache Flink has implemented a [Kubernetes Operator
   ```
 
 ## Streaming Processing Deployment
-
-There two types of Flink application to consider for deployment: the java packaged application or the SQL Statements. The deployment of java packaging is the same between OpenSource and Confluent Platform Flink. So any existing DataStream application will run the same way. There is only yaml manifest to deploy application that will take into account environment, as applications are grouped within environment.
+ TO BE MOVED
 
 ### Deploy DataStream / Table API Applications
 
@@ -341,20 +351,6 @@ TBC
 #### Confluent Flink SQL Statement
 
 A catalog is a top-level resource and references a Schema Registry instance. A database is a sub-resource of a catalog, references a Kafka cluster and exposes all topics of its Kafka cluster as queryable tables. 
-
-* Be sure that the port-forward to the svc/cmf-service is active.
-* [Define an environment if not done yet](#4--create-an-environment-for-flink)
-* Define the **Catalog**:  A `KafkaCatalog` exposes Kafka topics as tables and derives their schema from Schema Registry. Define a Flink Catalog as json file: (see [cmf/dev_catalog.json](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/k8s/cmf/dev_catalog.json)). The catalog is configured with connection properties to the Schema Registry clients.
-  ```sh
-  # under deployment/k8s/cmf
-  make create_kafka_catalog
-  # OR using curl
-  curl -v -H "Content-Type: application/json" -X POST http://localhost:8084/cmf/api/v1/catalogs/kafka -d@./dev_catalog.json
-  ```
-
-<figure markdown="span">
-![](./images/catalogs.png)
-</figure>
 
 * Define **Database** which maps to a Kafka Cluster and is created within a catalog: [see product documentation for example](https://docs.confluent.io/platform/current/flink/configure/catalog.html#create-a-database)
   ```sh

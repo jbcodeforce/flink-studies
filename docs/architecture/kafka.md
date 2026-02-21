@@ -58,17 +58,17 @@ In case of a job failure, Flink will restore the streaming program to the state 
 checkpoint and re-consume the records from Kafka, starting from the offsets that were stored 
 in the checkpoint.
 
-![](./images/e2e-1.png)
+![](../cookbook/images/e2e-1.png)
 
 But when it reprocesses the records again it will generate duplicate at the consumer level. 
 
-![](./images/e2e-2.png)
+![](../cookbook/images/e2e-2.png)
 
 Therefore the Sink connector needs to support transactional producer, and
 uses the producer API to support avoid duplication with transaction id, idempotence
 and acknowledge on all replicas:
 
-![](./images/e2e-3.png)
+![](../cookbook/images/e2e-3.png)
 
 Partition discover should be enable by properties so Flink job can discover newly added partitions.
 
