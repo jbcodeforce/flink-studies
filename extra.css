@@ -1,0 +1,220 @@
+.section ul li {
+  margin-bottom: 10px;
+}
+
+
+:root > * {
+    --md-primary-fg-color:        #B36DE3;   
+    --md-primary-fg-color--light: #ddb7ec;
+    --md-primary-fg-color--dark:  #90030C;
+    --md-accent-fg-color: #030303;
+  }
+
+.md-header__button.md-logo {
+    margin: 2;
+    padding: 0;
+}
+  
+.md-tabs__content {
+    color: blue; /* Or any valid CSS color value */
+    font-size: 1.25rem;
+}
+
+
+.md-header__button.md-logo img, .md-header__button.md-logo svg {
+    height: 4.0rem;
+    width: 3.0rem;
+}
+  
+.section ul li {
+  margin-bottom: 10px;
+  }
+
+.md-typeset .admonition,
+.md-typeset details.question {
+  border-width: 1;
+  border-left-width: 4px;
+  background-color: #e6f0f4cc;
+  border-color: #b9dde9cc;
+}
+
+.md-typeset details.question > summary {
+    background-color: #b9dde9cc;
+}
+
+.md-typeset pre>code {
+  --md-hue: 232;
+  --md-code-fg-color: #f5f5f5;
+  --md-code-bg-color: #46292f;
+  --md-code-hl-color: #33914f;
+}
+
+code>* {
+  --md-default-fg-color--light: hsl(66, 41%, 69%);
+  --md-code-hl-number-color:         hsla(6, 74%, 63%, 1);
+  --md-code-hl-special-color:        hsla(340, 83%, 66%, 1);
+  --md-code-hl-function-color:       hsla(291, 57%, 65%, 1);
+  --md-code-hl-constant-color:       rgb(184, 174, 236);
+  --md-code-hl-keyword-color:        rgb(139, 176, 244);
+  --md-code-hl-string-color:         #B36DE3;
+  --md-code-hl-name-color:           var(--md-code-fg-color);
+  --md-code-hl-operator-color:       var(--md-default-fg-color--light);
+  --md-code-hl-punctuation-color:    var(--md-default-fg-color--light);
+  --md-code-hl-comment-color:        var(--md-default-fg-color--light);
+  --md-code-hl-generic-color:        var(--md-default-fg-color--light);
+  --md-code-hl-variable-color:       var(--md-default-fg-color--light);
+}
+.md-clipboard {
+  color: white;
+}
+.md-clipboard:focus, .md-clipboard:hover {
+  color: rgb(207, 203, 203);
+}
+:hover>.md-clipboard {
+  color: rgb(207, 203, 203);
+}
+
+.highlight.no-copy .md-clipboard {
+  display: none;
+}
+
+
+.md-nav {
+    font-size: .75rem;
+    line-height: 1.3;
+}
+.md-grid {
+    max-width: initial;
+}
+li .md-nav__item--active {
+    background-color: #e0e0e0;
+}
+
+.md-nav__item .md-nav__link--active {
+    color: #161616;
+    font-weight: 600;
+}
+.md-clipboard {
+    color: #161616;
+}
+
+.md-tabs__link {
+    font-size: .8rem;
+}
+
+
+div.col-md-9 h1:first-of-type {
+    text-align: center;
+    font-size: 60px;
+    font-weight: 300;
+}
+
+div.col-md-9 h1:first-of-type .headerlink {
+    display: none;
+}
+
+code.no-highlight {
+    color: black;
+}
+
+.nav-links { display: flex; justify-content: space-between; }
+.nav-link { text-decoration: none; }
+.nav-prev { /* optional: left styles */ }
+.nav-next { /* optional: right styles */ }
+
+
+/* Definition List styles */
+
+dd {
+    padding-left: 20px;
+}
+
+
+/* Center images*/
+
+img.center {
+    display: block;
+    margin: 0 auto;
+}
+
+.md-content, .md-sidebar__scrollwrap {
+    padding-bottom: 6rem;
+}
+
+.md-header__inner {
+    padding: .3rem .2rem;
+}
+
+span.md-ellipsis {
+    font-weight: bold;
+}
+
+.homepage {
+    font-size: 1.2rem;
+}
+
+.md-footer-meta__inner {
+    justify-content: space-evenly;
+}
+
+.md-footer-column {
+    /* We first create a flex layout context */
+    display: flex;
+
+    /* Then we define the flow direction
+       and if we allow the items to wrap
+     * Remember this is the same as:
+     * flex-direction: row;
+     * flex-wrap: wrap;
+     */
+    flex-flow: column wrap;
+
+    /* Then we define how is distributed the remaining space */
+    justify-content: space-around;
+
+    padding: 5px 5px;
+}
+
+.md-footer-text {
+    font-size: .7rem;
+    padding: 2px 0;
+}
+
+/* top git source icon */
+.md-header__source {
+    width: 2rem;
+  }
+
+/* search box */
+.md-search__inner {
+width: 8rem;
+}
+
+/* center colum white */
+.md-content {
+    background-color: #fff;
+}
+
+/* adjust center column */
+.md-main__inner {
+    margin-top: 0px;
+}
+
+/* top banner home page */
+[data-md-color-primary=black] .md-header {
+    background-color: #B36DE3;
+}
+
+/* tabs border */
+.md-typeset .tabbed-set>label {
+    border-bottom: .1rem solid #B36DE3;
+}
+
+/* headings */
+.md-typeset h1, .md-typeset h2 {
+    font-weight: 500;
+}
+
+.md-typeset .admonition {
+    font-size: .75rem;
+}
