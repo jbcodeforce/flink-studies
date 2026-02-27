@@ -29,6 +29,7 @@ nav:
     - UDFs & PTFs: coding/udf_sql.md
     - Deployment: 
       - Manage CC Flink projects: https://jbcodeforce.github.io/shift_left_utils/
+      - dbt: coding/dbt.md
     - More advanced topics:
       - Stateful function: coding/stateful-func.md
       - Complex Event Processing: coding/cep.md

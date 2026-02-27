@@ -15,6 +15,6 @@ dependencies = [
 
 [tool.uv.workspace]
 members = [
-    "e2e-demos/cdc-demo/src",
-    "e2e-demos/dedup-demo",
+    "e2e-demos/cdc-demo/",
+    "code/dbt"
 ]
