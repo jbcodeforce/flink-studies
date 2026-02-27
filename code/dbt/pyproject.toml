@@ -8,6 +8,6 @@ dependencies = [
      "dagster-dbt>=0.28.14",
      "dagster-webserver>=1.12.14",
      "dbt-autofix>=0.20.0",
-     "dbt-core",
+     "dbt-core>=1.11.6",
      "dbt-snowflake>=1.8.4",
 ]

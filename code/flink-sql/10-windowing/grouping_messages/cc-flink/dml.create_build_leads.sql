@@ -1,4 +1,4 @@
-insert into `bulk_leads`
+insert into bulk_leads
 with bucketed as (SELECT
                 window_start,
                 window_end,
@@ -8,7 +8,7 @@ with bucketed as (SELECT
                 MOD(ABS(HASH_CODE(CAST(`key` AS STRING))), 5) AS bucket
             FROM TABLE(
                 TUMBLE(
-                    TABLE `leads_raw`,
+                    TABLE leads_raw,
                     DESCRIPTOR(`$rowtime`),
                     INTERVAL '1' SECOND
                 )

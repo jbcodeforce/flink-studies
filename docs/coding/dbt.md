@@ -12,13 +12,30 @@
 * Incremental load of fact tables
 * Track history of dimension tables
 
+## Major Concepts
+
+* **Models**: basic building block of the business logic. Includes materialized tables and views, and SQL files. Models can reference each other and use templates and macros
+
 ## Install
 
 * [Supported Python database](https://docs.getdbt.com/faqs/Core/install-python-compatibility)
+* Init a project:
+    ```sh
+    uv run dbt init --skip-profile-setup airbnb
+    ```
 
 ## Snowflake example
 
 * Two schemas: dev and raw. [See data import sql](https://github.com/nordquant/complete-dbt-bootcamp-zero-to-hero/blob/main/_course_resources/course-resources.md). [S3 AirBnB listing](s3://dbt-datasets/listings.csv), [reviews.csv](s3://dbt-datasets/reviews.csv) and [hosts](s3://dbt-datasets/hosts.csv).
+* Get connection to database like snowflake using the profiles.yml which should be under ~/.dbt or .gitgnore.
+* Airbnb models:
+    * Listings
+    * reviews
+    * hosts
+    * 
+## dbt_profile.yaml
+
+Defines the structure of the project.
 
 ## Sources
 

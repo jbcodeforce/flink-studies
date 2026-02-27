@@ -1,4 +1,4 @@
-INSERT INTO `leads_raw`
+INSERT INTO leads_raw
 SELECT
     lead_id AS `key`,
     CONCAT(
@@ -8,4 +8,4 @@ SELECT
         ',"__op":"', __op, '"', '"}'
     ) AS `val`
 
-FROM leads_faker;
+FROM `j9r-env.j9r-kafka.leads_faker`;

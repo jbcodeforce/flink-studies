@@ -2,7 +2,7 @@
 # for j9r-env base infrastructure
 
 # ------------------------------------------------------
-# Flink Developer (deploys Flink statements)
+# Flink Developer
 # ------------------------------------------------------
 
 resource "confluent_service_account" "flink-developer-sa" {

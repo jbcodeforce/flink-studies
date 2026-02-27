@@ -48,15 +48,37 @@ flowchart LR
 
 The [terraform/](terraform/) directory creates the five Flink statements in dependency order on Confluent Cloud: DDL for `leads_raw` and `bulk_leads`, faker table `leads_faker`, then DML to stream from faker into `leads_raw` and from `leads_raw` into `bulk_leads`.
 
-From `terraform/`, set the required variables (e.g. via `terraform.tfvars` or `-var`) and run:
+Set Confluent Cloud settings in `~/.confluent/.env` (same file as Python dotenv). Two scripts wire it to Terraform:
+
+1. **[terraform/load_confluent_env.sh](terraform/load_confluent_env.sh)** – Reads `~/.confluent/.env` and exports every `KEY=value` into the current bash session (comments and empty lines skipped, quotes stripped).
+2. **[terraform/env.confluent.sh](terraform/env.confluent.sh)** – Sources the loader, then exports `TF_VAR_*` and provider vars. It maps common .env keys to Terraform (e.g. `ENVIRONMENT_ID` → `TF_VAR_environment_id`).
+
+From `terraform/`, run:
 
 ```bash
 cd terraform
+source load_confluent_env.sh
+source env.confluent.sh
 terraform init
 terraform apply
 ```
 
-Required variables: `environment_id`, `flink_compute_pool_id`, `kafka_cluster_id`, `principal_id`, `flink_api_key`, `flink_api_secret`. Optional: `flink_rest_endpoint`, `statement_name_prefix` (default `grouping-messages`). Provider auth can use `confluent_cloud_api_key` / `confluent_cloud_api_secret` or `CONFLUENT_CLOUD_API_KEY` / `CONFLUENT_CLOUD_API_SECRET` env vars.
+Example `~/.confluent/.env` (same key names as used by Python dotenv):
+
+```bash
+CONFLUENT_CLOUD_API_KEY=...
+CONFLUENT_CLOUD_API_SECRET=...
+ORGANIZATION_ID=xxxxx
+ENVIRONMENT_ID=env-xxxxx
+KAFKA_CLUSTER_ID=lkc-xxxxx
+FLINK_COMPUTE_POOL_ID=lfcp-xxxxx
+PRINCIPAL_ID=sa-xxxxx
+FLINK_API_KEY=...
+FLINK_API_SECRET=...
+# optional: FLINK_REST_ENDPOINT, STATEMENT_NAME_PREFIX
+```
+
+Terraform reads `TF_VAR_*`; the Confluent provider uses `CONFLUENT_CLOUD_API_KEY` and `CONFLUENT_CLOUD_API_SECRET`. You can also set `TF_VAR_*` directly in `.env`; the loader will export them.
 
 ### Inspecting results
 

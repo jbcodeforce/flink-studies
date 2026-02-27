@@ -12,6 +12,11 @@ variable "confluent_cloud_api_secret" {
   sensitive   = true
 }
 
+variable "organization_id" {
+  description = "Confluent Cloud organization ID (required in provider when using Flink statements)"
+  type        = string
+}
+
 variable "environment_id" {
   description = "Existing Confluent Cloud environment ID"
   type        = string
@@ -47,11 +52,11 @@ variable "flink_api_secret" {
 variable "flink_rest_endpoint" {
   description = "Flink REST endpoint URL"
   type        = string
-  default     = "https://flink.us-east4.gcp.confluent.cloud"
+  default     = "https://flink.us-west-2.aws.confluent.cloud"
 }
 
 variable "statement_name_prefix" {
   description = "Prefix for Flink statement names"
   type        = string
-  default     = "grouping-messages"
+  default     = "j9r-gm"
 }

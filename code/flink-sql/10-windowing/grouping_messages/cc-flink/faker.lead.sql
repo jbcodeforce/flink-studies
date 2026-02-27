@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS leads_faker (
 ) WITH (
     'connector' = 'faker',
     'changelog.mode' = 'append',
-    'rows-per-second' = '100',
-    'fields.lead_id.expression' = '#{numerify ''L-###''},
+    'rows-per-second' = '1000',
+    'fields.lead_id.expression' = '#{numerify ''L-###''}',
     'fields.tenant_id.expression' = '#{numerify ''tenant-###''}',
     'fields.name.expression' = '#{Name.fullName}',
     'fields.__op.expression' = '#{Options.option '''',''c'',''c'',''d''}',

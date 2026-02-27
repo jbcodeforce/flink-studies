@@ -72,6 +72,7 @@ Under code/flink-sql folder
 | Sample | Path | Description |
 |--------|------|-------------|
 | **Tumbling & hopping windows** | [flink-sql/10-windowing](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/10-windowing/) | Tumbling window: distinct order count per minute. Hopping: 10-minute window, 5-minute slide. Uses deduplicated orders from CC marketplace. `cc-flink/create_unique_oder.sql`, `order_per_minute.sql`. |
+| **Grouping messages** | [flink-sql/10-windowing/grouping-messages](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/10-windowing/grouping-messages) | Creating n bulk NDJSON messages from raw <k,value> json payload, to 'batch' message at a pace of n messages per seconds |
 
 ### 1.10 Puzzles & Exercises
 

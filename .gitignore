@@ -24,6 +24,7 @@ e2e-demos/cdc-demo/datasets/
 **/client.properties
 **/variables.tfvars
 **/set_env.sh
+**/env.confluent.local.sh
 e2e-demos/config.yaml
 **/queries_etl.sql
 **/run_forever.sh
@@ -31,3 +32,4 @@ e2e-demos/config.yaml
 e2e-demos/cc-cdc-tx-demo/cc-flink-sql/staging/ 
 **/prometheus.yml
 **/keys/
+**/profiles.yml
