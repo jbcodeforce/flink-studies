@@ -1,8 +1,12 @@
-# Snapshot Query 
+# Snapshot Query and Search External Table
 
-This is a simple demo of [snapshot query](https://docs.confluent.io/cloud/current/flink/how-to-guides/run-snapshot-query.html#flink-sql-run-snapshot-query)
+This folder includes two recipes:
 
-## Create a Datagen connector
+* Using Confluent Cloud Flink [snapshot query](https://docs.confluent.io/cloud/current/flink/how-to-guides/run-snapshot-query.html#flink-sql-run-snapshot-query) to read data from a table at a specific time.
+* Use [Key search](#search-external-tables) to do data enrichment by calling a remote data source: JDBC, MongoDB or REST.
+
+## Snapshot Query 
+### Create a Datagen connector
 
 * In Connector UI add a connector, and in the Connector Plugins page, click Sample Data, select Users or Orders. It will create a topic name something like `sample_data_users`
 
@@ -11,7 +15,7 @@ This is a simple demo of [snapshot query](https://docs.confluent.io/cloud/curren
 * Use the Flink Query editor from the topic, and then select the Snapshot mode:
     ![](./images/snapshot-query.png)
 
-## Set the snapshot and the query
+### Set the snapshot and the query
 
 As an alternate the following query can be used:
 
@@ -20,7 +24,7 @@ SET 'sql.snapshot.mode' = 'now';
 SELECT COUNT(*) as nb_records from sample_data_users;
 ```
 
-# Search External Tables
+## Search External Tables
 
 There are few mecanisms [to search external tables](https://docs.confluent.io/cloud/current/ai/external-tables/key-search.htm):
 
@@ -32,9 +36,9 @@ Future UDF+Async I/O will be available and used for non-trivial matching logic (
 
 For any external call, it is very important to aggressively filter before lookup (reduce QPS before you fan out). 
 
-## Lookup RDS table
+### Lookup RDS table
 
-* Create a RDS Postgresql Database on free tier, get the endpoint, username and password.
+* Create a AWS RDS Postgresql Database on free tier, get the endpoint, username and password.
 * Use the python code to create the users table
     ```sh
     source ../.venv/bin/activate

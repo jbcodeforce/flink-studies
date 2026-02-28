@@ -78,7 +78,9 @@ Pay attention that most Flink managed services are cloud-hosted and not cloud-na
 
     See [simple demo](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/08-snapshot-query)
 
-* [External lookups](https://docs.confluent.io/cloud/current/ai/external-tables/overview.html)
+* [External lookups](https://docs.confluent.io/cloud/current/ai/external-tables/overview.html) with [this demo/code](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/08-snapshot-external-query) to explore.
+* **Watermark:** In Confluent Cloud Flink, every table gets a default watermark strategy on the $rowtime system column, based on the Kafka record timestamp (SOURCE_WATERMARK()), even if you never write a WATERMARK FOR ... clause yourself. The UI metrics (“watermark” and “watermark behind”) are computed from these internal input/output watermarks at the statement level (min watermark from sources and sinks).
+
 
 ???- info "Statement life cycle"
     Use a service account for background statements.
