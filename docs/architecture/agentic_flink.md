@@ -115,8 +115,7 @@ Data Stream Processing offerings from Confluent, helps building the new event-dr
 1. Streaming Agents give you the ability to build agents as event-driven microservices on Flink with state, timers, and replay so you can evaluate and improve before you ship.
 1. The Real-time Context Engine is how those agents–or any other agent or AI app outside of Confluent–see trusted context in seconds. It exposes any AI app, agent or system with governed, materialized real-time data through MCP so teams don’t need to know Kafka or manage servers. 
 
-
-Confluent builds its AI strategy on three functional layers:
+Confluent builds its *AI strategy* on three functional layers:
 
 * **Real-Time Processing** (Flink Streaming Agents): Using Kafka and Flink to process data from disparate systems in real-time, built on open-source standards to avoid vendor lock-in. Confluent offers a set of [ML functions](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html) and [ML preprocessing functions](https://docs.confluent.io/cloud/current/flink/reference/functions/ml-preprocessing-functions.html) to be integrated into Flink SQL to do ML processing. 
 * **Interoperability (MCP Protocol)**: Leveraging the Model Context Protocol (MCP) as a universal language, allowing Confluent to serve real-time context to any AI agent or tool regardless of the provider.
@@ -124,7 +123,11 @@ Confluent builds its AI strategy on three functional layers:
 
 * Flink paired with Kafka is purpose-built for real-time data processing and event-driven microservices. [Confluent AI with Flink SQL](https://docs.confluent.io/cloud/current/ai/overview.html) helps decouple AI agents.
 * Agent communication protocols are available to define agent interations: [Agent to Agent from Google](https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/) and [ACP from IBM/ Linux foundations](https://agentcommunicationprotocol.dev/introduction/welcome)
-* Agent integrate with IT applications and services via [Model Context Protocol from Anthropic](https://www.anthropic.com/news/model-context-protocol)
+* Agent integrates with IT applications and services via [Model Context Protocol from Anthropic](https://www.anthropic.com/news/model-context-protocol)
+* **Native Inference** to run any open-source or fine-tuned AI model directly on Confluent Cloud using shared GPU resources, improving security and cost-effectiveness.
+* Multivariate Anomaly Detection to detect anomalies across multiple correlated metrics simultaneously while ignoring data outliers, ensuring higher accuracy for complex data monitoring.
+
+[A github to quickstart streaming agents demonstration.](https://github.com/confluentinc/quickstart-streaming-agents/)
 
 #### Quick demonstration
 

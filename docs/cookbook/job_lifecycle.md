@@ -273,9 +273,9 @@ As any performance test, it is very import to decide what you’re optimizing fo
 
 * Throughput (RPS / MBps) per Flink Application and per Kafka topic
 * End‑to‑end latency: from source event time to sink
-* Resource efficiency: CPU utilization state size, dick IO, network IO 
+* Resource efficiency: CPU utilization state size, disk IO, network IO 
 
-If we take a classical shift left real-time processing architecture where Kafka topics and Flink jobs are used for building bronze, silver and gold recors, it is possible to measure timestamps at different level:
+If we take a classical shift left real-time processing architecture where Kafka topics and Flink jobs are used for building bronze, silver and gold records, it is possible to measure timestamps at different level:
 
 <figure markdown="span">
 ![](./images/perf_test_basic.drawio.png)
@@ -388,6 +388,7 @@ You need to have access to:
 1. Validating the disk speed for worker node
 
 #### Gotchas
+
 * [See performance tuning Flink chapter](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/tuning/)
 * [See the end-to-end demonstration for perf testing in this repo.](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/perf-testing)
 
