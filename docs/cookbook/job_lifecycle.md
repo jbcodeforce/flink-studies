@@ -261,7 +261,134 @@ You need to recompute results for a historical period (e.g., due to a code bug o
 #### Procedure
 #### Rollback
 #### Gotchas
-## 6- Performance Troubleshooting
+## 6- Performance Testing
+
+
+
+### 6.0 Establish a Performance Testing Platform
+### Context
+Load testing Apache Flink applications requires a shift from traditional request-response testing to a stream-centric approach. Instead of testing concurrent users, you are testing **sustained throughput, event-time latency, and state stability** under pressure.
+
+As any performance test, it is very import to decide what you’re optimizing for. Pick a primary goal per test run, which could be:
+
+* Throughput (RPS / MBps) per Flink Application and per Kafka topic
+* End‑to‑end latency: from source event time to sink
+* Resource efficiency: CPU utilization state size, dick IO, network IO 
+
+If we take a classical shift left real-time processing architecture where Kafka topics and Flink jobs are used for building bronze, silver and gold recors, it is possible to measure timestamps at different level:
+
+<figure markdown="span">
+![](./images/perf_test_basic.drawio.png)
+</figure>
+
+This diagram is important to support discussions about what latency means, and what and where to measure.
+
+* Throughput Testing
+    * As a baseline, the current benchmark, gave us that Flink can process ~10,000 records per second per CPU core. This baseline may decrease with larger messages, bigger state, key skew, or high number of distinct keys.
+    * Measure maximum processing rate (events/second)
+    * Evaluate parallel processing capabilities
+
+* Latency Testing
+
+    * Measure end-to-end processing latency
+
+* Scalability Testing
+
+    * Test horizontal scaling by assessing CFU increase up to the limit, control those statements to assess if we need to split them.
+    * Evaluate job manager performance
+    * Test with increasing data volumes
+    * Monitor resource utilization
+
+**Some Metrics to consider:**
+
+* Get time stamp when the Flink job is created
+* Time stamp when the Flink SQL statement deployment is started and finished
+* Time stamp when the LAG is processed
+* Number of message per second processed per Flink statement
+* Time stamp from source to destination for a given transaction
+
+The following figures represents the different component for performance testing to deploy according to the target platform:
+
+=== "Confluent Cloud"
+    For Confluent Cloud the network may be part of the equation, depending on where you run the producer and consumer to measure performance. 
+
+    ![](./diagrams/cc-perf-test.drawio.png)
+
+=== "Apache Flink/ Confluent Platform Java App"
+    ![](./diagrams/flink-java-perf-test.drawio.png)
+
+=== "Confluent Platform/ Flink OSS - SQL"
+    ![](./diagrams/k8s-flink-sql-perf-test.drawio.png)
+
+
+
+#### The following baseline abacus are used:
+* Typical Flink node configuration:
+    * 4 CPU cores with 16GB memory
+    * Should process 20-50 MB/s of data
+    * Jobs with significant state benefit from more memory
+* Scaling Strategy: Scale vertically before horizontally
+* Latency Impact on Resources: Lower latency requirements significantly increase resource needs:
+    * Sub-500ms latency: +50% CPU, frequent checkpoints (10s), boosted parallelism
+    * Sub-1s latency: +20% CPU, extra buffering memory, 30s checkpoints
+    * Sub-5s latency: +10% CPU, moderate buffering, 60s checkpoints
+    * Relaxed latency (>5s): Standard resource allocation
+
+[See the Flink Estimator tool](https://github.com/jbcodeforce/flink-estimator)
+
+### Preconditions / Checklist
+
+You need to have access to:
+
+* **Kafka cluster** with 1-3 topics, 42 partitions - Kafka cluster size is a minimum of 3 nodes.
+* **Data generator**  producer apps able to send 1-7kb messages at a 40-500k messages / sec. The goal is to have a lot of unique keys (30G) to generate big 210GB of state. As part of the testing, there will be joins operator, so the schema should include foreign keys. For platform test, a schema may look like:
+    ```json
+    timestamp: long - unix timestamp
+    record_id: long - incrementing record number
+    user_id: long - for something to key by
+    cat_id: long – for something else to key by
+    group_id: long – for more to key by
+    payload: string – to make a record big or large. 
+    ```
+
+* Some Flink job to use as benchmark, for platform sizing purpose, or the real production flink job for job performance asssessment. Use a small set of canonical queries that mirror real jobs and map to known internal benchmarks:
+    * Stateless 1:1 transform: baseline max throughput; typically Kafka IO/partitions are the bottleneck, not Flink 
+    * CPU‑heavy stateless transform (e.g., string/JSON/UDF heavy): traditionally it is CPU bound 
+    * Joins & aggregations with realistic key cardinality and state size: state access pattern dominates throughput.
+    * If you use remote UDFs, include a UDF‑heavy workload; be aware that batching and RPC overhead dominate there 
+
+* Be sure to have metrics and dashboard in place.
+
+#### Procedure
+
+1. Create Kafka Topics for Test
+1. Calibrate data generator
+1. Launch benchmarking job
+    * Example of SQL query for stateful processing:
+        ```sql
+         INSERT INTO SinkTable
+                SELECT
+                    `user_id`,
+                    COUNT(*) AS `event_count`,
+                    ROW(
+                        LAST_VALUE(`timestamp`),
+                        LAST_VALUE(`record_id`),
+                        LAST_VALUE(`cat_id`),
+                        LAST_VALUE(`group_id`),
+                        LAST_VALUE(CAST(`payload` AS VARCHAR))
+                    ) AS `last_record`
+                FROM TABLE(
+                    TUMBLE(TABLE SourceTable, DESCRIPTOR(proc_time), INTERVAL '5' MINUTES)
+                )
+                GROUP BY `user_id`, `window_start`, `window_end`;
+        ```
+
+1. Use Flink Console to assess job metrics
+1. Use Grafana dashboard
+1. Validating the disk speed for worker node
+
+[See the end-to-end demonstration](https://github.com/jbcodeforce/tree/master/e2e-demos/perf-testing)
+
 ### 6.1- Identifying bottlenecks (sources, network, RocksDB).
 #### Context
 #### Preconditions / Checklist
@@ -290,6 +417,7 @@ A job repeatedly fails and auto-restarts due to its restart strategy, causing in
 * JOB_ID.
 * Recent error stack traces.
 * Restart strategy configuration.
+
 #### Procedure
 
 1. Pause/Limit Damage if Needed

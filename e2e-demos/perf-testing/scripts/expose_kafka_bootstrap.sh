@@ -1,0 +1,1 @@
+kubectl port-forward svc/kafka-rest-proxy 9092:9092 -n kafka

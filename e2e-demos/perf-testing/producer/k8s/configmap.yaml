@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: perf-producer-config
+  labels:
+    app: perf-producer
+data:
+  # Override in Job or set cluster bootstrap (e.g. kafka.kafka.svc.cluster.local:9092)
+  BOOTSTRAP_SERVERS: "kafka.kafka.svc.cluster.local:9092"
+  TOPIC: "perf-input"
+  RATE_PER_SEC: "1000"
+  MESSAGE_SIZE_BYTES: "256"
+  DURATION_SECONDS: "60"
+  NUM_THREADS: "1"

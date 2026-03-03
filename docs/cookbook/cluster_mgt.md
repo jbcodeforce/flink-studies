@@ -76,6 +76,7 @@ For **Apache Flink or Confluent Platform:**
 #### Gotchas
 * Durable storage is not optional in production; losing it means losing consistent recovery 
 * For multi-namespace or multi-cluster topologies, leverage CMF’s multi-cluster support
+* Adopting a declarative configuration for all applications and infrastructure components deployed to Kubernetes clusters with ArgoCD: [see this repository](https://github.com/osowski/confluent-platform-gitops) to present a GitOps for Confluent Platform deployment running on Kubernetes.
 
 ### 1.2 Adjust cluster resources (more TaskManagers, more slots).
 
