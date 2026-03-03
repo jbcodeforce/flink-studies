@@ -387,7 +387,9 @@ You need to have access to:
 1. Use Grafana dashboard
 1. Validating the disk speed for worker node
 
-[See the end-to-end demonstration](https://github.com/jbcodeforce/tree/master/e2e-demos/perf-testing)
+#### Gotchas
+* [See performance tuning Flink chapter](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/tuning/)
+* [See the end-to-end demonstration for perf testing in this repo.](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/perf-testing)
 
 ### 6.1- Identifying bottlenecks (sources, network, RocksDB).
 #### Context

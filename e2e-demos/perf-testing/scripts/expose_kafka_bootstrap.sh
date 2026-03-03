@@ -1,1 +1,1 @@
-kubectl port-forward svc/kafka-rest-proxy 9092:9092 -n kafka
+osascript -e 'tell app "Terminal" to do script "kubectl port-forward svc/kafka 9092:9092 -n kafka"' -e 'tell application "Terminal" to set current settings of front window to settings set "Ocean"'

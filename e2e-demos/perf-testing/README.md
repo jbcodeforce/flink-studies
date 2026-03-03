@@ -1,6 +1,6 @@
 # End-to-End Performance Assessment for Flink Jobs
 
-This demo implements a repeatable approach to measure Flink job performance: from a dedicated Kafka producer (data generator) through one or more Flink jobs to measure. The design follows the performance testing approach (see [cookbook chapter](flink-studies/cookbook/job_lifecycle/#60-establish-a-performance-testing-platform)) and the timing model in depicted in the figure below:
+This demo implements a repeatable approach to measure Flink job performance: from a dedicated Kafka producer (data generator) through one or more Flink jobs to measure. The design follows the performance testing approach (see the [cookbook chapter](https://jbcodeforce.github.io/flink-studies/cookbook/job_lifecycle/#60-establish-a-performance-testing-platform)) and the timing model as depicted in the figure below:
 
 ![](../../docs/cookbook/images/perf_test_basic.drawio.png)
 
