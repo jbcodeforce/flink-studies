@@ -25,6 +25,12 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 |------|------|-------------|
 | **cdc-demo** | `cdc-demo/` | PostgreSQL (CloudNativePG) + Debezium CDC on K8s → Kafka → Flink SQL. Tables: loan_applications, transactions. Debezium envelope, `message.key.columns`, Flink DDL with debezium-json. Makefile: demo_setup, deploy_connect, demo_run, deploy_flink, flink_sql_client. Datasets and Python loaders in `datasets/`, `src/`. |
 
+### 1.4 Debezium mock – Table API to silver (dimensions and facts)
+
+| Demo | Path | Description |
+|------|------|-------------|
+| **cdc-tableapi-to-silver** | `cdc-tableapi-to-silver/` | Flink Table API / SQL pipeline from mock Debezium envelope: raw **accounts** and **transactions** topics → silver (src_accounts, src_transactions) → **dim_account** dimension and **fct_transactions** fact. Red/green TDD: validation SQL and test data first; apply DDL/DML until tests pass. Confluent Cloud–style DDL (avro-registry). |
+
 ---
 
 ## 2. Deduplication
@@ -105,6 +111,14 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 
 ---
 
+## 9. Time-based triggers / Cutoff
+
+| Demo | Path | Description |
+|------|------|-------------|
+| **package-morning-cutoff** | `package-morning-cutoff/` | Package events in the morning with 11:30 cutoff: pass-through received events and proactively emit one event per expected package that had no event by cutoff. Flink SQL (interval join, LEFT JOIN for proactive). Red/green TDD with insert/validate tests and `run_tests.sh`. |
+
+---
+
 ## Quick Reference by Topic
 
 | Topic | Demos |
@@ -125,6 +139,7 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 | **Savepoints** | `savepoint-demo` |
 | **SQL Gateway** | `sql-gateway-demo` |
 | **Flink Agents** | `agentic-demo` |
+| **Time-based cutoff / proactive events** | `package-morning-cutoff` |
 
 ---
 

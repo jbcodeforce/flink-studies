@@ -1,0 +1,12 @@
+# Copy to terraform.tfvars and set values. Do not commit terraform.tfvars.
+
+organization_id        = "org-xxxxx"
+environment_id         = "env-xxxxx"
+flink_compute_pool_id  = "lfcp-xxxxx"
+flink_api_key          = "xxxxx"
+flink_api_secret       = "xxxxx"
+rest_endpoint          = "https://flink.us-east-1.aws.confluent.cloud"
+principal_id           = "sa-xxxxx"
+sql_current_catalog    = "env-display-name"
+sql_current_database  = "cluster-display-name"
+prefix                 = "sephora-raw"

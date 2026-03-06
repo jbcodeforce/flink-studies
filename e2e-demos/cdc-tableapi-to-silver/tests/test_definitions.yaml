@@ -1,0 +1,27 @@
+# Test suite for cdc-tableapi-to-silver (Red/Green TDD).
+# Run: 1) create raw tables, 2) insert raw data (insert_raw_accounts_1.sql, insert_raw_transactions_1.sql),
+# 3) ensure silver/dimension/fact DDL and DML are applied, 4) run validation SQL.
+foundations:
+  - table_name: raw_accounts
+    ddl_for_test: ../raw_topic_for_tests/ddl.raw_accounts.sql
+  - table_name: raw_transactions
+    ddl_for_test: ../raw_topic_for_tests/ddl.raw_transactions.sql
+test_suite:
+  - name: test_dim_account_1
+    inputs:
+      - table_name: raw_accounts
+        file_name: ../raw_topic_for_tests/insert_raw_accounts_1.sql
+        file_type: sql
+    outputs:
+      - table_name: dim_account
+        file_name: validate_dim_account_1.sql
+        file_type: sql
+  - name: test_fct_transactions_1
+    inputs:
+      - table_name: raw_transactions
+        file_name: ../raw_topic_for_tests/insert_raw_transactions_1.sql
+        file_type: sql
+    outputs:
+      - table_name: fct_transactions
+        file_name: validate_fct_transactions_1.sql
+        file_type: sql

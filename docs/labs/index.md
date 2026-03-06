@@ -58,7 +58,7 @@ Under code/flink-sql folder
 
 | Sample | Path | Description |
 |--------|------|-------------|
-| **Snapshot query** | [flink-sql/08-snapshot-external-query](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/08-snapshot-external-query/) | Confluent Cloud snapshot query: Datagen connector, `SET sql.snapshot.mode = 'now'`, count on append-only table. |
+| **Snapshot query** | [flink-sql/08-snapshot-external-query](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/08-snapshot-external-query/) | Confluent Cloud snapshot query: Datagen connector, `SET 'sql.snapshot.mode' = 'now'`, count on append-only table. |
 | **External table lookup** | [flink-sql/08-snapshot-external-query](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/08-snapshot-external-query/) | Use KEY_SEARCH_AGG with external table deployed on AWS RDS Postgresql |
 
 ### 1.8 Temporal Joins
