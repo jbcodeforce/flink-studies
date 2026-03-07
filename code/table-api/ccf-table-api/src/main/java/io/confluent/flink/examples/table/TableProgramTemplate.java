@@ -52,8 +52,11 @@ import java.util.Map;
 public class TableProgramTemplate {
 
     public static void main(String[] args) {
-        EnvironmentSettings settings =
-                ConfluentSettings.newBuilderFromResource("/cloud.properties")
+        // EnvironmentSettings settings =
+        //         ConfluentSettings.newBuilderFromResource("/cloud.properties")
+        //                 .setOption("sql.local-time-zone", "UTC")
+        //                 .build();
+        EnvironmentSettings settings = ConfluentSettings.fromGlobalVariables()
                         .setOption("sql.local-time-zone", "UTC")
                         .build();
 

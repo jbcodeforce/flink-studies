@@ -9,7 +9,8 @@ import org.apache.flink.table.api.TableEnvironment;
 public class Example_01_CatalogsAndDatabases {
 
     public static void main(String[] args) {
-        EnvironmentSettings settings = ConfluentSettings.fromResource("/cloud.properties");
+        // EnvironmentSettings settings = ConfluentSettings.fromResource("/cloud.properties");
+        EnvironmentSettings settings = ConfluentSettings.fromGlobalVariables();
         TableEnvironment env = TableEnvironment.create(settings);
 
         // Each catalog object is located in a catalog and database

@@ -13,4 +13,4 @@ curl https://archive.apache.org/dist/flink/flink-$VERSION/flink-$VERSION-bin-sca
 tar -xzf flink-$VERSION.tgz
 rm flink-$VERSION.tgz
 export FLINK_HOME=$(pwd)/flink-$VERSION
-cp $FLINK_HOME/opt/flink-python-1.20.3.jar $FLINK_HOME/lib/
+cp $FLINK_HOME/opt/flink-python-$VERSION.jar $FLINK_HOME/lib/

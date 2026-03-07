@@ -76,7 +76,8 @@ public class Example_08_IntegrationAndDeployment {
                     "No mode specified. Possible values are 'setup', 'test', or 'deploy'.");
         }
 
-        EnvironmentSettings settings = ConfluentSettings.fromResource("/cloud.properties");
+        // EnvironmentSettings settings = ConfluentSettings.fromResource("/cloud.properties");
+        EnvironmentSettings settings = ConfluentSettings.fromGlobalVariables();
         TableEnvironment env = TableEnvironment.create(settings);
         env.useCatalog(TARGET_CATALOG);
         env.useDatabase(TARGET_DATABASE);

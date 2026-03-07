@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Load ~/.confluent/.env and export all variables into the current shell.
+# Usage: source path/to/set_confluent_env   (or . path/to/set_confluent_env)
+CONFLUENT_ENV="${CONFLUENT_ENV:-$HOME/.confluent/.env}"
+if [[ -r "$CONFLUENT_ENV" ]]; then
+  set -a
+  # shellcheck source=/dev/null
+  source "$CONFLUENT_ENV"
+  # Second pass: expand ${VAR} references so variables can reuse others regardless of order
+  if command -v envsubst >/dev/null 2>&1; then
+    source <(envsubst < "$CONFLUENT_ENV")
+  fi
+  set +a
+  echo "Loaded environment variables from $CONFLUENT_ENV"
+  echo "KAFKA_API_KEY: $KAFKA_API_KEY"
+  echo "ORG_ID: $ORG_ID"
+  echo "ENV_ID: $ENVIRONMENT_ID"
+  echo "FLINK_ENV_ID: $FLINK_ENV_ID"
+ 
+else
+  echo "Not found or not readable: $CONFLUENT_ENV" >&2
+  return 1 2>/dev/null || exit 1
+fi

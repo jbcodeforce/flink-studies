@@ -37,7 +37,6 @@ public class SimpleTableTest {
             .select($("id"), $("name"));
 
         // 6. Convert Table back to DataStream and print
-        System.out.println("Executing Flink Table API job...");
         tableEnv.toDataStream(resultTable, Row.class).print();
 
         // 7. Execute the job and keep it running

@@ -13,7 +13,8 @@ import static org.apache.flink.table.api.Expressions.$;
 public class Example_07_Changelogs {
 
     public static void main(String[] args) {
-        EnvironmentSettings settings = ConfluentSettings.fromResource("/cloud.properties");
+        // EnvironmentSettings settings = ConfluentSettings.fromResource("/cloud.properties");
+        EnvironmentSettings settings = ConfluentSettings.fromGlobalVariables();
         TableEnvironment env = TableEnvironment.create(settings);
         env.useCatalog("examples");
         env.useDatabase("marketplace");

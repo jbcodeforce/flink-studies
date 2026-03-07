@@ -1,5 +1,7 @@
 # Simplest Table Api program for Local run
 
+--- Updated: 03/06/2026 Flink 2.2.0 (flink java still on 1.20.3)
+
 The simplest way to test your local Flink environment using the Table API is to execute a basic job that creates an in-memory table and prints its contents.
 
 The approach is to
@@ -19,14 +21,22 @@ mvn package
 
 ### Run local Session Job
 
-* Start cluster (from `<repo>/deployment/product-tar/flink-2.1.0`)
+* Start cluster (from `<repo>/deployment/product-tar/flink-2.2.0`)
     ```sh
     ./bin/start-cluster.sh
     ```
 
 * Submit the JAR to Flink's JobManager in Session mode
     ```sh
-    ./bin/flink run <repo>/code/table-api/simplest-table-api-for-local/target/simplest-table-api-for-local-1.0.0.jar
+    ./bin/flink run <repo>/code/table-api/simplest-table-api-for-flink-oss/target/simplest-table-api-for-flink-oss-1.0.0.jar
+    ```
+
+    Should get a JobID and the [Flink UI](http://localhost:8081)
+
+    The output is written to the log files of the TaskManagers, specifically in the .out files located within your Flink log directory:
+    ```sh
+    +I[4.00, David]
+    +I[3.00, Charlie]
     ```
 
 * Stop the cluster
@@ -39,7 +49,7 @@ mvn package
 * Still start the cluster to get access to the Flink UI
 * Copy the application jar into the Flink `lib` folder
     ```sh
-    cp <repo>/code/table-api/simplest-table-api-for-local/target/simplest-table-api-for-local-1.0.0.jar lib
+    cp <repo>/code/table-api/simplest-table-api-for-flink-oss/target/simplest-table-api-for-flink-oss-1.0.0.jar lib
     ```
 
 * we can launch one JobManager:

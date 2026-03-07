@@ -1,4 +1,4 @@
-# CDC Debezium Demo with Kafka and Flink
+# CDC Debezium Demo with Confluent Platform Kafka and Flink SQL
 
 This demonstration shows how to capture database changes from PostgreSQL using Debezium CDC, stream them to Kafka, and consume them with Flink SQL.
 
@@ -13,28 +13,8 @@ This demonstration shows how to capture database changes from PostgreSQL using D
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              Kubernetes Cluster                              │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  ┌─────────────┐     ┌──────────────┐     ┌─────────────┐     ┌───────────┐ │
-│  │  PostgreSQL │────▶│   Debezium   │────▶│    Kafka    │────▶│ Flink SQL │ │
-│  │   (pgdb)    │ WAL │  Connector   │     │ (confluent) │     │           │ │
-│  └──────┬──────┘     └──────────────┘     └──────┬──────┘     └───────────┘ │
-│         │                   │                     │                          │
-│         │            Replication Slot      CDC Topics:                       │
-│         │            Publication           • cdc.public.transactions         │
-│         │                                  • cdc.public.loan_applications    │
-│         │                                  • schema-changes.cdc              │
-│         ▼                                                                    │
-│  ┌──────────────┐                                                            │
-│  │   PGAdmin    │                                                            │
-│  │  (Web UI)    │                                                            │
-│  └──────────────┘                                                            │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+![](./docs/cdc-kafka-flinksql.drawio.png)
+
 
 ### How PostgreSQL CDC Works
 

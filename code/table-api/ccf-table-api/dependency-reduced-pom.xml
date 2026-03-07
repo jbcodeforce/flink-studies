@@ -2,8 +2,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.confluent.flink.examples.table</groupId>
-  <artifactId>table-api</artifactId>
-  <version>1.0.0</version>
+  <artifactId>flink-table-api-java-examples</artifactId>
+  <name>Apache Flink® Table API Java Examples on Confluent Cloud</name>
+  <version>1.0</version>
   <build>
     <pluginManagement>
       <plugins>
@@ -48,6 +49,32 @@
       </plugins>
     </pluginManagement>
     <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.10.1</version>
+        <configuration>
+          <source>${target.java.version}</source>
+          <target>${target.java.version}</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>${spotless.version}</version>
+        <configuration>
+          <java>
+            <googleJavaFormat>
+              <version>1.23.0</version>
+              <style>AOSP</style>
+            </googleJavaFormat>
+            <importOrder>
+              <order>io.confluent,org.apache.flink,,javax,java,scala,\#</order>
+            </importOrder>
+            <removeUnusedImports />
+            <toggleOffOn />
+          </java>
+        </configuration>
+      </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
         <version>3.4.1</version>
@@ -102,10 +129,13 @@
     </repository>
   </repositories>
   <properties>
-    <maven.compiler.target>11</maven.compiler.target>
-    <maven.compiler.source>11</maven.compiler.source>
-    <confluent-plugin.version>1.20-42</confluent-plugin.version>
-    <log4j.version>2.17.1</log4j.version>
-    <flink.version>1.20.0</flink.version>
+    <maven.compiler.target>${target.java.version}</maven.compiler.target>
+    <spotless.version>2.44.5</spotless.version>
+    <maven.compiler.source>${target.java.version}</maven.compiler.source>
+    <confluent-plugin.version>2.2-4</confluent-plugin.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <log4j.version>2.25.3</log4j.version>
+    <target.java.version>17</target.java.version>
+    <flink.version>2.2.0</flink.version>
   </properties>
 </project>

@@ -99,6 +99,9 @@ Under code/flink-sql folder
 
 ## 2. Flink Java (DataStream API)
 
+???+ danger "to rework"
+    All Datastream demos are too old.
+
 ### 2.1 Quickstart & Word Count
 
 | Sample | Path | Description |
@@ -158,13 +161,23 @@ Under code/flink-sql folder
 
 ## 4. Local end-to-end demonstrations
 
-All the local demonstrations run on local Kubernetes, some on Confluent Cloud. Most of them are still work in progress.
+All the local demonstrations run on local Kubernetes (Confluent Platform or Apache Flink), some on Confluent Cloud. Most of them are still work in progress.
 
 See the [e2e-demos](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/README.md) folder for a set of available demos based on the Flink local deployment or using Confluent Cloud for Flink.
 
 ### 4.1 Confluent Cloud – Transaction processing (RDS → Kafka → Flink → Iceberg)
 
-Full Confluent Cloud demo: AWS RDS PostgreSQL → Debezium CDC → Kafka → Flink (dedup, enrichment, sliding-window aggregates) → TableFlow → Iceberg/S3, AWS Glue, Athena. ML scoring via ECS/Fargate. Outbox pattern notes. Terraform: IaC (RDS, Confluent, connectors, compute pool), cc-flink-sql/terraform (Flink statements)
+Full Confluent Cloud demo in [e2e-demos/cc-cdc-tx-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cc-cdc-tx-demo): AWS RDS PostgreSQL → Debezium CDC → Kafka → Flink (dedup, enrichment, sliding-window aggregates) → TableFlow → Iceberg/S3, AWS Glue, Athena.
+
+![](https://raw.githubusercontent.com/jbcodeforce/flink-studies/master/e2e-demos/cc-cdc-tx-demo/images/proposed_arch.drawio.png)
+
+It also includes, a Terraform Infrastructure as Code for: RDS, Confluent, connectors, compute pool.
+
+  
+### 4.2 Change Data Capture - Confluent Cloud - TableAPI processing
+
+[e2e-demos/cdc-tableapi-to-silver](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cdc-tableapi-to-silver)
+
 
 ## Public repositories with valuable demonstrations
 

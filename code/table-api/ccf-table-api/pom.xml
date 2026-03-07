@@ -10,14 +10,14 @@
     <name>Apache Flink® Table API Java Examples on Confluent Cloud</name>
 
     <properties>
-        <flink.version>1.20.0</flink.version>
-        <confluent-plugin.version>1.20-42</confluent-plugin.version>
+        <flink.version>2.2.0</flink.version>
+        <confluent-plugin.version>2.2-4</confluent-plugin.version>
         <target.java.version>17</target.java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>${target.java.version}</maven.compiler.source>
         <maven.compiler.target>${target.java.version}</maven.compiler.target>
-        <log4j.version>2.17.1</log4j.version>
-        <spotless.version>2.43.0</spotless.version>
+        <log4j.version>2.25.3</log4j.version>
+        <spotless.version>2.44.5</spotless.version>
     </properties>
 
     <repositories>
@@ -89,7 +89,8 @@
                 </configuration>
             </plugin>
 
-            <!-- Spotless formatting -->
+            <!-- Spotless: run explicitly with mvn spotless:check or spotless:apply (requires JDK 17;
+                 google-java-format uses javac internals that break on JDK 21+) -->
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
@@ -108,15 +109,6 @@
                         <toggleOffOn />
                     </java>
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>spotless-check</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
 
             <!-- We use the maven-shade plugin to create a fat jar that contains all necessary dependencies. -->

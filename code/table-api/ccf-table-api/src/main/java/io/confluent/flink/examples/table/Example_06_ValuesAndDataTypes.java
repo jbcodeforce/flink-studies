@@ -26,7 +26,8 @@ import static org.apache.flink.table.api.Expressions.row;
 public class Example_06_ValuesAndDataTypes {
 
     public static void main(String[] args) {
-        EnvironmentSettings settings = ConfluentSettings.fromResource("/cloud.properties");
+        // EnvironmentSettings settings = ConfluentSettings.fromResource("/cloud.properties");
+        EnvironmentSettings settings = ConfluentSettings.fromGlobalVariables();
         TableEnvironment env = TableEnvironment.create(settings);
 
         // Values for each data type can be created...

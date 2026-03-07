@@ -20,17 +20,18 @@ import java.util.List;
 public class Example_04_CreatingTables {
 
     // Fill this with an environment you have write access to
-    static final String TARGET_CATALOG = "";
+    static final String TARGET_CATALOG = System.getenv("FLINK_ENV_NAME");
 
     // Fill this with a Kafka cluster you have write access to
-    static final String TARGET_DATABASE = "";
+    static final String TARGET_DATABASE = System.getenv("FLINK_DATABASE_NAME");
 
     // Fill this with names of the Kafka Topics you want to create
     static final String TARGET_TABLE1 = "MyExampleTable1";
     static final String TARGET_TABLE2 = "MyExampleTable2";
 
     public static void main(String[] args) {
-        EnvironmentSettings settings = ConfluentSettings.fromResource("/cloud.properties");
+        // EnvironmentSettings settings = ConfluentSettings.fromResource("/cloud.properties");
+        EnvironmentSettings settings = ConfluentSettings.fromGlobalVariables();
         TableEnvironment env = TableEnvironment.create(settings);
         env.useCatalog(TARGET_CATALOG);
         env.useDatabase(TARGET_DATABASE);
