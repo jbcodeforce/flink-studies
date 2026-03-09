@@ -1,5 +1,9 @@
 # Demonstrate savepointing with Flink for Kubernetes
 
+## Deployment
+
+- **[cp-flink/](cp-flink/)** – Confluent Platform on Minikube. Run steps below from demo root.
+
 ## Goals
 
 Demonstrate how to stop and restart a stateful processing application with savepoints to continue where the application was stopped. The approach is to get one producer app which creates new basic records (sequence_id, value=2) in a newly created topics. The Flink SQL computes the sum of the value. So after n records sent the sum should be sequence_id * 2.  

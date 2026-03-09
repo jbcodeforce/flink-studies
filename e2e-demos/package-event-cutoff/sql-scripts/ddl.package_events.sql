@@ -9,6 +9,8 @@ CREATE TABLE package_events (
     expected_ts TIMESTAMP(3),
     event_type STRING,
     payload STRING,
+    current_location STRING,
+    delivery_address STRING,
     WATERMARK FOR event_ts AS event_ts - INTERVAL '5' SECOND,
     primary key (package_id) not enforced
 ) with (

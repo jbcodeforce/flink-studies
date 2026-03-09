@@ -1,5 +1,8 @@
 # A simple demonstration on how to use Flink SQL Gateway
 
+## Deployment
+
+- **[oss-flink/](oss-flink/)** – Local/OSS Flink SQL Gateway. Steps below.
 
 ## Start a cluster and the gateway
 

@@ -2,6 +2,10 @@
 
 This folder is to demonstrate preparing a time window feature to be pushed to Feast on-line feature store and consumed by a ML deployed model. The model is called by another Flink SQL processing.  
 
+## Deployment
+
+- **[cccloud/](cccloud/)** – Confluent Cloud Flink and ML_PREDICT. Shared: feature_repo/, kafka_consumer/, model_serving/, k8s/.
+
 ## Architecture
 
 ![](./images/architecture.drawio.png)

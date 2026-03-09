@@ -6,6 +6,16 @@ This demonstration showcases an approach to processing Change Data Capture (CDC)
 
 We assume the reader to have basic knowledge of Confluent Cloud environment, Kafka, Schema Registry. See [Flink SQL introduction](https://developer.confluent.io/courses/apache-flink/intro/ ) and those [videos tutorial](https://developer.confluent.io/courses/flink-sql/overview/).
 
+## Deployment
+
+This demo supports **Confluent Cloud only**. All Confluent Cloud assets are under **[cccloud/](cccloud/)**:
+
+- **cccloud/IaC/** – Optional Terraform for Confluent Cloud.
+- **cccloud/raw_topic_for_tests/** – DDL and test data for the raw CDC table.
+- **cccloud/customers/** – Flink SQL pipeline (src_customers, dim_groups, fact_customers).
+
+See [cccloud/README.md](cccloud/README.md) for how to run.
+
 ## Business Problems
 
 Organizations often struggle with processing raw CDC streams that contain:
@@ -84,7 +94,7 @@ The `headers.operation` may take the following values: REFRESH, INSERT, UPDATE, 
     * Open a `Flink SQL Workspace` from one of the compute pool you use for development. 
     * Create the `qlik_cdc_output_table` to mockup Qlik CDC output:
 
-* In `raw_topic_for_tests` folder, execute the `ddl.cdc_raw_table.sql`, by copy/paste inside the Workspace (or use the Makefile in this folder see below). It should result in a kafka topic created in the Cluster and two schemas in the schema registry as illustrated by running `show create table qlik_cdc_output_table;`:
+* In `cccloud/raw_topic_for_tests` folder, execute the `ddl.cdc_raw_table.sql`, by copy/paste inside the Workspace (or use the Makefile in this folder see below). It should result in a kafka topic created in the Cluster and two schemas in the schema registry as illustrated by running `show create table qlik_cdc_output_table;`:
 
     ```sql
     CREATE TABLE qlik_cdc_output_table (
@@ -103,13 +113,13 @@ The `headers.operation` may take the following values: REFRESH, INSERT, UPDATE, 
     ![](./docs/show-create-table.png)
 
 
-* Using a makefile to encapsulate confluent cli to deploy Flink statement: it is also possible to use the Makefile under the `raw_topic_for_tests` folder to create the table and insert test records using Confluent Cloud cli:
+* Using a makefile to encapsulate confluent cli to deploy Flink statement: it is also possible to use the Makefile under the `cccloud/raw_topic_for_tests` folder to create the table and insert test records using Confluent Cloud cli:
     ```sh
     make create_raw_table
     make insert_raw_data
     ```
 
-* Insert a set of sample data in this raw table: There will be duplicates and one record being wrong: See the `insert_raw_test_data.sql` script from the `raw_topic_for_tests` folder
+* Insert a set of sample data in this raw table: There will be duplicates and one record being wrong: See the `insert_raw_test_data.sql` script from the `cccloud/raw_topic_for_tests` folder
 
 | operation | beforeData | Data | Comment |
 | --- | --- | --- | --- |
@@ -201,7 +211,7 @@ We want to:
     );
     ```
 
-    Under the customers/src_customers folder run:
+    Under the cccloud/customers/src_customers folder run:
     ```sh
     make create_flink_ddl
     ```
@@ -347,7 +357,7 @@ This can be enhanced by adding new condition like on the headers null
 
 This time we can filter records with some NULL value in important columns, and address more business rule type of valiation, like malformed emails.
 
-This logic is implemented in the Fact customer table, see code in the customers/fact_customers folder.
+This logic is implemented in the Fact customer table, see code in the cccloud/customers/fact_customers folder.
 
 ## Sink to S3
 

@@ -78,7 +78,7 @@ verify_postgresql_operator: ## Verify PostgreSQL operator status
 
 deploy_postgresql: ## Deploy PostgreSQL cluster
 	@echo "$(BLUE)Deploying PostgreSQL cluster...$(NC)"
-	@kubectl apply -f infrastructure/pg-cluster.yaml
+	@kubectl apply -f cp-flink/infrastructure/pg-cluster.yaml
 	@echo "$(YELLOW)Waiting for PostgreSQL cluster to be ready...$(NC)"
 	@sleep 10
 	@kubectl wait --for=condition=ready pod/pg-cluster-1 -n $(PGDB_NS) --timeout=180s
@@ -90,15 +90,15 @@ verify_postgresql: ## Verify PostgreSQL cluster status
 	@kubectl get svc -n $(PGDB_NS)
 
 undeploy_postgresql: ## Undeploy PostgreSQL cluster
-	@kubectl delete -f infrastructure/pg-cluster.yaml --ignore-not-found
+	@kubectl delete -f cp-flink/infrastructure/pg-cluster.yaml --ignore-not-found
 
 deploy_pgadmin: ## Deploy PGAdmin web UI
-	@kubectl apply -f infrastructure/pg-admin.yaml
+	@kubectl apply -f cp-flink/infrastructure/pg-admin.yaml
 	@echo "$(GREEN)PGAdmin available at http://localhost:30001$(NC)"
 	@echo "  Login: admin@example.com / password123"
 
 undeploy_pgadmin: ## Undeploy PGAdmin
-	@kubectl delete -f infrastructure/pg-admin.yaml --ignore-not-found
+	@kubectl delete -f cp-flink/infrastructure/pg-admin.yaml --ignore-not-found
 
 port_forward_pg: ## Port forward PostgreSQL for local access
 	@echo "$(BLUE)Port-forwarding PostgreSQL...$(NC)"
@@ -115,8 +115,8 @@ load_data: ## Load sample data into PostgreSQL (requires port-forward running)
 	@echo "$(YELLOW)Ensure port-forward is running: make port_forward_pg$(NC)"
 	@echo "$(YELLOW)Waiting for connection...$(NC)"
 	@sleep 2
-	@cd $(CURDIR) && uv run python src/create_loan_applications.py --small
-	@cd $(CURDIR) && uv run python src/create_transactions.py --small
+	@cd $(CURDIR) && uv run python cp-flink/src/create_loan_applications.py --small
+	@cd $(CURDIR) && uv run python cp-flink/src/create_transactions.py --small
 	@echo "$(GREEN)Data loaded successfully$(NC)"
 
 load_data_with_pf: ## Load data with port-forward in background
@@ -124,8 +124,8 @@ load_data_with_pf: ## Load data with port-forward in background
 	@kubectl port-forward pg-cluster-1 5432:5432 -n $(PGDB_NS) &
 	@sleep 5
 	@echo "$(BLUE)Loading sample data...$(NC)"
-	@cd $(CURDIR) && uv run python src/create_loan_applications.py --small
-	@cd $(CURDIR) && uv run python src/create_transactions.py --small
+	@cd $(CURDIR) && uv run python cp-flink/src/create_loan_applications.py --small
+	@cd $(CURDIR) && uv run python cp-flink/src/create_transactions.py --small
 	@echo "$(GREEN)Data loaded successfully$(NC)"
 	@echo "$(YELLOW)Note: Port-forward is still running in background. Kill with: pkill -f 'port-forward pg-cluster'$(NC)"
 
@@ -138,12 +138,12 @@ load_data_psql: create_tables_psql insert_data_psql ## Load data using psql exec
 
 create_tables_psql: ## Create tables via kubectl exec
 	@echo "$(BLUE)Creating tables via kubectl exec...$(NC)"
-	@cat src/postgresql/create_tables.sql | kubectl exec -i pg-cluster-1 -n $(PGDB_NS) -- psql -U postgres -d app
+	@cat cp-flink/src/postgresql/create_tables.sql | kubectl exec -i pg-cluster-1 -n $(PGDB_NS) -- psql -U postgres -d app
 	@echo "$(GREEN)Tables created$(NC)"
 
 insert_data_psql: ## Insert sample data via kubectl exec
 	@echo "$(BLUE)Inserting sample data...$(NC)"
-	@cat src/postgresql/insert_sample_data.sql | kubectl exec -i pg-cluster-1 -n $(PGDB_NS) -- psql -U postgres -d app
+	@cat cp-flink/src/postgresql/insert_sample_data.sql | kubectl exec -i pg-cluster-1 -n $(PGDB_NS) -- psql -U postgres -d app
 	@echo "$(GREEN)Sample data inserted$(NC)"
 
 verify_tables: ## Verify tables exist in PostgreSQL
@@ -154,8 +154,8 @@ verify_tables: ## Verify tables exist in PostgreSQL
 # ---------------------- Kafka Connect ----------------------
 deploy_connect: ## Deploy Kafka Connect with Debezium plugin
 	@echo "$(BLUE)Deploying Kafka Connect with Debezium...$(NC)"
-	@kubectl apply -f infrastructure/debezium.yaml
-	@kubectl apply -f infrastructure/kconnect.yaml
+	@kubectl apply -f cp-flink/infrastructure/debezium.yaml
+	@kubectl apply -f cp-flink/infrastructure/kconnect.yaml
 	@echo "$(YELLOW)Waiting for Connect to be ready (this may take a few minutes)...$(NC)"
 	@sleep 30
 	@kubectl wait --for=condition=ready pod -l app=connect -n $(CONFLUENT_NS) --timeout=300s || true
@@ -166,8 +166,8 @@ verify_connect: ## Verify Kafka Connect status
 	@kubectl get svc -n $(CONFLUENT_NS) | grep connect
 
 undeploy_connect: ## Undeploy Kafka Connect
-	@kubectl delete -f infrastructure/kconnect.yaml --ignore-not-found
-	@kubectl delete -f infrastructure/debezium.yaml --ignore-not-found
+	@kubectl delete -f cp-flink/infrastructure/kconnect.yaml --ignore-not-found
+	@kubectl delete -f cp-flink/infrastructure/debezium.yaml --ignore-not-found
 
 port_forward_connect: ## Port forward Connect REST API
 	@echo "$(BLUE)Port-forwarding Connect REST API...$(NC)"
@@ -188,7 +188,7 @@ deploy_connector: prepare_cdc ## Deploy Debezium PostgreSQL connector
 	@make port_forward_connect
 	@sleep 3
 	@curl -X POST -H "Content-Type: application/json" \
-		--data @infrastructure/cdc_debezium.json \
+		--data @cp-flink/infrastructure/cdc_debezium.json \
 		http://localhost:8083/connectors
 	@echo ""
 	@echo "$(GREEN)Connector deployed$(NC)"
@@ -238,10 +238,10 @@ verify_installation: ## Verify all components are running
 # ---------------------- Flink SQL ----------------------
 show_flink_ddl: ## Display Flink SQL DDL for CDC tables
 	@echo "$(BLUE)Flink SQL DDL for loan_applications:$(NC)"
-	@cat src/flink-sql/ddl.loan_applications.sql
+	@cat cp-flink/src/flink-sql/ddl.loan_applications.sql
 	@echo ""
 	@echo "$(BLUE)Flink SQL DDL for transactions:$(NC)"
-	@cat src/flink-sql/ddl.transactions.sql
+	@cat cp-flink/src/flink-sql/ddl.transactions.sql
 
 port_forward_cmf: ## Port forward Confluent Manager for Flink (CMF) on port 8084
 	@echo "$(BLUE)Port-forwarding CMF on port 8084...$(NC)"
@@ -257,10 +257,10 @@ FLINK_NS=flink-cdc
 
 deploy_flink: ## Deploy Apache Flink session cluster for CDC demo
 	@echo "$(BLUE)Deploying Apache Flink session cluster...$(NC)"
-	@kubectl apply -f infrastructure/flink/namespace.yaml
-	@kubectl apply -f infrastructure/flink/flink-config.yaml
-	@kubectl apply -f infrastructure/flink/jobmanager.yaml
-	@kubectl apply -f infrastructure/flink/taskmanager.yaml
+	@kubectl apply -f cp-flink/infrastructure/flink/namespace.yaml
+	@kubectl apply -f cp-flink/infrastructure/flink/flink-config.yaml
+	@kubectl apply -f cp-flink/infrastructure/flink/jobmanager.yaml
+	@kubectl apply -f cp-flink/infrastructure/flink/taskmanager.yaml
 	@echo "$(YELLOW)Waiting for Flink JobManager to be ready...$(NC)"
 	@sleep 10
 	@kubectl wait --for=condition=available deployment/flink-jobmanager -n $(FLINK_NS) --timeout=180s || true
@@ -268,9 +268,9 @@ deploy_flink: ## Deploy Apache Flink session cluster for CDC demo
 	@echo "$(YELLOW)Access Flink UI: make port_forward_flink_ui$(NC)"
 
 undeploy_flink: ## Undeploy Apache Flink session cluster
-	@kubectl delete -f infrastructure/flink/taskmanager.yaml --ignore-not-found
-	@kubectl delete -f infrastructure/flink/jobmanager.yaml --ignore-not-found
-	@kubectl delete -f infrastructure/flink/flink-config.yaml --ignore-not-found
+	@kubectl delete -f cp-flink/infrastructure/flink/taskmanager.yaml --ignore-not-found
+	@kubectl delete -f cp-flink/infrastructure/flink/jobmanager.yaml --ignore-not-found
+	@kubectl delete -f cp-flink/infrastructure/flink/flink-config.yaml --ignore-not-found
 	@echo "$(GREEN)Flink cluster removed$(NC)"
 
 verify_flink: ## Verify Flink cluster status
@@ -287,5 +287,5 @@ port_forward_flink_ui: ## Port forward Flink Web UI on port 8081
 
 flink_sql_client: ## Open Flink SQL client (Apache Flink OSS)
 	@echo "$(BLUE)Opening Flink SQL client...$(NC)"
-	@echo "$(YELLOW)Tip: Use the DDL files in src/flink-sql/ to create tables$(NC)"
+	@echo "$(YELLOW)Tip: Use the DDL files in cp-flink/src/flink-sql/ to create tables$(NC)"
 	@kubectl exec -it $$(kubectl get pods -n $(FLINK_NS) -l component=jobmanager -o jsonpath='{.items[0].metadata.name}') -n $(FLINK_NS) -- /opt/flink/bin/sql-client.sh

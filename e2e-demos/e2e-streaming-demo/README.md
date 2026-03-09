@@ -9,6 +9,10 @@ The demo explanation is [here](https://flink.apache.org/2020/07/28/flink-sql-dem
 
 Source code is [wuchong/flink-sql-demo](https://github.com/wuchong/flink-sql-demo/)
 
+## Deployment
+
+- **[oss-flink/](oss-flink/)** – Docker Compose (Flink SQL, Kafka, MySQL, Elasticsearch, Kibana).
+
 ## Demo summary and updates
 
 GenCode component writes events to Kafka, as user's behaviors including “click”, “like”, “purchase” and “add to shopping cart” events.

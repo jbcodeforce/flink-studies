@@ -9,10 +9,15 @@ This demo showcases how to handle duplicate events in a streaming data pipeline 
 
 The demo includes a Python producer that intentionally generates duplicate product events to demonstrate Flink's deduplication capabilities.
 
-The deployment is done on Kubernetes.
+## Deployment
+
+- **[oss-flink/](oss-flink/)** – Flink SQL implementation (local or OSS Flink).
+- **[cp-flink/](cp-flink/)** – Flink Table API on Kubernetes (Confluent Platform).
+
+Producer: [python-producer/](python-producer/).
 
 ### 1. Flink SQL Implementation 
-**Location**: `flink-sql` directory 
+**Location**: [oss-flink/flink-sql](oss-flink/flink-sql) directory 
 
 **Purpose**: 
 - Interactive SQL-based deduplication logic
@@ -23,7 +28,7 @@ The deployment is done on Kubernetes.
 
 
 ### 2. Flink Table API Implementation
-**Location**: `flink-table-api/` directory
+**Location**: [cp-flink/flink-table-api/](cp-flink/flink-table-api/) directory
 
 **Purpose**:
 - Self-contained Java application using Flink Table API

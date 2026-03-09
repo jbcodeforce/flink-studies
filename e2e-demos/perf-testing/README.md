@@ -21,6 +21,13 @@ This demo implements a repeatable approach to measure Flink job performance: fro
 - **Flink jobs**: Several example jobs under `flink-jobs/` consume from those topics and write to a sink. Each subfolder holds one job variant to assess.
 - **Metrics**: Flink processing time, consumer lag, and end-to-end latency from production to consumption (aligned with the diagram: Flink processing time, messaging times, end-to-end from creation to consumption).
 
+## Deployment
+
+- **[oss-flink/](oss-flink/)** – Run with OSS Flink (SQL gateway, standalone, or plain K8s).
+- **[cp-flink/](cp-flink/)** – Run with Confluent Platform or Confluent Cloud Flink.
+
+Producer, flink-jobs, and scripts are shared at demo root.
+
 ## Repository Layout
 
 ```

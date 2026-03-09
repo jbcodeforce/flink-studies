@@ -50,10 +50,10 @@ use_confluent_ns: ## Use the confluent namespace
 # entry points
 build_all: ## Build the demonstation components
 	@echo "$(BLUE)Building demo...$(NC)"
-	kubectl apply -f k8s/rental.yaml
-	kubectl apply -f k8s/kafka_client_cm.yaml -n $(CFNT_NS)
-	kubectl apply -f k8s/kafka_client_cm.yaml -n $(DEMO_NS)
-	kubectl apply -f k8s/rbac.yaml -n $(DEMO_NS)
+	kubectl apply -f cp-flink/k8s/rental.yaml
+	kubectl apply -f cp-flink/k8s/kafka_client_cm.yaml -n $(CFNT_NS)
+	kubectl apply -f cp-flink/k8s/kafka_client_cm.yaml -n $(DEMO_NS)
+	kubectl apply -f cp-flink/k8s/rbac.yaml -n $(DEMO_NS)
 	make create_environment
 	make create_secret
 	make map_secret
@@ -63,13 +63,13 @@ build_all: ## Build the demonstation components
 	make create_catalog
 	make create_database
 	cd src/producer && make build 
-	cd src/cp-flink && make build
+	cd cp-flink && make build
 
 deploy_all: ## Deploy the demonstation components
 	@echo "$(BLUE)Deploying demo...$(NC)"
 	cd src/producer && make deploy
 	@echo "Producer App Web Page should be visible at http://localhost:30080"
-	cd src/cp-flink && make deploy
+	cd cp-flink && make deploy
 	make message
 
 
@@ -87,15 +87,15 @@ status_all: ## Validate the demo
 	@echo "----------------------------------------"
 	confluent flink catalog list --url $(CONFLUENT_CMF_URL)
 	@echo "----------------------------------------"
-	cd src/cp-flink && make status
+	cd cp-flink && make status
 	@echo "$(WHITE) $(BOLD)Checking Flink environment...$(NC)"
-	cd src/demo-app && make status
+	cd src/producer && make status
 	@echo "✅ Demo status check complete!"
 
 undeploy_all: ## Tear down the demo
 	@echo "$(BLUE)Tearing down demo...$(NC)"
-	cd src/demo-app && make undeploy
-	cd src/cp-flink && make undeploy
+	cd src/producer && make undeploy
+	cd cp-flink && make undeploy
 	make delete_all_schemas
 	make delete_all_cms
 	make delete_all_topics
@@ -158,10 +158,10 @@ message:
 
 # ---------------- Flink Environment ----------------
 create_environment:
-	@confluent flink environment create $(ENV_NAME) --defaults k8s/flink_dev_rental.yaml  --url $(CONFLUENT_CMF_URL) --kubernetes-namespace $(DEMO_NS)
+	@confluent flink environment create $(ENV_NAME) --defaults cp-flink/k8s/flink_dev_rental.yaml  --url $(CONFLUENT_CMF_URL) --kubernetes-namespace $(DEMO_NS)
 
 update_environment:
-	@confluent flink environment update $(ENV_NAME)--defaults k8s/flink_dev_rental.yaml --url $(CONFLUENT_CMF_URL)
+	@confluent flink environment update $(ENV_NAME)--defaults cp-flink/k8s/flink_dev_rental.yaml --url $(CONFLUENT_CMF_URL)
 
 
 delete_environment:
@@ -170,7 +170,7 @@ delete_environment:
 
 create_compute_pool:
 	@echo "$(YELLOW)Creating compute pool...$(NC)"
-	confluent flink compute-pool create k8s/compute_pool.yaml --environment $(ENV_NAME) --url $(CONFLUENT_CMF_URL)
+	confluent flink compute-pool create cp-flink/k8s/compute_pool.yaml --environment $(ENV_NAME) --url $(CONFLUENT_CMF_URL)
 
 delete_compute_pool:
 	@if confluent flink compute-pool list --url $(CONFLUENT_CMF_URL) --environment $(ENV_NAME) | grep -q "$(POOL_NAME)"; then \
@@ -189,7 +189,7 @@ status_compute_pool:
 
 create_secret:
 	@echo "$(YELLOW)Creating secrets...$(NC)"
-	@curl -X POST -H "Content-Type: application/json" -v -d @k8s/kafka_secrets.json $(CONFLUENT_CMF_URL)/cmf/api/v1/secrets
+	@curl -X POST -H "Content-Type: application/json" -v -d @cp-flink/k8s/kafka_secrets.json $(CONFLUENT_CMF_URL)/cmf/api/v1/secrets
 
 delete_secret:
 	@echo "$(YELLOW)Deleting secrets...$(NC)"
@@ -197,7 +197,7 @@ delete_secret:
 
 map_secret:
 	@echo "$(YELLOW)Mapping secrets...$(NC)"
-	@curl -X POST -H "Content-Type: application/json" -v -d @k8s/kafka_secret_mapping.json $(CONFLUENT_CMF_URL)/cmf/api/v1/environments/$(ENV_NAME)/secret-mappings
+	@curl -X POST -H "Content-Type: application/json" -v -d @cp-flink/k8s/kafka_secret_mapping.json $(CONFLUENT_CMF_URL)/cmf/api/v1/environments/$(ENV_NAME)/secret-mappings
 
 delete_secret_mapping:
 	@echo "$(YELLOW)Deleting secret mapping...$(NC)"
@@ -205,13 +205,13 @@ delete_secret_mapping:
 
 create_catalog:
 	@if ! `confluent flink catalog list --url $(CONFLUENT_CMF_URL) | grep -qw rental`; then \
-		confluent flink catalog create k8s/kafka_catalog_cmf.json --url $(CONFLUENT_CMF_URL); \
+		confluent flink catalog create cp-flink/k8s/kafka_catalog_cmf.json --url $(CONFLUENT_CMF_URL); \
 	else \
 		echo "$(YELLOW)Catalog 'rental' already exists; skipping creation.$(NC)"; \
 	fi
 
 create_database:
-	@curl -X POST -H "Content-Type: application/json" -v -d @k8s/database.json $(CONFLUENT_CMF_URL)/cmf/api/v1/catalogs/$()/databases
+	@curl -X POST -H "Content-Type: application/json" -v -d @cp-flink/k8s/database.json $(CONFLUENT_CMF_URL)/cmf/api/v1/catalogs/$()/databases
 
 delete_catalog:
 	@confluent flink catalog delete rental --url $(CONFLUENT_CMF_URL) --force --ignore-not-found=true
@@ -223,9 +223,9 @@ list_kafka_catalogs:
 # ---- topics -----
 create_all_topics:
 	@echo "Creating all topics...in namespace $(CFNT_NS)"
-	@kubectl apply -f k8s/topics/raw_orders_topic.yaml -n $(CFNT_NS)
-	@kubectl apply -f k8s/topics/raw_jobs_topic.yaml -n $(CFNT_NS)
-	@kubectl apply -f k8s/topics/order_details_topic.yaml -n $(CFNT_NS)
+	@kubectl apply -f cp-flink/k8s/topics/raw_orders_topic.yaml -n $(CFNT_NS)
+	@kubectl apply -f cp-flink/k8s/topics/raw_jobs_topic.yaml -n $(CFNT_NS)
+	@kubectl apply -f cp-flink/k8s/topics/order_details_topic.yaml -n $(CFNT_NS)
 
 status_all_topics:
 	@echo "--------------------------------"
@@ -234,9 +234,9 @@ status_all_topics:
 	@kubectl get KafkaTopics -n $(CFNT_NS)
 
 delete_all_topics:
-	@kubectl delete -f k8s/topics/raw_orders_topic.yaml -n $(CFNT_NS) --ignore-not-found=true
-	@kubectl delete -f k8s/topics/raw_jobs_topic.yaml -n $(CFNT_NS) --ignore-not-found=true
-	@kubectl delete -f k8s/topics/order_details_topic.yaml -n $(CFNT_NS) --ignore-not-found=true
+	@kubectl delete -f cp-flink/k8s/topics/raw_orders_topic.yaml -n $(CFNT_NS) --ignore-not-found=true
+	@kubectl delete -f cp-flink/k8s/topics/raw_jobs_topic.yaml -n $(CFNT_NS) --ignore-not-found=true
+	@kubectl delete -f cp-flink/k8s/topics/order_details_topic.yaml -n $(CFNT_NS) --ignore-not-found=true
 
 # ---- Schemas with ConfigMaps
 status_all_schemas:
@@ -261,7 +261,7 @@ create_raw_orders_cm:
 
 
 delete_raw_orders_cm:
-	@kubectl delete -f k8s/schemas/raw_orders_cm.yaml -n $(CFNT_NS) --ignore-not-found=true
+	@kubectl delete -f cp-flink/k8s/schemas/raw_orders_cm.yaml -n $(CFNT_NS) --ignore-not-found=true
 
 create_order_details_cm:
 	@echo "$(YELLOW)Creating order-details ConfigMap from schema file...$(NC)"
@@ -271,7 +271,7 @@ create_order_details_cm:
 		--dry-run=client -o yaml | kubectl apply -f -
 
 delete_order_details_cm:
-	@kubectl delete -f k8s/schemas/order_details_cm.yaml -n $(CFNT_NS) --ignore-not-found=true
+	@kubectl delete -f cp-flink/k8s/schemas/order_details_cm.yaml -n $(CFNT_NS) --ignore-not-found=true
 
 ## ---- jobs -----
 create_raw_jobs_cm:
@@ -282,18 +282,18 @@ create_raw_jobs_cm:
 		--dry-run=client -o yaml | kubectl apply -f -
 
 delete_raw_jobs_cm:
-	@kubectl delete -f k8s/schemas/raw_jobs_cm.yaml -n $(CFNT_NS) --ignore-not-found=true
+	@kubectl delete -f cp-flink/k8s/schemas/raw_jobs_cm.yaml -n $(CFNT_NS) --ignore-not-found=true
 
 create_all_schemas: create_raw_orders_cm create_order_details_cm create_raw_jobs_cm
 	@echo "$(YELLOW)Creating all schemas definitions in the Schema Registry...$(NC)"
-	@kubectl apply -f k8s/schemas/raw_orders_schema.yaml -n $(CFNT_NS)
-	@kubectl apply -f k8s/schemas/raw_jobs_schema.yaml -n $(CFNT_NS)
-	@kubectl apply -f k8s/schemas/order_details_schema.yaml -n $(CFNT_NS)
+	@kubectl apply -f cp-flink/k8s/schemas/raw_orders_schema.yaml -n $(CFNT_NS)
+	@kubectl apply -f cp-flink/k8s/schemas/raw_jobs_schema.yaml -n $(CFNT_NS)
+	@kubectl apply -f cp-flink/k8s/schemas/order_details_schema.yaml -n $(CFNT_NS)
 
 delete_all_schemas:
-	@kubectl delete -f k8s/schemas/raw_orders_schema.yaml -n $(CFNT_NS) --ignore-not-found=true
-	@kubectl delete -f k8s/schemas/raw_jobs_schema.yaml -n $(CFNT_NS) --ignore-not-found=true
-	@kubectl delete -f k8s/schemas/order_details_schema.yaml -n $(CFNT_NS) --ignore-not-found=true
+	@kubectl delete -f cp-flink/k8s/schemas/raw_orders_schema.yaml -n $(CFNT_NS) --ignore-not-found=true
+	@kubectl delete -f cp-flink/k8s/schemas/raw_jobs_schema.yaml -n $(CFNT_NS) --ignore-not-found=true
+	@kubectl delete -f cp-flink/k8s/schemas/order_details_schema.yaml -n $(CFNT_NS) --ignore-not-found=true
 	@echo "$(YELLOW)Permanently deleting subjects from Schema Registry...$(NC)"
 	@curl -X DELETE "$(SR_URL)/subjects/raw-orders-value?permanent=true" 2>/dev/null || true
 	@curl -X DELETE "$(SR_URL)/subjects/raw-jobs-value?permanent=true" 2>/dev/null || true
@@ -303,10 +303,10 @@ delete_all_schemas:
 delete_all_cms: delete_raw_jobs_cm delete_raw_orders_cm delete_order_details_cm
 
 create_minio_secrets:
-	@kubectl apply -f k8s/minio-credentials-secret.yaml -n $(DEMO_NS)
+	@kubectl apply -f cp-flink/k8s/minio-credentials-secret.yaml -n $(DEMO_NS)
 
 delete_minio_secrets:
-	@kubectl delete -f k8s/minio-credentials-secret.yaml -n $(DEMO_NS) --ignore-not-found=true
+	@kubectl delete -f cp-flink/k8s/minio-credentials-secret.yaml -n $(DEMO_NS) --ignore-not-found=true
 
 delete_ns:
 	@kubectl delete ns $(DEMO_NS)

@@ -2,6 +2,10 @@
 
 Based [on Flink Agents docs](https://nightlies.apache.org/flink/flink-agents-docs-release-0.1/)
 
+## Deployment
+
+- **[oss-flink/](oss-flink/)** – Local Flink only; run steps below from demo root.
+
 ## Installation
 
 * Use Apache Flink install script

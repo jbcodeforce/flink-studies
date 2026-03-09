@@ -6,6 +6,10 @@ The demonstration needs to be able to simulate lookup failure for invalid claim_
 
 The Database can be a simple postgresql or duckdb database. The processing is done via Flink, and the stream of events are in Kafka topic.
 
+## Deployment
+
+This demo supports **Confluent Platform on K8s**. Flink app and K8s manifests are under **[cp-flink/](cp-flink/)**. Shared components: [database/](database/), [event-generator/](event-generator/). See [cp-flink/README.md](cp-flink/README.md).
+
 ## TL;DR
 
 * start_colima, with Confluent Plaform and Confluent Manager for Flink Services already installed (see [deployment/k8s](../../deployment/k8s/README.md))

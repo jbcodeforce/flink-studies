@@ -161,28 +161,175 @@ Under code/flink-sql folder
 
 ## 4. Local end-to-end demonstrations
 
-All the local demonstrations run on local Kubernetes (Confluent Platform or Apache Flink), some on Confluent Cloud. Most of them are still work in progress.
+All demonstrations run on local Kubernetes (Confluent Platform or Apache Flink), Confluent Cloud, or OSS Flink. Each demo follows a standard layout: **cccloud/** (Confluent Cloud), **cp-flink/** (Confluent Platform on K8s), **oss-flink/** (OSS Apache Flink), with a README per folder for goal, status, approach, and how to run.
 
-See the [e2e-demos](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/README.md) folder for a set of available demos based on the Flink local deployment or using Confluent Cloud for Flink.
+See the [e2e-demos README](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/README.md) for the full index. The table below tracks refactoring status, supported environments, README update date, and automation to validate each demo.
 
-### 4.1 Confluent Cloud – Transaction processing (RDS → Kafka → Flink → Iceberg)
+### 4.1 cc-cdc-tx-demo
 
-Full Confluent Cloud demo in [e2e-demos/cc-cdc-tx-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cc-cdc-tx-demo): AWS RDS PostgreSQL → Debezium CDC → Kafka → Flink (dedup, enrichment, sliding-window aggregates) → TableFlow → Iceberg/S3, AWS Glue, Athena.
+Full Confluent Cloud demo: AWS RDS PostgreSQL → Debezium CDC → Kafka → Flink (dedup, enrichment, sliding-window aggregates) → TableFlow → Iceberg/S3, AWS Glue, Athena. Optional ML scoring via ECS/Fargate. Terraform: RDS, Confluent, connectors, compute pool; separate Terraform for Flink statements.
+
+| Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
+|--------|---------|----------|-----------|---------|-----------------|
+| Ready | ✓ | — | — | — | Partial (IaC + Makefiles; no single end-to-end validate) |
+
+**Path:** [e2e-demos/cc-cdc-tx-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cc-cdc-tx-demo)
 
 ![](https://raw.githubusercontent.com/jbcodeforce/flink-studies/master/e2e-demos/cc-cdc-tx-demo/images/proposed_arch.drawio.png)
 
-It also includes, a Terraform Infrastructure as Code for: RDS, Confluent, connectors, compute pool.
+### 4.2 cdc-dedup-transform
 
-  
-### 4.2 Change Data Capture - Confluent Cloud - TableAPI processing
+Qlik Replicate CDC → Flink: raw CDC envelope (key, headers, data, beforeData), filter/dedup, extract by operation (REFRESH/INSERT/UPDATE/DELETE), DLQ, business validation, S3/Iceberg sink. Propagate DELETE to sink.
 
-[e2e-demos/cdc-tableapi-to-silver](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cdc-tableapi-to-silver)
+| Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
+|--------|---------|----------|-----------|---------|-----------------|
+| Ready | ✓ | — | — | — | Partial (Makefiles per layer; no single validate) |
 
-### 4.4 Simulate cut-off time for event creation
-* Present how to emit event only when a field change, for example an ETA field for package delivery
-* Present the concept of cut-off time at a given hours to create event for object <k,v> that has no events on the given key withn the last x hours.
+**Path:** [e2e-demos/cdc-dedup-transform](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cdc-dedup-transform)
 
-[Package morning cutoff](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/package-event-cutoff)
+### 4.3 cdc-demo
+
+PostgreSQL (CloudNativePG) + Debezium CDC on K8s → Kafka → Flink SQL. Tables: loan_applications, transactions. Debezium envelope, `message.key.columns`, Flink DDL. Makefile: demo_setup, deploy_connect, demo_run, deploy_flink, flink_sql_client.
+
+| Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
+|--------|---------|----------|-----------|---------|-----------------|
+| Ready | — | ✓ | — | — | Partial (make demo_setup / demo_run / demo_cleanup; no automated validation) |
+
+**Path:** [e2e-demos/cdc-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cdc-demo)
+
+### 4.4 cdc-tableapi-to-silver
+
+Mock Debezium envelope: raw accounts and transactions → silver (src_accounts, src_transactions) → dim_account, fct_transactions. Red/green TDD with run_tests.sh and validation SQL.
+
+| Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
+|--------|---------|----------|-----------|---------|-----------------|
+| Ready | ✓ | — | ✓ | — | Partial (run_tests.sh; deploy still manual per env) |
+
+**Path:** [e2e-demos/cdc-tableapi-to-silver](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cdc-tableapi-to-silver)
+
+### 4.5 dedup-demo
+
+Deduplicate product events: Flink SQL (ROW_NUMBER dedup, upsert to src_products) or Flink Table API (Java, K8s). Python producer generates intentional duplicates.
+
+| Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
+|--------|---------|----------|-----------|---------|-----------------|
+| Ready | — | ✓ | ✓ | — | Partial (scripts/Makefile per variant; no single validate) |
+
+**Path:** [e2e-demos/dedup-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/dedup-demo)
+
+### 4.6 e-com-sale
+
+Real-time e-commerce: user actions, purchases, inventory. Flink job: revenue per minute, top products, low-inventory alerts, recommendations. Python simulator, K8s topics + Flink app (CMF or OSS).
+
+| Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
+|--------|---------|----------|-----------|---------|-----------------|
+| Ready | — | ✓ | ✓ | — | Manual (make build / create_flink_app; no automated validation) |
+
+**Path:** [e2e-demos/e-com-sale](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale)
+
+### 4.7 e2e-streaming-demo
+
+Flink SQL (Alibaba Tianchi–style user_behavior): Kafka source, TUMBLE windows (hourly buy count → Elasticsearch), cumulative UV, top categories via temporal join to MySQL. Docker Compose.
+
+| Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
+|--------|---------|----------|-----------|---------|-----------------|
+| Ready | — | — | ✓ | — | Manual (docker compose + manual SQL; no validate script) |
+
+**Path:** [e2e-demos/e2e-streaming-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e2e-streaming-demo)
+
+### 4.8 external-lookup
+
+Payment events (Kafka) enriched by async lookup to external DB (claims). Flink left join; success → enriched-payments, failures → failed-payments. DuckDB + API, event-generator, Flink app on K8s (CMF).
+
+| Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
+|--------|---------|----------|-----------|---------|-----------------|
+| Ready | — | ✓ | — | — | Partial (make prepare_demo / run_demo; no automated assertion) |
+
+**Path:** [e2e-demos/external-lookup](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/external-lookup)
+
+### 4.9 flink-to-feast
+
+Real-time windowed aggregation → Feast online feature store; ML model consumes features. Confluent ML_PREDICT, feature_repo, kafka_consumer, model_serving.
+
+| Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
+|--------|---------|----------|-----------|---------|-----------------|
+| Ready | ✓ | — | — | — | Manual (multi-component; no single validate) |
+
+**Path:** [e2e-demos/flink-to-feast](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/flink-to-feast)
+
+### 4.10 flink-to-sink-postgresql
+
+Flink joins two topics (e.g. orders + shipments) → output topic → Kafka JDBC Sink → PostgreSQL. Docker Compose or K8s.
+
+| Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
+|--------|---------|----------|-----------|---------|-----------------|
+| Ready | — | ✓ | ✓ | — | Manual (start stack, send data, verify in PG manually) |
+
+**Path:** [e2e-demos/flink-to-sink-postgresql](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/flink-to-sink-postgresql)
+
+### 4.11 json-transformation
+
+Truck rental: raw-orders + raw-jobs Kafka topics → Flink SQL or Table API → nested OrderDetails (EquipmentRentalDetails, MovingHelpDetails). Producer and schemas at root.
+
+| Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
+|--------|---------|----------|-----------|---------|-----------------|
+| Ready | ✓ | ✓ | — | — | Partial (Makefile deploy; no automated SQL validation) |
+
+**Path:** [e2e-demos/json-transformation](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/json-transformation)
+
+### 4.12 savepoint-demo
+
+Stop/restart stateful Flink job with savepoints. Producer writes (sequence_id, value=2) to Kafka; Flink SQL sums value. Minikube, Confluent Platform.
+
+| Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
+|--------|---------|----------|-----------|---------|-----------------|
+| Ready | — | ✓ | — | — | Manual (README steps; no scripted validate) |
+
+**Path:** [e2e-demos/savepoint-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/savepoint-demo)
+
+### 4.13 sql-gateway-demo
+
+Flink SQL Gateway: start cluster and gateway, create CSV source table, deploy DML, assess results. Local/OSS only.
+
+| Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
+|--------|---------|----------|-----------|---------|-----------------|
+| Ready | — | — | ✓ | — | Manual (no scripts) |
+
+**Path:** [e2e-demos/sql-gateway-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/sql-gateway-demo)
+
+### 4.14 agentic-demo
+
+Flink Agents (Python): flink-agents package with local Flink. Python 3.11 + uv, PYTHONPATH for JVM.
+
+| Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
+|--------|---------|----------|-----------|---------|-----------------|
+| Ready | — | — | ✓ | — | Manual (README only) |
+
+**Path:** [e2e-demos/agentic-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/agentic-demo)
+
+### 4.15 package-event-cutoff
+
+Package morning cutoff (11:30): emit only when expected_delivery changes; at cutoff, proactively emit for packages with no recent event; ETA computation with UDF. Shared sql-scripts, tests, eta_udf.
+
+| Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
+|--------|---------|----------|-----------|---------|-----------------|
+| Ready | ✓ | — | — | 03/03/2026 | Partial (run_use_case_1/2/3.sh; validate SQL exist but no single end-to-end script) |
+
+**Path:** [e2e-demos/package-event-cutoff](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/package-event-cutoff)
+
+### 4.16 perf-testing
+
+End-to-end performance assessment: configurable producer → Kafka → Flink job(s) (sql-executor, datastream, flink-sql). Throughput and latency metrics. Scripts for topics, run producer, deploy jobs.
+
+| Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
+|--------|---------|----------|-----------|---------|-----------------|
+| Ready | — | ✓ | ✓ | — | Partial (build + scripts; no automated metric assertion) |
+
+**Path:** [e2e-demos/perf-testing](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/perf-testing)
+
+---
+
+**Legend:** ✓ = deployment folder present with README. **Updated** = date from demo root README (e.g. "Created DD/MM/YYYY") when present; otherwise —. **Full automation** = one-command (or scripted) deploy + validation that the demo works; Partial = scripted deploy or validate only; Manual = README steps only.
 
 ## Public repositories with valuable demonstrations
 

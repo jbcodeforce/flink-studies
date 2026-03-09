@@ -20,6 +20,13 @@ The Flink job consumes this data from the Kafka topic and performs various analy
 
 The SQL client can be used to compute some aggregation on the sale events created by the `E-commerce simulator`. 
 
+## Deployment
+
+- **[cp-flink/](cp-flink/)** – Confluent Platform / CMF deployment.
+- **[oss-flink/](oss-flink/)** – OSS Flink on K8s deployment.
+
+Shared: [flink-app/](flink-app/), [k8s/](k8s/), [simulator.py](simulator.py).
+
 ## Setup
 
 * If not done  yet, go to the k8s deployment for CP for Flink and the Confluent Platform deployment [here](../../deployment/k8s/README.md) and use the makefile to deploy all the needed components.

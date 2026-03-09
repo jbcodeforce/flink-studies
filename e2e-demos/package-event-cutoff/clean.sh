@@ -43,3 +43,19 @@ fi
 
 confluent flink statement create "drop-sink-table-2" --sql "drop table enhanced_package_events" --database "${FLINK_DATABASE}" --compute-pool "${FLINK_COMPUTE_POOL}" --environment "${FLINK_ENVIRONMENT}" --context "${FLINK_CONTEXT}" --wait
 confluent flink statement delete 'drop-sink-table-2' --cloud ${CLOUD} --region ${REGION} --environment "${FLINK_ENVIRONMENT}" --context "${FLINK_CONTEXT}" --force
+
+# Use case 3: Compute ETA (do not drop package_events)
+if ! statement_exists "${STATEMENT_LIST}" "dml-compute-eta"; then
+  confluent flink statement delete 'dml-compute-eta' --cloud ${CLOUD} --region ${REGION} --environment "${FLINK_ENVIRONMENT}" --context "${FLINK_CONTEXT}" --force
+fi
+if ! statement_exists "${STATEMENT_LIST}" "dml-package-eta-history"; then
+  confluent flink statement delete 'dml-package-eta-history' --cloud ${CLOUD} --region ${REGION} --environment "${FLINK_ENVIRONMENT}" --context "${FLINK_CONTEXT}" --force
+fi
+if ! statement_exists "${STATEMENT_LIST}" "ddl-package-eta-history"; then
+  confluent flink statement delete 'ddl-package-eta-history' --cloud ${CLOUD} --region ${REGION} --environment "${FLINK_ENVIRONMENT}" --context "${FLINK_CONTEXT}" --force
+fi
+if ! statement_exists "${STATEMENT_LIST}" "drop-package-eta-history"; then
+  confluent flink statement delete 'drop-package-eta-history' --cloud ${CLOUD} --region ${REGION} --environment "${FLINK_ENVIRONMENT}" --context "${FLINK_CONTEXT}" --force
+fi
+confluent flink statement create "drop-package-eta-history" --sql "drop table package_eta_history" --database "${FLINK_DATABASE}" --compute-pool "${FLINK_COMPUTE_POOL}" --environment "${FLINK_ENVIRONMENT}" --context "${FLINK_CONTEXT}" --wait
+confluent flink statement delete 'drop-package-eta-history' --cloud ${CLOUD} --region ${REGION} --environment "${FLINK_ENVIRONMENT}" --context "${FLINK_CONTEXT}" --force

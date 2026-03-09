@@ -17,11 +17,20 @@ The input are:
 
 The jobs are related to a move `orders`, so the join key is the `OrderId`.
 
+## Deployment
+
+This demo supports two deployment targets:
+
+- **[Confluent Cloud](cccloud/)** – Flink SQL only; deploy via Flink workspace or Confluent CLI. See [cccloud/README.md](cccloud/README.md).
+- **[Confluent Platform Flink](cp-flink/)** – Table API Java or SQL on K8s (CMF). See [cp-flink/README.md](cp-flink/README.md).
+
+Shared components: [src/producer/](src/producer/) (test data), [src/schemas/](src/schemas/) (JSON schemas).
+
 ## Use Case
 
 * Truck rental orders continuously arrive to the `raw-orders` kafka topic, while job demands are sent to `raw-jobs` topic. 
 
-![](./src/demo-app/static/mover-truck-2100.png)
+![](./docs/mover-truck-2100.png)
 *Image generated with Google Gemini*
 
 * The raw-orders json payload looks like:
@@ -155,7 +164,7 @@ The Flink application(s), and the record producer Webapp are deployed under the 
     name: flink-sa-r
     apiGroup: rbac.authorization.k8s.io
   ```
-  which are defined in `k8s/rbac.yaml` 
+  which are defined in `cp-flink/k8s/rbac.yaml` 
 
 ---
 
@@ -221,9 +230,9 @@ The Kubernetes deployment is done using Colima VM and Confluent Platform. [See t
 
 * See [deployment/k8s/cfk](../../deployment/k8s/cfk/README.md) for Confluent Platform upgrade
 * See [deployment/k8s/cmf](../../deployment/k8s/cmf/README.md) for Confluent Manager for Flink upgrade
-* [Get the cp-flink tag version from dockerhub](https://hub.docker.com/r/confluentinc/cp-flink/tags) modify the version in [Dockerfile](./src/cp-flink/table_api/Dockerfile) and update the matching `flink.version` in the [pom.xml for the table api code](./src/cp-flink/table_api/pom.xml)
-* Modify flink sql image version in [compute-pool](./k8s/compute-pool-cmf.json)
-* Change the version number in the [flink_application](./src/cp-flink/k8s/flink_application.json) see [product documentation](https://docs.confluent.io/platform/current/flink/jobs/applications/create.html).
+* [Get the cp-flink tag version from dockerhub](https://hub.docker.com/r/confluentinc/cp-flink/tags) modify the version in [Dockerfile](./cp-flink/table_api/Dockerfile) and update the matching `flink.version` in the [pom.xml for the table api code](./cp-flink/table_api/pom.xml)
+* Modify flink sql image version in [compute-pool](./cp-flink/k8s/compute_pool.yaml)
+* Change the version number in the [flink_application](./cp-flink/k8s/flink_application.json) see [product documentation](https://docs.confluent.io/platform/current/flink/jobs/applications/create.html).
 
 ### Demonstration from the user interface
 
@@ -270,7 +279,7 @@ There are multiple approaches for the implementation. The easiest one is to tune
 
 For Confluent Manager for Flink, the SQL feature is in preview (as of 07/2025). The elements to defined for SQL processing are the same as in Confluent Cloud for Flink with Environment, Compute Pools, and Catalog. 
 
-The [k8s folder](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/k8s/) includes the following nanifests:
+The [cp-flink/k8s folder](cp-flink/k8s/) includes the following manifests:
 
 | Manifest | Description | Deployment |
 | --- | --- | --- |
@@ -321,7 +330,7 @@ The following steps should have been run with the previous execution of `make bu
     ```sh
     make create_compute_pool
     # same as 
-    confluent flink compute-pool create k8s/compute_pool.yaml --environment $ENV_NAME 
+    confluent flink compute-pool create cp-flink/k8s/compute_pool.yaml --environment $ENV_NAME 
     ```
 1. Verify existing compute pools:
   ```sh
@@ -334,7 +343,7 @@ The following steps should have been run with the previous execution of `make bu
     ```sh
     make create_secret
     # using curl
-    curl -X POST -H "Content-Type: application/json" -v -d @k8s/kafka_secrets.json $(CONFLUENT_CMF_URL)/cmf/api/v1/secrets
+    curl -X POST -H "Content-Type: application/json" -v -d @cp-flink/k8s/kafka_secrets.json $(CONFLUENT_CMF_URL)/cmf/api/v1/secrets
     make map_secret
     ```
 1. Create SQL Catalog
@@ -347,7 +356,7 @@ The following steps should have been run with the previous execution of `make bu
 During query development the shell is the most efficient to write the complex query incrementally. Ensure the cmf service is exposed via a port forward, using `make expose_services` in this folder.
 
 ```sh
-cd src/cp-flink
+cd cp-flink
 make start_flink_shell
 ```
 
@@ -391,14 +400,14 @@ The approach is to keep component in separate folder under `src`, with makefile 
 
 | Folder | Content |
 | --- | --- |
-| **k8s** | Makefile and common kubernetes elements of the demonstrations. Common to all components, like namespace and config map |
-| **src/cp-flink** | Flink statemens as Table API code or pure SQLs |
+| **cp-flink/k8s** | K8s manifests (topics, schemas, RBAC, FlinkApplication, compute pool). Common to CP deployment. |
+| **cp-flink** | Flink statements as Table API code or pure SQLs; see [cp-flink/README.md](cp-flink/README.md). |
 | **docs** | Some diagrams |
 | **src/producer** | Web App and CLI to produce demonstration records to the  `raw-orders` and `raw-jobs` | 
 | **src/schemas** | Json schema definitions to be deployed by schema registry |
-| **src/cc-flink** | Equivalent Flink SQLs for Confluent Cloud Flink - Start earlier to  code SQL logic. see the [README.md](./src/cc-flink/README.md) for instructions|
+| **cccloud** | Flink SQL for Confluent Cloud; see [cccloud/README.md](cccloud/README.md). |
 
-The `k8s` folder includes the configuration to create schemas and topics for the raw input data: `jobs` and `orders` and the `order-details` topic and schema. When deploying to Kubernetes, the topic and schema are defined as config maps. The following diagram illustrates the relationships with those k8s elements:
+The `cp-flink/k8s` folder includes the configuration to create schemas and topics for the raw input data: `jobs` and `orders` and the `order-details` topic and schema. When deploying to Kubernetes, the topic and schema are defined as config maps. The following diagram illustrates the relationships with those k8s elements:
 
 ![](./docs/k8s_cp_elements.drawio.png)
 
@@ -447,7 +456,7 @@ The following figure illustrates the different deployment model:
 | `KAFKA_SASL_MECHANISM` | `PLAIN` | SASL mechanism |
 | `KAFKA_CERT` | _(empty)_ | SSL certificate path |
 
-Those environment variables are defined in `k8s/kafka_client_cm.yaml`.
+Those environment variables are defined in `cp-flink/k8s/kafka_client_cm.yaml`.
 
 ### The Flink SQL processing
 

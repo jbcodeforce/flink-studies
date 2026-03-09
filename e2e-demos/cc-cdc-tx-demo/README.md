@@ -8,25 +8,34 @@ The high level flow is presented in this high-level architecture:
 
 **Audience:** Developer and SRE to understand a classical Data Steaming Processing implementation and deployment.
 
+## Deployment
+
+This demo supports **Confluent Cloud only**. All infrastructure and Flink SQL live under **[cccloud/](cccloud/)**:
+
+- **cccloud/IaC/** – Terraform for AWS (RDS, S3, Glue) and Confluent Cloud (Kafka, connectors, Flink compute pool).
+- **cccloud/cc-flink-sql/** – Flink SQL (sources, dimensions, facts) and optional Terraform for deploying statements.
+
+See [cccloud/README.md](cccloud/README.md) for how to run.
+
 ## Goals
 
 The demonstration presents a hands-on guidance for the following requirements:
 
 * [x] Integrate with AWS RDS Postgres and CDC Debezium v2 Kafka Connector deployed as managed service on Confluent Cloud (CC)
-* [x] Decoding Debezium message envelope using Flink or using the json-debezium-registry setting in CC Flink. [See Flink processing](./cc-flink-sql/README.md)
+* [x] Decoding Debezium message envelope using Flink or using the json-debezium-registry setting in CC Flink. [See Flink processing](./cccloud/cc-flink-sql/README.md)
 * [x] Understanding how to replace existing ETL processes with Flink. [Explanation in this section.](#from-etl-to-flink)
-* [x] Sliding window aggregations over transactions grouped by cardholder (1 minute to 1 day windows). [See chapter](./cc-flink-sql/README.md#sliding-window-aggregations)
-* [x] How to propagate delete operations to sink bucket [See section](./cc-flink-sql/README.md#propagating-the-operation-delete-too)
+* [x] Sliding window aggregations over transactions grouped by cardholder (1 minute to 1 day windows). [See chapter](./cccloud/cc-flink-sql/README.md#sliding-window-aggregations)
+* [x] How to propagate delete operations to sink bucket [See section](./cccloud/cc-flink-sql/README.md#propagating-the-operation-delete-too)
 * [x] Maintain data order for transactional systems. [See below section on end to end ordering](#end-to-end-ordering).
-* [x] Fanout to different topics using statement set. [See statement set of tx](./cc-flink-sql/sources/txp/src_transaction/sql-scripts/dml.src_txp_transaction.sql)
-* [x] Data enrichment with joins. [See joins transaction and customer](./cc-flink-sql/dimensions/txp/dim_enriched_tx/sql-scripts/dml.txp_dim_enriched_tx.sql)
+* [x] Fanout to different topics using statement set. [See statement set of tx](./cccloud/cc-flink-sql/sources/txp/src_transaction/sql-scripts/dml.src_txp_transaction.sql)
+* [x] Data enrichment with joins. [See joins transaction and customer](./cccloud/cc-flink-sql/dimensions/txp/dim_enriched_tx/sql-scripts/dml.txp_dim_enriched_tx.sql)
 * [x] Tableflow set up for aggregation and enriched_transaction topics - Messages in S3 Buckets and Iceberg Tables [See section below](#tableflow)
 * [x] Tableflow Catalog in sync with AWS Glue Catalog
 * [x] AWS Athena integrated with AWS Glue Catalog for the Kafka Cluster defined and then being able to see and query the Iceberg tables. 
 * [x] Integrate with a [ML scoring service](./tx_scoring/README.md). The scoring is deployed as a task in AWS ECS. Docker image in ECR.
 * [x] What monitoring and observability requirements exist? [See specific section below.](#monitoring)
 * [x] How to handle microservices that produce/consume Kafka data without going through Debezium? ([Outbox pattern](#outbox-pattern))
-* [x] Flink statement deployment with Terraform. [See the terraform folder](./cc-flink-sql/terraform/README.md)
+* [x] Flink statement deployment with Terraform. [See the terraform folder](./cccloud/cc-flink-sql/terraform/README.md)
 
 ## From ETL to Flink
 
@@ -48,7 +57,7 @@ At the data preparation layer the ELT batch processing addresses deduplication, 
 
 As the Data is already in Kafka it is more efficient in term of cost to do transformation, enrichment, filtering from bronze to gold in real-time processing. The architecture combines query engine on top of lake house tables for final consumers such as BI dashboard or ML team.
 
-In this demonstration the [./cc-flink-sql/](./cc-flink-sql/) folder has the Kimball structure built with 'shift_left' CLI.
+In this demonstration the [./cccloud/cc-flink-sql/](./cccloud/cc-flink-sql/) folder has the Kimball structure built with 'shift_left' CLI. All Confluent Cloud deployment (IaC and Flink) is under [cccloud/](cccloud/).
 
 ## Architecture
 
@@ -98,10 +107,12 @@ Which, once the Terraform deployment is completed and the Flink Statements are e
 <details>
 <summary>Project Structure</summary>
 
-The folder `cc-flink-sql` includes all the Flink Statements organized by using the Kimball architecture and [star schema](https://jbcodeforce.github.io/flink-studies/concepts/#the-star-schema).
+The folder `cccloud/cc-flink-sql` includes all the Flink Statements organized by using the Kimball architecture and [star schema](https://jbcodeforce.github.io/flink-studies/concepts/#the-star-schema).
 
 ```sh
-├── cc-flink-sql
+├── cccloud
+│   ├── IaC
+│   └── cc-flink-sql
 │   ├── common.mk
 │   ├── dimensions
 │   │   └── txp
@@ -251,7 +262,7 @@ Flink 1.19+ introduced direct support for Changelog Window Aggregation. This all
 
 ## Infrastructure as Code (Expect around 15+ minutes deployment)
 
-The [IaC](./IaC/) folder includes the Terraform to deploy the infractructure of the solution on AWS and Confluent Cloud. 
+The [IaC](./cccloud/IaC/) folder includes the Terraform to deploy the infractructure of the solution on AWS and Confluent Cloud. 
 
 1. Confluent Cloud Infrastructure components:
    1. Environment
@@ -358,14 +369,14 @@ graph LR
 4. `terraform apply`  
 5. Wait for RDS + CDC to be provisioned
 6. Insert sample data using [Data Generator](./data-generators/README.md)
-7. Deploy Flink SQL statements using another set of terraform for [Flink SQLs](./cc-flink-sql/terraform/README.md)
+7. Deploy Flink SQL statements using another set of terraform for [Flink SQLs](./cccloud/cc-flink-sql/terraform/README.md)
 7. Can validate in Confluent Cloud User Interface the state of the Flink Statements
 8. Verify enriched transactions and hourly_aggregate topics
 9. Query Iceberg tables with Athena
 
 **Option 2: Step-by-Step Deployment**
 
-For incremental deployment (e.g., RDS first, then Confluent Cloud), see the detailed [Deployment Guide](./IaC/README.md).
+For incremental deployment (e.g., RDS first, then Confluent Cloud), see the detailed [Deployment Guide](./cccloud/IaC/README.md).
 
 
 ### Key Terraform Variables
@@ -383,7 +394,7 @@ For incremental deployment (e.g., RDS first, then Confluent Cloud), see the deta
 
 ## Flink Processing
 
-[See dedicated note](./cc-flink-sql/README.md) for the details on how to process Debezium envelop, addressing deduplication, sliding window aggregation, ML Scoring calls...
+[See dedicated note](./cccloud/cc-flink-sql/README.md) for the details on how to process Debezium envelop, addressing deduplication, sliding window aggregation, ML Scoring calls...
 
 ## Demonstration Script
 
@@ -395,7 +406,7 @@ For incremental deployment (e.g., RDS first, then Confluent Cloud), see the deta
     terraform apply
     ```
 
-    or [step-by-step with detail instructions](./IaC/README.md). This is recommended the first time to understand what is done.
+    or [step-by-step with detail instructions](./cccloud/IaC/README.md). This is recommended the first time to understand what is done.
 
 1. Once RDS in place and Source Connector running, use the data generator to create 10 base customers and transactions. ([See Data Generator readme for more details](./data-generators/README.md))
     * Getting RDS Endpoint and send 10 records in each table:
@@ -414,9 +425,9 @@ For incremental deployment (e.g., RDS first, then Confluent Cloud), see the deta
         # last is the same as run.sh
         ```
 
-1. [Execute the steps in the Flink table analysis](./cc-flink-sql/README.md#table-analysis) to explain the envelop processing. 
+1. [Execute the steps in the Flink table analysis](./cccloud/cc-flink-sql/README.md#table-analysis) to explain the envelop processing. 
 
-1. Aggregation deployment is done using separate Terraform under [cc-flink-sql/terraform](./cc-flink-sql/terraform/README.md). The DDL scripts complete:
+1. Aggregation deployment is done using separate Terraform under [cc-flink-sql/terraform](./cccloud/cc-flink-sql/terraform/README.md). The DDL scripts complete:
 
     ![](./images/flink-statements.png)
 
@@ -465,7 +476,7 @@ Tableflow is enabled at the topic level. It may be done via User interface, CLI 
 
 [See this lab](https://github.com/confluentinc/confluent-cloud-flink-workshop/blob/master/tableflow-labs/lab3.md) for step by step instruction using the AWS and Confluent consoles.
 
-In this demonstration the Terraform [IaC/aws.tf](./IaC/aws.tf) has created the S3 bucket.
+In this demonstration the Terraform [IaC/aws.tf](./cccloud/IaC/aws.tf) has created the S3 bucket.
 
 ![](./images/tableflow-screen.png)
 

@@ -42,7 +42,7 @@ build-all: build-flink build-event-generator build-claimdb build-monitoring ## B
 
 build-flink: ## Build Flink application
 	@echo "$(BLUE)Building Flink application...$(NC)"
-	@cd flink-app && make build
+	@cd cp-flink/flink-app && make build
 	@echo "$(GREEN)✅ Flink application built$(NC)"
 
 build-event-generator: ## Build event generator
@@ -73,12 +73,12 @@ deploy-all: deploy-kafka-catalog \
 
 deploy-flink-app: ## Deploy Flink application
 	@echo "$(BLUE)Deploying Flink application...$(NC)"
-	@cd flink-app && make deploy
+	@cd cp-flink/flink-app && make deploy
 	@echo "$(GREEN)✅ Flink application deployed$(NC)"
 
 deploy-kafka-catalog: ## Deploy the Flink Catalog
 	@echo "$(BLUE)Deploying Kafka Catalog...$(NC)"
-	@confluent flink catalog create k8s/kafka-catalog-cmf.json --url $(CMF_URL)
+	@confluent flink catalog create cp-flink/k8s/kafka-catalog-cmf.json --url $(CMF_URL)
 
 
 deploy-event-generator: ## Deploy event generator
@@ -103,7 +103,7 @@ clean-all: clean-flink-app clean-event-generator clean-claimdb clean-monitoring 
 
 clean-flink-app: ## Clean Flink application
 	@echo "$(BLUE)Cleaning Flink application...$(NC)"
-	@cd flink-app && make clean
+	@cd cp-flink/flink-app && make clean
 	@echo "$(GREEN)✅ Flink application cleaned$(NC)"
 
 clean-event-generator: ## Clean event generator
@@ -234,9 +234,9 @@ use-cp-ns:
 
 # --------- Kafka topics ---------
 create-topics:
-	@kubectl apply -f k8s/enriched-payments-topic.yaml
-	@kubectl apply -f k8s/failed-payments-topic.yaml
-	@kubectl apply -f k8s/payment-events-topic.yaml
+	@kubectl apply -f cp-flink/k8s/enriched-payments-topic.yaml
+	@kubectl apply -f cp-flink/k8s/failed-payments-topic.yaml
+	@kubectl apply -f cp-flink/k8s/payment-events-topic.yaml
 
 list-kafka-topics:
 	@kubectl get kafkatopics -n $(CFNT_NS)
@@ -263,7 +263,7 @@ validate_cmf: ## Validate Confluent Manager for Flink configuration
 
 define_compute_pool: ## Define Compute Pool
 	@echo "Defining Compute Pool..."
-	@kubectl apply -f k8s/compute-pool-cmf.json -n $(FLCK_NS)
+	@kubectl apply -f cp-flink/k8s/compute-pool-cmf.json -n $(FLCK_NS)
 	@echo "✅ Compute Pool defined"
 
 validate_cp_flink_artifacts: ## Validate Compute Pool Flink artifacts

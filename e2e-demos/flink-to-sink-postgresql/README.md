@@ -6,6 +6,11 @@ The goal is to validate how a solution using the following architecture is worki
 
 The use case is a simple transaction system on orders and shipments.
 
+## Deployment
+
+- **[oss-flink/](oss-flink/)** – Docker Compose (OSS Flink, Kafka, Connect, PostgreSQL).
+- **[cp-flink/](cp-flink/)** – Kubernetes deployment.
+
 ## Approach
 
 * After starting the containers, you can create the input topics and the output topic to verify that the connector is connected correctly. You can use the Kafka Connect REST API to post the configuration:

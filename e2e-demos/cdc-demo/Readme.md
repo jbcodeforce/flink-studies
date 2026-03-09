@@ -2,6 +2,10 @@
 
 This demonstration shows how to capture database changes from PostgreSQL using Debezium CDC, stream them to Kafka, and consume them with Flink SQL.
 
+## Deployment
+
+This demo supports **Confluent Platform on Kubernetes** only. All K8s and Flink assets are under **[cp-flink/](cp-flink/)** (`infrastructure/`, `src/`). Run Makefile targets from the demo root. See [cp-flink/README.md](cp-flink/README.md).
+
 ## What This Demo Covers
 
 - [x] Running PostgreSQL on Kubernetes with CloudNativePG operator

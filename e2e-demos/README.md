@@ -1,8 +1,10 @@
 # A set of end-to-end demonstrations
 
-For each demonstrations it should be easy to deploy, have a readme to explain the goals, what will be learn, how to setup and how to validate the demonstration.
+For each demonstration it should be easy to deploy, have a readme to explain the goals, what will be learned, how to setup and how to validate.
 
 All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are relative to `e2e-demos/`.
+
+**Standard layout:** Demos may expose deployment-specific folders: **`cccloud/`** (Confluent Cloud + Terraform), **`cp-flink/`** (Confluent Platform Flink on K8s), **`oss-flink/`** (OSS Apache Flink). Each has a README with goal, status, implementation approach, and how to run. See [.cursor/skills/e2e-demo-structure/SKILL.md](../.cursor/skills/e2e-demo-structure/SKILL.md).
 
 
 ## 1. CDC & Change Data Capture
@@ -11,25 +13,25 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 
 | Demo | Path | Description |
 |------|------|-------------|
-| **cc-cdc-tx-demo** | `https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cc-cdc-tx-demo/` | Full Confluent Cloud demo: AWS RDS PostgreSQL → Debezium CDC → Kafka → Flink (dedup, enrichment, sliding-window aggregates) → TableFlow → Iceberg/S3, AWS Glue, Athena. ML scoring via ECS/Fargate. Outbox pattern notes. Terraform: IaC (RDS, Confluent, connectors, compute pool), cc-flink-sql/terraform (Flink statements). **Subfolders:** `cc-flink-sql/` (sources, dimensions, facts, Terraform), `data-generators/`, `IaC/`, `tx_scoring/` (ML inference service), `oubox-customer-service/` (future). |
+| **cc-cdc-tx-demo** | `cc-cdc-tx-demo/` | Full Confluent Cloud demo: AWS RDS PostgreSQL → Debezium CDC → Kafka → Flink (dedup, enrichment, sliding-window aggregates) → TableFlow → Iceberg/S3, AWS Glue, Athena. ML scoring via ECS/Fargate. **Deployment:** `cccloud/IaC/` (Terraform), `cccloud/cc-flink-sql/` (Flink statements). Root: `data-generators/`, `tx_scoring/`. |
 
 ### 1.2 Qlik CDC – Dedup & transform to analytics-ready streams
 
 | Demo | Path | Description |
 |------|------|-------------|
-| **cdc-dedup-transform** | `cdc-dedup-transform/` | Qlik Replicate CDC → Flink: raw CDC envelope (key, headers, data, beforeData), filter/dedup (ROW_NUMBER), extract by operation (REFRESH/INSERT/UPDATE/DELETE), DLQ for errors, business validation, S3/Iceberg sink. Propagate DELETE to sink. IaC folder for Confluent. |
+| **cdc-dedup-transform** | `cdc-dedup-transform/` | Qlik Replicate CDC → Flink: raw CDC envelope, filter/dedup, DLQ, business validation, S3/Iceberg sink. **Deployment:** `cccloud/IaC/`, `cccloud/customers/`, `cccloud/raw_topic_for_tests/`. |
 
 ### 1.3 PostgreSQL + Debezium on Kubernetes
 
 | Demo | Path | Description |
 |------|------|-------------|
-| **cdc-demo** | `cdc-demo/` | PostgreSQL (CloudNativePG) + Debezium CDC on K8s → Kafka → Flink SQL. Tables: loan_applications, transactions. Debezium envelope, `message.key.columns`, Flink DDL with debezium-json. Makefile: demo_setup, deploy_connect, demo_run, deploy_flink, flink_sql_client. Datasets and Python loaders in `datasets/`, `src/`. |
+| **cdc-demo** | `cdc-demo/` | PostgreSQL (CloudNativePG) + Debezium CDC on K8s → Kafka → Flink SQL. **Deployment:** `cp-flink/` (infrastructure, src). Root Makefile. Datasets at root. |
 
 ### 1.4 Debezium mock – Table API to silver (dimensions and facts)
 
 | Demo | Path | Description |
 |------|------|-------------|
-| **cdc-tableapi-to-silver** | `cdc-tableapi-to-silver/` | Flink Table API / SQL pipeline from mock Debezium envelope: raw **accounts** and **transactions** topics → silver (src_accounts, src_transactions) → **dim_account** dimension and **fct_transactions** fact. Red/green TDD: validation SQL and test data first; apply DDL/DML until tests pass. Confluent Cloud–style DDL (avro-registry). |
+| **cdc-tableapi-to-silver** | `cdc-tableapi-to-silver/` | Mock Debezium envelope → silver → dim_account, fct_transactions. Red/green TDD with run_tests.sh. **Deployment:** `cccloud/`, `oss-flink/`. Shared: sources/, dimensions/, facts/. |
 
 ---
 
@@ -37,7 +39,7 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 
 | Demo | Path | Description |
 |------|------|-------------|
-| **dedup-demo** | `dedup-demo/` | Two implementations: (1) **Flink SQL** (`flink-sql/`): product events from Kafka, ROW_NUMBER dedup, upsert to `src_products`; run via SQL CLI or `run-flink-dedup.sh`. (2) **Flink Table API** (`flink-table-api/`): Java app, K8s deployment (FlinkApplication CRD). Python producer (`python-producer/`) generates product events with intentional duplicates. K8s deployment with Confluent Platform. |
+| **dedup-demo** | `dedup-demo/` | Dedup product events: **oss-flink/** (Flink SQL), **cp-flink/** (Table API Java, K8s). Producer: `python-producer/`. |
 
 ---
 
@@ -47,13 +49,13 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 
 | Demo | Path | Description |
 |------|------|-------------|
-| **e-com-sale** | `e-com-sale/` | Real-time e-commerce: user actions (page view, add to cart), purchases, inventory updates. Flink job from Kafka (`ecommerce.purchase` etc.): revenue per minute, top products, low-inventory alerts, behavior/conversion, simple recommendations. Python simulator, K8s topics + Flink app. Java DataStream/Table API. |
+| **e-com-sale** | `e-com-sale/` | Real-time e-commerce analytics. **Deployment:** `cp-flink/` (CMF), `oss-flink/` (OSS). Shared: flink-app/, k8s/, simulator.py. |
 
 ### 3.2 Flink SQL e2e (Kafka, MySQL, Elasticsearch, Kibana)
 
 | Demo | Path | Description |
 |------|------|-------------|
-| **e2e-streaming-demo** | `e2e-streaming-demo/` | Flink SQL demo (Alibaba Tianchi–style user_behavior): Kafka source, TUMBLE windows (hourly buy count → Elasticsearch), cumulative UV every 10 min, top categories via temporal join to MySQL `category_dim`. Sinks: Elasticsearch, Kibana dashboards. Docker Compose. |
+| **e2e-streaming-demo** | `e2e-streaming-demo/` | Flink SQL (user_behavior): TUMBLE windows, cumulative UV, top categories. **Deployment:** `oss-flink/`. Docker Compose. |
 
 ---
 
@@ -61,7 +63,7 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 
 | Demo | Path | Description |
 |------|------|-------------|
-| **external-lookup** | `external-lookup/` | Payment events (Kafka) enriched by async lookup to external DB (claims: claim_id, claim_amount, member_id). Flink app does left join; success → `enriched-payments`, failures (invalid claim_id, DB error/timeout) → `failed-payments`. **Components:** `database/` (DuckDB + API in container, K8s), `event-generator/` (Python producer, valid/invalid claim_ids), `flink-app/` (Flink job, K8s). Colima/K8s, Confluent Platform, CMF. |
+| **external-lookup** | `external-lookup/` | Payment events enriched by lookup to external DB; success → enriched-payments, failures → failed-payments. **Deployment:** `cp-flink/` (flink-app, k8s). Shared: database/, event-generator/. |
 
 ---
 
@@ -69,7 +71,7 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 
 | Demo | Path | Description |
 |------|------|-------------|
-| **flink-to-feast** | `flink-to-feast/` | Real-time windowed aggregation → Feast online feature store; ML model consumes features for inference. Confluent ML_PREDICT, connections, models. **Parts:** `feature_repo/` (Feast definitions, registry, offline store), `kafka_consumer/` (push to online store), `model_serving/` (inference). K8s manifests, Docker. |
+| **flink-to-feast** | `flink-to-feast/` | Windowed aggregation → Feast online store; ML inference. **Deployment:** `cccloud/`. Shared: feature_repo/, kafka_consumer/, model_serving/, k8s/. |
 
 ---
 
@@ -77,7 +79,7 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 
 | Demo | Path | Description |
 |------|------|-------------|
-| **flink-to-sink-postgresql** | `flink-to-sink-postgresql/` | Flink statement joining two topics (e.g. orders + shipments) → output topic → Kafka JDBC Sink connector → PostgreSQL. Docker Compose, K8s (PostgreSQL operator, topics). Validation: data in topic and in PG. |
+| **flink-to-sink-postgresql** | `flink-to-sink-postgresql/` | Join two topics → output topic → JDBC Sink → PostgreSQL. **Deployment:** `oss-flink/` (Docker Compose), `cp-flink/` (K8s). |
 
 ---
 
@@ -85,7 +87,7 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 
 | Demo | Path | Description |
 |------|------|-------------|
-| **json-transformation** | `json-transformation/` | Truck rental (2190): `raw-orders` + `raw-jobs` Kafka topics → Flink SQL build nested JSON `OrderDetails` (EquipmentRentalDetails, MovingHelpDetails), join orders–jobs. **Components:** `src/cc-flink/` (Confluent Cloud Flink SQL: DDL, DML, tests), `src/cp-flink/` (Confluent Platform: Table API Java, SQL, K8s FlinkApplication), `src/producer/` (FastAPI + CLI producer, Web UI), `src/schemas/` (JSON schemas). K8s under `rental` namespace, CMF, catalog, compute pool. |
+| **json-transformation** | `json-transformation/` | Truck rental: raw-orders + raw-jobs → nested OrderDetails (join). **Deployment:** `cccloud/` (Flink SQL), `cp-flink/` (Table API Java, K8s). Shared: src/producer/, src/schemas/. |
 
 ---
 
@@ -95,19 +97,19 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 
 | Demo | Path | Description |
 |------|------|-------------|
-| **savepoint-demo** | `savepoint-demo/` | Stop/restart stateful Flink job with savepoints. Producer writes (sequence_id, value=2) to Kafka; Flink SQL sums value. After n records, sum = sequence_id * 2. Minikube, Confluent Platform, Python event generator, Avro schema, config.yaml. |
+| **savepoint-demo** | `savepoint-demo/` | Stop/restart stateful Flink job with savepoints. **Deployment:** `cp-flink/`. Minikube, Confluent Platform. |
 
 ### 8.2 SQL Gateway
 
 | Demo | Path | Description |
 |------|------|-------------|
-| **sql-gateway-demo** | `sql-gateway-demo/` | Flink SQL Gateway: start cluster and gateway, create CSV source table, deploy DML, assess results. |
+| **sql-gateway-demo** | `sql-gateway-demo/` | Flink SQL Gateway: start cluster and gateway, CSV source, DML. **Deployment:** `oss-flink/` (local). |
 
 ### 8.3 Flink Agents (AI)
 
 | Demo | Path | Description |
 |------|------|-------------|
-| **agentic-demo** | `agentic-demo/` | Flink Agents (Python): based on [Flink Agents docs](https://nightlies.apache.org/flink/flink-agents-docs-release-0.1/). Local Flink install, Python 3.11 + uv, `flink-agents` package, PYTHONPATH for JVM. |
+| **agentic-demo** | `agentic-demo/` | Flink Agents (Python). **Deployment:** `oss-flink/` (local Flink). Python 3.11 + uv, flink-agents. |
 
 ---
 
@@ -115,7 +117,7 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 
 | Demo | Path | Description |
 |------|------|-------------|
-| **package-morning-cutoff** | `package-morning-cutoff/` | Package events in the morning with 11:30 cutoff: pass-through received events and proactively emit one event per expected package that had no event by cutoff. Flink SQL (interval join, LEFT JOIN for proactive). Red/green TDD with insert/validate tests and `run_tests.sh`. |
+| **package-event-cutoff** | `package-event-cutoff/` | Package morning cutoff (11:30): pass-through + proactive emit for no-event packages; ETA computation with UDF. **Deployment:** `cccloud/` (IaC, run_use_case_*.sh). Shared: sql-scripts/, tests/, eta_udf/. |
 
 ---
 
@@ -132,14 +134,15 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 | **External DB lookup** | `external-lookup`, `e2e-streaming-demo` (JDBC temporal) |
 | **ML / feature store** | `flink-to-feast`, `cc-cdc-tx-demo` (tx_scoring) |
 | **Sink to RDBMS** | `flink-to-sink-postgresql` |
-| **Confluent Cloud** | `cc-cdc-tx-demo`, `json-transformation` (cc-flink), `cdc-dedup-transform` |
-| **Confluent Platform / K8s** | `json-transformation`, `dedup-demo`, `external-lookup`, `cdc-demo`, `e-com-sale`, `savepoint-demo` |
-| **Terraform / IaC** | `cc-cdc-tx-demo` (IaC, cc-flink-sql/terraform), `cdc-dedup-transform` (IaC) |
+| **Confluent Cloud** | `cc-cdc-tx-demo` (cccloud/), `json-transformation` (cccloud/), `cdc-dedup-transform` (cccloud/), `package-event-cutoff` (cccloud/) |
+| **Confluent Platform / K8s** | `json-transformation` (cp-flink/), `dedup-demo` (cp-flink/), `external-lookup` (cp-flink/), `cdc-demo` (cp-flink/), `e-com-sale` (cp-flink/), `savepoint-demo` (cp-flink/) |
+| **OSS Flink** | `dedup-demo` (oss-flink/), `e-com-sale` (oss-flink/), `perf-testing` (oss-flink/), `cdc-tableapi-to-silver` (oss-flink/), `flink-to-sink-postgresql` (oss-flink/), `e2e-streaming-demo` (oss-flink/), `sql-gateway-demo` (oss-flink/), `agentic-demo` (oss-flink/) |
+| **Terraform / IaC** | `cc-cdc-tx-demo` (cccloud/IaC), `cdc-dedup-transform` (cccloud/IaC), `package-event-cutoff` (cccloud/IaC) |
 | **TableFlow / Iceberg** | `cc-cdc-tx-demo` |
 | **Savepoints** | `savepoint-demo` |
 | **SQL Gateway** | `sql-gateway-demo` |
 | **Flink Agents** | `agentic-demo` |
-| **Time-based cutoff / proactive events** | `package-morning-cutoff` |
+| **Time-based cutoff / proactive events** | `package-event-cutoff` |
 
 ---
 

@@ -8,6 +8,7 @@ A simple demonstration about to present keeping last event per key, and emit eve
 
 1. Emit output event only when `expected_delivery` changed. Keep a <k,v>.
 2. In the morning, there will be a  **cutofftime at 11:30am**. By cutofftime, we either pass through every received events or, for any expected package that had no recent event, proactively publish an event with same expected delivery time but a new event time that will be the cutofftime.
+3. **Compute ETA:** From `package_events` (with location fields `current_location`, `delivery_address`), maintain per-package ETA history and estimated time of arrival (2h window, risk, confidence) using a UDF and join.
 
 ## Approach
 
@@ -91,42 +92,31 @@ select * from last_expected_ts_package_events
 
 Output is a single stream (union of both paths) for downstream consumers.
 
+### 3- Compute ETA
+
+From **package_events** (with optional `current_location` and `delivery_address`), the third use case maintains **package_eta_history**: one row per `package_id` with an array of event info and ETA fields. A table function `estimate_delivery(current_location, delivery_address, event_ts)` must be registered in the Flink catalog; it returns a 2h estimation window and risk/confidence. The DML `dml.package_eta_history.sql` aggregates from `package_events` and calls this UDF via a LATERAL join. The DML `dml.compute_eta.sql` joins `package_events` and `package_eta_history` to produce an ETA-enriched stream. For a Python mock of the UDF, see [./eta_udf/](./eta_udf/).
+
 Below is the results
 
 ![](./images/enhanced_package_events.png)
 
+## Deployment
+
+This demo currently supports:
+
+- **[Confluent Cloud](cccloud/)** – Run with Confluent CLI scripts and optional Terraform in `cccloud/IaC/`.
+
+Other deployment targets (oss-flink, cp-flink) are not yet provided; see root [e2e-demos README](../README.md) for the standard layout.
+
 ## Running the demonstration
 
-1. Prerequisites: Have access to Confluent Cloud, Kafka, Flink compute pool and confluent cli.
-### Confluent Cloud Flink Workspace
-1. If using Confluent Cloud Flink Workspace, just copy past the ddls and insert + dml in the good order:
-   1. DDL: `sql-scripts/ddl.package_events.sql`
-   1. DDL: `sql-scripts/last_expected_ts_package_events.sql`
-   1. Insert: `tests/insert_package_events.sql`
-1. Start first use case
-   1. DML: `sql-scripts/dml.package_events_on_expected_ts_change.sql`
+### Confluent Cloud ([cccloud/](cccloud/))
 
-3. Start the 2nd use case: run 
-   1. DDL for cutoff trigger: `sql-scripts/ddl.cutoff_triggers.sql`
-   1. insert one record: `tests/insert_cutoff_trigger.sql`
-   1. Execute DSP logic: `sql-scripts/dml.package_morning_cutoff.sql`
+1. Prerequisites: Confluent Cloud (Kafka, Flink compute pool) and `confluent` CLI.
+2. **Manual (Flink Workspace UI):** Copy-paste DDL/DML from `sql-scripts/` and `tests/` in order; see [cccloud/README.md](cccloud/README.md) for the sequence.
+3. **Automated (Confluent CLI):** From the `cccloud/` folder, set `FLINK_DATABASE`, `FLINK_COMPUTE_POOL`, `FLINK_ENVIRONMENT`, then run:
+   - `./run_use_case_1.sh`
+   - `./run_use_case_2.sh`
+   - `./run_use_case_3.sh` (requires `estimate_delivery` UDF registered; run use case 1 first).
 
-### Automatic deployment with confluent cli
-
-* Set environment variables:
-   ```sh
-   export FLINK_DATABASE='kafka-cluster-name'
-   export FLINK_COMPUTE_POOL='cpf'
-   export FLINK_ENVIRONMENT='env...'
-   ```
-
-* `./run_use_case_1.sh`
-* Then run second use case
-   ```sh
-   ./run_user_case_2.sh
-   ```
-
-## Terraform deployment
-
-The terraform is under IaC-for-CC
-To finish!!!
+Full details, prerequisites, and optional Terraform: [cccloud/README.md](cccloud/README.md).
