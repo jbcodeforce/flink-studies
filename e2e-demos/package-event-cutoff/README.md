@@ -1,18 +1,19 @@
 # Package morning cutoff (11:30) – Flink SQL demo
 
-End-to-end demo: shipping package events are sent to the Kafka package_events  topic. There is a package_id as unique key. The major other fields are event_time and expected_delivery time.
+Created 03/03/2026
 
 ## Goals
-The demonstration presents:
 
-1. Emit output only when expected_delivery changed
-2. In the morning, there will be a  **cut off time at 11:30am**. By cutoff time we either pass through every received events or, for any expected package that had no recent event, proactively publish an event with same expected delivery time but a new event time that will be the cut-off time.
+A simple demonstration about to present keeping last event per key, and emit events when there is no event since x hours for a given key. The use case is around package delivery. The shipping package events are sent to the Kafka `package_events` topic. There is a `package_id` as unique key. The major other fields are `event_time`, `status` and `expected_delivery` time.
+
+1. Emit output event only when `expected_delivery` changed. Keep a <k,v>.
+2. In the morning, there will be a  **cutofftime at 11:30am**. By cutofftime, we either pass through every received events or, for any expected package that had no recent event, proactively publish an event with same expected delivery time but a new event time that will be the cutofftime.
 
 ## Approach
 
 ### 1- Keep last expected_delivery per package
 
-* One solution is using the last record on package_id, expected_ts:
+* One solution is using the last record by <package_id, expected_ts>:
 
    ```sql
    SELECT package_id, event_ts, status, expected_ts, payload
@@ -32,26 +33,29 @@ The demonstration presents:
    - **sink DDL**: `sql-scripts/ddl.last_expected_ts_package_events.sql` (sink table).
    - **DML**: `sql-scripts/dml.package_events_on_expected_ts_change.sql` (deduplication by package_id, expected_ts).
 
-* A second approach is to use LAG and OVER time_window. You can also treat “emit when changed” as: emit when expected_ts is different from the previous row’s expected_ts (or there is no previous row):
+* A second approach is to use LAG and OVER time_window. You can also treat “emit when changed” requirement as: emit when `expected_ts` is different from the previous row’s `expected_ts` (or there is no previous row):
    ```sql
    SELECT package_id, event_ts, status, expected_ts, payload
    FROM (
-   SELECT *,
-      LAG(expected_ts) OVER (PARTITION BY package_id ORDER BY event_ts) AS prev_expected_ts
-   FROM package_events
+      SELECT *,
+         LAG(expected_ts, 1) OVER (PARTITION BY package_id ORDER BY event_ts) AS prev_expected_ts
+      FROM package_events
    )
    WHERE prev_expected_ts IS NULL OR expected_ts <> prev_expected_ts
    ```
 
-  one row per “change” of expected_ts per package_id. This is the `dml.package_event_expected_ts_with_lag.sql`
+   LAG is a window function to get access to data from a previous row. The second argument is the offset, or the number of rows back from the current row, to retrieve value from. The OVER close specifies the time window.
+
+one row per “change” of expected_ts per package_id. This is the `dml.package_event_expected_ts_with_lag.sql`
 
 
-### 2- Emit events at cut off time
+### 2- Emit events at cutoff time
+
 For the second use case, at cutoff time, for each expected package that had **no** event before cutoff and some time window size, emit one row with `event_type = 'proactive_no_event'` and `event_ts = cutoff_ts`.
 
-Use a stream of cutoff timestamps (`cutoff_ts`). One record per cutoff (e.g. one per day at 11:30). In production an external scheduler or job publishes this; in tests the test data injects it.
+Use a stream of cutoff timestamps (`cutoff_ts`). One record per cutoff (e.g. one per day at 11:30). In production an external scheduler or job publishes this; in tests the test data injects it. To keep the right semantic the table could be dropped once processed.
 
-All three use **event time** and watermarks so that “before 11:30” is well-defined and tests are deterministic.
+All th **event time** and watermarks so that “before 11:30” is well-defined and tests are deterministic.
 
 ```sql
 insert into  enhanced_package_events 

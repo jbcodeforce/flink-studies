@@ -178,6 +178,11 @@ It also includes, a Terraform Infrastructure as Code for: RDS, Confluent, connec
 
 [e2e-demos/cdc-tableapi-to-silver](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cdc-tableapi-to-silver)
 
+### 4.4 Simulate cut-off time for event creation
+* Present how to emit event only when a field change, for example an ETA field for package delivery
+* Present the concept of cut-off time at a given hours to create event for object <k,v> that has no events on the given key withn the last x hours.
+
+[Package morning cutoff](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/package-event-cutoff)
 
 ## Public repositories with valuable demonstrations
 
