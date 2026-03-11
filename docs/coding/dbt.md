@@ -23,7 +23,10 @@
     ```sh
     uv run dbt init --skip-profile-setup airbnb
     ```
-* Or in virtual env created wuth uv and uv sync use `dbt` directly.
+* Or in virtual env created with `uv` and `uv sync` use:
+     ```sh
+     dbt init
+     ```
 
 ???- info "pyproject.toml"
     The following dependencies are needed:
@@ -38,13 +41,13 @@
     ```
 ### dbt_profile.yaml
 
-Defines the structure of the project.
+[profile.yaml](https://docs.getdbt.com/docs/local/profiles.yml?version=1.12) defines the structure of the project, and keep information to connect to database.
 
 ## Work on Models
 
 * Add Kimball structure as sources, dimensions, facts under the `models` folder
-* Add SQL materialized view using `SELECT ...`. No insert into
-* Validate each new SQL creation: within the folder with the dbt_profile.yaml, to build a view in Snowflake
+* Add SQL materialized view using `SELECT ...`. No `INSERT INTO`
+* Validate each new SQL creation: within the folder with the `dbt_profile.yaml`, to build a view in Snowflake for example
     ```sh
     dbt run
     ```
@@ -65,7 +68,7 @@ Defines the structure of the project.
     22:20:59  Done. PASS=1 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=1
     ```
 
-    adn within Snowflake:
+    and within Snowflake:
 
     ![](./images/src_listings_snowflake.png)
 
@@ -86,7 +89,7 @@ models:
   airbnb:
     +materialized: view
     dimensions:
-      +materialized: table
+      +materialized: table 
     sources:
       +materialized: ephemeral
 ```
@@ -94,45 +97,43 @@ models:
 
 ### Incremental
 
-Specify a fact table is incremental and add condition for which the records are added to the table. The review_date of the record needs to be after the last record in the fct_reviews table:
+* Specifying a fact table is incremental and add conditions for which the records are added to the table. The review_date of the record needs to be after the last record in the fct_reviews table:
+  ```sql
+  {{
+    config(
+      materialized = 'incremental',
+      on_schema_change='fail'
+      )
+  }}
+  WITH src_reviews AS (
+    SELECT * FROM {{ ref('src_reviews') }}
+  )
+  SELECT * FROM src_reviews
+  WHERE review_text is not null
 
-```sql
-{{
-  config(
-    materialized = 'incremental',
-    on_schema_change='fail'
-    )
-}}
-WITH src_reviews AS (
-  SELECT * FROM {{ ref('src_reviews') }}
-)
-SELECT * FROM src_reviews
-WHERE review_text is not null
-
-{% if is_incremental() %}
-  AND review_date > (select max(review_date) from {{ this }})
-{% endif %}
-```
+  {% if is_incremental() %}
+    AND review_date > (select max(review_date) from {{ this }})
+  {% endif %}
+  ```
 
 * Making a full-refresh:
-```
-dbt run --full-refresh
-```
+  ```
+  dbt run --full-refresh
+  ```
 
 * With the sources as ephemeral the output of dbt run becomes:
-
-```sh
-23:16:16  1 of 4 START sql table model DEV.dim_hosts_cleansed ............................ [RUN]
-23:16:18  1 of 4 OK created sql table model DEV.dim_hosts_cleansed ....................... [SUCCESS 14111 in 1.93s]
-23:16:18  2 of 4 START sql table model DEV.dim_listings_cleansed ......................... [RUN]
-23:16:20  2 of 4 OK created sql table model DEV.dim_listings_cleansed .................... [SUCCESS 17499 in 2.47s]
-23:16:20  3 of 4 START sql incremental model DEV.fct_reviews ............................. [RUN]
-23:16:23  3 of 4 OK created sql incremental model DEV.fct_reviews ........................ [SUCCESS 0 in 2.37s]
-23:16:23  4 of 4 START sql table model DEV.dim_listings_with_hosts ....................... [RUN]
-23:16:24  4 of 4 OK created sql table model DEV.dim_listings_with_hosts .................. [SUCCESS 17499 in 1.58s]
-23:16:24  
-23:16:24  Finished running 1 incremental model, 3 table models in 0 hours 0 minutes and 9.83 seconds (9.83s).
-```
+  ```sh
+  23:16:16  1 of 4 START sql table model DEV.dim_hosts_cleansed ............................ [RUN]
+  23:16:18  1 of 4 OK created sql table model DEV.dim_hosts_cleansed ....................... [SUCCESS 14111 in 1.93s]
+  23:16:18  2 of 4 START sql table model DEV.dim_listings_cleansed ......................... [RUN]
+  23:16:20  2 of 4 OK created sql table model DEV.dim_listings_cleansed .................... [SUCCESS 17499 in 2.47s]
+  23:16:20  3 of 4 START sql incremental model DEV.fct_reviews ............................. [RUN]
+  23:16:23  3 of 4 OK created sql incremental model DEV.fct_reviews ........................ [SUCCESS 0 in 2.37s]
+  23:16:23  4 of 4 START sql table model DEV.dim_listings_with_hosts ....................... [RUN]
+  23:16:24  4 of 4 OK created sql table model DEV.dim_listings_with_hosts .................. [SUCCESS 17499 in 1.58s]
+  23:16:24  
+  23:16:24  Finished running 1 incremental model, 3 table models in 0 hours 0 minutes and 9.83 seconds (9.83s).
+  ```
 
 * `dbt compile` does not deploy to the target data warehouse
     ```sh
@@ -153,30 +154,30 @@ dbt run --full-refresh
     ```
 
 * Sources may be defined in a yaml:
-```yaml
-sources:
-  - name: airbnb
-    schema: raw
-    tables:
-      - name: listings
-        identifier: raw_listings
+  ```yaml
+  sources:
+    - name: airbnb
+      schema: raw
+      tables:
+        - name: listings
+          identifier: raw_listings
 
-      - name: hosts
-        identifier: raw_hosts
+        - name: hosts
+          identifier: raw_hosts
 
-      - name: reviews
-        identifier: raw_reviews
-```
+        - name: reviews
+          identifier: raw_reviews
+  ```
 
 * From there the src_*.sql needs to be modified to do not reference ay table name in the data warehouse, but the source aliases.
-```sql
-WITH raw_hosts AS (
-    SELECT
-        *
-    FROM
-        {{ source('airbnb', 'hosts') }}
-)
-```
+  ```sql
+  WITH raw_hosts AS (
+      SELECT
+          *
+      FROM
+          {{ source('airbnb', 'hosts') }}
+  )
+  ```
 
 * For source freshness, we need to consider one DATE column and add a config element to the table to define refreshness condition:
     ```yaml
@@ -193,7 +194,7 @@ WITH raw_hosts AS (
 
 ## Type-2 slowly changing dimensions
 
-The goal is to keep history of change to the records over time and not just the last record per key. dbt adds `dbt_valid_from` and `dbt_valid_to` columns to mark each records to be valid time from and to. A current correct records have `dbt_valid_to` sets to null.
+The goal is to keep history of changes to the records over time and not just the last record per key. dbt adds `dbt_valid_from` and `dbt_valid_to` columns to mark each records to be valid time from and to. A current correct records have `dbt_valid_to` sets to null.
 
 **snapshots** live in the snapshot folder. There are two strategies for assessing data changes:
 * *Timestamp*: a unique key and updated_at fields is defined at the source model. These columns are used for determining changes
@@ -221,6 +222,12 @@ The goal is to keep history of change to the records over time and not just the 
 * An update to an existing record and a new `dbt snapshot` will create historical record.
 
 ## Tests
+* Two types of tests:
+  * Unit Tests
+  * Data Tests: run on actual data
+* There are two types of data tests: singular(SQL queries stored in tests) and generic
+
+### Generic Tests
 
 ## Sources of Information
 
