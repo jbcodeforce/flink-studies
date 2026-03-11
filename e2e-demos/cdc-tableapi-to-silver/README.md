@@ -50,6 +50,8 @@ Silver DML uses `IF(op = 'd', before.x, after.x)` and `source.ts_ms` for event t
 - Confluent Cloud environment with Flink compute pool and Kafka cluster (or equivalent), or local Kafka + Flink with schema registry as needed.
 - For the Java job: Java 17+, Maven; set `FLINK_ENV_NAME` and `FLINK_DATABASE_NAME` (and Confluent credentials) for the target catalog/database. See the [code/table_api/set_confluent_env](../../code/table-api/set_confluent_env)
 
+As of now as the WITH part of each SQL will be different according to the target environment, the Apache Flink and CP Flink are not completed.
+
 ### Java Table API job
 
 The pipeline is implemented as a single Flink Table API job in Java. It creates all table DDL and runs the four pipelines (raw → silver → dim/fact) in one StatementSet.
@@ -94,30 +96,30 @@ The pipeline is implemented as a single Flink Table API job in Java. It creates 
 
     TO BE CONTINUED
 
-Once the jobs are started you should see results in the fact table:
+* Once the jobs are started you should see results in the fact table:
 
-![](./docs/fct_tx.png)
+    ![](./docs/fct_tx.png)
 
 4. **Validate**: After the job is running, wait for processing (e.g. 10–30 seconds), then run the validation SQL under `tests/` (see *Run tests* below).
-  ```sh
-  # Under cccloud
-  uv run python cc_run_validate_tests.py
-  ```
+    ```sh
+    # Under cccloud
+    uv run python cc_run_validate_tests.py
+    ```
 
-  Results will look like:
-  ```sh
-  /statements/validate-fp-dim-accounts
-  JSON body: None
-  Timeout: 60
-  Row 1: ['PASS', '1', '1']
-  Test result: PASS
+    Results will look like:
+    ```sh
+    /statements/validate-fp-dim-accounts
+    JSON body: None
+    Timeout: 60
+    Row 1: ['PASS', '1', '1']
+    Test result: PASS
 
-  And 
-  statements/validate-fp-fct-transactions
-  Timeout: 60
-  Row 1: ['PASS', '1', '1']
-  Test result: PASS
-  ```
+    And 
+    statements/validate-fp-fct-transactions
+    Timeout: 60
+    Row 1: ['PASS', '1', '1']
+    Test result: PASS
+    ```
 
 5. Clean up
     ```sh

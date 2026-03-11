@@ -199,11 +199,11 @@ PostgreSQL (CloudNativePG) + Debezium CDC on K8s → Kafka → Flink SQL. Tables
 
 ### 4.4 cdc-tableapi-to-silver
 
-Mock Debezium envelope: raw accounts and transactions → silver (src_accounts, src_transactions) → dim_account, fct_transactions. Red/green TDD with run_tests.sh and validation SQL.
+Mock Debezium envelope processing: raw accounts and transactions as after and before field. Extract the schema from ROW as silver (src_accounts, src_transactions), then basic dim_account, and fact fct_transactions enriched with account informations. Python code to deploy statments, delete and drop tables and run validation SQLs, all based on the Confluent Cloud REST API (a simple version of shift_left tools).
 
 | Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
 |--------|---------|----------|-----------|---------|-----------------|
-| Ready | ✓ | — | ✓ | — | Partial (run_tests.sh; deploy still manual per env) |
+| Ready | ✓ | — | ✓ | — | In 3 scripts |
 
 **Path:** [e2e-demos/cdc-tableapi-to-silver](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cdc-tableapi-to-silver)
 
@@ -214,6 +214,8 @@ Deduplicate product events: Flink SQL (ROW_NUMBER dedup, upsert to src_products)
 | Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
 |--------|---------|----------|-----------|---------|-----------------|
 | Ready | — | ✓ | ✓ | — | Partial (scripts/Makefile per variant; no single validate) |
+
+As of now as the WITH part of each SQL will be different according to the target environment, the Apache Flink and CP Flink are not completed.
 
 **Path:** [e2e-demos/dedup-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/dedup-demo)
 
