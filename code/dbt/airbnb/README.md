@@ -11,7 +11,8 @@ Welcome to your new dbt project!
 2. Place raw CSVs in `code/dbt/airbnb/data/`: `listings.csv`, `hosts.csv`, `reviews.csv` (e.g. from the [bootcamp resources](https://github.com/nordquant/complete-dbt-bootcamp-zero-to-hero/blob/main/_course_resources/course-resources.md) or S3: `s3://dbt-datasets/listings.csv`, etc.).
 3. From `code/dbt/airbnb/`, bootstrap the DuckDB raw tables (one-time):
    ```bash
-   duckdb "${DBT_DUCKDB_PATH:-./airbnb.duckdb}" < scripts/bootstrap_duckdb_raw.sql
+   export DBT_DUCKDB_PATH=./data/airbnb.duckdb
+   duckdb "${DBT_DUCKDB_PATH:-./data/airbnb.duckdb}" < scripts/bootstrap_duckdb_raw.sql
    ```
 4. Run dbt against DuckDB:
    ```bash

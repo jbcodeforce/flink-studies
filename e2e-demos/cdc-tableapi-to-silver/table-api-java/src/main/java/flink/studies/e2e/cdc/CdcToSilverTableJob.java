@@ -132,7 +132,9 @@ public final class CdcToSilverTableJob {
         String deployment = args.length > 0 ? args[0].trim().toUpperCase() : DEPLOYMENT_CC;
         EnvironmentSettings settings = createEnvironmentSettings(deployment);
         TableEnvironment env = TableEnvironment.create(settings);
-        env.getConfig().set("client.statement-name", "cdc-to-silver-table-job");
+        // setting the name of the statement can olny work if there is one statment. Here this code
+        // generates multiple statements
+        //env.getConfig().set("client.statement-name", "cdc-to-silver-table-job");
 
         String catalog = System.getenv("FLINK_ENV_NAME");
         String database = System.getenv("FLINK_DATABASE_NAME");

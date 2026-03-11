@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 # Add code/flink-sql so we can import tools.cc_flink_rest_client
-_repo_root = Path(__file__).resolve().parent.parent.parent
+_repo_root = Path(__file__).resolve().parent.parent.parent.parent
 _flink_sql = _repo_root / "code" / "flink-sql"
 if str(_flink_sql) not in sys.path:
     sys.path.insert(0, str(_flink_sql))

@@ -33,3 +33,11 @@ e2e-demos/cc-cdc-tx-demo/cc-flink-sql/staging/
 **/prometheus.yml
 **/keys/
 **/profiles.yml
+**/listings.csv
+**/reviews.csv
+**/hosts.csv
+**/calendar.csv
+**/listings_summary.csv
+**/reviews_summary.csv
+**/hosts_summary.csv
+**/calendar_summary.csv
