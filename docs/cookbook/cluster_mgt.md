@@ -76,7 +76,7 @@ For **Apache Flink or Confluent Platform:**
 #### Gotchas
 * Durable storage is not optional in production; losing it means losing consistent recovery 
 * For multi-namespace or multi-cluster topologies, leverage CMF’s multi-cluster support
-* Adopting a declarative configuration for all applications and infrastructure components deployed to Kubernetes clusters with ArgoCD: [see this repository](https://github.com/osowski/confluent-platform-gitops) to present a GitOps for Confluent Platform deployment running on Kubernetes.
+* Adopting a declarative configuration for all applications and infrastructure components deployed to Kubernetes clusters with ArgoCD: [see Rick Osowski's repository](https://github.com/osowski/confluent-platform-gitops) addressing a GitOps practices for Confluent Platform deployment running on Kubernetes.
 
 ### 1.2 Adjust cluster resources (more TaskManagers, more slots).
 
@@ -164,17 +164,140 @@ If the change makes things worse (more instability, timeouts, cost spikes):
 #### Rollback
 #### Gotchas
 ## 3 Disaster Recovery & Multi-Region Strategies
-### 3.1 Backup/restore of state backend.
+
+Disaster recovery for Flink depends on the deployment model (Confluent Cloud, Confluent Platform, or open-source) and always requires a DR strategy for Kafka and Schema Registry first. Data and schema replication (exact replication including offsets and schemas) are prerequisites; Flink state recovery builds on that. See [Confluent Cloud Flink — Disaster Recovery](../techno/ccloud-flink.md#disaster-recovery) and [CP Flink deployment architecture](../techno/cp-flink.md#deployment-architecture) for the concepts summarized here.
+
+### 3.1 Backup/restore of state backend
+
 #### Context
+
+Use this when you need to back up Flink job state for recovery, upgrades, or migration, or when designing for regional failure (disaster recovery). Flink state is captured via **checkpoints** (automatic, lightweight, Flink-managed) and **savepoints** (manual, portable, user-managed).
+
+* **Checkpoints**: Provide automatic recovery from job failures. Flink creates, owns, and may delete them. Stored in state-backend–specific (native) format; optimized for fast restore. In production, store checkpoints in durable, shared storage (e.g. S3, GCS, HDFS, MinIO) so that JobManagers and TaskManagers can recover after process or node failure.
+* **Savepoints**: User-triggered, consistent images of job state for planned operations (version upgrades, graph changes, rescaling). Stored in canonical (backend-independent) or native format; not deleted by Flink. Required when you need to restore a job in another region or after a major change.
+
+**By deployment:**
+
+* **Confluent Cloud**: Regional, multi-AZ service. Checkpoints run every minute for in-region fault tolerance. No user-configurable state backend; state is managed by the service. In a region loss, there is no built-in cross-region state restore—you must implement a cross-region DR strategy (see [3.2](#32-active-active--active-passive-patterns)).
+* **Confluent Platform (CMF) / Kubernetes**: Checkpoints and savepoints go to object or distributed storage (e.g. S3, HDFS). [CMF supports Savepoint resources](https://docs.confluent.io/platform/current/flink/jobs/savepoints.html) (trigger, list, detach, start from savepoint) via REST API. For failover between data centers, durable storage must be accessible from both (or replicated); Kafka topics (and offsets) must be replicated; then Flink applications can be restarted from checkpoints/savepoints in the DR site.
+* **Open-source Flink (e.g. K8s operator)**: Same concepts; configure `state.checkpoints.dir` and optional `state.savepoints.dir` to durable storage. Use [Kubernetes HA](https://nightlies.apache.org/flink/flink-docs-stable/docs/deployment/ha/kubernetes_ha/) with `high-availability.storageDir` for JobManager metadata.
+
 #### Preconditions / Checklist
+
+* Durable, shared storage for checkpoints (and savepoints) that all Flink processes can access (e.g. S3 bucket, HDFS, GCS, MinIO). For cross-DC DR, storage must be reachable from the DR site or replicated.
+* Checkpointing enabled in the job (and optionally configured retention).
+* For savepoints: job is running (or you have an existing savepoint path to adopt/import).
+* For Confluent Cloud: no direct state-backend configuration; ensure Kafka + Schema Registry DR (e.g. [Cluster Linking](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/dr-failover.html), [Schema Linking](https://docs.confluent.io/cloud/current/sr/schema-linking.html)) before designing Flink DR.
+
 #### Inputs / Parameters
+
+| Parameter | Description |
+| ---------| ----------- |
+| `state.checkpoints.dir` | Directory for checkpoints (e.g. `s3://bucket/flink/checkpoints/`). |
+| `state.savepoints.dir` | Optional directory for savepoints. |
+| `execution.checkpointing.interval` | Checkpoint interval (e.g. `1 min`). |
+| `execution.checkpointing.externalized-checkpoint-retention` | `RETAIN_ON_CANCELLATION` or `DELETE_ON_CANCELLATION`. |
+| Savepoint path | For restore: path returned when creating a savepoint, or CMF savepoint name/UID. |
+
 #### Procedure
+
+**Backup (savepoint) — Confluent Platform / CMF**
+
+1. Trigger a savepoint via CMF API (applications or statements):
+    * `POST /cmf/api/v1/environments/{env}/applications/{appName}/savepoints` or `.../statements/{stmtName}/savepoints`
+    * Optional body: `spec.path`, `spec.formatType` (e.g. `CANONICAL`), `spec.backoffLimit`.
+2. Poll or watch savepoint status until `status.state` is `COMPLETED`; use `status.path` as the restore path.
+3. Optionally detach the savepoint (applications only) to preserve it after deleting the application: `POST .../savepoints/{savepointName}/detach`. For external/open-source savepoints, register as detached: `POST /cmf/api/v1/detached-savepoints` with `spec.path`.
+
+**Backup (checkpoint) — self-managed (CP/OSS)**
+
+1. Ensure `state.checkpoints.dir` points to durable storage (e.g. [enable checkpointing to S3](https://docs.confluent.io/platform/current/flink/how-to-guides/checkpoint-s3.html)).
+2. Let Flink create checkpoints at the configured interval. Optionally set `execution.checkpointing.externalized-checkpoint-retention` to retain checkpoints on cancel.
+3. For a consistent “backup” suitable for migration or DR, trigger a savepoint (as above) rather than relying only on the last checkpoint.
+
+**Restore**
+
+1. **From savepoint**: Start the application with `startFromSavepoint` set to the savepoint path, CMF savepoint name, or UID. In CMF: create/update application with `savepointName`/`uid`/`initialSavepointPath`, or `POST .../applications/{appName}/start?startFromSavepointUid={uid}`.
+2. **From checkpoint (automatic)**: After a failure, Flink (and K8s HA if configured) restarts the job and restores from the latest successful checkpoint when no savepoint is specified.
+3. **Confluent Cloud**: Failed statements auto-restart using the last checkpoint; there is no user-visible backup/restore of state to another region—use active-active or active-passive (see 3.2).
+
 #### Rollback
+
+* If a restore from savepoint fails or the job misbehaves: stop the job, fix code or state compatibility, then start again from an earlier savepoint or from scratch (no savepoint).
+* If you restored with wrong parallelism or backend: take a new savepoint, adjust config, and restore from that savepoint (canonical savepoints support state backend change and rescaling; see [Flink checkpoints vs savepoints](https://nightlies.apache.org/flink/flink-docs-stable/docs/ops/state/checkpoints_vs_savepoints/)).
+
 #### Gotchas
-### 3.2 Active-active / active-passive patterns.
+
+* Checkpoints are often incremental and backend-specific; savepoints in canonical format are portable and support state backend change and rescaling. Native savepoints are faster but have limitations (e.g. no state backend change).
+* You cannot create a canonical savepoint for a job with an operator using `enableAsyncState()` (CMF/Flink).
+* Deleting an attached savepoint in CMF requires the Flink cluster to be running; use `force=true` only when necessary (can leave orphaned data in blob storage).
+* Confluent Cloud does not expose state backend or checkpoint/savepoint paths; DR is achieved by running Flink in the DR region against replicated Kafka/Schema Registry and accepting state rebuild or active-active/active-passive design.
+
+### 3.2 Active-active / active-passive patterns
+
 #### Context
+
+Use this when you need to survive a full region or data-center failure. Flink DR options assume **Kafka and Schema Registry DR** first: exact replication of data (including consumer offsets) and schemas. On Confluent Cloud, [Cluster Linking](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/dr-failover.html) and [Schema Linking](https://docs.confluent.io/cloud/current/sr/schema-linking.html) provide topic and schema replication. On Confluent Platform or self-managed, you replicate topics (and offsets) and schemas by your own means (e.g. MirrorMaker, cluster links, or shared storage).
+
+Two main patterns:
+
+* **Active/active**: Two (or more) regions run identical Flink jobs continuously, both processing the same input (with replication delay in the secondary). Best for low RTO, large state, or when you need exactly-once semantics and both regions to produce the same results.
+* **Active/passive**: Flink runs only in the primary region; in the DR region, Flink jobs are started on failover. Best when state can be recreated quickly (e.g. stateless or small time windows) or when at-least-once/at-most-once is acceptable.
+
+These patterns are described in [Confluent Cloud Flink — Disaster Recovery](../techno/ccloud-flink.md#disaster-recovery); a generic DR components view:
+
+<figure markdown="span">
+![](../techno/diagrams/dr_act_act.drawio.png)
+</figure>
+
+For Confluent Platform / Kubernetes with shared durable storage and Kafka replication:
+<figure markdown="span">
+![](../techno/diagrams/simple_ha.drawio.png)
+</figure>
+
 #### Preconditions / Checklist
+
+* Kafka (and Schema Registry) DR is in place: topics and consumer offsets replicated to the DR cluster; schemas replicated (e.g. Schema Linking on Confluent Cloud).
+* RTO and RPO defined: how long failover can take and how much data loss is acceptable. Cluster Linking is asynchronous—RPO is bounded by mirror lag; RTO depends on client failover and (for active-passive) time to start Flink and restore state.
+* For active-active: Flink jobs must be deterministic and tolerate out-of-order input; replicate only input topics and keep config (RBAC, networking) aligned across regions.
+* For active-passive: Topic retention in DR must exceed the time needed to rebuild state (e.g. window size or TTL). Use event time (not processing time) for windows and aggregations so replay produces correct results.
+
 #### Inputs / Parameters
+
+| Parameter | Description |
+| ---------| ----------- |
+| Primary / DR cluster bootstrap, API keys | Stored in service discovery / vault for fast client switch on failover. |
+| Cluster link config (Confluent Cloud) | Consumer offset sync, ACL sync, mirror topics (or auto-create), optional filters. |
+| Flink state recreation window | For active-passive: max window/TTL and retention must allow full replay. |
+| Semantics | Exactly-once (active-active with deterministic jobs), at-least-once, or at-most-once (affects duplicate handling and restore guarantees). |
+
 #### Procedure
+
+**Active/active (Confluent Cloud or multi-region)**
+
+1. Replicate **only input topics** to the DR region (e.g. cluster link from primary to DR). Do not replicate Flink output topics into the other region’s input to avoid feedback loops.
+2. Deploy the same Flink statements/jobs in both regions, reading from the local Kafka cluster (primary or DR copy). Ensure queries are deterministic and support out-of-order arrival.
+3. Mirror configuration: same service accounts, RBAC, private networking, and table/job definitions in both regions.
+4. On regional failure: direct clients (producers/consumers) to the DR cluster (bootstrap and credentials via service discovery/vault); Flink in DR is already running.
+
+**Active/passive**
+
+1. Set up DR cluster with mirrored topics (and consumer offsets) and schemas. Ensure retention in DR > time to rebuild Flink state (window size or TTL).
+2. Keep Flink job definitions and savepoints/checkpoint config in version control or automation. Do not run Flink in DR during normal operation.
+3. On failover: switch clients to the DR cluster; create/start Flink environment and statements in DR (from savepoint if available, or from earliest offset so state is rebuilt from replicated input). Prefer event-time windows so replay is correct.
+4. Confluent Cloud: see [Cluster Linking DR and Failover](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/dr-failover.html) (create DR cluster, cluster link, mirror topics, consumer offset sync, ACL sync). Provision API keys for the DR cluster in advance and store them in a vault for low RTO.
+
+**Monitoring**
+
+* Monitor mirror lag (Confluent Cloud Metrics API, Console, or REST) to bound RPO. Practice failover to meet RTO.
+
 #### Rollback
+
+* After primary region recovery: decide whether to fail back (switch clients and optionally Flink back to primary) or keep running in DR. If failing back, replicate any new data produced in DR back to primary (e.g. bidirectional cluster link) and then switch clients and Flink back to primary.
+
 #### Gotchas
+
+* All Flink DR depends on Kafka (and SR) DR; without replicated topics and offsets, Flink cannot recover correctly in the DR region.
+* Active-passive with stateful jobs: RTO must be greater than the time to restore state from replicated input; otherwise use active-active or accept semantics/state trade-offs.
+* Consumer offset sync (Confluent Cloud) is asynchronous; after failover, consumers may see a small number of duplicates—design for idempotency.
+* Confluent Cloud is regional: there is no built-in cross-region state replication; you achieve DR by running Flink in the DR region and feeding it from replicated Kafka/Schema Registry.

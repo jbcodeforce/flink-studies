@@ -24,7 +24,8 @@ import requests
 from dotenv import load_dotenv
 _env_file = os.environ.get("CONFLUENT_ENV_FILE") or str(Path.home() / ".confluent" / ".env")
 load_dotenv(_env_file)
-
+FLINK_STATEMENT_TIMEOUT = 600
+POLL_INTERVAL = 10
 
 def _auth_header() -> str:
     api_key = os.environ.get("FLINK_API_KEY") or os.environ.get("CONFLUENT_CLOUD_API_KEY")
@@ -202,3 +203,92 @@ def delete_statement(name: str, timeout: int = 60) -> None:
     except RuntimeError as e:
         if "404" not in str(e):
             raise
+
+
+
+def run_ddl(name: str, script_dir: Path,    sql_file: str) -> None:
+    """Deploy DDL: create statement, wait COMPLETED, delete statement."""
+    path = script_dir / sql_file
+    if not path.exists():
+        raise FileNotFoundError(path)
+    sql = path.read_text()
+    print(f"Deploying DDL: {path.name} (statement: {name})")
+    create_statement(
+        name,
+        sql,
+        wait_phase="COMPLETED",
+        poll_interval=POLL_INTERVAL,
+        timeout=FLINK_STATEMENT_TIMEOUT,
+    )
+    delete_statement(name)
+    print(f"  Done: {name}")
+
+def drop_table(name: str, table_name: str) -> None:
+    """Drop a table by name."""
+    sql = f"drop table {table_name}"
+    print(f"Dropping table: {table_name} (statement: {name})")
+    create_statement(
+        name,
+        sql,
+        wait_phase="COMPLETED",
+        poll_interval=POLL_INTERVAL,
+        timeout=FLINK_STATEMENT_TIMEOUT,
+    )
+    delete_statement(name)
+    print(f"  Done: {name}")
+
+
+def run_dml(name: str, script_dir: Path, sql_file: str, delete_after: bool = True) -> None:
+    """Run DML: create statement, wait COMPLETED, optionally delete statement."""
+    path = script_dir / sql_file
+    if not path.exists():
+        raise FileNotFoundError(path)
+    sql = path.read_text()
+    print(f"Running DML: {path.name} (statement: {name})")
+    create_statement(
+        name,
+        sql,
+        wait_phase=["RUNNING", "COMPLETED"],
+        poll_interval=POLL_INTERVAL,
+        timeout=FLINK_STATEMENT_TIMEOUT,
+    )
+    if delete_after:
+        delete_statement(name)
+    print(f"  Done: {name}")
+
+
+def run_snapshot_query(name: str, query: str) -> list:
+    """
+    Run a snapshot query: create statement with sql.snapshot.mode=now,
+    wait COMPLETED, fetch results, delete statement. Returns list of rows.
+    """
+    print(f"Running snapshot query: {name}")
+    create_statement(
+        name,
+        query,
+        properties={"sql.snapshot.mode": "now"},
+        wait_phase="COMPLETED",
+        poll_interval=POLL_INTERVAL,
+        timeout=FLINK_STATEMENT_TIMEOUT,
+    )
+    try:
+        out = get_statement_results(name, timeout=120)
+        print(f"----------\nSnapshot query results: {out}\n----------")
+        rows = out.get("results") or []
+        return rows
+    finally:
+        delete_statement(name)
+
+
+def run_query_no_results(name: str, query: str) -> None:
+    """Run a one-off query (e.g. DROP TABLE); wait COMPLETED, then delete statement."""
+    print(f"Running query: {name}")
+    create_statement(
+        name,
+        query,
+        wait_phase="COMPLETED",
+        poll_interval=POLL_INTERVAL,
+        timeout=FLINK_STATEMENT_TIMEOUT,
+    )
+    delete_statement(name)
+    print(f"  Done: {name}")

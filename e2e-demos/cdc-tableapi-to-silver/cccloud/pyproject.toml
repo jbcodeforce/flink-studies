@@ -1,0 +1,15 @@
+[project]
+name = "cdc-tableapi-to-silver"
+version = "0.1.0"
+description = "CDC Table API to silver: raw tables, dimensions, and facts (Flink Table API)."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "requests>=2.28",
+    "python-dotenv>=1.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+

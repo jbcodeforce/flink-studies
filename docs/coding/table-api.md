@@ -102,11 +102,12 @@ The [TableAPI](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/tab
 ### Summary of important concepts:
 
 * The main function is a Flink client, that will compile the code into a dataflow graph and submit to the JobManager.
-* A TableEnvironment maintains a map of catalogs of tables 
+* A [TableEnvironment](https://nightlies.apache.org/flink/flink-docs-stable/api/java/org/apache/flink/table/api/TableEnvironment.html) maintains a map of catalogs of tables. It is the base class, central context for creating Table and SQL API programs.
+* [Table](https://nightlies.apache.org/flink/flink-docs-stable/api/java/org/apache/flink/table/api/Table.html) is the core class for TableAPI. It describes a pipeline of data transformations. 
 * Tables can be either virtual (VIEWS) or regular TABLES which describe external data (csv, sql, kafka topic).
 * Tables may be temporary (tied to the lifecycle of a single Flink session), or permanent (visible across multiple Flink sessions and clusters).
 * Temportary table may shadow a permanent table.
-* Tables are always registered with a 3-part identifier consisting of catalog, database, and table name.
+* Tables are always registered with a 3-part identifier consisting of catalog, database, and table name. Every Table object has a schema that is available through `getResolvedSchema()` function
 * TableSink is a [generic interface to write](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/common/#emit-a-table) results to. A batch Table can only be written to a `BatchTableSink`, while a streaming Table requires either an `AppendStreamTableSink`, a `RetractStreamTableSink`, or an `UpsertStreamTableSink`.
 * A pipeline can be explained with `TablePipeline.explain()` and executed invoking `TablePipeline.execute()`.
 * Recall that High-Availability in Application Mode is only supported for single-execute() applications.
@@ -192,11 +193,42 @@ The Flink Python API communicates with a Java process. You must have at least Ja
 
 ## How to
 
-All the Java based Table API examples, for Confluent Cloud are in the []() folder, in different java classes.
+All the Java based Table API examples, for Confluent Cloud are in the [code/table-api/ccf-table-api](https://github.com/jbcodeforce/flink-studies/tree/master/code/table-api/ccf-table-api) folder, each example in different java classes.
 
 ### Code structure
 
-Clearly separate the creation of sources, sinks, workflow in different methods. References those methods in the main().
+Clearly separate the creation of sources, sinks,and the pipeline logic in different methods. References those methods in the main().
+
+### Execute Query
+We may use two functions:
+
+* `sqlQuery`: The function is from the TableEnv: it evaluates the SQL query on registered tables and returns a Table object describing the pipeline for further transformations.
+* `executeSql`" Executes the given single statement and returns the execution result. The statement can be DDL/DML/DQL/SHOW/DESCRIBE/EXPLAIN/USE. For DML and DQL, this method returns `TableResult` once the job has been submitted.
+
+```java
+   Table rawToSrcAccounts = env.sqlQuery(SELECT_RAW_TO_SRC_ACCOUNTS);
+
+   // another
+    env.executeSql(DDL_SRC_ACCOUNTS);
+```
+* The [insertInto()](https://nightlies.apache.org/flink/flink-docs-stable/api/java/org/apache/flink/table/api/Table.html#insertInto(java.lang.String)) function specify which Table to use as a sink of a query.
+ 
+* Finally the [TablePipeline](https://nightlies.apache.org/flink/flink-docs-stable/api/java/org/apache/flink/table/api/TablePipeline.html) is used to define a pipeline from one or more source tables to one sink table. It is equivalent to a SQL statement.
+    ```java
+    Table table = tableEnv.sqlQuery("SELECT * FROM src_table");
+    TablePipeline tablePipeline = table.insertInto("fact_table");
+    TableResult tableResult = tablePipeline.execute();
+    tableResult.await();
+    ```
+
+    TableResult is not mandatory.
+* A program may have multiple pipelines, and in this case we use StatementSet.  [StatementSet](https://nightlies.apache.org/flink/flink-docs-stable/api/java/org/apache/flink/table/api/TableEnvironment.html#createStatementSet()) accepts pipelines defined by DML statements or Table objects.
+    ```java
+    StatementSet statementSet = env.createStatementSet();
+    statementSet.add(rawToSrcAccountsQuery.insertInto("tp_src_accounts"));
+    statementSet.add(rawToSrcTransactionsQuery.insertInto("tp_src_transactions"));
+    statementSet.execute();
+    ```
 
 ### Joining two tables
 
@@ -212,6 +244,11 @@ Table joinedTable = customers
 ???- question "Create a data generator"
     There is the [FlinkFaker tool](https://github.com/knaufk/flink-faker) that seems to be very efficient to send different types of data. It is using [Datafaker](https://www.datafaker.net/documentation/getting-started/) Java library, which can be extended to add our own data provider. FlinkFaker jar is added to the custom flink image in the Dockerfile. 
 
+???- question "How to name a statement for Confluent Cloud"
+    ```java
+    TableEnvironment env = TableEnvironment.create(settings);
+    env.getConfig().set("client.statement-name", "cdc-to-silver-table-job");
+    ```
 
 ???- question "Create a table with Kafka topic as persistence in Confluent Cloud?"
     ```java title="Create a table"

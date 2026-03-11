@@ -2,7 +2,7 @@
 
 ## Goal
 
-Run the same Debezium-mock pipeline (raw → silver → dim_account, fct_transactions) with local Kafka and OSS Flink (SQL client or Table API Java at [../java/](../java/)).
+Run the same Debezium-mock pipeline (raw → silver → dim_account, fct_transactions) with local Kafka and OSS Flink (SQL client or Table API Java at [../table-api-java/](../table-api-java/)).
 
 ## Status
 

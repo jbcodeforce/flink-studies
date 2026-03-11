@@ -97,7 +97,7 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 
 | Demo | Path | Description |
 |------|------|-------------|
-| **savepoint-demo** | `savepoint-demo/` | Stop/restart stateful Flink job with savepoints. **Deployment:** `cp-flink/`. Minikube, Confluent Platform. |
+| **savepoint-demo** | `savepoint-demo/` | Backup/restore of state via savepoints: trigger, stop, restart from savepoint. Aligns with [DR cookbook](../docs/cookbook/cluster_mgt.md#31-backuprestore-of-state-backend). **Deployment:** `cp-flink/`. k8s, Confluent Platform. |
 
 ### 8.2 SQL Gateway
 

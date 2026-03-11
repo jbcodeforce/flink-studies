@@ -16,4 +16,5 @@ dependencies = [
 [tool.uv.workspace]
 members = [
     "e2e-demos/cdc-demo/",
+    "e2e-demos/cdc-tableapi-to-silver",
 ]
