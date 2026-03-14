@@ -227,7 +227,43 @@ The goal is to keep history of changes to the records over time and not just the
   * Data Tests: run on actual data
 * There are two types of data tests: singular(SQL queries stored in tests) and generic
 
-### Generic Tests
+* Defining test is by adding a `schema.yaml` with conditions on table. [See example in models folder](https://github.com/jbcodeforce/flink-studies/blob/master/code/dbt/airbnb/models/schema.yaml)
+
+* To run the tests
+  ```sh
+  dbt text --target duckdb -x
+  # -x it to continue even if one test fails
+  ```
+
+* To debug a test, we can always look at where the dbt created the SQL to run, and execute this SQL in a SQL client, like duckdb cli.
+* By setting in the dbt_project.yaml
+  ```yaml
+  data_tests:
+    _store_failures: true
+  ```
+
+  Then any test failures will be saved in a new schema with table in the datawarehouse.
+
+  ```sh
+  02:48:41  Failure in test accepted_values_dim_listings_cleansed_room_type__Private_room__Entire_home_apt__Shared_room__Hotelroom (models/schema.yaml)
+  02:48:41    Got 1 result, configured to fail if != 0
+  02:48:41  
+  02:48:41    compiled code at target/compiled/airbnb/models/schema.yaml/accepted_values_dim_listings_c_72f6cd1e8c350657dd7c7e44ed95fd70.sql
+  02:48:41  
+  02:48:41    See test failures:
+  ---------------------------------------------------------------------------------------------------------------
+  select * from "airbnb"."main_dbt_test__audit"."accepted_values_dim_listings_c_72f6cd1e8c350657dd7c7e44ed95fd70"
+  ---------------------------------------------------------------------------------------------------------------
+  ```
+
+* See [elementary-data.com](https://elementary-data.com)
+* For unit test, we can define a yaml file at the same level as the SQL under validation. See [unit_test.yaml](https://github.com/jbcodeforce/flink-studies/blob/master/code/dbt/airbnb/models/mart/unit_test.yaml), then run:
+  ```sh
+  dbt test -s mart_fullmoon_reviews
+  ```
+* Example to validate consistency among the created_at fields of the listings and reviews, we may want to add a singular test under the tests folder in the form of SQL:
+  ```sql
+  ```
 
 ## Sources of Information
 

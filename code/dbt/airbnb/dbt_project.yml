@@ -36,3 +36,5 @@ models:
       +materialized: table
     sources:
       +materialized: ephemeral
+data_tests:
+  +store_failures: true

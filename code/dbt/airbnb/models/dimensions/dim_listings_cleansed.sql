@@ -19,7 +19,7 @@ SELECT
   END AS minimum_nights,
   host_id,
   CAST(
-    REPLACE(price_str, '$') AS DECIMAL(10, 2)
+    REPLACE(price_str, '$', '') AS DECIMAL(10, 2)
   ) AS price,
   created_at,
   updated_at

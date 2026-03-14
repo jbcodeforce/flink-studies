@@ -2,6 +2,8 @@ Welcome to your new dbt project!
 
 ### Using the starter project
 
+Be sure to have sourced the python virtual environment. dbt cli is defined in .venv.
+
 **Snowflake (default)**  
 - `dbt run`  
 - `dbt test`  
