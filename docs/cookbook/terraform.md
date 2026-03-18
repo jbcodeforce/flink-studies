@@ -29,6 +29,14 @@ The [Confluent Terraform Provider](https://docs.confluent.io/cloud/current/clust
 * [Confluent Terraform Provider Documentation](https://docs.confluent.io/cloud/current/clusters/terraform-provider.html)
 * [Sample Project Tutorial](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs/guides/sample-project)
 * [Configuration Examples](https://github.com/confluentinc/terraform-provider-confluent/tree/master/examples/configurations)
+* My projects using terraform:
+    * [Deployment of CCC infrastructure](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/cc-terraform)
+    * [Deployment 3 statements in 00-basic-sql examples](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/00-basic-sql/cc-flink/terraform) to an existing environment, Kafka cluster, and Flink compute pool. No resources are created except the three Flink statements.
+    * [flink-sql/10-windowing/grouping_messages](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/10-windowing/grouping_messages/terraform) creates the five Flink statements in dependency order
+    * [deployment/ec2_tf](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/ec2_tf) to create a free-tier EC2 instance on AWS for Flink experiments
+    * [Cdc with RDS, S3, TableFlow and Flink](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cc-cdc-tx-demo/cccloud/IaC) AWS resources + Confluent environments and [flink statements as separate terraform](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cc-cdc-tx-demo/cccloud/cc-flink-sql/terraform) using list of statements.
+    * [e2e-demos/cdc-dedup-transform/cccloud/IaC](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cdc-dedup-transform/cccloud/IaC) creates an AWS S3 bucket with the necessary IAM user and permissions for Confluent Cloud S3 sink connector.
+    * []()
 
 ## Prerequisites
 
@@ -328,7 +336,9 @@ resource "confluent_flink_compute_pool" "default" {
 
 ## Deploying Flink Statements
 
-Flink SQL statements can be deployed using the `confluent_flink_statement` resource. See the [Flink Statement Resource Documentation](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs/resources/confluent_flink_statement). We recommend to separate the deployment from the infrastructure but reference the terraform state from to get definitions from already deployed resources. 
+Deploying Flink Statements with Terraform in production is an anti-pattern, as Flink queries are planned to run forrever, and the state management done with Terraform may trigger drift alert as completed DDL will be out of date, and therefore trigger a drop table and recreate table while dml is running. DDL should have condition like `CREATE TABLE IF NOT EXISTS`. Also Flink statements are added over time and depends on outcome from others, so dependencies management is dynamic and needs to take into consideration the statefulness of the statement. Stateful statement needs to reprocess from the earliest offset and will impact the Flink statement consumers of their output. This cascading down to the last sink.
+
+For demonstration purpose, Flink SQL statements can be deployed using the `confluent_flink_statement` resource. See the [Flink Statement Resource Documentation](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs/resources/confluent_flink_statement). We recommend to separate the deployment from the infrastructure but reference the terraform state from to get definitions from already deployed resources. 
 
 See [e2e-demos/cc-cdc-tx-demo/cc-flink-sql/terraform](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cc-cdc-tx-demo/cc-flink-sql/terraform) folder for such approach.
 
@@ -748,3 +758,4 @@ Compute pools with running Flink statements cannot be deleted - stop all stateme
   ```sh
   terraform state rm confluent_flink_compute_pool.data-generation
   ```
+

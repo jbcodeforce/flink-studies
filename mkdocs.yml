@@ -13,12 +13,12 @@ nav:
     - Agentic applications: architecture/agentic_flink.md
   - Cookbook:
     - Introduction: cookbook/index.md
-    - Considerations: cookbook/considerations.md
+    - Deployment Models: cookbook/considerations.md
     - Cluster management: cookbook/cluster_mgt.md
     - Job Lifecycle: cookbook/job_lifecycle.md
     - FKO & CMF Deployment: coding/k8s-deploy.md
+    - Flink Project Management: cookbook/pm.md
     - Confluent Cloud Terraform: cookbook/terraform.md
-    - Monitoring: techno/fk-k8s-monitor.md
   - Flink_App_Coding:
     - Flink SQL coding:
       - SQL Clients: coding/flink-sql-clients.md

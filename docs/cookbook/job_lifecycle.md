@@ -135,8 +135,10 @@ You see sustained backpressure in the Flink UI or high operator utilization, and
 #### Preconditions / Checklist
 
 Check that:
+
 * The upstream system can support higher parallelism (e.g., Kafka topic partition count).
 * The Flink cluster has or can get enough resources (TaskManagers, CPU/memory).
+* Be sure to get telemetry on the Flink Cluster for CPU, network and disk I/O. 
 
 #### Inputs / Parameters
 
@@ -146,16 +148,17 @@ Check that:
 
 #### Procedure
 
-1. Identify Bottleneck Operators
-    In Flink UI, look at:
-        * Backpressure tab (which subtasks are under pressure).
-        * Operator utilization and busy time.
-        * Confirm where the bottleneck actually is (source, transformation, sink).
+1. Identify Bottleneck Operators. In Flink UI, look at:
+    * Backpressure tab (which subtasks are under pressure).
+    * Operator utilization and busy time.
+    * How much state does this pipeline have? 
+    * Confirm where the bottleneck actually is (source, transformation, sink).
+    * Verify checkpoint frequency, backend system performance.
 
 1. Verify External Constraints
     * For Kafka sources:
         * Ensure partitions ≥ desired parallelism.
-    * For sinks (databases, external systems):
+    * For sinks (databases, external systems) (Apache Flink, CP Flink):
         * Check they can handle increased concurrency.
 
 1. Plan Parallelism Change. Because job state is keyed, changing parallelism will usually require restart-from-savepoint:
@@ -182,6 +185,7 @@ Check that:
 #### Rollback
 
 If errors appear or performance worsens:
+
 * Cancel the new deployment.
 * Restore the previous parallelism from the same savepoint.
 * Reevaluate resource allocation or code hot spots before attempting scale-out again.

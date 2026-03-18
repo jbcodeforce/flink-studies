@@ -4,9 +4,7 @@ SELECT
   url,
   ARRAY_AGG(
     CAST(
-      (user_id, view_time, $rowtime) AS ROW < user_id INT,
-      view_time INT,
-      viewed_at TIMESTAMP_LTZ(3) >
+      (user_id, view_time, $rowtime) AS ROW < user_id INT, view_time INT, viewed_at TIMESTAMP_LTZ(3) >
     )
   ) AS page_views
 FROM

@@ -31,4 +31,4 @@ The cookbook is not documentation for “how to write Flink code.” It assumes 
 * Data & schema: Handling schema evolution (e.g., with Kafka/Confluent Schema Registry), reprocessing, backfills.
 * Failure handling: Job failures, checkpoint failures, state corruption, external system outages.
 
-For each of the chapter / section we will try to address Apache Flink, Confluent Platform and Confluent Cloud for Flink.
+For each of the chapter / section we will try to address Apache Flink, Confluent Platform and Confluent Cloud for Flink, when relevant.

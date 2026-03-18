@@ -275,46 +275,6 @@ Some **important resources:**
 
 
 
-???+ question "How to access json data from a string column being a json object?"
-    
-    Use json_query function in the select.
-
-    ```sql
-     json_query(task.object_state, '$.dueDate') AS due_date,
-    ```
-
-    Use `json_value()` instead if the column content is a dict or json {}.
-
-
-
-???+ question "How to transform a json array column (named data) into an array to then generate n rows?"
-    Returning an array from a json string:
-    ```sql
-    json_query(`data`, '$' RETURNING ARRAY<STRING>) as anewcolumn
-    ```
-
-    To create as many rows as there are elements in the nested array:
-    ```sql
-    SELECT existing_column, anewcolumn from table_name
-    cross join unnest (json_query(`data`, '$' RETURNING ARRAY<STRING>)) as t(anewcolumn)
-    ```
-
-    UNNEST returns a new row for each element in the array
-    [See multiset expansion doc](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/joins/#array-multiset-and-map-expansion)
-
-???+ question "How to implement the equivalent of SQL explode?"
-    SQL EXPLODE creates a row for each element in the array or map, and ignore null or empty values in array.
-    ```sql
-    SELECT explode(col1) from values (array(10,20)), (null)
-    ```
-
-    SQL has also EXPLODE_OUTER, which returns all values in array including null or empty.
-
-    To translate this to Flink SQL we can use MAP_ENTRIES and MAP_FROM_ARRAYS. MAP_ENTRIES returns an array of all entries in the given map. While MAP_FROM_ARRAYS returns a map created from an arrays of keys and values.
-    ```sql
-    select map_entries(map_from_arrays())
-    ```
-
 ???+ question "How to use conditional functions?"
     [Flink has built-in conditional functions](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#conditional-functions) (See also [Confluent support](https://docs.confluent.io/cloud/current/flink/reference/functions/conditional-functions.html)) and specially the CASE WHEN:
 
@@ -337,6 +297,81 @@ Some **important resources:**
     create table users_msk like users;
     INSERT INTO users_msk SELECT ..., REGEXP_REPLACE(credit_card,'(\w)','*') as credit_card FROM users;
     ```
+
+### JSON Transformation
+
+Flink has a set of JSON [built in functions](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/functions/systemfunctions/#json-functions). '$'' denotes the root node in a JSON path.
+
+Paths can access properties ($.a), array elements ($.a[0].b), or branch over all elements in an array ($.a[*].b).
+
+???+ question "How to access json data from a string column being a json object?"
+    
+    Use json_query function in the select.
+
+    ```sql
+     json_query(task.object_state, '$.dueDate') AS due_date,
+    ```
+
+    Use `json_value()` instead if the column content is a dict or json {}.
+    ```sql
+    select before, after, json_value(after, '$.patient_id') as patient_id from `hc_raw_patients`
+    ```
+
+
+???+ question "How to transform a json array column (named data) into an array to then generate n rows?"
+    Returning an array from a json string:
+    ```sql
+    json_query(`data`, '$' RETURNING ARRAY<STRING>) as anewcolumn
+    ```
+
+    To create as many rows as there are elements in the nested array:
+    ```sql
+    SELECT existing_column, anewcolumn from table_name
+    cross join unnest (json_query(`data`, '$' RETURNING ARRAY<STRING>)) as t(anewcolumn)
+    ```
+
+    UNNEST returns a new row for each element in the array
+    [See multiset expansion doc](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/joins/#array-multiset-and-map-expansion)
+
+???+ question "Extract content from json array as string and explode to multiple rows?" 
+    The input record has a parameters column with an array of objects, with key-value pair, like:
+    ```json
+    [{"parameter_name": "Pressure", "parameter_value": 10.0, "parameter_type": "float", "parameter_tolerance": 1.0}, {"parameter_name": "FlowRate", "parameter_value": 2.5, "parameter_type": "float", "parameter_tolerance": 0.5}, {"parameter_name": "MotorSpeed", "parameter_value": 3200.0, "parameter_type": "float", "parameter_tolerance": 150.0}]
+    ```
+    The first step os to exploded the array using cross join unnest of an array. Then extract the json object. Be sure to protect with conditions on the parameters string so the json_query will work.
+    ```sql
+    SELECT
+        prescription_id,
+        patient_id,
+        device_id,
+        medication_or_therapy,
+        JSON_VALUE(param_obj, 'lax $.parameter_name')     AS metric_name,
+        CAST(JSON_VALUE(param_obj, 'lax $.parameter_value' RETURNING DOUBLE) AS DOUBLE) AS target_value,
+        CAST(JSON_VALUE(param_obj, 'lax $.parameter_tolerance' RETURNING DOUBLE) AS DOUBLE) AS tolerance_range,
+        start_date,
+        end_date
+    FROM `healthcare.public.prescriptions`
+    CROSS JOIN UNNEST(
+        JSON_QUERY(parameters, 'lax $[*]' RETURNING ARRAY<STRING>)
+        ) AS t(param_obj)
+    WHERE parameters IS NOT NULL AND TRIM(parameters) <> '' AND TRIM(parameters) <> '[]';
+    ```
+
+???+ question "How to implement the equivalent of SQL explode?"
+    In classical SQL, EXPLODE creates a row for each element in the array or map, and ignore null or empty values in array.
+    ```sql
+    SELECT explode(col1) from values (array(10,20)), (null)
+    ```
+
+    SQL has also EXPLODE_OUTER, which returns all values in array including null or empty.
+
+    To translate this to Flink SQL we can use MAP_ENTRIES and MAP_FROM_ARRAYS. MAP_ENTRIES returns an array of all entries in the given map. While MAP_FROM_ARRAYS returns a map created from an arrays of keys and values.
+    ```sql
+    select map_entries(map_from_arrays())
+    ```
+
+    As presented in previous question, `CROSS JOIN UNNEST(array)` is also the recommended solution.
+    
 
 ### Statement Set
 

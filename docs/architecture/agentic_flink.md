@@ -17,7 +17,7 @@ The vision is to have a fleet of streaming agents—background "teammates" that 
 * Operate with varying levels of autonomy (including human-in-the-loop).
 * Process right data at the right time with the right context.
 
-As part of the Agentic architecture, there is the planning phase of an agent, which has to use up-to-date data to define the best future actions. With autonomous agents, once they assess the business events, and plan, then can act on external systems, and emit othe business events for others to consume.
+As part of the Agentic architecture, there is the planning phase of an agent, which has to use up-to-date data to define the best future actions. Practitioners realize batch-processing stale data into LLMs causes hallucinations and need to move to real-time context.  With autonomous agents, once they assess the business events, and plan, then can act on external systems, and emit othe business events for others to consume.
 
 <figure markdown='span'>
 ![](./diagrams/event-agent-arch.drawio.png){: style="width: 1000px;" }

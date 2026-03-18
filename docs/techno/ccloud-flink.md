@@ -42,7 +42,7 @@ The following table is current January 2026. Roadmap changes and product feature
 | Multiple Kafka connectors, and other sources/sinks | One Kafka connector with support to append/upsert mode from table configuration, Other system is via Confluent Cloud managed connectors | 
 | Full SQL surface | Limitation on Database and Catalog actions |
 | Integrate with your own IAM, ACLs, encryption, auditing, governance tooling | Inherits Confluent Cloud IAM, RBAC, audit logs, and governance; Flink defines dedicated roles like FlinkDeveloper and FlinkAdmin layered on top of existing Kafka RBAC |
-| Support your networking integration |NSame private networking and networking controls as Confluent Cloud Kafka (VPC peering / Private Link / CC | 
+| Support your networking integration |NSame private networking and networking controls as Confluent Cloud Kafka VPC peering / Private Link / CCN | 
 | Integrate metrics and logs into your own stack. Per cluster dashboard | Confluent UI has built‑in Flink statements view, lag/throughput metrics, and error states. Native integration with Prometheus/Datadog via Confluent Cloud Metrics API and Notifications | 
 
 Pay attention that most Flink managed services are cloud-hosted and not cloud-native: only the infrastructure layer is fully managed and there’s still a lot of manual tasks for day 2 operations. 
@@ -55,7 +55,7 @@ Pay attention that most Flink managed services are cloud-hosted and not cloud-na
 * Manage Flink Compute Pools in Confluent Cloud for Apache Flink | [Confluent Documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/create-compute-pool.html)
 * Monitor and Manage Flink SQL Statements in Confluent Cloud for Apache Flink | [Confluent Documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html)
 
-## Key Concepts
+## Key Concepts/Specifics
 
 * This is a **regional service**, in one of the three major cloud providers. It is defined in a context of a Confluent's environment.
 * **Compute pools** groups resources for running Flink clusters, which may scale down to zero. They run SQL **statements**. Maximum pool size is defined at creation. Statements, in different compute pools, are **isolated** from each other. 
@@ -111,10 +111,11 @@ The Confluent Cloud for Kafka and for Flink is based on the SaaS pattern of cont
 </figure>
 
 * Each data plane is made of a VPC, a kubernetes cluster, a set of Kafka clusters and some management services to support platform management and communication with the control plane.
-* The control plane is called  the *mothership*, and refers to VPC, services, Database to manage the multi-tenancy platform, a kubernetes cluster, Kafka cluster, and other components. This is where the Confluent console runs for users to administer the Kafka clusters. 
+* The control plane refers to VPC, services, Database to manage the multi-tenancy platform, a kubernetes cluster, Kafka cluster, and other components. This is where the Confluent console runs for users to administer the Kafka clusters. 
 * For each data plane VPC, outbound connections are allowed through internet gateways.
 * There is a scheduler service to provision resources or assign cluster to existing resources. Target states are saved in a SQL database, while states are propagated from the different data planes to the mothership. This communication is async and leverage a global Kafka cluster.
 * There are the concepts of physical Kafka clusters and logical clusters. Logical clusters are groupings of topics on the physical clusters isolated from each other via a prefix. Professional Confluent Cloud organization can only have logical clusters. Enterprise can have physical clusters.
+* The difference between Standard and Enterprise Kafka clusters, reside in the private networking, and higher throughput volume, and client app quotas control. If the workloads run on the public internet and don't need fine-grained tenant isolation, Standard is the choice, for other use cases, Enterprise should be selected.
 
 ## Getting Started
 
@@ -200,9 +201,7 @@ Nothing special to mention, except that users need to recall that once the job i
 
 Confluent Cloud for Flink [supports the Table API, in Java](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-java-table-api.html) or [Python](https://docs.confluent.io/cloud/current/flink/get-started/quick-start-python-table-api.html).
 
-The [Table API](../coding/table-api.md) code is a client SDK, it communicates with Confluent Cloud by using REST requests to send SQL statement to the job manager and is interpreted by the SQL engine. 
-
-The Table API program acts as a client-side library for interacting with the Flink engine hosted in the cloud. It enables the submission of `Statements` and retrieval of `StatementResults`. The provided Confluent plugin integrates specific components for configuring the TableEnvironment, eliminating the need for a local Flink cluster. By including the `confluent-flink-table-api-java-plugin` dependency, Flink's internal components—such as CatalogStore, Catalog, Planner, Executor, and configuration, are managed by the plugin and fully integrated with Confluent Cloud. This integration is via the REST API, so Confluent Table API plugin is an higher emcapsulation of the CC REST API. 
+The [Table API](../coding/table-api.md) code is a client SDK, which acts as a client-side library for interacting with the Flink engine hosted in the cloud. It enables the submission of `Statements` and retrieval of `StatementResults`. The provided Confluent plugin integrates specific components for configuring the TableEnvironment, eliminating the need for a local Flink cluster. By including the `confluent-flink-table-api-java-plugin` dependency, Flink's internal components—such as CatalogStore, Catalog, Planner, Executor, and configuration, are managed by the plugin and fully integrated with Confluent Cloud. This integration is via the REST API, so Confluent Table API plugin is an higher emcapsulation of the CC REST API. 
 
 The code runs on an external systems, but uses an specific Flink environment for Confluent Cloud to submit the DAG to the remote engine.
 
@@ -232,7 +231,7 @@ When running TableAPI with Confluent Cloud for Flink plugin, we need to provide 
 
 1. Package and run
 
-[Read this chapter](../coding/table-api.md) for more information.
+[Read this chapter](../coding/table-api.md) for more information and [see tabel-api examples in the code folder](https://github.com/jbcodeforce/flink-studies/tree/master/code/table-api)
 
 ## DLQ support
 
@@ -307,15 +306,14 @@ Kafka clusters have the following properties:
 
 * Basic and standard clusters are multi-tenant and accessible via secured (TLS encrypted) public endpoints.
 * Using private link does not expose Kafka clusters to the public.
-* Enterprise clusters are accessible through secure AWS PrivateLink or Azure Private Link connections.
+* Enterprise clusters are accessible through secure, AWS VPC peering,  PrivateLink attachement on AWS, Azure, GCP private network connections.
+* A PrivateLink Attachment is a resource that enables you to connect to Confluent serverless products, like Enterprise clusters and Flink.
 * Secure public endpoints are protected by a proxy layer that prevents types of DoS, DDoS, syn flooding, and other network-level attacks.
 * A Confluent Cloud network is an abstraction for a single tenant network environment. [See setup CC network on AWS.](https://docs.confluent.io/cloud/current/networking/ccloud-network/aws.html#create-ccloud-network-aws). 
 * For AWS and Confluent Dedicated Clusters, networking can be done via VPC peering, transit gateway, inbound and outbound private link (for Kafka and Flink): this is a one-way connection access from a VPC to CC.
-* Flink Private Networking requires a [PrivateLink Attachment](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/private-networking.html#create-a-pla-overview) (PLATT) to access Kafka clusters with private networking. It is used to connect clients such as confluent CLI, the console, the rest api or terraform with Flink. Flink-to-Kafka is routed internally within Confluent Cloud.
+* Flink Private Networking requires a [PrivateLink Attachment](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/private-networking.html#create-a-pla-overview) (PLATT) to access Kafka clusters with private networking (*Enterprise, Dedicated or Freight*). It is used to connect clients such as confluent CLI, the console, the rest api or terraform with Flink. Only used for submitting statements and fetching results from the client.  Flink-to-Kafka is routed internally within Confluent Cloud.
 
-<figure markdown="span">
 ![](./images/flink-private-networking.svg)
-</figure>
 
 * PLATT is independant of the network type: PrivateLink, VPC peering or transit GTW.
 
