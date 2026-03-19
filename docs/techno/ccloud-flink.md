@@ -395,7 +395,7 @@ For internal system error, this may be linked to resources issue. [See standard 
 
 ### Query Profiler
 
-[Query Profiler](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/query-profiler.html) helps developers to get visibility into each operator of the query DAG, with metrcis like CPU utilization, state size, ...
+[Query Profiler](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/query-profiler.html) helps developers to get visibility into each operator of the query DAG, with metrics like CPU utilization, state size, data skew...
 
 ![](./images/statement_query_profiler.png)
 
@@ -412,6 +412,9 @@ Consider assessing the following metrics:
 * Bytes in and out
 * State Size
 * Watermark
+* Skew column in the task and operator metrics tables surfaces data distribution imbalances across subtasks.
+* Drill down into per-subtask metrics to understand exactly how work is distributed across parallel instances
+* Visibility into what's happening for degraded statements
 
 **watermark and watermark alignment** status is presenter for the partitions in a Kafka topic that Flink reads data from. The watermark alignment status has 3 columns: blocked, active, idle with percentages to represent *how much time the Kafka partition* is contributing to watermark alignment. Partition watermarks metric is available for Flink source operators only. Developer may be able to see **idle partitions**, or idleness behavior over time (this last issue may impact the record processing with delay from second to several minutes).
 

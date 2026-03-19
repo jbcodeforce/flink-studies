@@ -3,6 +3,8 @@
 * [Dbt core](https://github.com/dbt-labs/dbt-core) is an open source CLI and database agnostic. It enables data teams to transform data within their warehouse using SQL by applying software engineering best practices like version control.
 * [dbt Cloud](): A managed service with a web-based IDE, scheduler, job orchestration, and monitoring
 
+Supported by ISVs in lake house market.
+
 ## Use Cases
 
 * Modelling changes are easy to follow and revert
@@ -11,18 +13,33 @@
 * Data quality tests
 * Incremental load of fact tables
 * Track history of dimension tables
+* Support automated testing, document generation, and data lineage visualization
 
 ## Major Concepts
 
+* dbt uses a template mechanism, functions and a set of features to organize SQL and cross reference them.
+
 * **Models**: basic building block of the business logic. Includes materialized tables and views, and SQL files. Models can reference each other and use templates and macros
+
+The table lists when to use View vs Table:
+
+|  | View | Table|
+| --- | --- | --- |
+| **Purpose** | Use for minor transformation | For intensive transformation |
+| **Execution** | At runtime and when referenced | Pre-executed, with the results saved in tables |
+| **Storage** | None | Need Storage space for materialized tables |
+| **Performance** | Lot of steps leads to slower performance | Chained processes get improved perf. | 
 
 ## Install
 
+* Need Python, and dbt should be installed in a virtual environment. [See installation instructions](https://docs.getdbt.com/docs/core/installation-overview)
 * [Supported Python database](https://docs.getdbt.com/faqs/Core/install-python-compatibility)
-* Init a project:
+* Create a $HOME/.dbt folder to let dbt persist the dbt-profile.yaml file to keep user and DB credentials. Also create a dbt project
+* Init a project: This command creates some folders to organize work inside the project.
     ```sh
     uv run dbt init --skip-profile-setup airbnb
     ```
+
 * Or in virtual env created with `uv` and `uv sync` use:
      ```sh
      dbt init
@@ -39,6 +56,7 @@
         "dbt-snowflake>=1.8.4",
     ]
     ```
+
 ### dbt_profile.yaml
 
 [profile.yaml](https://docs.getdbt.com/docs/local/profiles.yml?version=1.12) defines the structure of the project, and keep information to connect to database.
@@ -145,6 +163,7 @@ models:
     ```
 
 ## Sources and Seeds
+
 * Seeds are local files that is uploaded to the data warehouse from dbt
 * Sources is an abstraction layer on top of the input tables. The source freshness can be checked automatically.
 * use `dbt seed` to populate the seed (csv file) to the data warehouse.
@@ -222,6 +241,7 @@ The goal is to keep history of changes to the records over time and not just the
 * An update to an existing record and a new `dbt snapshot` will create historical record.
 
 ## Tests
+
 * Two types of tests:
   * Unit Tests
   * Data Tests: run on actual data
@@ -265,9 +285,39 @@ The goal is to keep history of changes to the records over time and not just the
   ```sql
   ```
 
+## Other Database
+### Using dbt with postgresql
+
+* Install Kubernetes Postgresql operator, then a postgres cluster and PGadmin webapp. See the minikube/posgresql folder 
+* Do port forwarding for both Postgresql server and pgadmin webapp
+
+    ```sh
+    kubectl port-forward service/pg-cluster 5432:5432
+    kubectl port-forward service/pgadmin-service 8080:80 
+    ```
+
+* get user, database name , password and URI from the postgresql secrets (see Makefile)
+* Create customers and orders tables, insert some records
+* Define the connection to the database in the `.dbt/profiles.yaml` 
+* Validate with the connection `dbt debug`
+* Write some sql scripts in the `models` folder, then use `dbt run` and it will create new views in the `default` schema and one table. Example of join
+
+    ```sql
+
+    ```
+
+* The results can be also seen by querying the newly created views or tables.
+
+    ```sql
+    select * from "default".customerorders;
+    ```
+
+
+
 ## Sources of Information
 
 * [Udemy training from Zoltan C. Toth](https://www.udemy.com/course/complete-dbt-data-build-tool-bootcamp-zero-to-hero-learn-dbt) with [Git Repo](https://github.com/nordquant/complete-dbt-bootcamp-zero-to-hero). Example of data [from Inside AirBnB](https://insideairbnb.com/berlin/).
 * [Dbt core](https://github.com/dbt-labs/dbt-core)
 * [Preset]()
 * [Snowflake](https://app.snowflake.com)  username: jbcodeforce. Using key-pair authentication. Public [key in Snowlflake](https://docs.snowflake.com/en/user-guide/opencatalog/key-pair-auth-configure#generate-a-private-and-public-key)
+* [Youtube tutorial](https://www.youtube.com/watch?v=cW7KFaos2cw)
