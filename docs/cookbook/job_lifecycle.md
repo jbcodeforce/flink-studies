@@ -125,6 +125,7 @@ If you detect errors, anomalies, or instability:
 #### Procedure
 #### Rollback
 #### Gotchas
+
 ## 3- Scaling Jobs
 
 ### 3.1- Recipe: Scale a Flink Job to Handle Increased Load
@@ -250,6 +251,7 @@ You need to recompute results for a historical period (e.g., due to a code bug o
 #### Procedure
 #### Rollback
 #### Gotchas
+
 ## 5- Monitoring & Alerting
 ### 5.1- Key metrics to watch (checkpointing, backpressure, task failures, JVM).
 #### Context
@@ -265,9 +267,8 @@ You need to recompute results for a historical period (e.g., due to a code bug o
 #### Procedure
 #### Rollback
 #### Gotchas
+
 ## 6- Performance Testing
-
-
 
 ### 6.0 Establish a Performance Testing Platform
 ### Context
@@ -411,6 +412,9 @@ You need to have access to:
 #### Rollback
 #### Gotchas
 ## 7- Common Incident Recipes
+
+See Confluent Product documentation for [troubleshoot Flink SQL statements](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/query-profiler.html#troubleshoot-flink-sql-statements).
+
 ### 7.1 Job stuck in “restarting” or “failing” loop.
 #### Context
 
