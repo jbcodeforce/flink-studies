@@ -1,6 +1,6 @@
 # Flink Agent Demos
 
-Based [on Flink Agents docs](https://nightlies.apache.org/flink/flink-agents-docs-release-0.1/)
+Based [on Flink Agents documentation](https://nightlies.apache.org/flink/flink-agents-docs-release-0.1/), this is a simple demo with python.
 
 ## Deployment
 

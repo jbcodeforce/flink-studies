@@ -1,12 +1,12 @@
 # Flink SQL DML
 
 ???- Info "Updates"
-    Created 10/24, Updated 12/20/24
-    Revised 12/06/24
+    Created 10/24
+    Revised 4/07/26
 
-This chapter offers continue on the best practices for implementing Flink SQL solutions, for Data Manipulation Language queries. DML is used to define statements which modify the data and don’t change the metadata.
+This chapter continues the discussion of best practices for implementing Flink SQL Data Manipulation Language (DML) queries. DML defines statements that modify data without changing metadata.
 
-## Sources Of Information
+## Sources of information
 
 * [Confluent SQL documentation for DML samples](https://docs.confluent.io/cloud/current/flink/reference/queries/overview.html#flink-sql-queries) 
 * [Apache Flink SQL](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/insert/)
@@ -15,7 +15,7 @@ This chapter offers continue on the best practices for implementing Flink SQL so
 
 ## Common Patterns
 
-This is important to recall that a select applies to a stream of record so the results will change at each new record. A query as below will show the last top 10 orders, and when a new record arrives this list is updated. 
+It is important to recall that a `SELECT` applies to a stream of records, so the results change as new records arrive. The query below shows the latest top 10 orders; when a new record arrives, the list updates. 
 
 ```sql
 select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
@@ -24,13 +24,13 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 ???+ question "What are the different SQL execution modes? (OSS)"
 
-    Using previous table it is possible to count the elements in the table using:
+    Using the previous table, you can count rows with:
 
     ```sql
     select count(*) AS `count` from pageviews;
     ```
 
-    and we get different behaviors depending of the execution mode:
+    and we get different behavior depending on the execution mode:
 
     ```sql
     set 'execution.runtime-mode' = 'batch';
@@ -52,9 +52,9 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 ### Filtering
 
-* [Start by looking at this Confluent tutorial](https://developer.confluent.io/confluent-tutorials/filtering/flinksql/) or [The Apache Flink doc section]()
-* SELECT ... FROM ... WHERE ... consists of column projections or filters and are stateless. Except if the output table has a a `retract` changelog while input is `upsert`, the sink will have a `changelog materializer` (see [section below.](#sinkupsertmaterializer))
-* SELECT DISTINCT to remove duplicate rows. Which leads to keep state for each row.
+* [Start with this Confluent tutorial](https://developer.confluent.io/confluent-tutorials/filtering/flinksql/) or [the Apache Flink `SELECT` documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/select/).
+* `SELECT ... FROM ... WHERE ...` uses column projections or filters and is stateless. Unless the output table has a `retract` changelog while the input is `upsert`, the sink will use a `changelog materializer` (see [section below](#sinkupsertmaterializer)).
+* `SELECT DISTINCT` removes duplicate rows, which requires keeping state for each distinct row.
 
 ???+ question "How to filter out records?"
 
@@ -67,10 +67,10 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     Count the number of events related to a cancelled flight (need to use one of the selected field as grouping key):
 
     ```sql
-    select fight_id, count(*) as cancelled_fl from FlightEvents where status = 'cancelled' group by flight_id;
+    select flight_id, count(*) as cancelled_fl from FlightEvents where status = 'cancelled' group by flight_id;
     ```
 
-    Recall that this results produces a dynamic table.
+    Recall that this query produces a dynamic table.
 
 ???+ question "HAVING to filter after aggregation"
     The `HAVING` clause is used to filter results after the aggregation (i.e., like `GROUP BY`). It is similar to the `WHERE` clause, but while `WHERE` filters rows before aggregation, `HAVING` filters rows after aggregation.
@@ -86,7 +86,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     ```
 
 ???+ question "How to combine records from multiple tables (UNION)?"
-    When the two tables has the same number of columns of the same type, then we can combine them:
+    When the two tables have the same number of columns of compatible types, we can combine them:
 
     ```sql
     SELECT * FROM T1
@@ -94,12 +94,12 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     SELECT * FROM T2;
     ```
 
-    [See product documentation on Union](https://docs.confluent.io/cloud/current/flink/reference/queries/set-logic.html#flink-sql-set-logic-union). Remember that UNION will apply distinct, and avoid duplicate, while UNION ALL will generate duplicates. 
+    [See product documentation on UNION](https://docs.confluent.io/cloud/current/flink/reference/queries/set-logic.html#flink-sql-set-logic-union). Remember that `UNION` applies `DISTINCT` and removes duplicates, while `UNION ALL` keeps all rows, including duplicates. 
 
 
 
 
-???+ question "How to filter row that has column content not matching a regular expression?"
+???+ question "How to filter rows whose column content does not match a regular expression?"
 
     Use [REGEX](https://docs.confluent.io/cloud/current/flink/reference/functions/string-functions.html#flink-sql-regexp-function)
 
@@ -121,7 +121,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 
 ???+ info "Navigate a hierarchical structure in a table"
-    The unique table has node and ancestors representation. Suppose the graph represents a Procedure at the highest level, then an Operation, then a Phase and a Phase Step at the level 4. In the Procedures table we can have rows like:
+    The table uses a node-and-ancestors representation. Suppose the graph represents a procedure at the highest level, then an operation, then a phase, and a phase step at level 4. The procedures table can have rows like:
     
     ```csv
     id, parent_ids, depth, information
@@ -132,7 +132,7 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     'id_5', ['id_1','id_2','id_3'], 3 , 'phase_step 2'
     ```
 
-    Suppose we want to extract the matching  procedure_id, operation_id, phase_id, phase_step_id like
+    Suppose we want to extract matching `procedure_id`, `operation_id`, `phase_id`, and `phase_step_id` like:
     ```csv
     id, procedure_id, operation_id, phase_id, phase_step_id, information
     'id_1', 'id_1', NULL, NULL, NULL, 'procedure 1'
@@ -184,20 +184,20 @@ AS SELECT ip_address, url, TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) as click_ti
 ```
 
 * The query is designed to identify and persist only the earliest record. Once the record is written to the table_deduped any subsequent events pertaining to the same `ip_address` are effectively discarded by the `WHERE rownum = 1` filter.
-* ROW_NUMBER() Assigns an unique, sequential number to each row. It is part of the Top-N queries pattern.
-* Use OVER aggregation to compute agg value for every input window clause and a filter condition to express a Top-N query. Combined with PARTITION BY clause, Flink supports a per group Top-N. 
-* The internal CTE add a row_num for each 
+* `ROW_NUMBER()` assigns a unique, sequential number to each row. It is part of the Top-N query pattern.
+* Use `OVER` aggregation to compute aggregate values for each input row under a window specification and a filter condition to express a Top-N query. Combined with `PARTITION BY`, Flink supports per-group Top-N.
+* The inner query adds a `row_num` for each row in each partition.
 * The subsequent `WHERE rownum = 1` clause filters the results to retain only the very first event observed for each unique `ip_address` based on its timestamp.
 * The created table is an append table. There is no mechanism within this query to generate update or delete operations for records that have already been processed. Even if the underlying `clicks` table has a primary key defined, the transformation applied here dictates that the `unique_clicks` table will only ever grow by appending new, unique `ip_address` entries.
-* If the sorting was DESC when a new record arrive a retraction/update record is emitted. 
-* If after deduplication, the upsert sink needs to have the same key as the partition keys used. 
+* If the sort order is `DESC`, when a new record arrives a retraction or update may be emitted.
+* After deduplication, the upsert sink primary key should align with the partition keys used in the deduplication logic.
 
-[See this example](https://docs.confluent.io/cloud/current/flink/how-to-guides/deduplicate-rows.html#flink-sql-deduplicate-topic-action) in the Confluent product documentation which demonstrates there is no duplicate in the query result with `select * from dedup_table;` returns 8 messages. Same in the Kafka topic there are 8 messages . 
+[See this example](https://docs.confluent.io/cloud/current/flink/how-to-guides/deduplicate-rows.html#flink-sql-deduplicate-topic-action) in the Confluent product documentation: `select * from dedup_table;` returns eight messages with no duplicates, and the Kafka topic also contains eight messages.
 
-But it does not demonstrate the last message is kept. The [deduplication sample](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/00-basic-sql#deduplication-example) demonstrates that an upsert table is already removing duplicates, and keep the last record per key. 
+That walkthrough does not show that the *last* message per key is kept. The [deduplication sample](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/00-basic-sql#deduplication-example) shows how an upsert table removes duplicates and retains the last record per key. 
 
-* Confluent Cloud has limitations: the order by can only be timestamp in ASC mode.
-* Example of deduplication on OSS Flink where order can apply to any column type.
+* Confluent Cloud has limitations: `ORDER BY` in this pattern may be restricted to a timestamp column in ascending order.
+* Example of deduplication on OSS Flink where `ORDER BY` can use columns of other types (where supported).
 ```sql
 select *  FROM (
     SELECT 
@@ -214,7 +214,7 @@ select *  FROM (
 
 Some **important resources:**
 
-* [Transform a Topic with Confluent Cloud for Apache Flink - product doc](https://docs.confluent.io/cloud/current/flink/how-to-guides/transform-topic.html#transform-a-topic-with-af-long) to demonstrate topic transformation from the Data Portal -> Actions -> Transform Topic, which creates a CTAS Flink SQL statment and automatically deploys it to the configured computepool. This is very efficient to do avro to json, field rename, and primary key reallocation.
+* [Transform a Topic with Confluent Cloud for Apache Flink (product doc)](https://docs.confluent.io/cloud/current/flink/how-to-guides/transform-topic.html#transform-a-topic-with-af-long) covers topic transformation from the Data Portal: Actions → Transform Topic, which creates a CTAS Flink SQL statement and deploys it to the configured compute pool. This is efficient for Avro-to-JSON conversion, field renames, and primary-key changes.
 
 ???+ question "How to transform a field representing epoch to a timestamp?"
     
@@ -227,7 +227,7 @@ Some **important resources:**
 ???+ question "How to change a date string to a timestamp?"
 
     ```sql
-    TO_TIMESTAMP('2024-11-20 12:34:568Z'),
+    TO_TIMESTAMP('2024-11-20 12:34:56Z'),
     ```
 
     ```sql
@@ -242,16 +242,16 @@ Some **important resources:**
     WHEN TIMESTAMPDIFF(day, event.event_launch_date, now()) > 120 THEN ...
     ```
 
-    If the target table is set with a `changelog mode = upsert`, the use of the now() function is problematic because the exact execution time is not deterministic for each row. So the above statement works only for `append` mode.
+    If the target table uses `changelog-mode` = `upsert`, using `now()` is problematic because the execution time is not deterministic per row. The statement above is appropriate mainly for `append` mode.
 
 
-???+ question "How to extract the number of DAY, from a date field and now?"
-    The only diff is on timestamp. So need to first to cast the DATE column to a ts, and then use CURRENT_DATE and the DAY dimension. [See the supported dimensions (SECOND, MINUTE, HOUR, DAY, MONTH, or YEAR)](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#temporal-functions)
+???+ question "How to extract the number of days between a date field and now?"
+    The difference is in timestamp types. First cast the `DATE` column to a timestamp, then use `CURRENT_DATE` and the `DAY` unit. [See supported units (SECOND, MINUTE, HOUR, DAY, MONTH, or YEAR)](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#temporal-functions).
     ```sql
      TIMESTAMPDIFF(DAY, CAST(created_date AS TIMESTAMP_LTZ(3)), CURRENT_DATE) as days_since_launch,
     ```
 
-???+ question "How to access element of an array of rows?"
+???+ question "How to access elements of an array of rows?"
     The table has a column that is an array of rows. 
     ```sql
      CREATE TABLE my_table (
@@ -276,7 +276,7 @@ Some **important resources:**
 
 
 ???+ question "How to use conditional functions?"
-    [Flink has built-in conditional functions](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#conditional-functions) (See also [Confluent support](https://docs.confluent.io/cloud/current/flink/reference/functions/conditional-functions.html)) and specially the CASE WHEN:
+    [Flink has built-in conditional functions](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#conditional-functions) (see also [Confluent](https://docs.confluent.io/cloud/current/flink/reference/functions/conditional-functions.html)), especially `CASE WHEN`:
 
     ```sql
     SELECT 
@@ -300,11 +300,11 @@ Some **important resources:**
 
 ### JSON Transformation
 
-Flink has a set of JSON [built in functions](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/functions/systemfunctions/#json-functions). '$'' denotes the root node in a JSON path.
+Flink provides JSON [built-in functions](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/functions/systemfunctions/#json-functions). `'$'` denotes the root node in a JSON path.
 
 Paths can access properties ($.a), array elements ($.a[0].b), or branch over all elements in an array ($.a[*].b).
 
-???+ question "How to access json data from a string column being a json object?"
+???+ question "How to access JSON data from a string column that contains a JSON object?"
     
     Use json_query function in the select.
 
@@ -312,13 +312,13 @@ Paths can access properties ($.a), array elements ($.a[0].b), or branch over all
      json_query(task.object_state, '$.dueDate') AS due_date,
     ```
 
-    Use `json_value()` instead if the column content is a dict or json {}.
+    Use `json_value()` when you need a scalar extracted from JSON object content.
     ```sql
     select before, after, json_value(after, '$.patient_id') as patient_id from `hc_raw_patients`
     ```
 
 
-???+ question "How to transform a json array column (named data) into an array to then generate n rows?"
+???+ question "How to transform a JSON array column (named data) into an array and then generate n rows?"
     Returning an array from a json string:
     ```sql
     json_query(`data`, '$' RETURNING ARRAY<STRING>) as anewcolumn
@@ -333,12 +333,12 @@ Paths can access properties ($.a), array elements ($.a[0].b), or branch over all
     UNNEST returns a new row for each element in the array
     [See multiset expansion doc](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/joins/#array-multiset-and-map-expansion)
 
-???+ question "Extract content from json array as string and explode to multiple rows?" 
-    The input record has a parameters column with an array of objects, with key-value pair, like:
+???+ question "Extract content from a JSON array as strings and explode to multiple rows?"
+    The input record has a `parameters` column with an array of objects (key-value fields), like:
     ```json
     [{"parameter_name": "Pressure", "parameter_value": 10.0, "parameter_type": "float", "parameter_tolerance": 1.0}, {"parameter_name": "FlowRate", "parameter_value": 2.5, "parameter_type": "float", "parameter_tolerance": 0.5}, {"parameter_name": "MotorSpeed", "parameter_value": 3200.0, "parameter_type": "float", "parameter_tolerance": 150.0}]
     ```
-    The first step os to exploded the array using cross join unnest of an array. Then extract the json object. Be sure to protect with conditions on the parameters string so the json_query will work.
+    The first step is to explode the array using `CROSS JOIN UNNEST` on an array. Then extract each JSON object. Guard with conditions on the `parameters` string so `JSON_QUERY` receives valid input.
     ```sql
     SELECT
         prescription_id,
@@ -358,14 +358,14 @@ Paths can access properties ($.a), array elements ($.a[0].b), or branch over all
     ```
 
 ???+ question "How to implement the equivalent of SQL explode?"
-    In classical SQL, EXPLODE creates a row for each element in the array or map, and ignore null or empty values in array.
+    In classical SQL, `EXPLODE` creates a row for each element in the array or map and ignores null or empty entries in the array.
     ```sql
     SELECT explode(col1) from values (array(10,20)), (null)
     ```
 
-    SQL has also EXPLODE_OUTER, which returns all values in array including null or empty.
+    SQL also defines `EXPLODE_OUTER`, which returns all values in the array, including null or empty entries.
 
-    To translate this to Flink SQL we can use MAP_ENTRIES and MAP_FROM_ARRAYS. MAP_ENTRIES returns an array of all entries in the given map. While MAP_FROM_ARRAYS returns a map created from an arrays of keys and values.
+    To translate this to Flink SQL you can use `MAP_ENTRIES` and `MAP_FROM_ARRAYS`. `MAP_ENTRIES` returns an array of all entries in the given map. `MAP_FROM_ARRAYS` returns a map created from parallel arrays of keys and values.
     ```sql
     select map_entries(map_from_arrays())
     ```
@@ -375,11 +375,11 @@ Paths can access properties ($.a), array elements ($.a[0].b), or branch over all
 
 ### Statement Set
 
-The benefit of bundling statements in a single set is to reduce the repeated read from the source for each Insert. A single read from the source is executed and shared with all downstream INSERTS.
+Bundling statements in a single set reduces repeated reads from the source for each `INSERT`: one read from the source is executed and shared across downstream inserts.
 
-Do not use `Statement Set` when the source are different for all statements within the Statement Sets. Take into account that within the statement set if one statement fails, then all queries fail. The state is shared by all the statements within Statement set, so one stateful query can impact all other statements.
+Do not use a statement set when the sources differ for each statement inside the set. If one statement in the set fails, all queries in the set fail. State is shared across statements in the set, so one stateful query can affect the others.
 
-???+ question "How to manage late message to be sent to a DLQ using Statement Set?"
+???+ question "How to route late messages to a DLQ using a statement set?"
     First, create a DLQ table like `late_orders` based on the order table:
     
     ```sql
@@ -390,12 +390,12 @@ Do not use `Statement Set` when the source are different for all statements with
         LIKE orders (EXCLUDING OPTIONS)
     ```
 
-    Groups the main stream processing and the late arrival processing in a statement set:
+    Group the main stream processing and late-arrival handling in one statement set:
 
     ```sql
     EXECUTE STATEMENT SET
     BEGIN
-        INSERT INTO late_orders SELECT from orders WHERE `$rowtime` < CURRENT_WATERMARK(`$rowtime`);
+        INSERT INTO late_orders SELECT * FROM orders WHERE `$rowtime` < CURRENT_WATERMARK(`$rowtime`);
         INSERT INTO order_counts -- the sink table
             SELECT window_time, COUNT(*) as cnt
             FROM TABLE(TUMBLE(TABLE orders DESCRIPTOR(`$rowtime`), INTERVAL '1' MINUTE))
@@ -407,9 +407,9 @@ Do not use `Statement Set` when the source are different for all statements with
 
 An aggregate function computes a single result from multiple input rows.
 
-### Group BY
+### GROUP BY
 
-Classical SQL grouping of records, but with Streaming the state may grow infinitely. The size will depend of the # of groups and the amount of data to keep per group.
+Classical SQL grouping of records, but with streaming the state may grow without bound. The size depends on the number of groups and how much data must be retained per group.
 `group by` generates upsert events as it manages key-value and repartitions data.
 
 ```sql
@@ -466,9 +466,9 @@ Upsert key: (account_number,transaction_type)
 State size: low
 ```
 
-### Distinct
+### DISTINCT
 
-Remove duplicate before doing the aggregation:
+Remove duplicates before aggregating:
 
 ```sql
 ARRAY_AGG(DISTINCT user_name) as persons
@@ -476,17 +476,17 @@ ARRAY_AGG(DISTINCT user_name) as persons
 
 ### ARRAY_AGG
 
-Array aggregation refers to the process of combining multiple data elements into a single array structure. The goal is to regroup multiple data points together. Array aggregation plays a pivotal role in data processing due to its ability to manage and analyze vast amounts of information effectively
+Array aggregation combines multiple data elements into a single array. It is widely used to regroup data points for downstream processing.
 
-This [Flink ARRAY_AGG, aggregate function](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions) is a common function used in a lot of record transformation implementations. The function returns an array with elements coming from multiple rows from the input table. 
+This [Flink `ARRAY_AGG` aggregate function](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions) is common in record transformations. It returns an array whose elements come from multiple input rows.
 
-Let start by a simple array indexing (the index is between 1 to n_element). Below, the `values array` creates test data into a memory table aliased a `T` with a column named `array_field`:
+Start with simple array indexing (indexes are 1-based through *n*). Below, `VALUES` creates in-memory test data in table alias `T` with column `array_field`:
 
 ```sql
 SELECT array_field[4] FROM ((VALUES ARRAY[5,4,3,2,1])) AS T(array_field)
 ```
 
-The following SQL, is creating a view with an [array of aggregates](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions), which in this case, is concatenating the urls for each user_id over a 1 minute tumble window.
+The following SQL creates a view with an [array aggregate](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions): it collects URLs per `user_id` over one-minute tumbling windows.
 
 ```sql
 CREATE VIEW visited_pages_per_minute AS 
@@ -505,9 +505,9 @@ SELECT v.window_time, v.user_id, u.url FROM visited_pages_per_minute AS v
 CROSS JOIN UNNEST(v.urls) AS u(url)
 ```
 
-One thing important is that new clicks for the same user_id with new url, will create a new output record with the aggregated array. See [cc-array-agg study](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/03-nested-row/cc-array-agg).
+Important: new clicks for the same `user_id` with a new URL produce a new output row with the updated aggregated array. See [cc-array-agg study](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/03-nested-row/cc-array-agg).
 
-To optimize the processing it is recommended to deduplicate and/or filter records before computing the aggregation, and using Flink View is a good example:
+To optimize processing, deduplicate and/or filter before aggregating; a Flink view is a typical pattern:
 
 ```sql
 create view suites_versioned as 
@@ -529,13 +529,13 @@ select
 from suites_versioned group by suite_id;
 ```
 
-As seen in example above the type within the array can be a row and sub-row. [See SQL examples](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/03-nested-row/cc-array-agg/cc_array_agg_on_row.sql)
+As in the example above, the array element type can be a row containing nested rows. [See SQL examples](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/03-nested-row/cc-array-agg/cc_array_agg_on_row.sql).
 
 
 
 ### OVER 
 
-[OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) computes an aggregated value for every input row **over a range** of ordered rows. It does not reduce the number of resulting rows, as GROUP BY does, but produces one result for every input row. 
+[OVER aggregations](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/queries/over-agg/) compute an aggregated value for every input row **over a range** of ordered rows. They do not reduce row count the way `GROUP BY` does; they emit one result per input row. 
 
 OVER specifies the **time window** over which the aggregation is performed. A classical example is to get a moving sum or average: the number of orders in the last 10 seconds: 
 
@@ -554,12 +554,10 @@ WINDOW w AS (
 )
 ```
 
-The source topic needs to be append mode as over window operaton does not supporting retraction/update semantic.
-
-The changelog mode, of the output of OVER is `append`. This is helpful when we need to act on each input row, but consider some time interval. 
+The source topic should be in append mode because over-window aggregation does not support retraction/update semantics. `OVER` is useful when each input row must be evaluated against a time or row interval. 
 
 
-To get the order exceeding some limits for the first time and then when the computed aggregates go below other limits. [LAG](https://docs.confluent.io/cloud/current/flink/reference/functions/aggregate-functions.html#lag)
+To detect when orders exceed limits for the first time and when aggregates later fall below other limits, use [LAG](https://docs.confluent.io/cloud/current/flink/reference/functions/aggregate-functions.html#lag).
 
 ```sql
 -- compute the total price and # of orders for a period of 10s for each customer
@@ -604,10 +602,24 @@ WHERE
 ```
 
 
+???+ question "Aggregation over the last n preceding elements"
+    The OVER window ends at the current row and stretches backward through the stream for a bounded interval, either in time or by row count.
+    For example counting the number of flight_schedule events of the same key over the last 100 events:
+
+    ```sql
+    select
+        flight_id,
+        evt_type,
+        count(evt_type) OVER w as number_evt
+    from flight_events
+    window w as (partition by flight_id order by $rowtime rows between 100 preceding and current row);
+    ```
+
+    The results are updated for every input row. The partition is by flight_id. Order by $rowtime is necessary.
 
 ???+ question "When and how to use custom watermark?"
-    Developer should use their own [watermark strategy](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#watermark-clause) when there are not a lot of records per topic/partition, there is a need for a large watermark delay, and need to use another timestamp. 
-    The default watermark strategy in SOUCE_WATERMARK(), a watermark defined by the source. The common strategy used is the `maximim-out-of-orderness` to allow messages arriving later to be part of the window, to ensure more accurate results, as a tradeoff of latency. It can be defined using:
+    Developers should define a custom [watermark strategy](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#watermark-clause) when there are few records per topic or partition, a large watermark delay is required, or a non-default event-time column is used.
+    The default uses `SOURCE_WATERMARK()`, a watermark supplied by the source. A common explicit choice is `maximum-out-of-orderness` so late-arriving events can still fall in the correct window, trading latency for accuracy. Example:
 
     ```sql
     ALTER TABLE <table_name> MODIFY WATERMARK for `$rowtime` as `$rowtime` - INTERVAL '20' SECONDS
@@ -619,7 +631,7 @@ WHERE
 
 ## Joins
 
-When doing a join in a database, the result reflects the state of the join at the time we execute the query. In streaming, as both side of a join receive new rows, both side of joins need to continuously change. This is a **continuous query on dynamic tables**, where the engine needs to keep a lot of state: each row of each table. 
+When you run a join in a database, the result reflects the join state at execution time. In streaming, as both sides of a join receive new rows, both sides keep evolving. This is a **continuous query on dynamic tables**, and the engine must retain substantial state—effectively rows from each input. 
 
 This is the common join we do between two tables: 
 
@@ -629,16 +641,16 @@ LEFT JOIN stocks s
 ON t.stockid = s.id
 ```
 
-On the left side, the fact table, has high velocity of changes, but the events are immutables, while on the right side, the dimension, the new records arrive slowly.
+On the left, the fact table changes at high velocity; events are typically append-only or immutable. On the right, the dimension table receives new records more slowly.
 
 When doing a join, Flink needs to fully materialize both the right and left of the join tables in state, which may cost a lot of memory, because if a row in the left-hand table (LHT), also named the **probe side**, is updated, the operator needs to emit an updated match for all matching rows in the right-hand table (RHT) or **build side**. The cardinality of right side will be mostly bounded at a given point of time, but the left side may vary a lot. A join emits matching rows to downstream operator.
 
 The key points to keep in mind are:
 
 * Regular joins typically produce a full cross-product of all matching records. However, in streaming scenarios, this behavior is often undesirable, for example if you want to enrich an event with additional information.
-* The order of joins is important, try to get the first join done on table with the lowest update frequency.
-* Cross join makes the query fails
-* When the RHS is an upsert table, the result will be upsert too. Which means a result will be re-emitted if the RHS change. To avoid that we need to take the reference data, RHS, in effect at time of the event on LHS. The result is becoming **time-versioned**.
+* Join order matters: prefer joining the slowest-changing dimension first when you can.
+* A cross join without selective predicates can explode cardinality or hit resource limits.
+* When the RHS is an upsert table, the join output is often upsert-shaped as well: results may be re-emitted when the RHS changes. To pin dimension values to event time, use a temporal join so the RHS is **as of** the LHS event time (**time-versioned** enrichment).
 
 ### Temporal Join
 
@@ -650,7 +662,7 @@ A [temporal join](https://docs.confluent.io/cloud/current/flink/reference/querie
     LEFT JOIN stocks s FOR SYSTEM_TIME AS OF t.purchase_ts
     ON t.stockid = s.id
     ```
-* The above query is a Temporal join. Temporal joins help to reduce the state size, as we need to keep only recent records on both side. The time will be linked to the watermark progress. If the opening_value of the stock change over time, it will not trigger update to the previously generated enriched transactions.  
+* The query above is a temporal join. Temporal joins reduce state because only time-relevant versions of the RHS are needed. Progress is tied to watermarks. If `opening_value` changes over time, earlier enriched rows are not retroactively updated.  
 * Temporal JOINs must include all of the PRIMARY KEY columns of the versioned (right-side) table: the ON conditions need to include exactly the same primary key columns:
     ```sql
     create table dim_rule_config(
@@ -658,7 +670,7 @@ A [temporal join](https://docs.confluent.io/cloud/current/flink/reference/querie
        rule_id BIGINT NOT NULL,
        rule_name STRING NOT NULL,
        parameter_id BIGINT NOT NULL,
-       paremeter_value BIGINT,
+       parameter_value BIGINT,
        primary key (tenant_id, rule_id, parameter_id) not enforced
     )
     # joining in a separate DML
@@ -670,7 +682,7 @@ A [temporal join](https://docs.confluent.io/cloud/current/flink/reference/querie
        AND s.parameter_id = rule.parameter_id
     ```
 
-    The extended_sensors is a CTE to add specific constant columns, as the ON conditions need to apply to columns on on the LHS. So to be able to search for specific rule id and parameter id, the approach is to create a CTE:
+    `extended_sensors` is a CTE that adds constant columns so the `ON` conditions reference columns on the LHS. To look up a specific rule and parameter, define those constants in the CTE:
     ```sql
     with extended_sensors (
         select
@@ -681,11 +693,11 @@ A [temporal join](https://docs.confluent.io/cloud/current/flink/reference/querie
     ) select ... 
     ```
 
-    [See also this code sample for an example of rule based control](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/04-joins/rule_match_on_sensors/README.md) with temporal joins and contant columns.
+    [See also this sample for rule-based control](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/04-joins/rule_match_on_sensors/README.md) with temporal joins and constant columns.
 
-* When the LHS of the temporal join is upsert then the sink table needs to be retract. While if it is an append changelog then the sink should be append too.
-* INNER JOIN is a cartesian product.
-* OUTER joins like left, right or full, may generate records with empty columns for non-matching row.
+* When the LHS of a temporal join is upsert, the sink often needs retract changelog mode; with an append LHS, an append sink is typical.
+* An inner join with only equality predicates is not a full Cartesian product; unconstrained joins can behave like one.
+* Outer joins (left, right, full) may emit rows with nulls for non-matching sides.
 
 ### Interval Join 
 * Interval joins are particularly useful when working with unbounded data streams. Here is an example for orders and payments, where 
@@ -724,18 +736,18 @@ FROM
     LATERAL TABLE(udtf_function(t.column_a, t.column_b)) AS tf(output_column_1, output_column_2)
 ```
 
-We can combine the LATERAL TABLE with different join types to control which rows are preserved
+You can combine `LATERAL TABLE` with different join types to control which rows are preserved.
 
 | Joins | Behavior |
 | --- | --- |
 | CROSS JOIN LATERAL TABLE(...) | If the UDTF returns zero rows for a given input row, the original row from the outer table is discarded. |
 | LEFT JOIN LATERAL | Returns all rows from the outer table, even if the UDTF produces zero rows.|
 
-The Lateral Table allows to dynamically transform stream records in a row-by-row fashion, which is often difficult with standard joins.
+`LATERAL TABLE` lets you transform stream records row by row, which is awkward with standard joins alone.
 
-### Multi way joins
+### Multi-way joins
 
-[See Confluent Flink SQL documentation](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html#enabling-multi-way-joins) for multi-way joins as part of optimizing the flink state. Need to add annotations:
+[See Confluent Flink SQL documentation](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html#enabling-multi-way-joins) for multi-way joins and Flink state optimization. Add hints such as:
     ```sql
     SELECT /*+ MULTI_JOIN(o, c, a) */ 
     * FROM orders o
@@ -748,8 +760,8 @@ The Lateral Table allows to dynamically transform stream records in a row-by-row
 
 Here is a list of important tutorials on Joins:
 
-* [Confluent Cloud: video on joins](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html) with details on fow joins work.
-* [Confluent -developer: How to join streams](https://developer.confluent.io/tutorials/join-a-stream-to-a-stream/flinksql.html). The matching content is in [flink-sql/04-joins folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/04-joins) for Confluent Cloud or Platform for Flink. This folder also includes more SQL exercises.
+* [Confluent Cloud: joins documentation](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html) explains how joins behave in Flink SQL.
+* [Confluent Developer: How to join streams](https://developer.confluent.io/tutorials/join-a-stream-to-a-stream/flinksql.html). Related exercises live in the [flink-sql/04-joins folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/04-joins) for Confluent Cloud or Confluent Platform for Flink.
 * [Confluent temporal join documentation.](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html#temporal-joins)
 * [Window Join Queries in Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/flink/reference/queries/window-join.html)
 * [Temporal Join Study in this repo.](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/09-temporal-joins)
@@ -757,9 +769,9 @@ Here is a list of important tutorials on Joins:
 
 ### FAQs
 ???+ info "Inner knowledge on temporal join"
-    Event-time temporal joins are used to join two or more tables based on a **common** event time (in one of the record table or the kafka record: `$rowtime` system column). With an event-time attribute, the operator can retrieve the value of a key as it was at some point in the past. The right-side, versioned table, stores all versions, identified by time, since the last watermark.
+    Event-time temporal joins align two or more tables on a **common** event time (from a business timestamp column or the Kafka record timestamp in `$rowtime`). With event time, the operator can read a key as it was at a past instant. The versioned RHS retains rows keyed by time up to the watermark horizon.
 
-    The temporal Flink sql looks like:
+    Temporal Flink SQL looks like:
     
     ```sql
     SELECT [column_list]
@@ -768,7 +780,7 @@ Here is a list of important tutorials on Joins:
     ON table1.column-name1 = table2.column-name1
     ```
 
-    When enriching a particular `table1`, an event-time temporal join waits until the watermark on the table2 stream reaches the timestamp of that `table1` row, because only then, it is reasonable to be confident that the result of the join is being produced with complete knowledge of the relevant `table2` data. This table2 records can be old as the watermark on that table being late.
+    When enriching `table1`, an event-time temporal join waits until the watermark on `table2` reaches that `table1` row's timestamp, so the join uses a complete snapshot of relevant `table2` rows as of that time. `table2` rows may be older if that side's watermark lags.
 
 ???+ info "How to join two tables on a key within a time window using event column as timestamp and store results in a target table?"
     Full example:
@@ -783,17 +795,17 @@ Here is a list of important tutorials on Joins:
     begin
     insert into Transactions values(now(), 10,20),(now(),11,25),(now(),12,34);
     insert into Payments values(now(), 10, 'debit'),(now(),11,'debit'),(now(),12,'credit');
-    insert into Matched 
+    insert into Matched
         select T.tid, T.amount, P.type
-        from Transactions T join Payments P ON T.tid = P.tid 
+        from Transactions T join Payments P ON T.tid = P.tid
         where P.ts between T.ts and T.ts + interval '1' minutes;
     end
     ```
 
-???+ question "how primary key selection impacts joins?"
-    Primary keys on source tables do not impact joins as the joins can be done on any column of the left and right tables. The important keys are the one on the sink table and they need to match the last join columns.
+???+ question "How does primary key selection impact joins?"
+    Primary keys on source tables do not constrain which columns you join on. What matters for sinks is that the sink primary key aligns with the effective key produced by the final join shape.
 
-???+ info "Understand Left side velocity and update strategy"
+???+ info "Understand left-side velocity and update strategy"
     If the left table has a high velocity and there is no new event for the defined primary key, then it is important to set a TTL on the left side that is short so the state will stay under control. Use the aliases set on the tables and set the retention time.
     ```sql
     select /* STATE_TTL('tx'='120s', 'c'='4d') */
@@ -803,20 +815,20 @@ Here is a list of important tutorials on Joins:
     on tx.account_id = c.id
     ```
 
-    **Remark**: Running an EXPLAIN on the above statement give the TTL.
+    **Remark**: Running `EXPLAIN` on the statement above shows the configured TTL.
 
 ???+ warning "Join on 1x1 relationship"
     In current Flink SQL it is not possible to *efficiently* join elements from two tables when we know the relation is 1 to 1: one transaction to one account, one shipment to one order. As soon as there is a match, normally we want to emit the result and clear the state. This is possible to do so with the DataStream API, not SQL.
 
 ## Windowing / Table Value Functions
 
-[Windowing Table-Valued Functions](https://docs.confluent.io/cloud/current/flink/reference/queries/window-tvf.html) groups the Tumble, Hop, Cumulate, and Session Windows. Windows split the stream into “buckets” of finite size, over which we can implement logic. The return value adds three additional columns named “window_start”, “window_end”, “window_time” to indicate the assigned window.
+[Windowing Table-Valued Functions](https://docs.confluent.io/cloud/current/flink/reference/queries/window-tvf.html) cover Tumble, Hop, Cumulate, and Session windows. Windows split the stream into finite buckets for aggregation and other logic. TVFs add `window_start`, `window_end`, and `window_time` columns for the assigned window.
 
 * The TUMBLE function assigns each element to a window of specified window size. Tumbling windows have a fixed size and do not overlap.
 
-???+ question "Count the number of different product type per 10 minutes (TUMBLE window)"
-    [Aggregate a Stream in a Tumbling Window documentation.](https://docs.confluent.io/cloud/current/flink/how-to-guides/aggregate-tumbling-window.html). 
-    The following query counts the number of different product types arriving from the event stream by interval of 10 minutes.
+???+ question "Count the number of different product types per 10 minutes (TUMBLE window)"
+    [Aggregate a stream in a tumbling window](https://docs.confluent.io/cloud/current/flink/how-to-guides/aggregate-tumbling-window.html).
+    The following query counts distinct product types from the event stream in 10-minute tumbling windows.
 
     ```sql
     SELECT window_start, product_type, count(product_type) as num_ptype
@@ -827,11 +839,11 @@ Here is a list of important tutorials on Joins:
                 INTERVAL '10' MINUTES
             )
         )
-        GROUP BY window_start, window_end, ;
+        GROUP BY window_start, window_end, product_type;
     ```
-    *DESCRIPTOR* indicates which time attributes column should be mapped to tumbling windows (here the kafka record ingestion timestamp). 
-    
-    When the internal time has expired the results will be published. This puts an upper bound on how much state Flink needs to keep to handle a query, which in this case is related to the number of different product type. 
+    `DESCRIPTOR` selects the time attribute for windowing (here, Kafka record ingestion time as `$rowtime`).
+
+    When the window closes, results are emitted. That bounds how much window state Flink retains—here, roughly by the number of distinct `product_type` values per window. 
 
     It is possible to use another timestamp from the input table. For example the `transaction_ts TIMESTAMP(3),` 
     then we need to declare a watermark on this ts:
@@ -841,33 +853,18 @@ Here is a list of important tutorials on Joins:
     
     ```sql
     INSERT INTO app_orders
-    select 
-        window_start, 
-        window_end, 
-        customer_id, sum(order_amount) 
-    from table(tumble(table `daily_spend`, DESCRIPTOR(transaction_ts), interval '24' hours)) 
-    group by window_start, window_end, customer_id 
+    SELECT
+        window_start,
+        window_end,
+        customer_id,
+        SUM(order_amount)
+    FROM TABLE(TUMBLE(TABLE `daily_spend`, DESCRIPTOR(transaction_ts), INTERVAL '24' HOURS))
+    GROUP BY window_start, window_end, customer_id
     ```
 
-
-
-???+ question "Aggregation over a window"
-    Windows over approach is to end with the current row, and stretches backwards through the history of the stream for a specific interval, either measured in time, or by some number of rows.
-    For example counting the umber of flight_schedule events of the same key over the last 100 events:
-
-    ```sql
-    select
-        flight_id,
-        evt_type,
-        count(evt_type) OVER w as number_evt,
-    from flight_events
-    window w as( partition by flight_id order by $rowtime rows between 100 preceding and current row);
-    ```
-
-    The results are updated for every input row. The partition is by flight_id. Order by $rowtime is necessary.
 
 ???+ question "Find the number of elements in x minutes intervals advanced by 5 minutes? (HOP)"
-    [Confluent documentation on window integration.](https://docs.confluent.io/cloud/current/flink/reference/queries/window-tvf.html). For **HOP** wuindow, there is the slide parameter to control how frequently a hopping window is started:
+    [Confluent documentation on window TVFs.](https://docs.confluent.io/cloud/current/flink/reference/queries/window-tvf.html) For **HOP** windows, the slide interval controls how often a new hopping window starts:
 
     ```sql
         SELECT
@@ -878,15 +875,15 @@ Here is a list of important tutorials on Joins:
         GROUP BY window_start, window_end;
     ```
 
-???+ question "How to compute the accumulate price over time in a day (CUMULATE)"
-    Needs to use the cumulate window, which adds up records to the window until max size, but emits results at each window steps. 
-    The is image summarizes well the behavior:
+???+ question "How to compute accumulated price over a day (CUMULATE)?"
+    Use a cumulate window: it grows toward a maximum window size and emits partial results at each step.
+    This image summarizes the behavior:
     ![](https://docs.confluent.io/cloud/current/_images/flink-cumulating-windows.png)
 
     ```sql
     SELECT window_start, window_end, SUM(price) as `sum`
         FROM TABLE(
-            CUMULATE(TABLE `examples`.`marketplace`.`orders`, DESCRIPTOR($rowtime), INTERVAL '30' SECONDES, INTERVAL '3' MINUTES))
+            CUMULATE(TABLE `examples`.`marketplace`.`orders`, DESCRIPTOR($rowtime), INTERVAL '30' SECONDS, INTERVAL '3' MINUTES))
         GROUP BY window_start, window_end;
     ```
 
@@ -903,7 +900,7 @@ Consider a scenario where 1 million records need to be processed across a small 
 To mitigate the usage of `SinkUpsertMaterializer`:
 
 * Ensure that the partition keys used for deduplication, group aggregation, etc., are identical to the sink table's primary keys.
-* `SinkUpsertMaterializer` is unnecessary if retractions are generated using the same key as the sink table's primary key. If a large number of records are processed but most are subsequently retracted, SinkUpsertMaterializer can significantly reduce its state size.
+* `SinkUpsertMaterializer` is unnecessary if retractions already use the same key as the sink primary key. When most rows are soon retracted, the materializer may retain far less state.
 * Utilize Time-To-Live (TTL) to limit the state size based on time.
 * A higher number of distinct values per primary key directly increases the state size of the SinkUpsertMaterializer.
 
@@ -915,8 +912,8 @@ To mitigate the usage of `SinkUpsertMaterializer`:
     [See product documentation on CEP pattern with SQL](https://nightlies.apache.org/flink/flink-docs-release-1.15/docs/dev/table/sql/queries/match_recognize/)
     
     ```sql
-    create table StockTicker(symbol string, price int tax int) with ('connector' = 'kafka',...)
-    SELECT * From StockTicker 
+    create table StockTicker(symbol string, price int, tax int) with ('connector' = 'kafka',...)
+    SELECT * FROM StockTicker 
     MATCH_RECOGNIZE ( 
         partition by symbol 
         order by rowtime
@@ -940,10 +937,10 @@ To mitigate the usage of `SinkUpsertMaterializer`:
 
 [See Flink Confluent Cloud queries documentation.](https://docs.confluent.io/cloud/current/flink/reference/queries/overview.html)
 
-Each topic is automatically mapped to a table with some metadata fields added, like the watermark in the form of `$rowtime` field, which is mapped to the Kafka record timestamp. To see it, run `describe extended table_name;` With watermarking. arriving event records will be ingested roughly in order with  respect to the `$rowtime` time attribute field.
+Each topic maps to a table with metadata columns such as `$rowtime`, aligned to the Kafka record timestamp. To inspect columns and watermarks, run `DESCRIBE EXTENDED table_name;`. With watermarking, arriving events are processed roughly in order with respect to `$rowtime`.
 
 ???+ question "Mapping from Kafka record timestamp and table $rowtime"
-    The Kafka record timestamp is automatically mapped to the `$rowtime` attribute, which is a read only field. Using this field we can order the record by arrival time:
+    The Kafka record timestamp maps to `$rowtime`, a read-only field. Use it to order rows by ingestion time:
 
     ```sql
     select 'flight_id', 'aircraft_id', 'status', $rowtime
@@ -962,13 +959,13 @@ Each topic is automatically mapped to a table with some metadata fields added, l
     ```
 
 ???+ question "Running Confluent Cloud Kafka with local Flink"
-    The goal is to demonstrate how to get a cluster created in an existing Confluent Cloud environment and then send message via FlinkFaker using local table to Kafka topic:
+    The goal is to show how to use a Confluent Cloud cluster and send messages via FlinkFaker from a local table into a Kafka topic:
     
     ![](./diagrams/flaker-to-kafka.drawio.png)
 
-    The [scripts and readme](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/01-confluent-kafka-local-flink) .
+    See the [scripts and README](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/01-confluent-kafka-local-flink).
 
-???+ question "Reading from a topic specific offsets"
+???+ question "Reading from a topic at specific offsets"
     ```sql
     ALTER TABLE table_name SET (
         'scan.startup.mode' = 'specific-offsets',
@@ -978,7 +975,7 @@ Each topic is automatically mapped to a table with some metadata fields added, l
     SELECT * FROM table_name;
     ```
 
-???+ question "create a long running SQL with cli"
+???+ question "Create a long-running SQL job with the CLI"
     Get or create a service account.
     
     ```sh
@@ -993,8 +990,8 @@ Each topic is automatically mapped to a table with some metadata fields added, l
 
 ## Analyzing Statements
 
-???+ question "Assess the current flink statement running in Confluent Cloud"
-    To assess which jobs are still running, which jobs failed, and which stopped, we can use the user interface, go to the Flink console > . Or the `confluent` CLI:
+???+ question "Assess the current Flink statement running in Confluent Cloud"
+    To see which jobs are running, failed, or stopped, use the Confluent Cloud UI (Flink workspace) or the `confluent` CLI:
 
     ```sh
     confluent environment list
@@ -1005,7 +1002,7 @@ Each topic is automatically mapped to a table with some metadata fields added, l
 
 ### Understand the physical execution plan for a SQL query
 
-See the [explain keyword](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/explain/) or [Confluent Flink documentation](https://docs.confluent.io/cloud/current/flink/reference/statements/explain.html) for the output explanations.
+See the [`EXPLAIN` statement](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/explain/) or [Confluent Flink documentation](https://docs.confluent.io/cloud/current/flink/reference/statements/explain.html) for how to read the plan.
 
 ```sql
 explain select ...
@@ -1022,11 +1019,11 @@ Pay special attention to data skew when designing your queries. If a particular 
 
 ???+ info "How to search for hot key?"
     ```sql
-    SELECT 
-        id, 
-        tenant_id, 
-        count(*) as record_count,
-    FROM table_name 
+    SELECT
+        id,
+        tenant_id,
+        count(*) AS record_count
+    FROM table_name
     GROUP BY id, tenant_id
     ```
 
@@ -1073,11 +1070,11 @@ Pay special attention to data skew when designing your queries. If a particular 
 
 ### Confluent Flink Query Profiler
 
-This is a specific, modern implementation of the Flink WebUI, used to monitor the performance of the query.
+This is a Confluent-specific view of Flink performance, related to the Flink Web UI, for monitoring statement execution.
 
 ![](../architecture/images/query-profiler.png)
 
 * [Query Profiler Product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/query-profiler.html)
-* [See how to use QP to debug statement, in the techno chapter](../techno/ccloud-flink.md#query-profiler).
+* [See how to use the Query Profiler to debug statements in the techno chapter](../techno/ccloud-flink.md#query-profiler).
 
 

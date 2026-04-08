@@ -4,7 +4,23 @@
     Create 07/2025
     Update - 02/09/26
 
-Gartner estimates that by 2028, 33% of enterprise applications will include agentic AI and this will drive 15% of automation in day-to-day tasks and 30% in cost savings. 
+Gartner estimates that by 2028, 33% of enterprise applications will include agentic AI and this will drive 15% of automation in day-to-day tasks and 30% in cost savings. One of the problems is that organizations do not have the right data for AI. Classical ML models are trained from historical data using batch processing, they are tailored for a specific use case with some specific features set. Generative AI are built on top of public human unstructured information, and they can work on very different things. They do not know organization data. Therefore one of the key challenge is to **to deliver the right data at the right time with the right context.**
+
+
+## Current Industry Challenges
+
+* Answering to the question: **How are they able to access relevant context in real time?** is not easy.
+* Opening data access via MCP is complex, opens security risks, sprawsn tokens and is slow. Most of Agent solutions are now moving away from MCP to use tool functions wrapped around CLIs.
+* While adopting the medallion architecture to prepare data with ELT batch processing, the latency is the main issue: you cannot get agents action on data old like a day or few hours ago. Having **stale** data serverd in production system is a real issue.
+* Current agentic frameworks are good for demonstration, and are not made for production deployment and to support purely autonomous agents. There is no governance, guardrails, some security holes, and light monitoring 
+* Not all data is needed in real time, and “real-time” is relative. Still the goal is to provide domain-specific context from internal data systems and applications to power real-time AI generation.
+* **Data** generated isn't delivered to AI systems **fast** enough. It’s a hard problem to solve because most businesses have data all over the place.
+* Current Agentic SDK or framework are not event-driven, lack replayability and production readiness
+* Missing fresh representation of live operational events
+* Currently there is a clear separation between data processing and AI inference
+* A lot of open frameworks are easy to get started with but hard to move to production because they’re fundamentally disconnected from data and fall short of requirements like governance, auditability, replayability
+
+## Context
 
 AI agentic applications, at scale will not only be triggered by users, but by **systems** using asynchronous events. It is assumed that AI Agents are becoming experts to certain tasks within a business workflow using domain-specific knowledge, and acts on direct user's queries or from events coming from other systems.
 
@@ -17,7 +33,7 @@ The vision is to have a fleet of streaming agents—background "teammates" that 
 * Operate with varying levels of autonomy (including human-in-the-loop).
 * Process right data at the right time with the right context.
 
-As part of the Agentic architecture, there is the planning phase of an agent, which has to use up-to-date data to define the best future actions. Practitioners realize batch-processing stale data into LLMs causes hallucinations and need to move to real-time context.  With autonomous agents, once they assess the business events, and plan, then can act on external systems, and emit othe business events for others to consume.
+As part of the Agentic architecture, there is the planning phase of an agent, which has to use up-to-date data to define the best future actions. Practitioners realize batch-processing stale data into LLMs causes hallucinations and need to move to real-time context.  With autonomous agents, once they assess the business events, and plan, then can act on external systems, and emit other business events for others to consume.
 
 <figure markdown='span'>
 ![](./diagrams/event-agent-arch.drawio.png){: style="width: 1000px;" }
@@ -29,7 +45,16 @@ The Flink's event capabilities for real-time distributed event processing, state
 
 Currently, agent frameworks contain some major inhibitors: data preparation and pipeline to build embedding and process semi-structured an unstructured data. Agents shouldn't just query a single database; they should participate in an ecosystem where they consume events, perform logic, and republish results for other agents to use. We are entering the aget of **Event-driven agents**.
 
-## Needs
+### Business use cases
+
+Some interesting use cases from early adopters:
+
+* Detecting changes in trading volume and then alerting a person to investigate. Learn trends on individual stocks
+* Detecting changes in engagement for marketing campaigns.
+* Assess spikes and dips in new patient registrations per location
+* Analyzing product reviews in real-time by combining sentiment analysis with anomaly detection:  first classify the product review into positive, negative, and neutral sentiment and then use anomaly detection to see spikes in negative reviews.
+
+## Requirements
 
 * One of the most practical insights is the cost-efficiency model. Pushing every business event through an LLM is prohibitively expensive. It is better fit to use **traditional machine learning** (for anomaly detection, fraud, or forecasting) as **a first-pass filter**.
 * Deliver fresh data from the transactional systems to the AI Agents: stale data leads to irrelevant recommendations and decisions. This is only used during inference and in the LLM conversation context enrichment.
@@ -45,18 +70,10 @@ Currently, agent frameworks contain some major inhibitors: data preparation and 
 ???- info "Decision Intelligent Platforms"
     Gartner defines decision intelligence platforms (DIPs) as software to create decision-centric solutions that support, augment and automate decision making of humans or machines, powered by the composition of **data, analytics, knowledge and AI**.
 
-## Challenges
-
-* Not all data is needed in real time, and “real-time” is relative. Still the goal is to provide domain-specific context from internal data systems and applications to power real-time AI generation.
-* **Data** generated isn't delivered to AI systems **fast** enough. It’s a hard problem to solve because most businesses have data all over the place.
-* Current Agentic SDK or framework are not event-driven, lack replayability and production readiness
-* Missing fresh representation of live operational events
-* Currently there is a clear separation between data processing and AI inference
-* A lot of open frameworks are easy to get started with but hard to move to production because they’re fundamentally disconnected from data and fall short of requirements like governance, auditability, replayability
 
 ## Understanding real-time data needs
 
-We can split the assessment into a business/oganization and architecture point of views:
+We can split the assessment into a business/organization and architecture point of views:
 
 ### Project Discovery Questions
 
@@ -111,13 +128,14 @@ Data Stream Processing offerings from Confluent, helps building the new event-dr
 
 [Confluent Intelligence](https://www.confluent.io/product/confluent-intelligence/) is a fully managed service on Confluent Cloud for building real-time, context-rich, and replayable AI systems using Apache Kafka® and Apache Flink®. It consists of three core tenets: 
 
-1. Flink has Built-in ML Functions to help you detect anomalies, forecasting, fraud, all in real-time. Detection of these events can be sent downstream or may even trigger agents
-1. Streaming Agents give you the ability to build agents as event-driven microservices on Flink with state, timers, and replay so you can evaluate and improve before you ship.
-1. The Real-time Context Engine is how those agents–or any other agent or AI app outside of Confluent–see trusted context in seconds. It exposes any AI app, agent or system with governed, materialized real-time data through MCP so teams don’t need to know Kafka or manage servers. 
+1. Flink has [Built-in ML Functions](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html) to help you detect anomalies, forecasting, fraud, all in real-time. Detection of these events can be sent downstream or may even trigger agents
+1. [Streaming Agents](https://docs.confluent.io/cloud/current/ai/overview.html) give you the ability to build agents as event-driven microservices on Flink with state, timers, and replay so you can evaluate and improve before you ship.
+1. The **Real-time Context Engine** is how those agents–or any other agents or AI app outside of Confluent, see trusted context in seconds. It exposes any AI app, agent or system with governed, materialized real-time data through MCP so teams don’t need to know Kafka or manage servers. 
 
 Confluent builds its *AI strategy* on three functional layers:
 
-* **Real-Time Processing** (Flink Streaming Agents): Using Kafka and Flink to process data from disparate systems in real-time, built on open-source standards to avoid vendor lock-in. Confluent offers a set of [ML functions](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html) and [ML preprocessing functions](https://docs.confluent.io/cloud/current/flink/reference/functions/ml-preprocessing-functions.html) to be integrated into Flink SQL to do ML processing. 
+* **Real-Time Processing** (Flink Streaming Agents): Using Kafka and Flink to process data from disparate systems in real-time, built on open-source standards to avoid vendor lock-in. Confluent offers a set of [ML functions](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html) and [ML preprocessing functions](https://docs.confluent.io/cloud/current/flink/reference/functions/ml-preprocessing-functions.html) to be integrated into Flink SQL to do ML processing, like [Anomaly detection](https://docs.confluent.io/cloud/current/ai/builtin-functions/detect-anomalies.html) using Autoregressive Integrated Moving Average or Median Absolute Deviation.
+
 * **Interoperability (MCP Protocol)**: Leveraging the Model Context Protocol (MCP) as a universal language, allowing Confluent to serve real-time context to any AI agent or tool regardless of the provider.
 * **Governance and Replayability:** Ensuring data is secure and auditable. A key advantage is Kafka’s "replayability," which allows developers to re-run data streams for debugging, auditing, and refining AI responses.
 
@@ -127,7 +145,10 @@ Confluent builds its *AI strategy* on three functional layers:
 * **Native Inference** to run any open-source or fine-tuned AI model directly on Confluent Cloud using shared GPU resources, improving security and cost-effectiveness.
 * Multivariate Anomaly Detection to detect anomalies across multiple correlated metrics simultaneously while ignoring data outliers, ensuring higher accuracy for complex data monitoring.
 
-[A github to quickstart streaming agents demonstration.](https://github.com/confluentinc/quickstart-streaming-agents/)
+[A github to quickstart streaming agents demonstrations](https://github.com/confluentinc/quickstart-streaming-agents/): 
+* Price matching by scraping e-business websites and adjusts prices in real-time
+* Retrieve part of documents using embedding and vector store, in the context of processing streaming data to LLM
+* Anomaly detection on boat taxi with real-time feed. 
 
 #### Quick demonstration
 
