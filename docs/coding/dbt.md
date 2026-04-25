@@ -1,7 +1,7 @@
 # Data Build Tool Summary
 
-* [Dbt core](https://github.com/dbt-labs/dbt-core) is an open source CLI and database agnostic. It enables data teams to transform data within their warehouse using SQL by applying software engineering best practices like version control.
-* [dbt Cloud](): A managed service with a web-based IDE, scheduler, job orchestration, and monitoring
+* [Dbt core](https://github.com/dbt-labs/dbt-core) is an open source CLI and database agnostic used to allow data analysts and engineers to build reliable, modular data pipelines, creating "models" (SELECT statements) that are version-controlled, automatically documented, and tested for quality before consumption by BI tools.  Learn more about dbt [in the docs](https://docs.getdbt.com/docs/introduction).
+* [dbt Cloud](https://www.getdbt.com/product/dbt): A managed service with a web-based IDE, scheduler, job orchestration, and monitoring
 
 Supported by ISVs in lake house market.
 
@@ -9,7 +9,6 @@ Supported by ISVs in lake house market.
 
 * Modelling changes are easy to follow and revert
 * Explicit dependencies between models
-* Explore dependencies between models
 * Data quality tests
 * Incremental load of fact tables
 * Track history of dimension tables
@@ -17,11 +16,23 @@ Supported by ISVs in lake house market.
 
 ## Major Concepts
 
-* dbt uses a template mechanism, functions and a set of features to organize SQL and cross reference them.
+* It encourages building complex transformations in smaller, reusable SQL steps, reducing repetitive code.
+* dbt uses a template mechanism (jinja), functions and a set of features to organize SQL and cross reference them. 
+* The mandatory file for a project is the `dbt_project.yml` file as it contains information that tells dbt how to operate your project. dbt demarcates between a folder name and a configuration by using a + prefix before the configuration name.
+* **Models**: are the basic building blocks of the business logic. They includes materialized tables and views, and SQL files. Models can reference each others and use templates and macros. 
+* **Resources types** includes models, seeds, snapshots, tests, sources
+* **Properties** describe resources
+* **Configurations** control how dbt builds resources in the warehouse. Could be set cross resources in `dbt_project.yml`, in a `properties.yml` under a folder, `config()` in a sql or resource file.
+* The `dbt_project.yml` may have many resources configured at once:
+  ```yaml
+  models:
+    models:
+      # namespace for model configs matching the project name
+      airbnb:
+        +materialized: view
+  ```
 
-* **Models**: basic building block of the business logic. Includes materialized tables and views, and SQL files. Models can reference each other and use templates and macros
-
-The table lists when to use View vs Table:
+The table below lists when to use View vs Table:
 
 |  | View | Table|
 | --- | --- | --- |
@@ -30,20 +41,39 @@ The table lists when to use View vs Table:
 | **Storage** | None | Need Storage space for materialized tables |
 | **Performance** | Lot of steps leads to slower performance | Chained processes get improved perf. | 
 
+* dbt provides built-in testing (e.g., uniqueness, non-null checks) to catch broken logic 
+* **schema** is the data contract of elements of the model, and define in a separate yaml file.
+* There are two macros to cross reference tables: `{{ ref() }}` use to reference a table within a model and `{{source() }}` to reference external data sources. 
+
 ## Install
 
-* Need Python, and dbt should be installed in a virtual environment. [See installation instructions](https://docs.getdbt.com/docs/core/installation-overview)
+* Need Python, as dbt should be installed in a virtual environment. [See installation instructions](https://docs.getdbt.com/docs/core/installation-overview)
 * [Supported Python database](https://docs.getdbt.com/faqs/Core/install-python-compatibility)
-* Create a $HOME/.dbt folder to let dbt persist the dbt-profile.yaml file to keep user and DB credentials. Also create a dbt project
-* Init a project: This command creates some folders to organize work inside the project.
+* Create a `$HOME/.dbt` folder to let dbt persists the `dbt-profile.yaml` file to keep user and DB credentials. 
+* Init a project: This command creates some folders to organize work inside the data project.
     ```sh
     uv run dbt init --skip-profile-setup airbnb
     ```
 
+    See the examples in [code/dbt/airbnb](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/airbnb) folder.
+
 * Or in virtual env created with `uv` and `uv sync` use:
-     ```sh
-     dbt init
-     ```
+    ```sh
+    dbt init
+    ```
+
+    This will create a set of folders to manage all the needed elements of data pipelines.
+    
+    ```
+    models
+    analyses
+    tests
+    seeds
+    macros
+    snapshots
+    ```
+
+    and the `dbt_project.yml` and `profiles.yml` files to define dbt settings.
 
 ???- info "pyproject.toml"
     The following dependencies are needed:
@@ -59,12 +89,14 @@ The table lists when to use View vs Table:
 
 ### dbt_profile.yaml
 
-[profile.yaml](https://docs.getdbt.com/docs/local/profiles.yml?version=1.12) defines the structure of the project, and keep information to connect to database.
+* [profile.yaml](https://docs.getdbt.com/docs/local/profiles.yml?version=1.12) defines the structure of the project, and keeps information to connect to database.
+* [dbt_profile]
+
 
 ## Work on Models
 
 * Add Kimball structure as sources, dimensions, facts under the `models` folder
-* Add SQL materialized view using `SELECT ...`. No `INSERT INTO`
+* Add SQL materialized view using `SELECT ...`. Do not use `INSERT INTO`, as it will be added
 * Validate each new SQL creation: within the folder with the `dbt_profile.yaml`, to build a view in Snowflake for example
     ```sh
     dbt run
@@ -91,17 +123,24 @@ The table lists when to use View vs Table:
     ![](./images/src_listings_snowflake.png)
 
 
-* `dbt run` creates final sql under the `target` folder
-## Materialization
+* `dbt run` creates final sql queries under the `target` folder. This command can also apply to a specific table:
+  ```sh
+  dbr run --select +models/facts/fct_reviews.sql
+  ```
 
-There are four materialization:
+  The + in front of the name specifies to deploy parents tables too.
+
+## Materializations
+
+There are four materializations:
 
 * **View:** this is a lightweight representation of the data,  not reused. no recreationg of the table as each execution.
 * **Table:** reusable data in external table- recreate at each run
 * **Incremental:** fact tables appends to tables - more like event data - table is not recreated each time.
 * **Ephemeral (CTEs):** aliasing of the data and filtering data. Not adversitized in the data warehouse. For example all the sql under the `sources` are becoming CTEs
 
-Materializatio an be set golbally in the `dbt_profile.yaml`: all models are view, except in the dimensions folder as table:
+Materialization can be set globally in the `dbt_profile.yaml`: all models are views, except in the dimensions folder where there are tables:
+
 ```yaml
 models:
   airbnb:
@@ -285,7 +324,35 @@ The goal is to keep history of changes to the records over time and not just the
   ```sql
   ```
 
-## Other Database
+## Other Databases
+
+### Using dbt with DuckDB
+
+* Install dbt-duckdb python module: `uv add dbt-duckd`
+* Inport raw data to the Duckdb table or use Airflow to ETL such data.  For example in `code/dbt/airbnb/`, bootstrap the DuckDB raw tables with:
+   ```bash
+   export DBT_DUCKDB_PATH=./data/airbnb.duckdb
+   duckdb "${DBT_DUCKDB_PATH:-./data/airbnb.duckdb}" < scripts/bootstrap_duckdb_raw.sql
+   ```
+* Run dbt against DuckDB:
+   ```bash
+   cd airbnd
+   dbt seed --target duckdb
+   dbt run --target duckdb
+   dbt test --target duckdb
+   ```
+
+* Use duckdb query engine to look at the tables: First `duckdb ./data/airbnb.duckdb` command. See [the dot commands](https://duckdb.org/docs/current/clients/cli/dot_commands)
+  ```sql
+  .open data/airbnd.duckdb
+  .databases
+  .schema
+  .read FILENAME  Read and execute SQL from an external file
+  select * from raw.raw_hosts;
+  ```
+
+* As duckDb can be embedded into Python code, it is possible to load a Pandas dataframe from a table in duckdb.
+
 ### Using dbt with postgresql
 
 * Install Kubernetes Postgresql operator, then a postgres cluster and PGadmin webapp. See the minikube/posgresql folder 
@@ -312,7 +379,28 @@ The goal is to keep history of changes to the records over time and not just the
     select * from "default".customerorders;
     ```
 
+### Confluent Cloud Flink
 
+[Confluent dbt adapter](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/deploy-flink-dbt.html) aims to support standard dbt commands (init, debug, run, test, docs generate, etc.) against Confluent Cloud Flink, so teams can manage pipelines end-to-end from dbt rather than Terraform/REST only.
+
+In Confluent Cloud Flink context, the `dbt run` does not process data; it deploys or updates the definition of a continuous dataflow to the streaming engine. User runs `dbt run` only when the SQL queries changes.
+
+* dbt concept mapping. A dbt schema is a Flink database, while a dbt database is a Flink Catalog, and finally a dbt identifier is a Flink Table. The `schema` field in `profiles.yml` actually refers to a Kafka cluster name. The `database` field refers to an environment ID. Some error messages reference "schema" when they mean "Kafka cluster/database".
+
+* The dbt mapping:
+
+| Dbt construct | CC Flink | dbt confluent |
+| --------- | -------- | ------- |
+| view     | create view .. as select | view |
+| table     | snapshot query | streaming_table  |
+| incremental | not-supported | | 
+| ephemeral | not supported | | 
+| materialized_view | create table ... as select |
+| seed |Faker /datagen connector | streaming_source | 
+
+
+* Flink Demos using dbt:
+  * [wd-flink-demo](https://github.com/jbcodeforce/wd-flink-demo)
 
 ## Sources of Information
 

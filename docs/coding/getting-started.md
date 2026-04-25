@@ -50,15 +50,15 @@ This approach is ideal for development and testing on a single machine.
 
 2. Set environment variables:
    ```sh
-   export Flink_HOME=$(pwd)/flink-2.1.1
+   export FLINK_HOME=$(pwd)/flink-2.1.1
    export KAFKA_HOME=$(pwd)/kafka_2.13-3.9.0
-   export PATH=$PATH:$Flink_HOME/bin:$KAFKA_HOME/bin
+   export PATH=$PATH:$FLINK_HOME/bin:$KAFKA_HOME/bin
 
    ```
 
 3. Start the Flink cluster:
    ```sh
-   $Flink_HOME/bin/start-cluster.sh
+   $FLINK_HOME/bin/start-cluster.sh
    ```
 
 1. Access the Web UI at [http://localhost:8081](http://localhost:8081)
@@ -69,6 +69,7 @@ This approach is ideal for development and testing on a single machine.
    ./bin/flink list
    ./bin/flink cancel <id> 
    ```
+   
 1. Download needed SQL connector for Kafka
    ```sh
    cd Flink-2.1.1
@@ -82,7 +83,7 @@ This approach is ideal for development and testing on a single machine.
     $Flink_HOME/bin/stop-cluster.sh
     ```
 
-* [See this deployement readme in this repo](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/product-tar/README.md).
+* [See this deployment readme in this repo](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/product-tar/README.md).
 
 ### Running simple SQL application
 

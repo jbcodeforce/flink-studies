@@ -24,6 +24,8 @@ nav:
       - SQL Clients: coding/flink-sql-clients.md
       - Create Table (SQL): coding/flink-sql-1.md
       - SQL DML: coding/flink-sql-2.md
+      - Materialized Tables: coding/flink-sql-3.md
+      - Agentic applications: architecture/agentic_flink.md
     - Java - Python:
       - Table API: coding/table-api.md
       - DataStreams API: coding/datastream.md

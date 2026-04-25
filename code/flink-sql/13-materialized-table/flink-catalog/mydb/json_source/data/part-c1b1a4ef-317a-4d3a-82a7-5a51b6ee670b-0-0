@@ -1,0 +1,8 @@
+{"order_id":1001,"user_id":1,"user_name":"user1","order_created_at":"2024-06-19","payment_amount_cents":10}
+{"order_id":1002,"user_id":2,"user_name":"user2","order_created_at":"2024-06-19","payment_amount_cents":20}
+{"order_id":1003,"user_id":3,"user_name":"user3","order_created_at":"2024-06-19","payment_amount_cents":30}
+{"order_id":1004,"user_id":4,"user_name":"user4","order_created_at":"2024-06-19","payment_amount_cents":40}
+{"order_id":1005,"user_id":1,"user_name":"user1","order_created_at":"2024-06-20","payment_amount_cents":10}
+{"order_id":1006,"user_id":2,"user_name":"user2","order_created_at":"2024-06-20","payment_amount_cents":20}
+{"order_id":1007,"user_id":3,"user_name":"user3","order_created_at":"2024-06-20","payment_amount_cents":30}
+{"order_id":1008,"user_id":4,"user_name":"user4","order_created_at":"2024-06-20","payment_amount_cents":40}

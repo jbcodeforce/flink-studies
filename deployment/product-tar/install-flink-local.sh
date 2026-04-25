@@ -8,8 +8,9 @@ fi
 
 VERSION=$1
 SCALA_VERSION=2.12
+URL="https://dlcdn.apache.org/flink/flink-$VERSION/flink-$VERSION-bin-scala_$SCALA_VERSION.tgz"
 
-curl https://archive.apache.org/dist/flink/flink-$VERSION/flink-$VERSION-bin-scala_$SCALA_VERSION.tgz --output flink-$VERSION.tgz
+curl $URL --output flink-$VERSION.tgz
 tar -xzf flink-$VERSION.tgz
 rm flink-$VERSION.tgz
 export FLINK_HOME=$(pwd)/flink-$VERSION

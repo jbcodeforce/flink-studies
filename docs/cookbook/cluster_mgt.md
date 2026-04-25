@@ -2,6 +2,90 @@
 
 ## 1- Provisioning and Scaling Clusters
 
+### 1.0 Sizing Flink Resources
+
+#### Context
+Sizing a Flink cluster is a complex project task, influenced by many factors, including workload demands, application logic, data characteristics, expected state size, required throughput and latency, concurrency, and hardware. 
+
+Because of those variables, every Flink deployment needs a unique sizing approach. The most effective method is to run a real job, on real hardware and tune Flink to that specific workload.
+
+For architects seeking sizing guidance, it's helpful to consider:
+
+* the workload semantic complexity, with the usage of aggregations, joins, windows, processing type, 
+* the input throughput (MB/s or records/second), 
+* the expected state size (GB), 
+* the expected latency.
+
+While Kafka sizing estimates are based on throughput and latency, this is a very crude method for Flink, as it overlooks many critical details. 
+
+For new Flink deployments, a preliminary estimate can be provided, but it's important to stress its inexact nature. 
+
+A simple Flink job can process approximately **10,000 records per second per CPU**. However, a more substantial job, based on benchmarks, might process closer to 5,000 records per second per CPU. Estimations may use record size, throughput, and Flink statement complexity to estimate CPU load.
+
+Flink Task manager runs in JVM, and we should see the memory allocation as described in the figure below:
+
+<figure markdown="span">
+![1](./diagrams/tm_mem_map.drawio.png)
+<figcaption>Figure 1: Task Manager Memory Allocation</figcaption>
+</figure>
+
+* **Total Process Memory**: Memory allocated to the JVM process. 
+    ```yaml
+    spec:
+      containers:
+      - name: taskmanager
+        image: flink:latest
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2"
+          limits:
+            memory: "4Gi"
+            cpu: "2"
+        env:
+        - name: FLINK_PROPERTIES
+          value: |
+            taskmanager.numberOfTaskSlots: 2
+            taskmanager.memory.process.size: 4096m
+    ```
+
+* **Flink memory** is used by the Flink code, and is decomposed by 1/ <ins>network buffers</ins> to exchange partitions among operators, 2/ <ins>managed memory</ins> for state persistence buffering when using RockDB or ForSt, 3/ <ins>Task and Framework Off-heap</ins>, 4/ <ins>JVM Heap</ins>
+
+* For stateful streaming workloads, **managed memory** is usually the parameter that matters most. Shrink it and RocksDB gets less off-heap room for its block cache and other structures, so hot state falls back to disk more often and end-to-end latency increases. Grow it without proportionally sizing the **JVM heap** and the heap side for user functions can be squeezed, with GC events more likely to destabilize or fail the process.
+
+* In context of Confluent Platform for Flink, or Apache Flink, the deployment entity is an Application, which means 1 job manager and 1 to many task managers. So Kubernetes worker nodes host multiple job managers and Task managers. For most of the case the Job Manager use one core and 2GB of RAM. But when the number of keys in state grows it may be needed to go to 2-4 cores and 4-8 GB.
+
+#### Preconditions / Checklist
+
+Assess the following characteristics of each Flink application:
+
+* Desired Throughput and Latency
+* Message Size, data skew, number of distinct keys
+* Operator types, checkpoint interval, state size, parallelism
+* Concurrent Jobs
+
+Assess Hardware constraints:
+
+* Number of worker nodes
+* Memory and CPU per worker node
+* Network bandwidth
+
+#### CP Flink Estimation
+
+I tentatively built a [flink-estimator webapp](https://github.com/jbcodeforce/flink-estimator) with backend estimator for Apache Flink or Confluent Platform Cluster sizing.
+
+The tool needs to be simple, so it persists the estimation as json on the local disk. 
+
+To access this web app there is a docker image at [dockerhub - flink-estimator](https://hub.docker.com/repository/docker/jbcodeforce/flink-estimator/general). 
+
+The approach is to clone the repository: [https://github.com/jbcodeforce/flink-estimator](https://github.com/jbcodeforce/flink-estimator) 
+
+* use `docker-compose up -d` 
+* Access via web browser [http://localhost:8002/](http://localhost:8002/)
+    <figure markdown="span">
+    ![](./images/flink-estimator.png)
+    </figure>
+
 ### 1.1 Bring up new cluster/environment.
 #### Context
 Use this when you need a new Flink environment (e.g., dev / stage / prod or a new region) backed by one of:

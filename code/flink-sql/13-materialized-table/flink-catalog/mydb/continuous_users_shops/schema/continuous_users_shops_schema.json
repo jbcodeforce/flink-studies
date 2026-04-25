@@ -1,0 +1,28 @@
+{
+  "tableKind" : "MATERIALIZED_TABLE",
+  "catalogTableInfo" : {
+    "schema.0.data-type" : "BIGINT",
+    "definition-query" : "SELECT `tmp`.`user_id`, `tmp`.`ds`, SUM(`tmp`.`payment_amount_cents`) AS `payed_buy_fee_sum`, SUM(1) AS `PV`, AVG(`tmp`.`payment_amount_cents`) AS `avg_payment`\nFROM (SELECT `json_source`.`user_id`, `json_source`.`order_created_at` AS `ds`, `json_source`.`payment_amount_cents`\nFROM `mt_cat`.`mydb`.`json_source` AS `json_source`) AS `tmp`\nGROUP BY `tmp`.`user_id`, `tmp`.`ds`",
+    "schema.2.name" : "payed_buy_fee_sum",
+    "format" : "debezium-json",
+    "refresh-status" : "ACTIVATED",
+    "refresh-handler-bytes" : "rO0ABXNyADdvcmcuYXBhY2hlLmZsaW5rLnRhYmxlLnJlZnJlc2guQ29udGludW91c1JlZnJlc2hIYW5kbGVyAAAAAAAAAAECAARMAAljbHVzdGVySWR0ABJMamF2YS9sYW5nL1N0cmluZztMAA9leGVjdXRpb25UYXJnZXRxAH4AAUwABWpvYklkcQB+AAFMAAtyZXN0b3JlUGF0aHEAfgABeHB0ABNTdGFuZGFsb25lQ2x1c3RlcklkdAAGcmVtb3RldAAgZjE3ZGZkYzA2NTc5NzcwYjUzNzE3MGU5N2M3MjI0ODhw",
+    "schema.1.name" : "ds",
+    "freshness-interval" : "30",
+    "schema.4.name" : "avg_payment",
+    "refresh-mode" : "CONTINUOUS",
+    "schema.1.data-type" : "VARCHAR(2147483647)",
+    "partition.keys.0.name" : "ds",
+    "schema.3.data-type" : "INT NOT NULL",
+    "path" : "/Users/jerome/Documents/Code/flink-studies/code/flink-sql/13-materialized-table/flink-catalog/mydb/continuous_users_shops/data",
+    "schema.2.data-type" : "BIGINT",
+    "schema.3.name" : "PV",
+    "sink.rolling-policy.check-interval" : "10s",
+    "freshness-unit" : "SECOND",
+    "refresh-handler-desc" : "{\n executionTarget=remote,\n clusterId=StandaloneClusterId,\n jobId=f17dfdc06579770b537170e97c722488\n}",
+    "sink.rolling-policy.rollover-interval" : "10s",
+    "schema.4.data-type" : "BIGINT",
+    "logical-refresh-mode" : "AUTOMATIC",
+    "schema.0.name" : "user_id"
+  }
+}

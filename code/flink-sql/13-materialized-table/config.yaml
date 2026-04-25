@@ -1,0 +1,48 @@
+env:
+  java:
+    opts:
+      all: --add-exports=java.rmi/sun.rmi.registry=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+jobmanager:
+  bind-host: localhost
+  rpc:
+    address: localhost
+    port: 6123
+  memory:
+    process:
+      size: 1600m
+  execution:
+    failover-strategy: region
+
+
+taskmanager:
+  bind-host: localhost
+  host: localhost
+  numberOfTaskSlots: 4
+  memory:
+    process:
+      size: 4096m
+
+parallelism:
+  default: 4
+
+execution:
+  checkpoints:
+    dir: file:///Users/jerome/Documents/Code/flink-studies/code/flink-sql/13-materialized-table/checkpoints
+
+# Configure file catalog store
+table:
+  catalog-store:
+    kind: file
+    file:
+      path: /Users/jerome/Documents/Code/flink-studies/code/flink-sql/13-materialized-table/flink-catalog-store
+
+# Configure embedded scheduler
+workflow-scheduler:
+  type: embedded
+
+# Configure SQL gateway address and port
+sql-gateway:
+  endpoint:
+    rest:
+      address: 127.0.0.1
+      port: 8083
