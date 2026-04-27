@@ -190,15 +190,6 @@ See [Confluent Cloud Flink documentation](../techno/ccloud-flink.md) for more de
 
 Explore the [Shift Left project](https://jbcodeforce.github.io/shift_left_utils/), your dedicated CLI for scaling and organizing Confluent Cloud Flink projects with an opinionated, streamlined approach.
 
-## Choosing the Right Deployment Approach
-
-| Approach | Use Case | Pros | Cons |
-|----------|----------|------|------|
-| Local Binary | Development, Testing | Simple setup, Fast iteration | Limited scalability, or manual configuration and maintenance on distributed computers.|
-| Docker | Development, Testing | Containerized, Reproducible | Manual orchestration |
-| Kubernetes | Production | Scalable, Production-ready | Complex setup |
-| Confluent Cloud | Production | Fully managed, No ops | Vendor Control Plane |
-
 
 ## Additional Resources
 

@@ -1,18 +1,12 @@
-# Agentic demo – Local Flink
+# Agentic demo – local (OSS) Flink
 
-## Goal
+Scope: **no** Confluent Cloud and **no** Kubernetes in this demo folder—only what you need to run [Apache Flink Agents](https://nightlies.apache.org/flink/flink-agents-docs-latest/docs/get-started/overview/) with a **local** Flink cluster and Python 3.11 + `uv`.
 
-Flink Agents (Python): use flink-agents package with local Flink. See root [../README.md](../README.md) and [Flink Agents docs](https://nightlies.apache.org/flink/flink-agents-docs-release-0.1/).
+## Where to go next
+
+- **Install, `PYTHONPATH`, and run commands:** [../README.md](../README.md)
+- **Book chapter** (agentic + Flink): [../../docs/architecture/agentic_flink.md](../../docs/architecture/agentic_flink.md)
 
 ## Status
 
-Ready. Local Flink install; Python 3.11 + uv, PYTHONPATH for JVM.
-
-## Implementation approach
-
-- **No IaC.** Local Flink only; no K8s or cloud.
-- **Application logic:** Python/uv env and flink-agents at root.
-
-## How to run
-
-From **demo root**: install local Flink, set PYTHONPATH, run agent commands per root README. See [../README.md](../README.md).
+The demo is **documented** for: local Flink install, `uv` env, `flink-agents`, optional **Ollama** for upstream quickstart scripts.

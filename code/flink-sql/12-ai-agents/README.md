@@ -77,7 +77,7 @@ The use case is on Reefers temperature monitoring to assess potential cold chain
     from windowed_average
     ```
 
-    The above query computes anomaly per device on the average temperature variable, so each device/variable is like having its own model, with a threashold of 4% of standard deviation. In classical ML implementation, we export all the data per device and do ML training on the telemetries of each device. Current ML_DETECT_ANOMALIES uses one variable.
+    The above query computes anomaly per device on the average temperature variable, so each device/variable is like having its own model, with a threshold of 4% of standard deviation. In classical ML implementation, we export all the data per device and do ML training on the telemetries of each device. Current ML_DETECT_ANOMALIES uses one variable.
 
     [See ML_DETECT_ANOMALIES() documentation](https://docs.confluent.io/cloud/current/ai/builtin-functions/detect-anomalies.html#ml-detect-anomalies). 
 
@@ -101,6 +101,28 @@ The use case is on Reefers temperature monitoring to assess potential cold chain
 
     ![](./images/ml_anomaly_results.png)
 
+* **Gating (ML first, “agent” second):** `ML_DETECT_ANOMALIES` returns a `ROW` with `is_anomaly` (see [Confluent documentation](https://docs.confluent.io/cloud/current/ai/builtin-functions/detect-anomalies.html#ml-detect-anomalies)). Only those windows need an expensive follow-up (LLM triage, ticket, or human page). Expose them as a view for a downstream Kafka sink, `CREATE TABLE AS SELECT`, or a [Streaming Agent](https://docs.confluent.io/cloud/current/ai/overview.html) consumer.
+
+    ```sql
+    CREATE VIEW reefer_anomaly_escalations AS
+    SELECT
+        device_id,
+        window_start,
+        window_end,
+        avg_temp,
+        anomaly
+    FROM reefer_anomalies
+    WHERE anomaly.is_anomaly = true;
+    ```
+
+    Example check:
+
+    ```sql
+    SELECT * FROM reefer_anomaly_escalations WHERE device_id = 'reefer_01';
+    ```
+
+    In production you would sink `reefer_anomaly_escalations` to a topic (for example `coldchain.reefer.anomaly.v1`) that a small consumer or agent runtime subscribes to. That consumer is the stand-in for “call the LLM” or “open a ticket.” The book chapter stresses not calling an LLM on every telemetry window—this view is the branch that makes that real.
+
 * Types of Quality Issues Detectable: The Confluent platform offers capabilities to detect:
     * **Stale Data:** A value remaining constant for an extended period because no new data is arriving.
     * **Outlier Detection:** Spikes in data, which can be done through fixed thresholds or the virtual model detecting unfamiliar patterns.
@@ -108,8 +130,11 @@ The use case is on Reefers temperature monitoring to assess potential cold chain
     * **Data Drift:** Detecting small, gradual changes (e.g., a 5% increase over a day) that might not immediately trigger a fixed threshold alert.
 
 
+* **Replay and reprocessing:** the Faker source in this lab is not a durable log, so you cannot “replay the same day” the way you can with Kafka. For a replay exercise, use a Kafka topic as the `reefer` input, retain data long enough, then reset offsets or use a new consumer group and re-run the Flink job—see [REPLAY.md](REPLAY.md).
+
 * Clean tables:
     ```sql
+    DROP VIEW IF EXISTS reefer_anomaly_escalations;
     drop view `reefer_telemetry_burst`;
     drop table `reefer_telemetries`;
     drop table `reefer_anomalies`;

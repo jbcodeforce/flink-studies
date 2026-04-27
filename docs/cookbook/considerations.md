@@ -22,6 +22,7 @@ In application mode, the user jars are bundled with the Flink distribution, and 
 ### Apache Flink Standalone
 
 The key points to work on:
+
 * The processes presented above are executed within the host operating system.
 * SREs have to restart failed processes, or allocation and de-allocation of resources during operation
 * For getting HA, Zookeeper needs to be started, and the Flink configuration needs to be changed to support multiple Job Managers.
@@ -270,6 +271,33 @@ The configuration flexibility:
 
 #### Source of information
 The [examples in Confluent github](https://github.com/confluentinc/confluent-Kubernetes-examples) provides scenario workflows to deploy and manage Confluent on Kubernetes including Flink and [this article: How to Use Confluent for Kubernetes to Manage Resources Outside of Kubernetes](https://www.confluent.io/blog/resource-management-with-confluent-for-Kubernetes/) covers part of the deployment. 
+
+### Choosing the Right Deployment Approach
+
+Confluent Platform and Confluent Cloud offerings are evolving constantly. The following criterias are accurate as of **04/27/2026**
+
+At the high level view, the following table list the pros and cons.
+
+| Approach | Use Case | Pros | Cons |
+|----------|----------|------|------|
+| Local Binary | Development, Testing |  Full flexibility (all APIs: SQL, Table, DataStream), huge community, no license cost. Simple setup, Fast iteration, Development, or production with limited scope or Flink knowledgeable SRE team. Got the last features as soon as release. | Limited scalability, or manual configuration and maintenance on distributed computers.|
+| Confluent Platform - Kubernetes | Production deployment on your own k8s.| Scalable, Production-ready - K8S management, version to version mgt | Small gap between release of Apache Flink and CP. |
+| Confluent Cloud | Production | Fully managed, cloud-native, serverless Flink service tightly integrated with Confluent Cloud Kafka, Schema Registry, governance, and security. Version to version migration, no orchestrator management | Vendor Control Plane |
+
+With Apache Flink or Confluent Platform for Flink, your team own the cluster sizing, HA, checkpointing/state backends, upgrades/patching, monitoring, autoscaling, security hardening, multi-cluster ops, integration with Kafka and Schema Registry, DR, etc.
+
+Confluent Cloud is for cloud-first teams who want to standardize on Kafka+Flink with minimal ops/TCO, fast onboarding (SQL-first), elastic workloads, and built-in governance.
+
+For the specifics constraints per product:
+
+| Product | Features |
+| --- | --- | 
+| _Confluent Platform for Flink_ | - Enterprise support & expertise<br> - **Lifecycle management at fleet scale:** Confluent Manager for Apache Flink (CMF) + Flink K8s Operator + C3 integration to manage many Flink clusters/environments (creation, upgrades, savepoints, health, resource usage) from a unified control plane<br> - **Curated subset of APIs** (SQL, Table, DataStream/ProcessFunction) and connectors, plus best-practice defaults for security, workload isolation, encryption, autoscaling<br> - **Single support surface for Kafka and Flink:** removes “two-vendor finger-pointing” and lowers adoption barrier for regulated enterprises.<br> - **On-prem / regulated workloads:** designed for customers who cannot use fully managed CC for some use cases (government, FSI, healthcare, critical infra); supports K8s (incl. Red Hat/OpenShift, s390x) and hybrid patterns with CP/CC Kafka. |  
+| _Confluent Cloud_ | - **Zero ops / serverless**: no clusters, no state backends, no checkpoint tuning; you just define SQL/Table API (**no Datastream API**)  jobs, CC handles deployment, scaling, fault-tolerance, and upgrades.<br>- **Autoscaling + scale-to-zero**: Autopilot adjusts parallelism/CFUs per statement; compute is elastic and deallocated when idle → pay only for CFUs actually used, not provisioned capacity.<br>- **Deep Kafka/Schema integration**: Kafka topics and schemas appear automatically as Flink tables; DDL creates/updates physical topics and SR subjects, giving one operational catalog across Kafka + Flink.<br>- **Unified platform**: shared RBAC, IAM, audit, governance, observability with rest of Confluent Cloud; regional service with cross-cluster access within a region.<br>- **Innovation surface**: managed UDFs, AI model inference, external tables (key/text/vector search) for RAG-style and enrichment patterns, etc., delivered first in CC Flink.|
+
+* CP Flink gives you control over infra and topology (K8s, storage, network, DR) at the cost of ops effort; CC Flink offloads almost all of that.
+* CP Flink exposes the full Flink surface (including DataStream) for existing/advanced Flink users; CC Flink is intentionally more opinionated (SQL/Table-first) to keep the service manageable and serverless. Use CC to default for net-new stream processing on Confluent Cloud, especially when TCO, velocity, and governance matter more than infra control.
+* For me there is more an hybrid story where CP Flink can be your on-prem/hardened data plane with CC as control plane or Kafka backbone, enabling “run where you must, manage where you can.” 
 
 ## High Availability
 
