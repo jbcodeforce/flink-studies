@@ -1,4 +1,4 @@
 echo "Starting local development environment..."
 
 
-mkdocs server --dev-addr=0.0.0.0:8003
+mkdocs serve --dev-addr=0.0.0.0:8003

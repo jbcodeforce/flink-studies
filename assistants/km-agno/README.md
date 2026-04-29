@@ -2,6 +2,11 @@
 
 Index the flink-studies documentation and code with [Agno](https://docs.agno.com) and a local [Chroma](https://www.trychroma.com/) store, then run semantic **search** (vector retrieval) or **ask** (RAG: local [Ollama](https://ollama.com) by default, or other LLM with OpenAI client).
 
+## Features
+
+* [ ] List content of a folder passed as parameter to extract md file or code.
+* [ ] 
+
 ## Setup
 
 1. **Python 3.12+** and [uv](https://docs.astral.sh/uv/).

@@ -23,7 +23,21 @@
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "stopOnEntry": false
-        }
+        },
+        {
+            "name": "km-agno: pytest (file)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "${file}",
+                "-v",
+                "-s"
+            ],
+            "cwd": "${workspaceFolder}/assistants/km-agno",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
         {
             "name": "Python: Current File",
             "type": "python",

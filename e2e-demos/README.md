@@ -117,7 +117,13 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 
 | Demo | Path | Description |
 |------|------|-------------|
-| **package-event-cutoff** | `package-event-cutoff/` | Package morning cutoff (11:30): pass-through + proactive emit for no-event packages; ETA computation with UDF. **Deployment:** `cccloud/` (IaC, run_use_case_*.sh). Shared: sql-scripts/, tests/, eta_udf/. |
+| **package-event-cutoff** | [package-event-cutoff](./package-event-cutoff/) | Package morning cutoff (11:30): pass-through + proactive emit for no-event packages; ETA computation with UDF. **Deployment:** `cccloud/` (IaC, run_use_case_*.sh). Shared: sql-scripts/, tests/, eta_udf/. |
+
+## 10. Flink Watermark
+
+| Demo | Path | Description |
+|------|------|-------------|
+| Watermark stale | [flink-watermark](./flink-watermark/README.md) | |
 
 ---
 
@@ -129,7 +135,7 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 | **CDC (Qlik / custom envelope)** | `cdc-dedup-transform` |
 | **Deduplication** | `dedup-demo`, `cdc-dedup-transform`, `cc-cdc-tx-demo` |
 | **Enrichment / joins** | `cc-cdc-tx-demo`, `json-transformation`, `external-lookup`, `e2e-streaming-demo` |
-| **Windowing / aggregation** | `cc-cdc-tx-demo`, `e2e-streaming-demo`, `e-com-sale`, `flink-to-feast` |
+| **Windowing / aggregation** | `cc-cdc-tx-demo`, `e2e-streaming-demo`, `e-com-sale`, `flink-to-feast`, `flink-watermark` |
 | **JSON / nested** | `json-transformation` |
 | **External DB lookup** | `external-lookup`, `e2e-streaming-demo` (JDBC temporal) |
 | **ML / feature store** | `flink-to-feast`, `cc-cdc-tx-demo` (tx_scoring) |
@@ -143,6 +149,7 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 | **SQL Gateway** | `sql-gateway-demo` |
 | **Flink Agents** | `agentic-demo` |
 | **Time-based cutoff / proactive events** | `package-event-cutoff` |
+| **Flink Watermark** | `flink-watermark` |   
 
 ---
 
@@ -161,6 +168,10 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 
 * [Readme](./json-transformation/README.md)
 * [To Do](./json-transformation/checklist.md)
+
+### Flink Watermark
+
+* [Readme](./flink-watermark/README.md)
 
 ## CC-flink Demonstrations
 
