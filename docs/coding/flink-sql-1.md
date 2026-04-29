@@ -8,6 +8,8 @@ This chapter offers a compilation of best practices for implementing Flink SQL s
 
 Data Definition Language (DDL) are statements to define metadata in Flink SQL by creating, updating, or deleting tables. [See the Flink SQL Examples in Confluent Cloud for Apache Flink documentation.](https://docs.confluent.io/cloud/current/flink/reference/sql-examples.html#flink-sql-examples-in-af-long)
 
+Because Flink implements ANSI-Standard SQL, it uses a database analogy, and similar to a database, it uses the concepts of catalogs, databases and tables. In Confluent Clooud, these concepts map to environments, Kafka clusters, and topics, respectively.
+
 A table registered with the CREATE TABLE statement can be used as a table source or a table sink.
 
 Create table statements do not changes between managed services and standalone Flink deployment, except the metadata. Each examples with specific standalone content, will be marked as Flink OSS, which also works for Confluent Platform Flink.

@@ -6,6 +6,7 @@
 *From zero to running: required configs, resource requests, restart strategies.*
 
 There two types of Jobs/Flink application to consider for deployment: 
+
 * the java/python application (DataStream or TableAPI)
 * the SQL Statements. 
 

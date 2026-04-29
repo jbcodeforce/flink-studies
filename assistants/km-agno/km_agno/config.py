@@ -34,7 +34,28 @@ def get_embedding_model() -> str:
 
 
 def get_chat_model() -> str:
-    return os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+    """OpenAI chat model id when KM_AGNO_LLM=openai (see also OPENAI_MODEL)."""
+    return os.environ.get("OPENAI_MODEL") or os.environ.get("LLM_MODEL", "gpt-4o-mini")
+
+
+def get_LLM_url() -> str:
+    """LLM HTTP API base URL (e.g. local server)."""
+    return (
+        os.environ.get("LLM_URL")
+        or os.environ.get("OLLAMA_BASE_URL")
+        or "http://127.0.0.1:11434"
+    )
+
+
+def use_ollama_for_chat() -> bool:
+    """
+    LLM for `km-agno ask`: Ollama (local) vs OpenAI.
+    Set KM_AGNO_LLM=openai to use OpenAI; default is Ollama.
+    """
+    v = os.environ.get("KM_AGNO_LLM", "ollama").strip().lower()
+    if v in ("openai", "cloud"):
+        return False
+    return True
 
 
 def load_assistants_dotenv() -> None:

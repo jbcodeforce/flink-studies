@@ -1,10 +1,10 @@
-# km-agno
+# Knowledge Management with Agno
 
-Index the flink-studies documentation and code with [Agno](https://docs.agno.com) and a local [Chroma](https://www.trychroma.com/) store, then run semantic **search** (vector retrieval) or **ask** (RAG with an OpenAI chat model).
+Index the flink-studies documentation and code with [Agno](https://docs.agno.com) and a local [Chroma](https://www.trychroma.com/) store, then run semantic **search** (vector retrieval) or **ask** (RAG: local [Ollama](https://ollama.com) by default, or other LLM with OpenAI client).
 
 ## Setup
 
-1. **Python 3.11+** and [uv](https://docs.astral.sh/uv/).
+1. **Python 3.12+** and [uv](https://docs.astral.sh/uv/).
 
 2. From this directory:
 
@@ -13,14 +13,21 @@ Index the flink-studies documentation and code with [Agno](https://docs.agno.com
    uv sync
    ```
 
-3. **API key**: set `OPENAI_API_KEY` (embeddings for indexing/search, and chat for `ask`). A common pattern in this repo is to put it in `assistants/.env`; km-agno loads that file automatically when it exists.
+3. **Embeddings (index + search)**: `OPENAI_API_KEY` is required for OpenAI embeddings unless you change the embedder in code. Put keys in `assistants/.env` if you use it; km-agno loads that file when present.
+
+4. **Chat (`ask`)**: by default uses **Ollama** on `OLLAMA_HOST` (see below). No OpenAI key needed for `ask` unless you set `KM_AGNO_LLM=openai`.
 
 ## Environment variables
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `OPENAI_API_KEY` | (required for index/ask/search) | OpenAI API |
-| `OPENAI_MODEL` | `gpt-4o-mini` | Chat model for `ask` |
+| `OPENAI_API_KEY` | — | Required for **index** and **search** (embeddings) |
+| `OLLAMA_HOST` | `http://127.0.0.1:11434` | Ollama API base URL for local inference (`ask`) |
+| `OLLAMA_BASE_URL` | — | Alias for `OLLAMA_HOST` if set |
+| `OLLAMA_MODEL` | `llama3.1` | Model name as known to Ollama (`ollama pull …`) |
+| `KM_AGNO_LLM` | `ollama` | `ollama` = local chat; `openai` = cloud chat (`OPENAI_API_KEY` + `OPENAI_MODEL` / `LLM_MODEL`) |
+| `OPENAI_MODEL` | — | Overrides `LLM_MODEL` for OpenAI chat when `KM_AGNO_LLM=openai` |
+| `LLM_MODEL` | `gpt-4o-mini` | OpenAI model id if using OpenAI for `ask` |
 | `FLINK_STUDIES_ROOT` | auto: parent of `assistants/` | Repository root when not passing `--root` |
 | `KM_AGNO_CHROMA_PATH` | `assistants/km-agno/.data/chromadb` | Persistent Chroma directory |
 | `KM_AGNO_COLLECTION` | `flink_studies` | Chroma collection name |
@@ -38,13 +45,14 @@ uv run km-agno index --root /path/to/flink-studies/docs
 uv run km-agno index --recreate
 ```
 
-**Ask** (RAG: model answers using retrieved chunks):
+**Ask** (RAG; uses Ollama at `OLLAMA_HOST` by default):
 
 ```bash
+# Ensure Ollama is running and the model is pulled, e.g. ollama pull llama3.1
 uv run km-agno ask "Where is the agentic Flink demo described?"
 ```
 
-**Search** (top similar chunks, no LLM answer):
+**Search** (top similar chunks, no LLM answer; still needs `OPENAI_API_KEY` for query embedding):
 
 ```bash
 uv run km-agno search "Flink SQL windowing" -k 8
@@ -58,3 +66,4 @@ Text-like files under the chosen root: Markdown, SQL, Java/Kotlin, Python, YAML,
 
 - Point `--root` at a smaller path (e.g. `docs/`) to test before indexing the full tree.
 - The vector database is stored under `.data/chromadb` (see `.gitignore`); it is not committed to git.
+- Remote Ollama: set `OLLAMA_HOST` to your server URL (must be reachable from this machine).

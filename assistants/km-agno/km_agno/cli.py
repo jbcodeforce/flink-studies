@@ -64,8 +64,14 @@ def ask_cmd(
 ) -> None:
     """Answer a question using the indexed knowledge (RAG)."""
     _load_env()
-    if not os.environ.get("OPENAI_API_KEY"):
-        typer.secho("OPENAI_API_KEY is required.", err=True, fg="red")
+    from km_agno.config import use_ollama_for_chat
+
+    if not use_ollama_for_chat() and not os.environ.get("OPENAI_API_KEY"):
+        typer.secho(
+            "OPENAI_API_KEY is required when KM_AGNO_LLM=openai.",
+            err=True,
+            fg="red",
+        )
         raise typer.Exit(1)
 
     q = " ".join(question).strip()
