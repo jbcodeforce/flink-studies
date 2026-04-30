@@ -205,9 +205,167 @@ width: 8rem;
     background-color: #B36DE3;
 }
 
-/* tabs border */
-.md-typeset .tabbed-set>label {
-    border-bottom: .1rem solid #B36DE3;
+/*
+ * Content tabs (pymdownx.tabbed with alternate_style: true)
+ * Labels are in .tabbed-alternate .tabbed-labels — not .tabbed-set>label
+ */
+:root {
+  --md-content-tab-border: #B36DE3;
+}
+
+/* Material: hide JS-driven sliding bar under tab labels (default looks like a black underline) */
+@media screen {
+  .js .md-typeset .tabbed-alternate .tabbed-labels::before,
+  .md-typeset .tabbed-alternate .tabbed-labels::before {
+    content: none !important;
+    display: none !important;
+  }
+}
+
+/* Remove default inset rule line under the tab row */
+.md-typeset .tabbed-alternate .tabbed-labels {
+  box-shadow: none;
+  align-items: flex-end;
+  gap: 0.2rem;
+  margin-bottom: 0;
+  padding: 0;
+}
+
+/* Inactive tab labels: grey, no box */
+.md-typeset .tabbed-alternate .tabbed-labels > label {
+  border: 0.1rem solid transparent;
+  background: transparent;
+  font-weight: 500;
+  color: var(--md-default-fg-color--lighter, #9e9e9e);
+  z-index: 0;
+  margin: 0;
+}
+
+/* Bordered content panel (shared with active tab) */
+.md-typeset .tabbed-alternate .tabbed-content {
+  position: relative;
+  z-index: 1;
+  border: 0.1rem solid var(--md-content-tab-border);
+  border-radius: 0 0.1rem 0.1rem 0.1rem;
+  background-color: var(--md-default-bg-color, #fff);
+  margin: 0;
+  padding: 0.5rem 0.75rem 0.9rem;
+}
+
+/* Active tab: blue outline, connects to the panel (folder-tab) */
+@media screen {
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(1):checked
+    ~ .tabbed-labels
+    > :nth-child(1),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(2):checked
+    ~ .tabbed-labels
+    > :nth-child(2),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(3):checked
+    ~ .tabbed-labels
+    > :nth-child(3),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(4):checked
+    ~ .tabbed-labels
+    > :nth-child(4),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(5):checked
+    ~ .tabbed-labels
+    > :nth-child(5),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(6):checked
+    ~ .tabbed-labels
+    > :nth-child(6),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(7):checked
+    ~ .tabbed-labels
+    > :nth-child(7),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(8):checked
+    ~ .tabbed-labels
+    > :nth-child(8),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(9):checked
+    ~ .tabbed-labels
+    > :nth-child(9),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(10):checked
+    ~ .tabbed-labels
+    > :nth-child(10),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(11):checked
+    ~ .tabbed-labels
+    > :nth-child(11),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(12):checked
+    ~ .tabbed-labels
+    > :nth-child(12),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(13):checked
+    ~ .tabbed-labels
+    > :nth-child(13),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(14):checked
+    ~ .tabbed-labels
+    > :nth-child(14),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(15):checked
+    ~ .tabbed-labels
+    > :nth-child(15),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(16):checked
+    ~ .tabbed-labels
+    > :nth-child(16),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(17):checked
+    ~ .tabbed-labels
+    > :nth-child(17),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(18):checked
+    ~ .tabbed-labels
+    > :nth-child(18),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(19):checked
+    ~ .tabbed-labels
+    > :nth-child(19),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(20):checked
+    ~ .tabbed-labels
+    > :nth-child(20) {
+    color: var(--md-default-fg-color, #0d0d0d);
+    font-weight: 700;
+    z-index: 2;
+    border-color: var(--md-content-tab-border);
+    background-color: var(--md-default-bg-color, #fff);
+    /* hide panel top border only under the active tab */
+    border-bottom-color: var(--md-default-bg-color, #fff);
+    margin-bottom: -0.1rem;
+    padding: 0.6rem 0.9rem 0.75rem;
+    border-top-left-radius: 0.1rem;
+    border-top-right-radius: 0.1rem;
+  }
 }
 
 /* headings */

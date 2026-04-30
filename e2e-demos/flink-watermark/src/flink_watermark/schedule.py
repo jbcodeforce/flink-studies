@@ -18,7 +18,11 @@ TARGET_WINDOW_END_SEC = 60
 
 @dataclass(frozen=True)
 class ProducerPlan:
-    """How many events each phase emits (for tests and logging)."""
+    """
+    Define event produced semantic for testing watermark,
+    phase 1 is for idle partitions 
+    how many events each phase emits.
+    """
 
     phase1_end_inclusive_sec: int
     phase2_start_sec: int
@@ -58,6 +62,13 @@ def format_event_time_iso(ts: datetime) -> str:
 
 
 def default_plan() -> ProducerPlan:
+    """
+    two-phase producer to four partitions; 
+    phase one writes event time 0–20s on all partitions; 
+    phase two writes 21–59s only on partitions 0 and 1 so 2 and 3 go idle. 
+    The story window is [50s, 60s) on the fixed base time `2020-01-01T00:00:00Z` (10-second tumbles in SQL).
+    """
+
     return ProducerPlan(
         phase1_end_inclusive_sec=20,
         phase2_start_sec=21,

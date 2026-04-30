@@ -5,8 +5,22 @@ This demonstration shows stalled event-time progress when some Kafka partitions 
 ## What is implemented
 
 - Docker Compose: Confluent `cp-kafka:8.2.0` in KRaft mode (single combined broker+controller, no ZooKeeper), same pattern as [../kafka-topic-consumer-offsets/docker-compose.yaml](../kafka-topic-consumer-offsets/docker-compose.yaml). Host bootstrap `localhost:9092`; in-stack bootstrap for Flink is `broker:29092`. Flink 2.2.0 JobManager and TaskManager with the Kafka SQL connector fat JAR (see [Dockerfile](Dockerfile)).
-- SQL: [sql/01_baseline.sql](sql/01_baseline.sql) (idle handling off) and [sql/02_mitigation.sql](sql/02_mitigation.sql) (global and scan idle timeouts).
-- Python (uv): two-phase producer to four partitions; phase one writes event time 0–20s on all partitions; phase two writes 21–59s only on partitions 0 and 1 so 2 and 3 go idle. The story window is [50s, 60s) on the fixed base time `2020-01-01T00:00:00Z` (10-second tumbles in SQL).
+- SQL: [sql/01_baseline.sql](sql/01_baseline.sql) (idle handling off) and [sql/02_mitigation.sql](sql/02_mitigation.sql) (global and scan idle timeouts). The basic is to count the number of elements in time windows:
+    ```sql
+    INSERT INTO print_wm
+    SELECT
+        window_start,
+        window_end,
+        COUNT(*) AS cnt
+    FROM TABLE(
+        TUMBLE(TABLE events, DESCRIPTOR(event_time), INTERVAL '10' SECONDS)
+    ) GROUP BY window_start, window_end;
+    ```
+- Python (uv): Kafka producer to four partitions with phase one writes event time 0–20s on all partitions; phase two writes 21–59s only on partitions 0 and 1 so 2 and 3 go idle. The story window is [50s, 60s) on the fixed base time `2020-01-01T00:00:00Z` (10-second tumbles in SQL).
+
+![](./docs/scope.drawio.png)
+
+The producer sends 1 message for each event second. 
 
 ## Prerequisites
 

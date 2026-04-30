@@ -28,8 +28,8 @@ CREATE TABLE events (
 );
 
 CREATE TABLE print_wm (
-  window_start TIMESTAMP(3),
-  window_end TIMESTAMP(3),
+  window_start TIMESTAMP_LTZ(3),
+  window_end TIMESTAMP_LTZ(3),
   cnt BIGINT
 ) WITH (
   'connector' = 'print',

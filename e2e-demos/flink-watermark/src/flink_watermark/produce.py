@@ -33,22 +33,17 @@ def _delivery_callback(err, _msg) -> None:
 
 def run(
     bootstrap: str,
-    topic: str,
-    dry_run: bool = False,
+    topic: str
 ) -> None:
+    """Produce events to Kafka based on the plan."""
     plan = default_plan()
     pending = 0
     produced = 0
 
-    producer: Producer | None = None
-    if not dry_run:
-        producer = Producer(
-            {
-                "bootstrap.servers": bootstrap,
-                "enable.idempotence": False,
-                "linger.ms": 0,
-            }
-        )
+    producer = Producer({
+        "bootstrap.servers": bootstrap,
+        "linger.ms": 0,
+    })
 
     def send(partition: int, t_sec: int) -> None:
         nonlocal pending, produced
@@ -56,10 +51,6 @@ def run(
         ts = format_event_time_iso(ev_t)
         eid = f"p{partition}-t{t_sec:05d}"
         value = _build_payload(eid, ts)
-        if dry_run:
-            log.info("DRY p=%s t=%s", partition, t_sec)
-            produced += 1
-            return
         assert producer is not None
         producer.produce(
             topic,
@@ -79,6 +70,7 @@ def run(
         plan.phase1_end_inclusive_sec,
         plan.num_partitions - 1,
     )
+    # each event.event_time.second send one message on all partitions
     for t in range(0, plan.phase1_end_inclusive_sec + 1):
         for p in range(plan.num_partitions):
             send(p, t)
@@ -91,6 +83,7 @@ def run(
         plan.phase2_end_inclusive_sec,
         plan.active_partitions_phase2,
     )
+    # each second send one message on partitions 0 and 1
     for t in range(plan.phase2_start_sec, plan.phase2_end_inclusive_sec + 1):
         for p in plan.active_partitions_phase2:
             send(p, t)
@@ -115,13 +108,8 @@ def main() -> None:
         "--topic",
         default=os.environ.get("KAFKA_TOPIC", "watermark_demo"),
     )
-    p.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Do not connect; print the phase plan only.",
-    )
     args = p.parse_args()
-    run(args.bootstrap, args.topic, dry_run=args.dry_run)
+    run(args.bootstrap, args.topic)
     sys.exit(0)
 
 
