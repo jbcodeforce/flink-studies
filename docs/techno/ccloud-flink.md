@@ -492,7 +492,8 @@ See [Grafana integration](https://docs.confluent.io/cloud/current/monitoring/thi
     * When registering to CC, one org is created with the user who registered. Other users are invited.
 
 
-The following table list some classical use case and expected role:
+The following table list some classical use cases and the expected roles:
+
 | Use Case | Least privilege role needed |
 | -------- | ----------- |
 | Create environment  |  EnvironmentAdmin | 

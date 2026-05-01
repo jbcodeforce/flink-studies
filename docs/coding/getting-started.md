@@ -154,39 +154,130 @@ See [Kubernetes deployment chapter](./k8s-deploy.md) for detailed instructions, 
 
 ## 4. Confluent Cloud Deployment
 
-This approach provides a fully managed Flink service and very easy to get started quickly without managing Flink clusters or Kafka Clusters. It uses the confluent cli
+This section presents a SRE-facing checklist when onboarding a new data engineer so they can access Flink workspaces and deploy Flink SQL statements in Confluent Cloud. Most of infrastructure as code for Confluent resources, service account, role binding can be done with Terraform.
 
-1. Upgrade the cli
-   ```sh
-   confluent update
-   ```
-1. Create a Flink compute pool:
-   ```sh
-   confluent flink compute-pool create my-pool --cloud aws --region us-west-2
-   ```
+Then the classical tasks that should be enabled to a Data Engineer are:
 
-2. Start SQL client:
-   ```sh
-   confluent flink shell
-   ```
+- Engineer can log into Confluent Cloud, open the **Flink workspace**, and see the correct catalogs/databases/tables based on RBAC.
+- Engineer can run a simple SELECT query against an allowed table and see results.
+- Engineer can deploy one background statement (e.g., `INSERT INTO ... SELECT ...`) using the appropriate service account / compute pool, and monitoring shows it as healthy and consuming data
 
-3. Submit SQL statements:
-   ```sql
-   CREATE TABLE my_table (
-     id INT,
-     name STRING
-   ) WITH (
-     'connector' = 'kafka',
-     'topic' = 'my-topic',
-     'properties.bootstrap.servers' = 'pkc-xxxxx.region.provider.confluent.cloud:9092',
-     'properties.security.protocol' = 'SASL_SSL',
-     'properties.sasl.mechanism' = 'PLAIN',
-     'properties.sasl.jaas.config' = 'org.apache.kafka.common.security.plain.PlainLoginModule required username="<API_KEY>" password="<API_SECRET>";',
-     'format' = 'json'
-   );
-   ```
+The following is a detailed chekclist to assess as a Data Engineer to get the full scope of what to consider to deploy Flink Statement in production:
 
-See [Confluent Cloud Flink documentation](../techno/ccloud-flink.md) for more details.
+### 1. Organization, Environments, and Regions
+
+- Which Confluent Cloud **organization** will the engineer use (ID / name)?
+- Which **environments** (dev, test, prod) should they have access to?
+- For each environment, which **cloud provider and region(s)** are in scope for Flink (must match Kafka regions)?
+
+### 2. Identity, RBAC, and Service Accounts
+
+- What is the IdP/SSO setup and which SSO groups should map to Flink roles?
+- Should the engineer be granted **FlinkDeveloper** only, or also **FlinkAdmin** in any environments? [See this summary for access controle](../techno/ccloud-flink.md/#role-base-access-control)
+- Which Kafka cluster / topic-level RBAC roles do they need to read/write tables from Flink?
+- Will long-running Flink SQL statements use a service account? If yes:
+   - Which service account(s) should be created or reused?
+   - Who grants the **Assigner** role binding so the engineer can run statements with that service account?
+
+### 3. Networking and Connectivity
+
+- Will the engineer access Flink via public networking (allowed IPs) or private networking?
+- If private networking:
+  - Are we using a Confluent Cloud Network (CCN), PrivateLink Attachment (PLATT), or both for the relevant environments/regions?
+  - Are Flink endpoints reachable from the engineer’s network path (CCN / PLATT / peering)?
+- Are any corporate firewalls / proxies changes required (domains, ports) to reach:
+  - Confluent Cloud UI (Flink workspace)
+  - Flink SQL Shell / drivers (e.g., confluent-sql)
+  - Metrics / observability endpoints (Metrics API, Prometheus, Datadog, etc.)?
+
+### 4. Kafka & Schema Registry Prerequisites
+
+- Which Kafka clusters and topics will the engineer read/write from Flink?
+- Are the necessary topics and schemas already created?
+- Is Schema Registry enabled and reachable in the same regions, and are SR API / RBAC permissions configured for this engineer (or service account)?
+- Are there any naming conventions (topics, tables, catalogs/databases) the engineer must follow?
+
+### 5. Flink Compute Pools and Capacity
+
+- Are we using the default compute pool or explicit compute pools for this environment/region?
+- For explicit compute pools:
+  - Which compute pool(s) should this engineer target (name, region, environment)?
+  - What are the max CFU limits per pool and any per-statement limits we want to enforce?
+- Do we have any workload isolation rules (e.g., separate pools for dev vs prod, or per team/use case)?
+- Who is responsible for monitoring and adjusting CFU capacity as workloads grow?
+
+### 6. Tooling, Automation, and CI/CD
+
+- Which tools are **approved/standard** for managing Flink SQL:
+      - Confluent Cloud console (Flink workspace)
+      - **Confluent CLI**
+      - [Terraform](../cookbook/terraform.md) Confluent provider
+      - [dbt-confluent](./dbt.md) (dbt adapter)
+      - [shift_left utils](https://jbcodeforce.github.io/shift_left_utils/) to manage Flink project at scale with best practices enforcement.
+
+- Where should Flink SQL artifacts live (git repo, dbt project, etc.) and what is the review process?
+- How is promotion handled (dev → test → prod) for Flink SQL
+
+### 7. Observability, Monitoring, and Alerts
+
+- Which observability stack is in use for Flink - outside of Confluent Cloud?
+- Are standard dashboards already available for:
+  - Compute pools (CFU usage, backpressure, errors)
+  - Flink statement health and lag (pending records / messages behind)?
+- What alerting rules should be configured for this engineer’s workloads (e.g., lag thresholds, failure/restart loops, CFU saturation)?
+- How will the engineer access logs / error details for their statements (UI, API, log integrations)?
+
+### 8. Guardrails, Data Governance, and Safety
+
+- Are there RBAC guardrails to prevent:
+  - DDL in prod (CREATE/DROP/ALTER) by individuals
+  - Writes to sensitive topics/tables
+  - Cross-environment/table joins that violate governance?
+- What is the approved approach for handling late data, DLQs, and error-handling.mode on tables (if already standardized)?
+
+### 9. Incident Management and Support Paths
+
+- For Flink-related issues, what is the internal escalation path (Slack channels, on-call rotations, runbooks)?
+- Are there any runbooks specific to:
+  - Stuck or degraded statements
+  - Compute pool capacity exhaustion
+  - Misconfigured networking / access failures?
+- Who is the primary SRE contact for this engineer’s environment/region?
+
+???- info "Demonstrate with Confluent cli"
+      This approach provides a fully managed Flink service and very easy to get started quickly without managing Flink clusters or Kafka Clusters. It uses the confluent cli
+
+      1. Upgrade the cli
+         ```sh
+         confluent update
+         ```
+      1. Create a Flink compute pool:
+         ```sh
+         confluent flink compute-pool create my-pool --cloud aws --region us-west-2
+         ```
+
+      2. Start SQL client:
+         ```sh
+         confluent flink shell
+         ```
+
+      3. Submit SQL statements:
+         ```sql
+         CREATE TABLE my_table (
+         id INT,
+         name STRING
+         ) WITH (
+         'connector' = 'kafka',
+         'topic' = 'my-topic',
+         'properties.bootstrap.servers' = 'pkc-xxxxx.region.provider.confluent.cloud:9092',
+         'properties.security.protocol' = 'SASL_SSL',
+         'properties.sasl.mechanism' = 'PLAIN',
+         'properties.sasl.jaas.config' = 'org.apache.kafka.common.security.plain.PlainLoginModule required username="<API_KEY>" password="<API_SECRET>";',
+         'format' = 'json'
+         );
+         ```
+
+      See [Confluent Cloud Flink documentation](../techno/ccloud-flink.md) for more details.
 
 Explore the [Shift Left project](https://jbcodeforce.github.io/shift_left_utils/), your dedicated CLI for scaling and organizing Confluent Cloud Flink projects with an opinionated, streamlined approach.
 

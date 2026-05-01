@@ -29,7 +29,8 @@ nav:
     - Java - Python:
       - Table API: coding/table-api.md
       - DataStreams API: coding/datastream.md
-    - UDFs & PTFs: coding/udf_sql.md
+    - UDFs: coding/udf_sql.md
+    - PTFs: coding/ptf.md
     - Deployment: 
       - Manage CC Flink projects: https://jbcodeforce.github.io/shift_left_utils/
       - dbt: coding/dbt.md
@@ -51,6 +52,8 @@ nav:
     - Apache Iceberg: https://jbcodeforce.github.io/techno/data/#data-related-technologies
     - Kafka-studies: https://jbcodeforce.github.io/kafka-studies
   - EDA: https://jbcodeforce.github.io/eda-studies
+  - Assistants:
+      - Local expert chat (Agno): assistants/local-expert-chat.md
 theme: 
   name: material 
   #logo: images/logo.drawio.png
@@ -92,6 +95,7 @@ markdown_extensions:
   - admonition
   - codehilite
   - footnotes
+  - tables
   - pymdownx.blocks.caption
   - pymdownx.arithmatex:
       generic: true

@@ -1,5 +1,0 @@
-chroma: local
-flink_sql:
-  type: html
-  urls:
-    - ../../../dedup.html
