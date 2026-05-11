@@ -662,7 +662,9 @@ A [temporal join](https://docs.confluent.io/cloud/current/flink/reference/querie
     LEFT JOIN stocks s FOR SYSTEM_TIME AS OF t.purchase_ts
     ON t.stockid = s.id
     ```
+
 * The query above is a temporal join. Temporal joins reduce state because only time-relevant versions of the RHS are needed. Progress is tied to watermarks. If `opening_value` changes over time, earlier enriched rows are not retroactively updated.  
+* When the event time used comes from the LHS, this event time needs to have a watermark strategy sets, if not it is not considered as a time attribute. By default on Confluent Cloud `$rowtime` can be used.
 * Temporal JOINs must include all of the PRIMARY KEY columns of the versioned (right-side) table: the ON conditions need to include exactly the same primary key columns:
     ```sql
     create table dim_rule_config(
@@ -695,11 +697,12 @@ A [temporal join](https://docs.confluent.io/cloud/current/flink/reference/querie
 
     [See also this sample for rule-based control](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/04-joins/rule_match_on_sensors/README.md) with temporal joins and constant columns.
 
-* When the LHS of a temporal join is upsert, the sink often needs retract changelog mode; with an append LHS, an append sink is typical.
+* When the LHS of a temporal join is upsert, the sink often needs retract changelog mode; while with an append LHS, an append sink is typical.
 * An inner join with only equality predicates is not a full Cartesian product; unconstrained joins can behave like one.
 * Outer joins (left, right, full) may emit rows with nulls for non-matching sides.
 
 ### Interval Join 
+
 * Interval joins are particularly useful when working with unbounded data streams. Here is an example for orders and payments, where 
     ```sql
     CREATE TABLE valid_orders (

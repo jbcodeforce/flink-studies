@@ -20,6 +20,15 @@ Index the flink-studies documentation and code with [Agno](https://docs.agno.com
    uv sync
    ```
 
+Always invoke Python via **`uv run`** from `assistants/km_agno` (or use **`assistants/km_agno/.venv/bin/python`** if you activate the venv). Plain **`python`** / **`python3`** uses the system interpreter and will raise **`ModuleNotFoundError: No module named 'agno'`** because `agno` is installed only into that project environment.
+
+### Troubleshooting: `No module named 'agno'`
+
+1. `cd assistants/km_agno && uv sync`
+2. Start the app with `uv run ...` (see [Start the server](#start-the-server) below), not `python -m` from a global install.
+3. In VS Code / Cursor, choose **Python: Select Interpreter** → `assistants/km_agno/.venv/bin/python`.
+4. If this appears **only when using `uvicorn --reload`**, drop `--reload` or use `uv run python -m uvicorn ...` (see [Start the server](#start-the-server)).
+
 ## Indexing content using the CLI
 
 ### km_agno index
@@ -54,16 +63,22 @@ Text-like files under the chosen root: Markdown, SQL, Java/Kotlin, Python, YAML,
 
 ## Start the server
 
-Only when th knowledge base is updated.
+Run this after indexing when you want AgentOS + HTTP API.
+
+* Prefer **`uv run python -m uvicorn`** so the same interpreter loads `agno`. Avoid **`uvicorn ... --reload`** unless you need live reload: the reloader subprocess can pick **system Python** instead of the uv venv and raise **`No module named 'agno'`**.
 
 * Start with one of:
    ```sh
+   uv run python -m uvicorn km_agno.server:app --host 127.0.0.1 --port 7777
+   # OR (reload only if needed — see note above)
+   uv run python -m uvicorn km_agno.server:app --reload --host 127.0.0.1 --port 7777
+   # OR
    uv run python -m km_agno.server
    # OR
    uv run fastapi dev km_agno/server.py
-   # OR
-   uv run uvicorn km_agno.server:app --reload --host 127.0.0.1 --port 7777
 ```
+
+* From repo root, `./start_local.sh` with **`WITH_KM_AGNO_CHAT=1`** starts AgentOS **without** `--reload` by default. Set **`KM_AGNO_UVICORN_RELOAD=1`** to enable reload.
 
 * The API doc is at [http://localhost:7777/docs](http://localhost:7777/docs)
 
@@ -135,7 +150,7 @@ npm run test
 
 ### MkDocs integration
 
-This repo’s documentation includes **Assistants → Local expert chat (Agno)** ([MkDocs page](../../docs/assistants/local-expert-chat.md)). From the repository root, `WITH_KM_AGNO_CHAT=1 ./start_local.sh` starts MkDocs (port 8003), AgentOS (7777), and the Vite UI (5174) together for local browsing and chat.
+This repo’s documentation includes **Assistants → Local expert chat (Agno)** ([MkDocs page](../../docs/assistants/local-expert-chat.md)). From the repository root, `WITH_KM_AGNO_CHAT=1 ./start_local.sh` starts MkDocs (port 8003), AgentOS (7777, no `--reload` unless `KM_AGNO_UVICORN_RELOAD=1`), and the Vite UI (5174) together for local browsing and chat.
 
 ## Commands
 

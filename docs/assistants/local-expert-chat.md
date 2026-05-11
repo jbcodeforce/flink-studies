@@ -36,7 +36,7 @@ Prerequisites:
 - Python **uv** env synced in `assistants/km_agno` (`uv sync`).
 - Node dependencies in `assistants/km_agno/frontend` (`npm install` once).
 
-This starts AgentOS on port **7777**, the Vite dev server on **5174**, then **MkDocs** on **8003**. Stop with Ctrl+C (child processes are torn down).
+This starts AgentOS on port **7777**, the Vite dev server on **5174**, then **MkDocs** on **8003**. Stop with Ctrl+C (child processes are torn down). AgentOS is started **without** uvicorn `--reload` so the worker keeps using the uv environment (`agno` imports reliably). To turn reload on: **`KM_AGNO_UVICORN_RELOAD=1 WITH_KM_AGNO_CHAT=1 ./start_local.sh`**.
 
 Unless you override it, **`start_local.sh` sets `VITE_STATIC_SITE_URL` to `http://localhost:8003`** for the chat UI so the top bar shows **Back to studies** (MkDocs). To hide that link: `VITE_STATIC_SITE_URL="" WITH_KM_AGNO_CHAT=1 ./start_local.sh`. For other repos or ports, set `VITE_STATIC_SITE_URL` and optionally `VITE_STATIC_SITE_LABEL` (see `assistants/km_agno/frontend/.env.example`).
 
