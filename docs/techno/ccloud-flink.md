@@ -379,7 +379,7 @@ Be sure to enable cloud notifications and at least monitor topic consumer lag me
 
 The `flink/pending.records` is the most important metrics to consider. It corresponds to consumer lag in Kafka and “Messages Behind” in the Confluent Cloud UI. Monitor for high and increasing consumer lag.
 
-At the Statement level we can get the following metrics, over time:
+At the Statement level we can get the following metrics over time:
 
 ![](./images/statement_metrics.png)
 
@@ -401,7 +401,7 @@ For internal system error, this may be linked to resources issue. [See standard 
 
 Developers can now visualize data flow, track data volume processed by each operator, and identify operators experiencing high latency, unbounded state growth, or backpressure.
 
-As explained [in Flink Dataflow concept](http://localhost:8000/flink-studies/concepts/#dataflow), a task is responsible for executing a specific part of the data processing logics. As a task may be divided into multiple subtasks, the metrics at the task level will be calculated by aggregating together the metrics from the subtasks inside the task. 
+As explained [in Flink Dataflow concept](https://jbcodeforce.github.io/flink-studies/concepts/#dataflow), a task is responsible for executing a specific part of the data processing logics. As a task may be divided into multiple subtasks, the metrics at the task level will be calculated by aggregating together the metrics from the subtasks inside the task. 
 
 As Flink optimizes the operators execution plan, so operator level metrics are also reported. Operators which are chained together form tasks, tasks will be presented visually by grouping operators together inside a rectangle.
 

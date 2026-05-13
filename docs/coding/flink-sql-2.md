@@ -166,6 +166,22 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
         info from `procedures` cross join unnest(parentIds) as ids(parent_id)
     ```
 
+### [Snapshot queries](https://docs.confluent.io/cloud/current/flink/concepts/snapshot-queries.html)
+
+Enabling [snapshot query](https://docs.confluent.io/cloud/current/flink/concepts/snapshot-queries.html) forces Flink to process data in a topic as a bounded set, from the earliest available record to the latest offset when the query is submitted. On Confluent cloud, when Tableflow is enabled on the topic, the query will also read the historical data from the Iceberg table and then read only the latest records from the Kafka topic.
+
+It is used for reporting, assessing historical data, investigating issues on past data.
+
+```sql
+SET 'sql.snapshot.mode' = 'now';.
+SELECT ...
+```
+
+![](./images/snapshot_q.png)
+
+When summitting statement via the REST API, the mode is set via spec properties. 
+
+Flink automatically switches to batch mode processing. Snapshot queries use read-committed as the default isolation level, which aligns with Kafka’s exactly-once semantics (EOS).
 
 ### Deduplication
 
@@ -663,7 +679,7 @@ A [temporal join](https://docs.confluent.io/cloud/current/flink/reference/querie
     ON t.stockid = s.id
     ```
 
-* The query above is a temporal join. Temporal joins reduce state because only time-relevant versions of the RHS are needed. Progress is tied to watermarks. If `opening_value` changes over time, earlier enriched rows are not retroactively updated.  
+* Temporal joins reduce state because only time-relevant versions of the RHS are needed. Progress is tied to watermarks. If `opening_value` changes over time, earlier enriched rows are not retroactively updated.  
 * When the event time used comes from the LHS, this event time needs to have a watermark strategy sets, if not it is not considered as a time attribute. By default on Confluent Cloud `$rowtime` can be used.
 * Temporal JOINs must include all of the PRIMARY KEY columns of the versioned (right-side) table: the ON conditions need to include exactly the same primary key columns:
     ```sql
@@ -758,6 +774,55 @@ You can combine `LATERAL TABLE` with different join types to control which rows 
     JOIN addresses a ON c.id = a.customer_id;
     ```
 
+### Heartbeat pattern
+
+Flink SQL streaming queries depend upon a continuous flow of new events to advance event time in order for event-time based operations to emit results. With event-time based operations like, temporal JOINs, interval JOINs, Windows ( TUMBLE, HOP, CUMULATE, SESSION) and OVER aggregations, it may be possible that no events are emitted as result. To avoid this problem, we can inject dummy events (heartbeats) into the stream that is slow, so the watermark progresses.
+
+The pattern is better implemented in a separate topic, to avoid having records to filter out by any consumers of the topic. The Flink statement uses the UNION operator on the heartbeat  topic with the slow streaming records, and have Flink filter out the heartbeat records from the output so they don't affect downstream consumers.
+
+* Create the topic via SQL
+    ```sql
+    CREATE TABLE heartbeat
+    (
+    id int,
+    ts TIMESTAMP_LTZ(3) METADATA FROM 'timestamp',
+    WATERMARK FOR ts AS ts
+    );
+    ```
+
+* Create a CTE to union from both tables:
+    ```sql
+    with customers_cte as (
+        SELECT
+            customer_id,
+            customer_name,
+            age,
+            created_at,
+            `$rowtime` as ts
+        FROM  customers
+        UNION ALL
+        SELECT
+           CAST(NULL AS STRING) as customer_id,
+           CAST(NULL AS STRING) as customer_name,
+           CAST(0 AS INTEGER) as age,
+           CAST(NULL AS STRING) as created_at,
+           ts
+        FROM heartbeat
+    )
+    ```
+* Implement the windowing or other temporal operations on the CTE
+    ```sql
+    SELECT * 
+    FROM (
+        SELECT
+        *
+        FROM TUMBLE(
+            TABLE customers_cte,
+            DESCRIPTOR(ts),
+            INTERVAL '5' MINUTE
+        )
+    ) WHERE customer_id IS NOT NULL
+    ```
 
 ### References
 

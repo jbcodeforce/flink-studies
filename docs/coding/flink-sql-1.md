@@ -33,7 +33,9 @@ Create table statements do not changes between managed services and standalone F
 * Understanding the table structure and mapping from a Kafka topic: the basic query helps a lot to understand table configuration and column types. This is helpful to assess time column, to confirm if the type of a column as event_time is a STRING, TIMESTAMP or TIMESTAMP_LTZ.
 
     ```sql
-    show create table
+    show create table `tablename`
+    # or
+    DESCRIBE EXTENDED `tablename`
     ```
 
     The `TYPEOF(column_name)` can also being used in a select to understand the type, and troubleshooting a type error.

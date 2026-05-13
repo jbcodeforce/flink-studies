@@ -272,7 +272,7 @@ You need to recompute results for a historical period (e.g., due to a code bug o
 ## 6- Performance Testing
 
 ### 6.0 Establish a Performance Testing Platform
-### Context
+#### Context
 Load testing Apache Flink applications requires a shift from traditional request-response testing to a stream-centric approach. Instead of testing concurrent users, you are testing **sustained throughput, event-time latency, and state stability** under pressure.
 
 As any performance test, it is very import to decide what you’re optimizing for. Pick a primary goal per test run, which could be:
@@ -328,7 +328,8 @@ The following figures represents the different component for performance testing
 
 
 
-#### The following baseline abacus are used:
+#### The following baseline abacus are used
+
 * Typical Flink node configuration:
     * 4 CPU cores with 16GB memory
     * Should process 20-50 MB/s of data
@@ -342,7 +343,7 @@ The following figures represents the different component for performance testing
 
 [See the Flink Estimator tool](https://github.com/jbcodeforce/flink-estimator)
 
-### Preconditions / Checklist
+#### Preconditions / Checklist
 
 You need to have access to:
 
@@ -405,6 +406,7 @@ You need to have access to:
 #### Procedure
 #### Rollback
 #### Gotchas
+
 ### 6.2- GC/memory tuning, network/shuffle tuning.
 #### Context
 #### Preconditions / Checklist
@@ -412,6 +414,7 @@ You need to have access to:
 #### Procedure
 #### Rollback
 #### Gotchas
+
 ## 7- Common Incident Recipes
 
 See Confluent Product documentation for [troubleshoot Flink SQL statements](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/query-profiler.html#troubleshoot-flink-sql-statements).
@@ -526,5 +529,64 @@ If your configuration changes worsen things:
 #### Preconditions / Checklist
 #### Inputs / Parameters
 #### Procedure
+#### Rollback
+#### Gotchas
+
+### 7.4 Flink SQL debugging
+
+#### Context
+
+With a higher level of abstraction, the tools to assess SQL statements executions are different then pure Java based streaming processing. In this section we will review the practices and tools to assess Flink SQL statement in the context of Confluent Cloud in general and self-managed Flink deployment when relevant.
+
+##### Statement Lifecycle
+
+| State | Meaning | Action |
+| --- | --- | --- |
+| **PENDING** | Waiting for CFUs | Check compute pool utilization |
+| **RUNNING** | Actively processing | Monitor lag, watermarks, state size, throughput |
+| **COMPLETED** | Finished (DDL/bounded) | Normal for one-time operations |
+| **FAILED** | Unrecoverable error | Check logs, fix root cause |
+| **DEGRADED** | Checkpointing failing | Investigate state growth or resources |
+| **STOPPED** | Manually stopped | Resume or delete |
+
+#### Preconditions / Checklist
+
+* For Confluent Cloud: access to the console and being able to use Flink workspace
+
+#### Inputs 
+
+The following components are used for assessing Flink statement issues
+
+* Cloud Console -> Flink for Statements list and status per statement. In this view the important columns are:
+    * Status: Current state
+    * Messages Behind: Consumer lag (0 = healthy, growing = problem)
+    * Messages In/Out: Throughput + source/sink watermarks
+    * CFU: Resource consumption
+    * Time Created: How long it's been running
+
+    ![](./images/statement_list.png)
+
+* Cloud Console -> Flink Detail panel to assess current metrics for a given statement. Same metrics as above with time plotting figures.
+    ![](./images/statm-detail-view.png)
+
+    * Assess the watermark progression
+    * Review the CFU consumption over time to assess scaling capability. When there is high CFU usage with low throughput, it demonstrates a query ineffiency. 
+
+* Query Profiler (real-time visual monitoring)
+* Run `EXPLAIN `query to get the execution plan: Flink shows the Physical Plan of the query, which comprises all the operators Flink will use to execute your query. Look at operators with  potentially state-intensive which has no TTL applied, like joins:
+    ```
+    [8] StreamJoin
+    Changelog mode: append
+    State size: high
+    State TTL: never
+    ```
+
+
+* Metrics API
+* Snapshot queries for state inspection
+
+#### Procedure
+* Identify the common patterns:
+    
 #### Rollback
 #### Gotchas

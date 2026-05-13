@@ -57,16 +57,17 @@ if [[ "${WITH_KM_AGNO_CHAT:-}" == "1" ]]; then
   echo "  AgentOS logs: ${AGENT_LOG}"
   # Default: no --reload. Uvicorn's reload watcher spawns a child that can pick up system Python
   # instead of uv's venv, causing ModuleNotFoundError: agno. Enable reload with KM_AGNO_UVICORN_RELOAD=1.
-  RELOAD_FLAG=()
+  RELOAD_FLAG=""
   if [[ "${KM_AGNO_UVICORN_RELOAD:-}" == "1" ]]; then
-    RELOAD_FLAG=(--reload)
+    RELOAD_FLAG="--reload"
     echo "  KM_AGNO_UVICORN_RELOAD=1: uvicorn --reload enabled"
   else
     echo "  AgentOS without --reload (use KM_AGNO_UVICORN_RELOAD=1 for auto-reload when debugging)"
   fi
   (
     cd "${ASSISTANT_DIR}"
-    exec uv run python -m uvicorn km_agno.server:app "${RELOAD_FLAG[@]}" --host 127.0.0.1 --port 7777
+    source .venv/bin/activate
+    uv run python -m uvicorn km_agno.server:app ${RELOAD_FLAG} --host 127.0.0.1 --port 7777
   ) >>"${AGENT_LOG}" 2>&1 &
   AGENT_PID=$!
 
