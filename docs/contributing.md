@@ -1,3 +1,11 @@
+---
+title: "Contributing to this repository"
+source: flink-studies/docs/contributing.md
+ingested:
+tags: [flink, contributing]
+type: article
+compiled: false
+---
 # Contributing to this repository
 
 This chapter addresses how to support the development of this open source project.

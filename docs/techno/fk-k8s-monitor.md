@@ -1,3 +1,11 @@
+---
+title: "Monitoring Flink on Kubernetes"
+source: flink-studies/docs/techno/fk-k8s-monitor.md
+ingested:
+tags: [flink, operations, kubernetes]
+type: article
+compiled: false
+---
 # Monitoring Flink on Kubernetes 
 
 In this chapter, we assume Flink operator is deployed and some FlinkDeployments are running.

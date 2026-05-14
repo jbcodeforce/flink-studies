@@ -1,3 +1,11 @@
+---
+title: "Fit for purpose"
+source: flink-studies/docs/architecture/fitforpurpose.md
+ingested:
+tags: [flink, architecture]
+type: article
+compiled: false
+---
 # Fit for purpose
 
 ## Difference between Kafka Streams and Flink

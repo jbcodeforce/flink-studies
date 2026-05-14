@@ -1,3 +1,11 @@
+---
+title: "First Java Applications"
+source: flink-studies/docs/coding/firstapp.md
+ingested:
+tags: [flink, coding]
+type: article
+compiled: false
+---
 # First Java Applications
 
 

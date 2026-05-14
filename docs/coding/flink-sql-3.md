@@ -1,3 +1,11 @@
+---
+title: "Materialized Tables"
+source: flink-studies/docs/coding/flink-sql-3.md
+ingested:
+tags: [flink, sql]
+type: article
+compiled: false
+---
 # Materialized Tables
 
 

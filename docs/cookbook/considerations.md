@@ -1,3 +1,11 @@
+---
+title: "Deployment Model and Considerations"
+source: flink-studies/docs/cookbook/considerations.md
+ingested:
+tags: [flink, cookbook, operations]
+type: article
+compiled: false
+---
 # Deployment Model and Considerations
 
 ## Deployment Models

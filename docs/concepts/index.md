@@ -1,3 +1,11 @@
+---
+title: "Apache Flink - Core Concepts"
+source: flink-studies/docs/concepts/index.md
+ingested:
+tags: [flink, concepts, cep]
+type: article
+compiled: false
+---
 # Apache Flink - Core Concepts
 
 ???- "Version"

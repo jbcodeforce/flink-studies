@@ -1,3 +1,11 @@
+---
+title: "Moving to a Data as a Product Architecture"
+source: flink-studies/docs/methodology/data_as_a_product.md
+ingested:
+tags: [flink, methodology, data-mesh]
+type: article
+compiled: false
+---
 # Moving to a Data as a Product Architecture
 
 ???- info "Version"

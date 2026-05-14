@@ -1,3 +1,11 @@
+---
+title: "Flink Getting Started Guide"
+source: flink-studies/docs/coding/getting-started.md
+ingested:
+tags: [flink, coding]
+type: article
+compiled: false
+---
 # Flink Getting Started Guide
 
 ???- info "Updates"

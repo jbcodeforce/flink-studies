@@ -1,3 +1,11 @@
+---
+title: "Process Table Function"
+source: flink-studies/docs/coding/ptf.md
+ingested:
+tags: [flink, coding, python]
+type: article
+compiled: false
+---
 # Process Table Function
 
 

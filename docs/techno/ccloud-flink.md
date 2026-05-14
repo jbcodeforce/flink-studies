@@ -1,3 +1,11 @@
+---
+title: "Confluent Cloud for Apache Flink"
+source: flink-studies/docs/techno/ccloud-flink.md
+ingested:
+tags: [flink, operations, confluent-cloud]
+type: article
+compiled: false
+---
 # Confluent Cloud for Apache Flink
 
 ???- info "Chapter updates"

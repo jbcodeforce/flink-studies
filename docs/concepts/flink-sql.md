@@ -1,3 +1,11 @@
+---
+title: "Flink SQL Concepts"
+source: flink-studies/docs/concepts/flink-sql.md
+ingested:
+tags: [flink, concepts, cep]
+type: article
+compiled: false
+---
 # Flink SQL Concepts
 
 ???- Info "Updates"

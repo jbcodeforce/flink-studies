@@ -1,3 +1,11 @@
+---
+title: "Center of Excellence for Stream Processing Establishment"
+source: flink-studies/docs/methodology/coe.md
+ingested:
+tags: [flink, methodology]
+type: article
+compiled: false
+---
 # Center of Excellence for Stream Processing Establishment
 
 CoE is a centralized team or a virtual organization whose mission is to establish and disseminate best practices, provide expert consultation, and accelerate the adoption and successful, standardized deployment for real-time stream processing applications.

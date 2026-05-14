@@ -1,3 +1,11 @@
+---
+title: "Data Build Tool Summary"
+source: flink-studies/docs/coding/dbt.md
+ingested:
+tags: [flink, coding, dbt]
+type: article
+compiled: false
+---
 # Data Build Tool Summary
 
 * [Dbt core](https://github.com/dbt-labs/dbt-core) is an open source CLI and database agnostic used to allow data analysts and engineers to build reliable, modular data pipelines, creating "models" (SELECT statements) that are version-controlled, automatically documented, and tested for quality before consumption by BI tools.  Learn more about dbt [in the docs](https://docs.getdbt.com/docs/introduction).

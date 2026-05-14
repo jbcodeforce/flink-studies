@@ -1,3 +1,11 @@
+---
+title: "Table API"
+source: flink-studies/docs/coding/table-api.md
+ingested:
+tags: [flink, coding, table-api]
+type: article
+compiled: false
+---
 # Table API
 
 ???- info "Update"

@@ -1,3 +1,11 @@
+---
+title: "Flink Project Management"
+source: flink-studies/docs/cookbook/pm.md
+ingested:
+tags: [flink, cookbook]
+type: article
+compiled: false
+---
 # Flink Project Management
 
 When doing a project to deliver real-time processing there are a set of factors to consider. New project versus migration projects are not scoped the same, even if most of the time it is better for a migration project to start from the existing / updated business requirements, and leverage the lessons learned during the previous project to build a better solution.

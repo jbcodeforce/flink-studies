@@ -1,3 +1,11 @@
+---
+title: "Flink architecture"
+source: flink-studies/docs/architecture/index.md
+ingested:
+tags: [flink, architecture]
+type: article
+compiled: false
+---
 # Flink architecture
 
 ???- info "Update"

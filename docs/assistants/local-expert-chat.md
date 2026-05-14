@@ -1,3 +1,11 @@
+---
+title: "Local expert chat (Agno)"
+source: flink-studies/docs/assistants/local-expert-chat.md
+ingested:
+tags: [flink, assistants]
+type: article
+compiled: false
+---
 # Local expert chat (Agno)
 
 This site is built with MkDocs and deployed to GitHub Pages. The **indexed Flink expert chat** is a separate application that runs **only on your machine**. It is not part of the static site and is not available on the published documentation URL.

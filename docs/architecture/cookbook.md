@@ -1,3 +1,11 @@
+---
+title: "Flink Cookbook"
+source: flink-studies/docs/architecture/cookbook.md
+ingested:
+tags: [flink, architecture]
+type: article
+compiled: false
+---
 # Flink Cookbook
 
 ???- info "Chapter updates"

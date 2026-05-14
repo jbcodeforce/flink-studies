@@ -1,3 +1,11 @@
+---
+title: "Flink Kubernetes Deployment"
+source: flink-studies/docs/coding/k8s-deploy.md
+ingested:
+tags: [flink, coding, kubernetes]
+type: article
+compiled: false
+---
 # Flink Kubernetes Deployment
 
 ???- info "This chapter updates"

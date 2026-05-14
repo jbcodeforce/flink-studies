@@ -1,3 +1,11 @@
+---
+title: "Apache Flink Blog Posts Summary (2025–2026)"
+source: flink-studies/docs/news/flink-blog-posts-2025-2026.md
+ingested:
+tags: [flink, news]
+type: article
+compiled: false
+---
 # Apache Flink Blog Posts Summary (2025–2026)
 
 Summary of posts from the [Apache Flink Blog](https://flink.apache.org/posts/) for 2025 and 2026.

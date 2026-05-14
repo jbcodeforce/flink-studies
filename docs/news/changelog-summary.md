@@ -1,3 +1,11 @@
+---
+title: "Flink Studies Repository — Changelog Summary"
+source: flink-studies/docs/news/changelog-summary.md
+ingested:
+tags: [flink, news, release-notes]
+type: article
+compiled: false
+---
 # Flink Studies Repository — Changelog Summary
 
 Summary of recent changes from the git history (219 commits since 2024; latest March 2026).

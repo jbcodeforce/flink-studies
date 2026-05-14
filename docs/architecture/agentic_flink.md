@@ -1,3 +1,11 @@
+---
+title: "Agentic Applications Cross Systems"
+source: flink-studies/docs/architecture/agentic_flink.md
+ingested:
+tags: [flink, architecture, agents]
+type: article
+compiled: false
+---
 # Agentic Applications Cross Systems
 
 ???- "Version"

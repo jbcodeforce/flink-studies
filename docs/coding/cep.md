@@ -1,3 +1,11 @@
+---
+title: "Complex event processing"
+source: flink-studies/docs/coding/cep.md
+ingested:
+tags: [flink, coding, cep]
+type: article
+compiled: false
+---
 # Complex event processing
 
 The goal of CEP is to analyzing pattern relationships between streamed events. Complex processing can be done using Flink using three capabilities: 

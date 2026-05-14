@@ -1,3 +1,11 @@
+---
+title: "Job Lifecycle & State Management (App Owners + Platform)"
+source: flink-studies/docs/cookbook/job_lifecycle.md
+ingested:
+tags: [flink, cookbook, operations]
+type: article
+compiled: false
+---
 # Job Lifecycle & State Management (App Owners + Platform)
 
 

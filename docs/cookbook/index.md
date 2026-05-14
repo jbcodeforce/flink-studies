@@ -1,3 +1,11 @@
+---
+title: "A Production Cookbook for Managing Apache Flink"
+source: flink-studies/docs/cookbook/index.md
+ingested:
+tags: [flink, cookbook]
+type: article
+compiled: false
+---
 # A Production Cookbook for Managing Apache Flink
 
 ???- info "Chapter Version"

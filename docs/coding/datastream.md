@@ -1,3 +1,11 @@
+---
+title: "DataStreams Programming guidances and examples"
+source: flink-studies/docs/coding/datastream.md
+ingested:
+tags: [flink, coding, java]
+type: article
+compiled: false
+---
 # DataStreams Programming guidances and examples
 
 This chapter is a summary on how to use DataStream API, laborate from Apache Flink documentation, and other existing examples for Flink DataStream.

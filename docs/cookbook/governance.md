@@ -1,3 +1,11 @@
+---
+title: "Governance, Change Management & Best Practices"
+source: flink-studies/docs/cookbook/governance.md
+ingested:
+tags: [flink, cookbook, governance]
+type: article
+compiled: false
+---
 # Governance, Change Management & Best Practices
 
 ## Data Quality & Schema Evolution Incidents

@@ -1,3 +1,11 @@
+---
+title: "Last Flink News"
+source: flink-studies/docs/news/index.md
+ingested:
+tags: [flink, news]
+type: article
+compiled: false
+---
 # Last Flink News
 
 ???- info "Updates"

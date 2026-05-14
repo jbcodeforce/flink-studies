@@ -1,3 +1,11 @@
+---
+title: "Confluent Tableflow"
+source: flink-studies/docs/techno/cc-tableflow.md
+ingested:
+tags: [flink, operations, tableflow]
+type: article
+compiled: false
+---
 # Confluent Tableflow
 
 This chapter is based to public knowledge, product documentation, and customer engagements experiences. 

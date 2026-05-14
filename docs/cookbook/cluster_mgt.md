@@ -1,3 +1,11 @@
+---
+title: "Cluster & Environment Management"
+source: flink-studies/docs/cookbook/cluster_mgt.md
+ingested:
+tags: [flink, cookbook, operations]
+type: article
+compiled: false
+---
 # Cluster & Environment Management
 
 ## 1- Provisioning and Scaling Clusters

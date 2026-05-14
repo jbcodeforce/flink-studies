@@ -1,3 +1,11 @@
+---
+title: "Confluent Platform for Flink"
+source: flink-studies/docs/techno/cp-flink.md
+ingested:
+tags: [flink, operations, confluent-platform]
+type: article
+compiled: false
+---
 # Confluent Platform for Flink
 
 [The official product documentation after 07/2025 release is here.](https://docs.confluent.io/platform/current/flink/overview.html) 

@@ -1,3 +1,11 @@
+---
+title: "Integration with Kafka"
+source: flink-studies/docs/architecture/kafka.md
+ingested:
+tags: [flink, architecture, kafka]
+type: article
+compiled: false
+---
 # Integration with Kafka
 
 Flink has [a Kafka connector](https://ci.apache.org/projects/flink/flink-docs-release-1.14/dev/connectors/kafka.html) for consuming and producing messages. 

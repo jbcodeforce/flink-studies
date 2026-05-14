@@ -1,3 +1,11 @@
+---
+title: "Flink SQL DML"
+source: flink-studies/docs/coding/flink-sql-2.md
+ingested:
+tags: [flink, sql]
+type: article
+compiled: false
+---
 # Flink SQL DML
 
 ???- Info "Updates"

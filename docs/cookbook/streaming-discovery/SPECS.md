@@ -1,3 +1,11 @@
+---
+title: "Streaming discovery webapp — product specification"
+source: flink-studies/docs/cookbook/streaming-discovery/SPECS.md
+ingested:
+tags: [flink, cookbook, discovery, specifications]
+type: article
+compiled: false
+---
 # Streaming discovery webapp — product specification
 
 **Status:** Draft  

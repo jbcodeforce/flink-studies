@@ -1,3 +1,11 @@
+---
+title: "Flink SQL Client"
+source: flink-studies/docs/coding/flink-sql-clients.md
+ingested:
+tags: [flink, sql]
+type: article
+compiled: false
+---
 # Flink SQL Client
 
 ???+ Info "Updates"

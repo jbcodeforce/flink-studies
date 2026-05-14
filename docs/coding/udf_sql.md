@@ -1,3 +1,11 @@
+---
+title: "User Defined Functions"
+source: flink-studies/docs/coding/udf_sql.md
+ingested:
+tags: [flink, coding, sql]
+type: article
+compiled: false
+---
 # User Defined Functions
 
 [User-defined functions (UDFs)](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/udfs/) are extension to Flink SQL and Table API for frequently used logic and custom integration. It can be written in Java or PyFlink.

@@ -1,3 +1,11 @@
+---
+title: "Stateful function"
+source: flink-studies/docs/coding/stateful-func.md
+ingested:
+tags: [flink, coding, stateful-functions]
+type: article
+compiled: false
+---
 # Stateful function
 
 Update 1/2025: it seems the OSS project has less traction.

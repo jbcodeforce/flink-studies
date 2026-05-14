@@ -1,3 +1,11 @@
+---
+title: "Terraform for Confluent Cloud Flink"
+source: flink-studies/docs/cookbook/terraform.md
+ingested:
+tags: [flink, cookbook, terraform]
+type: article
+compiled: false
+---
 # Terraform for Confluent Cloud Flink
 
 ???- info "Version"

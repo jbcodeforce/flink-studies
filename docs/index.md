@@ -1,3 +1,11 @@
+---
+title: "🚧 The Complete Guide to Apache Flink and Confluent Flink"
+source: flink-studies/docs/index.md
+ingested:
+tags: [flink]
+type: article
+compiled: false
+---
 # 🚧 The Complete Guide to Apache Flink and Confluent Flink
 
 Welcome to **"A Guide to Apache Flink and Confluent Flink"** - a comprehensive, hands-on resource for mastering stream processing with Apache Flink and its enterprise distributions. I started this living book, in 2018 while working as IBM Distinguished Enginer / CTO for [Event-Driven Architecture](https://jbcodeforce.github.io/eda-studies/), and continue to enhance it while working at AWS and Confluent. It addresses practical implementations, methodologies and best practices I can share with my customers. In 2024 and 2025 I am focusing on Confluent Flink and Data mesh. All this content come from public content, articles, youtube, product documentations, git repositories.

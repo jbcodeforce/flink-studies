@@ -1,3 +1,11 @@
+---
+title: "Local code and demonstrations, plus other public references"
+source: flink-studies/docs/labs/index.md
+ingested:
+tags: [flink, labs]
+type: article
+compiled: false
+---
 # Local code and demonstrations, plus other public references
 
 This section lists the current demonstrations and labs in this git repository or the interesting public repositories about Flink
