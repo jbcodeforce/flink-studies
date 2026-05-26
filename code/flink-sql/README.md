@@ -135,7 +135,7 @@ Windowing examples (e.g. orders per minute).
 
 ## 11-puzzles
 
-Standalone puzzles and the compute_eta pipeline (UDF, shipment history, ETA).
+Standalone puzzles, the compute_eta pipeline (UDF, shipment history, ETA), and the tumble-then-hop rolling-feature study.
 
 | Asset | Code completion | Deployment status | Automation |
 |-------|------------------|-------------------|------------|
@@ -149,6 +149,7 @@ Standalone puzzles and the compute_eta pipeline (UDF, shipment history, ETA).
 | `highest_tx_per_day.sql` | Complete | Local | Manual |
 | `data/create_employees.sql`, `employees.csv` | Complete | Local | Manual |
 | `flink_sql_client.yaml`, `hostpath-*.yaml` | Complete | Kubernetes / Local | Manual |
+| `tumble_then_hop_rolling/README.md`, `rolling_from_hourly_buckets.sql` | Complete | Local | Manual |
 
 ---
 

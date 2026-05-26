@@ -89,6 +89,7 @@ Under code/flink-sql folder
 | **SQL puzzles (overview)** | [flink-sql/11-puzzles](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/11-puzzles/) | Highest transaction per day, employees data, table DDLs. Test env: Flink binary or Kubernetes. |
 | **Compute ETA (shipment)** | [flink-sql/11-puzzles/compute_eta](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/11-puzzles/compute_eta/) | ETA from shipment events: source `shipment_events`, `shipment_history` (ARRAY_AGG per shipment), join + UDF `estimate_delivery`. Confluent Cloud; Python UDF mock in `udf/`. `deploy_flink_statements.py`, Makefile. |
 | **Create tables (tx, loans, employees)** | [flink-sql/11-puzzles](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/11-puzzles/) | `create_tx_table.sql`, `create_loans_table.sql`, `data/create_employees.sql`, `highest_tx_per_day.sql`. |
+| **Tumble then hop (rolling features)** | [flink-sql/11-puzzles/tumble_then_hop_rolling](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/11-puzzles/tumble_then_hop_rolling/) | README + `rolling_from_hourly_buckets.sql`: coarse tumble, hop on buckets, conditional short lookbacks; bounded datagen + print sink. |
 
 ### 1.11 AI / ML Integration
 

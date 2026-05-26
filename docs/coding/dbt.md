@@ -417,3 +417,4 @@ In Confluent Cloud Flink context, the `dbt run` does not process data; it deploy
 * [Preset]()
 * [Snowflake](https://app.snowflake.com)  username: jbcodeforce. Using key-pair authentication. Public [key in Snowlflake](https://docs.snowflake.com/en/user-guide/opencatalog/key-pair-auth-configure#generate-a-private-and-public-key)
 * [Youtube tutorial](https://www.youtube.com/watch?v=cW7KFaos2cw)
+* [Patrick Neff's git repo: Stream Processing in Confluent Cloud Flink with data build tool (dbt)](https://github.com/pneff93/dbt-cc-stream-processing)

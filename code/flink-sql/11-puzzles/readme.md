@@ -62,3 +62,7 @@ The approach: use the transaction_date as a timestamp to apply time tumble windo
 * In most data pipeline there are set of data validation to be done to prepare the data to reach gold level quality, easily used for machine learning or dashboard. The transaction and loan-applications to assess fraud is part of [Kaggle dataset and with example of notebook](https://www.kaggle.com/code/prajwaldongre/fraud-detection-and-risk-assesment-model). From this notebook it is interesting to consider what could be done earler in the data pipeline, as soon as the data is created or shared within a messaging platform.
 
 * Need to transform the date into a timestamp and use it as the record time stamp
+
+## Two-stage window aggregation (tumble, then hop)
+
+Study: [tumble_then_hop_rolling](tumble_then_hop_rolling/README.md) — pre-aggregate with tumbling buckets, then hop on the compact series for long lookbacks; shorter horizons use conditional `SUM`/`MAX` over `bucket_end` vs `window_end`. Includes bounded datagen example [`rolling_from_hourly_buckets.sql`](tumble_then_hop_rolling/rolling_from_hourly_buckets.sql). Use the test environment above; start the Flink cluster before `sql-client.sh -f` (see the study README for a Docker one-liner).
