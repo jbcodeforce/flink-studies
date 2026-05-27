@@ -69,6 +69,46 @@ Create table statements do not changes between managed services and standalone F
     as select id, first_name, last_name, email from shoe_customers;
     ```
 
+???+ info "Controlling the source and sink connectors - WITH"
+    The [WITH options](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#with-options) define the table properties. The syntax looks like:
+    ```sql
+    CREATE TABLE tblname (
+       -- ...
+        PRIMARY KEY(time_key, product_key, customer_key, order_id, line_item_id) NOT ENFORCED
+    ) DISTRIBUTED BY HASH(time_key, product_key, customer_key) INTO 6 BUCKETS
+    WITH (
+        'changelog.mode' = 'upsert',
+        'key.avro-registry.schema-context' = '.flink-dev',
+        'value.avro-registry.schema-context' = '.flink-dev',
+        'key.format' = 'avro-registry',
+        'value.format' = 'avro-registry',
+        'kafka.retention.time' = '0',
+        'kafka.producer.compression.type' = 'snappy',
+        'scan.bounded.mode' = 'unbounded',
+        'scan.startup.mode' = 'earliest-offset',
+        'value.fields-include' = 'all'
+    );
+    ```
+
+???+ question "Connector supported in Flink"
+    The table option named `connector` is set by default to 'confluent' so Flink access kafka topic. Another setting is to use ['faker'](https://docs.confluent.io/cloud/current/flink/how-to-guides/custom-sample-data.html) to generate synthetic data.
+    
+    ```sql
+    WITH (
+        'changelog.mode' = 'upsert',
+        'connector' = 'faker',
+        'fields.brand_id.expression' = '#{Number.randomNumber ''3'',''false''}',
+        'fields.name.expression' = '#{Commerce.productName}',
+        'fields.product_id.expression' = '#{Number.randomNumber ''4'',''false''}',
+        'fields.vendor.expression' = '#{Commerce.vendor}',
+        'rows-per-second' = '1'
+    );
+    ```
+
+    or access to read-only external tables (public or private networking endpoints) using `KEY_SEARCH_AGG`, `TEXT_SEARCH_AGG` or `VECTOR_SEARCH_AGG`. [KEY_SEARCH_AGG](https://docs.confluent.io/cloud/current/ai/external-tables/key-search.html#syntax) can be integrated with JDBC database, couchbase, mongodb or a REST endpoint.
+    ```sql
+    ```
+
 ???+ question "How to support nested rows, DDL and inserts?"
     Avro, Protobuf or Json schemas are very often hierarchical per design. ROW and ARRAY are the objects with nested elements.
     `StatesTable` is a column in table `t`. It has rows of `states` column which is itself a array of `name,city,lg,lat`.

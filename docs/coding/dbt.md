@@ -11,7 +11,15 @@ compiled: false
 * [Dbt core](https://github.com/dbt-labs/dbt-core) is an open source CLI and database agnostic used to allow data analysts and engineers to build reliable, modular data pipelines, creating "models" (SELECT statements) that are version-controlled, automatically documented, and tested for quality before consumption by BI tools.  Learn more about dbt [in the docs](https://docs.getdbt.com/docs/introduction).
 * [dbt Cloud](https://www.getdbt.com/product/dbt): A managed service with a web-based IDE, scheduler, job orchestration, and monitoring
 
-Supported by ISVs in lake house market.
+Supported by ISVs in lake house market. 
+
+Confluent has also developed a [dbt adapter](https://pypi.org/project/dbt-confluent/) to deploy Flink SQL statements into Confluent Cloud for Flink.
+
+```sh
+pip install dbt-confluent
+# or
+uv add  dbt-confluent
+```
 
 ## Use Cases
 
@@ -98,13 +106,11 @@ The table below lists when to use View vs Table:
 ### dbt_profile.yaml
 
 * [profile.yaml](https://docs.getdbt.com/docs/local/profiles.yml?version=1.12) defines the structure of the project, and keeps information to connect to database.
-* [dbt_profile]
-
 
 ## Work on Models
 
 * Add Kimball structure as sources, dimensions, facts under the `models` folder
-* Add SQL materialized view using `SELECT ...`. Do not use `INSERT INTO`, as it will be added
+* Add SQL materialized view using `SELECT ...`. Do not use `INSERT INTO`, as it will be added automatically by `dbt`
 * Validate each new SQL creation: within the folder with the `dbt_profile.yaml`, to build a view in Snowflake for example
     ```sh
     dbt run
@@ -133,7 +139,7 @@ The table below lists when to use View vs Table:
 
 * `dbt run` creates final sql queries under the `target` folder. This command can also apply to a specific table:
   ```sh
-  dbr run --select +models/facts/fct_reviews.sql
+  dbt run --select +models/facts/fct_reviews.sql
   ```
 
   The + in front of the name specifies to deploy parents tables too.
@@ -235,7 +241,7 @@ models:
           identifier: raw_reviews
   ```
 
-* From there the src_*.sql needs to be modified to do not reference ay table name in the data warehouse, but the source aliases.
+* From there, the src_*.sql needs to be modified to do not reference any table name in the data warehouse, but use the source aliases.
   ```sql
   WITH raw_hosts AS (
       SELECT
@@ -256,7 +262,7 @@ models:
             error_after: {count: 24, period: hour}
     ```
 
-* Run the command: `sbt source freshness` to validate the data freshness.
+* Run the command: `dbt source freshness` to validate the data freshness.
 
 ## Type-2 slowly changing dimensions
 
@@ -285,13 +291,15 @@ The goal is to keep history of changes to the records over time and not just the
     ```
 
     ![](./images/scd_raw_listings.png)
+
 * An update to an existing record and a new `dbt snapshot` will create historical record.
 
 ## Tests
 
 * Two types of tests:
-  * Unit Tests
-  * Data Tests: run on actual data
+    * Unit Tests
+    * Data Tests: run on actual data
+
 * There are two types of data tests: singular(SQL queries stored in tests) and generic
 
 * Defining test is by adding a `schema.yaml` with conditions on table. [See example in models folder](https://github.com/jbcodeforce/flink-studies/blob/master/code/dbt/airbnb/models/schema.yaml)
@@ -387,7 +395,7 @@ The goal is to keep history of changes to the records over time and not just the
     select * from "default".customerorders;
     ```
 
-### Confluent Cloud Flink
+## Confluent Cloud Flink Specifics
 
 [Confluent dbt adapter](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/deploy-flink-dbt.html) aims to support standard dbt commands (init, debug, run, test, docs generate, etc.) against Confluent Cloud Flink, so teams can manage pipelines end-to-end from dbt rather than Terraform/REST only.
 
@@ -397,7 +405,7 @@ In Confluent Cloud Flink context, the `dbt run` does not process data; it deploy
 
 * The dbt mapping:
 
-| Dbt construct | CC Flink | dbt confluent |
+| Dbt construct | CC Flink | dbt confluent materialization |
 | --------- | -------- | ------- |
 | view     | create view .. as select | view |
 | table     | snapshot query | streaming_table  |
@@ -408,13 +416,29 @@ In Confluent Cloud Flink context, the `dbt run` does not process data; it deploy
 
 
 * Flink Demos using dbt:
-  * [wd-flink-demo](https://github.com/jbcodeforce/wd-flink-demo)
+    * [Research on PTF](https://github.com/jbcodeforce/research/tree/main/flink-ptf-multitenant-debezium-spanout/sql/order_pipeline)
+    * [wd-flink-demo](https://github.com/jbcodeforce/wd-flink-demo)
+
+### How to
+
+???+ question "How to specify table properties?"
+    Use the config function:
+
+    ```sql
+    {{ config(
+        materialized='streaming_table',
+        with={
+            'changelog.mode: 'upsert'
+              }
+       ) 
+    }}
+    ```
 
 ## Sources of Information
 
 * [Udemy training from Zoltan C. Toth](https://www.udemy.com/course/complete-dbt-data-build-tool-bootcamp-zero-to-hero-learn-dbt) with [Git Repo](https://github.com/nordquant/complete-dbt-bootcamp-zero-to-hero). Example of data [from Inside AirBnB](https://insideairbnb.com/berlin/).
 * [Dbt core](https://github.com/dbt-labs/dbt-core)
-* [Preset]()
+* [Preset](https://preset.io/product/) is a SaaS for [Apache Superset](https://superset.apache.org/) to develop BI dashboard, on cloud with dbt integration. It also includes a SQL Editor.
 * [Snowflake](https://app.snowflake.com)  username: jbcodeforce. Using key-pair authentication. Public [key in Snowlflake](https://docs.snowflake.com/en/user-guide/opencatalog/key-pair-auth-configure#generate-a-private-and-public-key)
 * [Youtube tutorial](https://www.youtube.com/watch?v=cW7KFaos2cw)
 * [Patrick Neff's git repo: Stream Processing in Confluent Cloud Flink with data build tool (dbt)](https://github.com/pneff93/dbt-cc-stream-processing)

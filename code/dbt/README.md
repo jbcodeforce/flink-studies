@@ -16,7 +16,6 @@ Once the dbt is install with uv. The approach is to implement the pipeline and t
     * Hosts
 
 
-
 ### DuckDB Raw Tables
 
 Use the same dbt project and models as Snowflake by switching the dbt target to DuckDB. Raw data lives in a local DuckDB file; no Snowflake account required.
@@ -49,3 +48,4 @@ dbt test --target duckdb
 
 Models (dimensions, facts, mart) and macros are adapter-aware; the same SQL runs on Snowflake (target `dev`) or DuckDB (target `duckdb`). Keep `profiles.yml` under `~/.dbt` or in `.gitignore` if it contains credentials.
 
+### dbt-confluent

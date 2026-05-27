@@ -262,19 +262,40 @@ You need to recompute results for a historical period (e.g., due to a code bug o
 #### Gotchas
 
 ## 5- Monitoring & Alerting
+
 ### 5.1- Key metrics to watch (checkpointing, backpressure, task failures, JVM).
-#### Context
-#### Preconditions / Checklist
-#### Inputs / Parameters
-#### Procedure
-#### Rollback
-#### Gotchas
+
+
+#### What to monitor in a custom Flink dashboard
+
+* Throughput / backlog: io.confluent.flink/num_records_in, io.confluent.flink/num_records_out, io.confluent.flink/num_records_in_from_topics, io.confluent.flink/pending_records.  
+* Latency / timeliness: current_input_watermark_milliseconds, current_output_watermark_milliseconds, max_input_lateness_milliseconds.  
+* Failures / health: io.confluent.flink/statement_status.  
+* Compute pool saturation: compare current CFUs vs CFU limit for the pool; docs call this out as a best-practice alert. 
+
+
 ### 5.2 Baseline dashboards and alerts.
+
 #### Context
+
+[Confluent Cloud Flink metrics](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html) can be exported to any [third-party tools](https://docs.confluent.io/cloud/current/monitoring/third-party-integration.html) like Prometheus and Grafana. [See also the Metrics REST API](https://api.telemetry.confluent.cloud/docs/descriptors/datasets/cloud)
+
+[confluent-cloud-flink-workshop/flink-monitoring](https://github.com/confluentinc/confluent-cloud-flink-workshop/tree/master/flink-monitoring) includes a Grafana dashboard for Confluent Cloud for Apache Flink and local Grafana + Prometheus setup you can run with Docker. [See this repository deployment](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/cc-flink-monitoring)
+
 #### Preconditions / Checklist
+
+* Deploy statements into one to many compute pool
+* Get a service account, and API key to access metrics
+* Configure Prometheus with your Confluent Cloud API key/secret and Flink resource IDs, or copy the config from the Confluent Cloud Metrics integration UI.
+
 #### Inputs / Parameters
+
 #### Procedure
-#### Rollback
+
+1. [Define new integration](https://confluent.cloud/settings/metrics/integrations?integration=prometheus) to monitoring platform. 
+1. For Metrics REST API access, build a bearer token from the Key ID as the username and the Key Secret as the password.
+1. [Locally] Start docker compose.
+
 #### Gotchas
 
 ## 6- Performance Testing
