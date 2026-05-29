@@ -338,6 +338,8 @@ End-to-end performance assessment: configurable producer → Kafka → Flink job
 
 **Path:** [e2e-demos/perf-testing](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/perf-testing)
 
+**Cookbook lab:** [Flink Tuning on Kubernetes §10 — Tune and Observe a FlinkApplication](../cookbook/k8s_tuning.md#10--lab-overview--tune-and-observe-a-flinkapplication) uses this demo with the [dedup-demo FlinkApplication](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/dedup-demo/cp-flink/flink-table-api/k8s/flink-application.yaml) for hands-on tuning exercises.
+
 ---
 
 **Legend:** ✓ = deployment folder present with README. **Updated** = date from demo root README (e.g. "Created DD/MM/YYYY") when present; otherwise —. **Full automation** = one-command (or scripted) deploy + validation that the demo works; Partial = scripted deploy or validate only; Manual = README steps only.

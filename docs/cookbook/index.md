@@ -35,6 +35,7 @@ The cookbook is not documentation for “how to write Flink code.” It assumes 
 * Provisioning / Cluster ops: Spinning up clusters, upgrading Flink versions, adjusting HA settings, etc.
 * Job lifecycle & state: Deploying jobs, restarting, upgrading with/without state, managing savepoints and checkpoints.
 * Resources & scaling: Tuning parallelism, memory, slots, auto-scaling strategies, backpressure handling.
+* Tuning on Kubernetes: Memory model, RocksDB, checkpoints, network shuffle, pod sizing, and observability ([Flink Tuning on Kubernetes](k8s_tuning.md)).
 * Observability: Metrics, logs, traces, alerts, SLOs, debugging performance issues.
 * Data & schema: Handling schema evolution (e.g., with Kafka/Confluent Schema Registry), reprocessing, backfills.
 * Failure handling: Job failures, checkpoint failures, state corruption, external system outages.

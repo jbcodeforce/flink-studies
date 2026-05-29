@@ -241,6 +241,8 @@ If the change makes things worse (more instability, timeouts, cost spikes):
 
 ## 2- Upgrading Flink and Cluster Components
 
+This section applies only to self managed Flink deployments.
+
 ### 2.1 Upgrade Flink minor/patch versions.
 #### Context
 #### Preconditions / Checklist

@@ -430,19 +430,58 @@ You need to have access to:
 
 ### 6.1- Identifying bottlenecks (sources, network, RocksDB).
 #### Context
+
+Use this recipe when throughput or latency SLOs are missed and the root cause is unclear. Symptoms include sustained backpressure, growing checkpoint duration, or single subtasks at 100% utilization while others are idle.
+
+The full symptom-to-diagnosis playbook with observability stack guidance is in [Flink Tuning on Kubernetes §9](k8s_tuning.md#9--identifying-bottlenecks--backpressure-gc-pressure-checkpoint-lag).
+
 #### Preconditions / Checklist
-#### Inputs / Parameters
+
+* Flink Web UI or Prometheus metrics available.
+* Baseline checkpoint history and consumer lag recorded.
+
 #### Procedure
+
+1. Open Flink UI → Backpressure tab; note red operators and subtask skew.
+2. Check Checkpoints → History for duration vs interval.
+3. Use the bottleneck table in [k8s_tuning.md §9](k8s_tuning.md#9--identifying-bottlenecks--backpressure-gc-pressure-checkpoint-lag) to map symptoms to first tuning knob.
+4. Apply one change; re-measure before proceeding.
+
 #### Rollback
+
+Revert the last configuration change; redeploy from savepoint if stateful.
+
 #### Gotchas
+
+* Scaling parallelism before fixing hot keys wastes resources.
+* See [Architecture cookbook](../architecture/cookbook.md) for metric definitions.
 
 ### 6.2- GC/memory tuning, network/shuffle tuning.
 #### Context
+
+Use when TaskManagers show GC pauses, OOMKilled events, or shuffle-related backpressure with low CPU. These issues often trace to misaligned Flink process memory, managed memory, or network buffer settings on Kubernetes.
+
+Detailed recipes and configuration keys are in [Flink Tuning on Kubernetes §3, §7, and §8](k8s_tuning.md#3--memory-model--heap-managed-network-and-metaspace).
+
 #### Preconditions / Checklist
-#### Inputs / Parameters
+
+* JVM GC metrics or logs available (`Status.JVM.GarbageCollector.*`).
+* Pod memory limits and `taskmanager.memory.process.size` documented.
+
 #### Procedure
+
+1. For GC pressure: rebalance heap vs managed memory (§3); align pod limits with process size (§2).
+2. For direct buffer OOM or shuffle backpressure: tune `taskmanager.network.memory.*` (§7).
+3. For RocksDB disk thrashing: increase managed memory and block cache (§3, §6).
+
 #### Rollback
+
+Revert memory and network settings; redeploy from savepoint if required.
+
 #### Gotchas
+
+* Network memory increases reduce heap or managed memory unless total process size grows.
+* See [Cluster management §1.0](cluster_mgt.md#10-sizing-flink-resources) for the TaskManager memory diagram.
 
 ## 7- Common Incident Recipes
 

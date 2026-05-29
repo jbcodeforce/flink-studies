@@ -17,6 +17,7 @@ nav:
     - Cluster management: cookbook/cluster_mgt.md
     - Job Lifecycle: cookbook/job_lifecycle.md
     - FKO & CMF Deployment: coding/k8s-deploy.md
+    - Flink Tuning on Kubernetes: cookbook/k8s_tuning.md
     - Flink Project Management: cookbook/pm.md
     - Confluent Cloud Terraform: cookbook/terraform.md
   - Flink_App_Coding:
