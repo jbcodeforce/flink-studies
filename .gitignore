@@ -41,3 +41,4 @@ e2e-demos/cc-cdc-tx-demo/cc-flink-sql/staging/
 **/reviews_summary.csv
 **/hosts_summary.csv
 **/calendar_summary.csv
+**/dbt_old

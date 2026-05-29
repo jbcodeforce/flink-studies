@@ -1,11 +1,11 @@
-[0m12:35:40.342910 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1078855e0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10d1ca540>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10d1ca270>]}
+[0m17:42:40.554529 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10910eae0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1092e7800>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1092e7530>]}
 
 
-============================== 12:35:40.351513 | dd196e27-b77e-42b4-adb1-c5a30ef17f76 ==============================
-[0m12:35:40.351513 [info ] [MainThread]: Running with dbt=1.8.8
-[0m12:35:40.351813 [debug] [MainThread]: running dbt with arguments {'printer_width': '80', 'indirect_selection': 'eager', 'write_json': 'True', 'log_cache_events': 'False', 'partial_parse': 'True', 'cache_selected_only': 'False', 'warn_error': 'None', 'debug': 'False', 'profiles_dir': '/Users/jerome/.dbt', 'log_path': 'logs', 'fail_fast': 'False', 'version_check': 'True', 'use_colors': 'True', 'use_experimental_parser': 'False', 'empty': 'None', 'quiet': 'False', 'no_print': 'None', 'log_format': 'default', 'introspect': 'True', 'invocation_command': 'dbt init --skip-profile-setup airbnb', 'warn_error_options': 'WarnErrorOptions(include=[], exclude=[])', 'target_path': 'None', 'static_parser': 'True', 'send_anonymous_usage_stats': 'True'}
-[0m12:35:40.382033 [debug] [MainThread]: Starter project path: /Users/jerome/Documents/Code/flink-studies/code/.venv/lib/python3.12/site-packages/dbt/include/starter_project
-[0m12:35:40.385771 [info ] [MainThread]: 
+============================== 17:42:40.557687 | c1f7ba61-b1f1-4a8e-915e-fcc57c68255b ==============================
+[0m17:42:40.557687 [info ] [MainThread]: Running with dbt=1.11.6
+[0m17:42:40.558010 [debug] [MainThread]: running dbt with arguments {'invocation_command': 'dbt init airbnb', 'quiet': 'False', 'profiles_dir': '/Users/jerome/.dbt', 'use_colors': 'True', 'log_path': 'logs', 'introspect': 'True', 'log_format': 'default', 'write_json': 'True', 'log_cache_events': 'False', 'empty': 'None', 'use_experimental_parser': 'False', 'debug': 'False', 'fail_fast': 'False', 'no_print': 'None', 'warn_error': 'None', 'version_check': 'True', 'cache_selected_only': 'False', 'static_parser': 'True', 'indirect_selection': 'eager', 'send_anonymous_usage_stats': 'True', 'printer_width': '80', 'partial_parse': 'True', 'target_path': 'None', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])'}
+[0m17:42:40.569511 [debug] [MainThread]: Starter project path: /Users/jerome/Documents/Code/flink-studies/code/dbt/.venv/lib/python3.12/site-packages/dbt/include/starter_project
+[0m17:42:40.573730 [info ] [MainThread]: 
 Your new dbt project "airbnb" was created!
 
 For more information on how to configure the profiles.yml file,
@@ -21,51 +21,96 @@ Need help? Don't hesitate to reach out to us via GitHub issues or on Slack:
 
 Happy modeling!
 
-[0m12:35:40.386120 [debug] [MainThread]: Resource report: {"command_name": "init", "command_success": true, "command_wall_clock_time": 0.079272084, "process_user_time": 1.197958, "process_kernel_time": 0.352075, "process_mem_max_rss": "127598592", "process_in_blocks": "0", "process_out_blocks": "0"}
-[0m12:35:40.386319 [debug] [MainThread]: Command `dbt init` succeeded at 12:35:40.386275 after 0.08 seconds
-[0m12:35:40.386489 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10cd87080>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10d1c64e0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1078855e0>]}
-[0m12:35:40.386651 [debug] [MainThread]: Flushing usage events
-[0m18:46:58.517425 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10a5303b0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10a3fa8a0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10a3fa810>]}
+[0m17:42:40.573937 [info ] [MainThread]: Setting up your profile.
+[0m17:43:29.994584 [debug] [MainThread]: Resource report: {"command_name": "init", "command_success": true, "command_wall_clock_time": 49.513435, "process_in_blocks": "0", "process_kernel_time": 0.192143, "process_mem_max_rss": "126353408", "process_out_blocks": "0", "process_user_time": 0.639402}
+[0m17:43:29.995040 [debug] [MainThread]: Command `dbt init` succeeded at 17:43:29.994980 after 49.51 seconds
+[0m17:43:29.995214 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1093a3770>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1093a1f10>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x108e7f5f0>]}
+[0m17:43:29.995381 [debug] [MainThread]: Flushing usage events
+[0m17:43:30.458284 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m18:25:41.370951 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10bf02f60>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10b3f21b0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10b3f2120>]}
 
 
-============================== 18:46:58.520102 | 17abed52-4c6a-4807-8d92-bb8cd5a69b0d ==============================
-[0m18:46:58.520102 [info ] [MainThread]: Running with dbt=1.11.6
-[0m18:46:58.520414 [debug] [MainThread]: running dbt with arguments {'target_path': 'None', 'cache_selected_only': 'False', 'warn_error': 'None', 'invocation_command': 'dbt init --skip-profile-setup airbnb', 'empty': 'None', 'log_cache_events': 'False', 'debug': 'False', 'profiles_dir': '/Users/jerome/.dbt', 'use_experimental_parser': 'False', 'indirect_selection': 'eager', 'static_parser': 'True', 'log_format': 'default', 'fail_fast': 'False', 'send_anonymous_usage_stats': 'True', 'printer_width': '80', 'partial_parse': 'True', 'version_check': 'True', 'use_colors': 'True', 'quiet': 'False', 'no_print': 'None', 'log_path': 'logs', 'introspect': 'True', 'write_json': 'True', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])'}
-[0m18:46:58.548530 [info ] [MainThread]: A project called airbnb already exists here.
-[0m18:46:58.548935 [debug] [MainThread]: Resource report: {"command_name": "init", "command_success": true, "command_wall_clock_time": 0.07020896, "process_in_blocks": "0", "process_kernel_time": 0.103226, "process_mem_max_rss": "109707264", "process_out_blocks": "0", "process_user_time": 0.584546}
-[0m18:46:58.549192 [debug] [MainThread]: Command `dbt init` succeeded at 18:46:58.549145 after 0.07 seconds
-[0m18:46:58.549371 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10aeae180>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10b263560>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10a5303b0>]}
-[0m18:46:58.549553 [debug] [MainThread]: Flushing usage events
-[0m18:46:59.017511 [debug] [MainThread]: An error was encountered while trying to flush usage events
-[0m14:19:13.580812 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x107cff230>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x106ef2570>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10812ffb0>]}
+============================== 18:25:41.374185 | ae30e8a0-57e7-4580-b2d2-77778d744cc1 ==============================
+[0m18:25:41.374185 [info ] [MainThread]: Running with dbt=1.11.6
+[0m18:25:41.374466 [debug] [MainThread]: running dbt with arguments {'profiles_dir': '/Users/jerome/.dbt', 'version_check': 'True', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'introspect': 'True', 'quiet': 'False', 'log_path': 'logs', 'use_colors': 'True', 'log_format': 'default', 'partial_parse': 'True', 'write_json': 'True', 'cache_selected_only': 'False', 'invocation_command': 'dbt debug', 'send_anonymous_usage_stats': 'True', 'warn_error': 'None', 'fail_fast': 'False', 'debug': 'False', 'indirect_selection': 'eager', 'use_experimental_parser': 'False', 'empty': 'None', 'no_print': 'None', 'log_cache_events': 'False', 'target_path': 'None', 'static_parser': 'True', 'printer_width': '80'}
+[0m18:25:41.383945 [info ] [MainThread]: dbt version: 1.11.6
+[0m18:25:41.384134 [info ] [MainThread]: python version: 3.12.11
+[0m18:25:41.384254 [info ] [MainThread]: python path: /Users/jerome/Documents/Code/flink-studies/code/dbt/.venv/bin/python3
+[0m18:25:41.384361 [info ] [MainThread]: os info: macOS-26.5-arm64-arm-64bit
+[0m18:25:41.568720 [info ] [MainThread]: Using profiles dir at /Users/jerome/.dbt
+[0m18:25:41.568959 [info ] [MainThread]: Using profiles.yml file at /Users/jerome/.dbt/profiles.yml
+[0m18:25:41.569088 [info ] [MainThread]: Using dbt_project.yml file at /Users/jerome/Documents/Code/flink-studies/code/dbt/dbt_project.yml
+[0m18:25:41.569232 [error] [MainThread]: Encountered an error:
+Internal Error
+  Profile should not be None if loading profile completed
+[0m18:25:41.569488 [debug] [MainThread]: Resource report: {"command_name": "debug", "command_success": false, "command_wall_clock_time": 0.27987674, "process_in_blocks": "0", "process_kernel_time": 0.168729, "process_mem_max_rss": "133808128", "process_out_blocks": "0", "process_user_time": 0.636549}
+[0m18:25:41.569663 [debug] [MainThread]: Command `dbt debug` failed at 18:25:41.569628 after 0.28 seconds
+[0m18:25:41.569796 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10bf03920>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10c13dd90>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10aaa9ac0>]}
+[0m18:25:41.569927 [debug] [MainThread]: Flushing usage events
+[0m18:25:42.014205 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m18:37:11.628001 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1088d3d40>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1095af950>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1095af680>]}
 
 
-============================== 14:19:13.583842 | 2817826e-2c3d-4097-a7eb-a49dcbed5be2 ==============================
-[0m14:19:13.583842 [info ] [MainThread]: Running with dbt=1.11.6
-[0m14:19:13.584173 [debug] [MainThread]: running dbt with arguments {'static_parser': 'True', 'cache_selected_only': 'False', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'log_path': 'logs', 'introspect': 'True', 'target_path': 'None', 'profiles_dir': '/Users/jerome/.dbt', 'partial_parse': 'True', 'empty': 'False', 'debug': 'False', 'send_anonymous_usage_stats': 'True', 'printer_width': '80', 'warn_error': 'None', 'write_json': 'True', 'version_check': 'True', 'quiet': 'False', 'use_colors': 'True', 'log_cache_events': 'False', 'no_print': 'None', 'log_format': 'default', 'use_experimental_parser': 'False', 'fail_fast': 'False', 'indirect_selection': 'eager', 'invocation_command': 'dbt run'}
-[0m14:19:13.584477 [error] [MainThread]: Encountered an error:
-Runtime Error
-  No dbt_project.yml found at expected path /Users/jerome/Documents/Code/flink-studies/code/dbt/dbt_project.yml
-  Verify that each entry within packages.yml (and their transitive dependencies) contains a file named dbt_project.yml
-  
-[0m14:19:13.584776 [debug] [MainThread]: Resource report: {"command_name": "run", "command_success": false, "command_wall_clock_time": 0.049375, "process_in_blocks": "0", "process_kernel_time": 0.12034, "process_mem_max_rss": "107003904", "process_out_blocks": "0", "process_user_time": 0.589481}
-[0m14:19:13.585024 [debug] [MainThread]: Command `dbt run` failed at 14:19:13.584984 after 0.05 seconds
-[0m14:19:13.585194 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10812ffe0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x107ef5f70>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x107c3ccb0>]}
-[0m14:19:13.585358 [debug] [MainThread]: Flushing usage events
-[0m14:19:14.024793 [debug] [MainThread]: An error was encountered while trying to flush usage events
-[0m17:47:25.364525 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10beff0e0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10b35a5d0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10c09bfb0>]}
+============================== 18:37:11.630253 | 6d7b14e1-c700-40f3-a6db-e39201c9794f ==============================
+[0m18:37:11.630253 [info ] [MainThread]: Running with dbt=1.11.6
+[0m18:37:11.630533 [debug] [MainThread]: running dbt with arguments {'fail_fast': 'False', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'static_parser': 'True', 'use_experimental_parser': 'False', 'no_print': 'None', 'printer_width': '80', 'version_check': 'True', 'log_path': 'logs', 'partial_parse': 'True', 'warn_error': 'None', 'log_cache_events': 'False', 'invocation_command': 'dbt init airbnb-streaming', 'indirect_selection': 'eager', 'empty': 'None', 'quiet': 'False', 'target_path': 'None', 'log_format': 'default', 'profiles_dir': '/Users/jerome/.dbt', 'debug': 'False', 'cache_selected_only': 'False', 'write_json': 'True', 'use_colors': 'True', 'introspect': 'True', 'send_anonymous_usage_stats': 'True'}
+[0m18:37:24.405352 [error] [MainThread]: Encountered an error:
+
+[0m18:37:24.408909 [error] [MainThread]: Traceback (most recent call last):
+  File "/Users/jerome/Documents/Code/flink-studies/code/dbt/.venv/lib/python3.12/site-packages/dbt/cli/requires.py", line 182, in wrapper
+    result, success = func(*args, **kwargs)
+                      ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jerome/Documents/Code/flink-studies/code/dbt/.venv/lib/python3.12/site-packages/dbt/cli/requires.py", line 128, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jerome/Documents/Code/flink-studies/code/dbt/.venv/lib/python3.12/site-packages/dbt/cli/main.py", line 483, in init
+    results = task.run()
+              ^^^^^^^^^^
+  File "/Users/jerome/Documents/Code/flink-studies/code/dbt/.venv/lib/python3.12/site-packages/dbt/task/init.py", line 324, in run
+    project_name = self.get_valid_project_name()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jerome/Documents/Code/flink-studies/code/dbt/.venv/lib/python3.12/site-packages/dbt/task/init.py", line 278, in get_valid_project_name
+    name = click.prompt("Enter a name for your project (letters, digits, underscore)")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jerome/Documents/Code/flink-studies/code/dbt/.venv/lib/python3.12/site-packages/click/termui.py", line 171, in prompt
+    value = prompt_func(prompt)
+            ^^^^^^^^^^^^^^^^^^^
+  File "/Users/jerome/Documents/Code/flink-studies/code/dbt/.venv/lib/python3.12/site-packages/click/termui.py", line 154, in prompt_func
+    raise Abort() from None
+click.exceptions.Abort
+
+[0m18:37:24.410092 [debug] [MainThread]: Resource report: {"command_name": "init", "command_success": false, "command_wall_clock_time": 12.837176, "process_in_blocks": "0", "process_kernel_time": 0.115976, "process_mem_max_rss": "109576192", "process_out_blocks": "0", "process_user_time": 0.557319}
+[0m18:37:24.410675 [debug] [MainThread]: Command `dbt init` failed at 18:37:24.410552 after 12.84 seconds
+[0m18:37:24.411084 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x109251820>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x109478bf0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10962a540>]}
+[0m18:37:24.411484 [debug] [MainThread]: Flushing usage events
+[0m18:37:24.876907 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m18:37:32.759790 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10cf7d2e0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10d7cefc0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10d7cf9b0>]}
 
 
-============================== 17:47:25.367844 | 691e6f92-cc2c-4b33-b97e-171fa4c551e1 ==============================
-[0m17:47:25.367844 [info ] [MainThread]: Running with dbt=1.11.6
-[0m17:47:25.368167 [debug] [MainThread]: running dbt with arguments {'static_parser': 'True', 'printer_width': '80', 'send_anonymous_usage_stats': 'True', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'debug': 'False', 'quiet': 'False', 'no_print': 'None', 'target_path': 'None', 'version_check': 'True', 'log_cache_events': 'False', 'introspect': 'True', 'warn_error': 'None', 'profiles_dir': '/Users/jerome/.dbt', 'use_experimental_parser': 'False', 'use_colors': 'True', 'empty': 'None', 'write_json': 'True', 'invocation_command': 'dbt test --target duckdb', 'log_format': 'default', 'partial_parse': 'True', 'log_path': 'logs', 'cache_selected_only': 'False', 'indirect_selection': 'eager', 'fail_fast': 'False'}
-[0m17:47:25.368467 [error] [MainThread]: Encountered an error:
-Runtime Error
-  No dbt_project.yml found at expected path /Users/jerome/Documents/Code/flink-studies/code/dbt/dbt_project.yml
-  Verify that each entry within packages.yml (and their transitive dependencies) contains a file named dbt_project.yml
-  
-[0m17:47:25.368792 [debug] [MainThread]: Resource report: {"command_name": "test", "command_success": false, "command_wall_clock_time": 0.09113483, "process_in_blocks": "0", "process_kernel_time": 0.148448, "process_mem_max_rss": "108544000", "process_out_blocks": "0", "process_user_time": 0.567553}
-[0m17:47:25.369045 [debug] [MainThread]: Command `dbt test` failed at 17:47:25.369001 after 0.09 seconds
-[0m17:47:25.369214 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10bce0cb0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10c09bd70>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10c09bf80>]}
-[0m17:47:25.369380 [debug] [MainThread]: Flushing usage events
-[0m17:47:25.813126 [debug] [MainThread]: An error was encountered while trying to flush usage events
+============================== 18:37:32.761649 | 3089a202-a7c7-46f1-afda-1cf4ccf92704 ==============================
+[0m18:37:32.761649 [info ] [MainThread]: Running with dbt=1.11.6
+[0m18:37:32.761898 [debug] [MainThread]: running dbt with arguments {'invocation_command': 'dbt init airbnb_streaming', 'no_print': 'None', 'use_experimental_parser': 'False', 'quiet': 'False', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'printer_width': '80', 'introspect': 'True', 'profiles_dir': '/Users/jerome/.dbt', 'log_path': 'logs', 'log_cache_events': 'False', 'target_path': 'None', 'warn_error': 'None', 'send_anonymous_usage_stats': 'True', 'fail_fast': 'False', 'indirect_selection': 'eager', 'debug': 'False', 'use_colors': 'True', 'empty': 'None', 'cache_selected_only': 'False', 'write_json': 'True', 'log_format': 'default', 'static_parser': 'True', 'version_check': 'True', 'partial_parse': 'True'}
+[0m18:37:32.766730 [debug] [MainThread]: Starter project path: /Users/jerome/Documents/Code/flink-studies/code/dbt/.venv/lib/python3.12/site-packages/dbt/include/starter_project
+[0m18:37:32.770730 [info ] [MainThread]: 
+Your new dbt project "airbnb_streaming" was created!
+
+For more information on how to configure the profiles.yml file,
+please consult the dbt documentation here:
+
+  https://docs.getdbt.com/docs/configure-your-profile
+
+One more thing:
+
+Need help? Don't hesitate to reach out to us via GitHub issues or on Slack:
+
+  https://community.getdbt.com/
+
+Happy modeling!
+
+[0m18:37:32.770882 [info ] [MainThread]: Setting up your profile.
+[0m18:38:30.950358 [info ] [MainThread]: Profile airbnb_streaming written to /Users/jerome/.dbt/profiles.yml using target's profile_template.yml and your supplied values. Run 'dbt debug' to validate the connection.
+[0m18:38:30.952241 [debug] [MainThread]: Resource report: {"command_name": "init", "command_success": true, "command_wall_clock_time": 58.232647, "process_in_blocks": "0", "process_kernel_time": 0.132122, "process_mem_max_rss": "115621888", "process_out_blocks": "0", "process_user_time": 0.598663}
+[0m18:38:30.953155 [debug] [MainThread]: Command `dbt init` succeeded at 18:38:30.952968 after 58.23 seconds
+[0m18:38:30.954081 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10dbabb90>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10dc5b170>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10ca90710>]}
+[0m18:38:30.954664 [debug] [MainThread]: Flushing usage events
+[0m18:38:31.423970 [debug] [MainThread]: An error was encountered while trying to flush usage events
