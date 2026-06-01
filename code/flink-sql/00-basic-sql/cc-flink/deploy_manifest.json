@@ -1,0 +1,36 @@
+{
+  "user_agent": "flink-studies-cc-basic-sql/0.1",
+  "deploy_all": ["ddl", "data", "pipeline"],
+  "undeploy_all": ["pipeline", "data"],
+  "drop_tables": [
+    "employee_count",
+    "dedup_customers",
+    "employees",
+    "customers"
+  ],
+  "drop_statement_prefix": "cc-flink-drop",
+  "groups": {
+    "ddl": [
+      {"name": "cc-flink-ddl-customers", "file": "ddl.customers.sql"},
+      {"name": "cc-flink-ddl-employees", "file": "ddl.employee.sql"}
+    ],
+    "data": [
+      {"name": "cc-flink-insert-customers", "file": "insert_customers.sql"},
+      {"name": "cc-flink-insert-employees", "file": "insert_employees.sql"}
+    ],
+    "pipeline": [
+      {"name": "cc-flink-dml-dedup-customers", "file": "dml.dedup_customers.sql"},
+      {"name": "cc-flink-dml-employee-count", "file": "dml.employee_count.sql"}
+    ],
+    "customers": [
+      {"name": "cc-flink-ddl-customers", "file": "ddl.customers.sql"},
+      {"name": "cc-flink-insert-customers", "file": "insert_customers.sql"},
+      {"name": "cc-flink-dml-dedup-customers", "file": "dml.dedup_customers.sql"}
+    ],
+    "employees": [
+      {"name": "cc-flink-ddl-employees", "file": "ddl.employee.sql"},
+      {"name": "cc-flink-insert-employees", "file": "insert_employees.sql"},
+      {"name": "cc-flink-dml-employee-count", "file": "dml.employee_count.sql"}
+    ]
+  }
+}

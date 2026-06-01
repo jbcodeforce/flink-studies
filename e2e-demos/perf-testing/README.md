@@ -6,16 +6,13 @@ This demo implements a repeatable approach to measure Flink job performance: fro
 
 ## Goals
 
-- Measure **throughput** (events/second) and **latency** (source to sink) for Flink jobs.
-- Compare different job types: Table API + SQL (SqlExecutor-style), DataStream, and pure Flink SQL.
+- Measure **throughput** (events/second) and **latency** (source to sink time) for Flink jobs.
+- Compare different job types: Table API + SQL, DataStream, and pure Flink SQL.
 - Keep the **data generator** separate from Flink so producer rate and message size can be tuned independently (see [Optimize Kafka producer throughput](https://developer.confluent.io/confluent-tutorials/optimize-producer-throughput/kafka/)).
 
 ## Architecture
 
-```
-[Data Generator]  -->  Kafka topic(s)  -->  [Flink Job A / B / C]  -->  Sink(s)
-     (producer)         (input)              (jobs under test)         (Kafka/print)
-```
+![](./docs/arch.drawio.png)
 
 - **Data generator**: Standalone Java (or other) process that produces records to Kafka with configurable rate, message size, and payload shape. Inspired by patterns such as Confluent's DataGeneratorJob (e.g. flight or generic event generation).
 - **Flink jobs**: Several example jobs under `flink-jobs/` consume from those topics and write to a sink. Each subfolder holds one job variant to assess.
@@ -28,27 +25,11 @@ This demo implements a repeatable approach to measure Flink job performance: fro
 
 Producer, flink-jobs, and scripts are shared at demo root.
 
-## Repository Layout
-
-```
-e2e-demos/perf-testing/
-├── README.md                 # This file
-├── producer/                 # Standalone Kafka data generator
-│   └── README.md
-├── flink-jobs/               # Flink applications used for performance assessment
-│   ├── sql-executor/         # Table API + SQL from file (SqlExecutor-style)
-│   │   └── README.md
-│   ├── datastream/           # DataStream API job example (optional)
-│   │   └── README.md
-│   └── flink-sql/            # Pure Flink SQL statements / SQL gateway (optional)
-│       └── README.md
-└── scripts/                  # Automation: topics, run producer, deploy jobs, collect metrics
-    └── README.md
-```
-
 ## Quick start
 
-Prerequisites: Java 17+, Maven, Kubernetes with Flink and Kafka deployed.
+Prerequisites: 
+* Java 17+, Maven, 
+* Kubernetes with Flink and Kafka deployed.
 
 ```bash
 # Build all components

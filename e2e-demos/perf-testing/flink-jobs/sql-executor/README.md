@@ -12,7 +12,7 @@ Flink job that uses the Table API and executes SQL statements from a file. Patte
 - Entry point: main class that accepts a SQL script path (or resource).
 - Parse and execute statements in order; handle `SET` and comments if needed (see `code/flink-java/sql-runner` in this repo for a reference).
 - Use Kafka table descriptors (or Flink Kafka connector) for source and sink; align key/value format (JSON, Avro) with the producer.
-- Build as a standard Flink application JAR for `flink run` or deployment to Confluent Platform / Confluent Cloud for Flink.
+- Build as a standard Flink application JAR for `flink run` or deployment to Confluent Platform via manifest.
 
 ## SQL Script
 

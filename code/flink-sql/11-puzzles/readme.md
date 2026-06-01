@@ -66,3 +66,7 @@ The approach: use the transaction_date as a timestamp to apply time tumble windo
 ## Two-stage window aggregation (tumble, then hop)
 
 Study: [tumble_then_hop_rolling](tumble_then_hop_rolling/README.md) — pre-aggregate with tumbling buckets, then hop on the compact series for long lookbacks; shorter horizons use conditional `SUM`/`MAX` over `bucket_end` vs `window_end`. Includes bounded datagen example [`rolling_from_hourly_buckets.sql`](tumble_then_hop_rolling/rolling_from_hourly_buckets.sql). Use the test environment above; start the Flink cluster before `sql-client.sh -f` (see the study README for a Docker one-liner).
+
+## Shopping cart updates from product catalog changes
+
+Confluent Cloud Flink SQL: [cart_update](cart_update/README.md) — open carts kept in upsert state; product price/availability changes fan out via regular join (no PTF). Mock data and verification steps included.

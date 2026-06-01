@@ -170,6 +170,8 @@ Utilities for wide-table generation and Flink SQL.
 
 | Asset | Code completion | Deployment status | Automation |
 |-------|------------------|-------------------|------------|
+| `cc_flink_deploy.py`, `deploy_flink_statements.py` | Complete | Confluent Cloud | Makefile + `deploy_manifest.json` per demo |
+| `cc_flink_rest_client.py` | Complete | Confluent Cloud | Manual (requests REST) |
 | `flink_wide_table.sql` | Complete | Local / Confluent Cloud | Manual |
 | `gen_flink_wide_table.py` | Complete | Local | Manual |
 

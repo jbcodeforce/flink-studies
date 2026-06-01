@@ -1,10 +1,10 @@
 # Data Generator (Standalone Kafka Producer)
 
-Standalone Kafka producer used to feed input topics for Flink performance runs.  Pattern inspired by Robert Metzger's DataGeneratorJob-style generators.
+Standalone Kafka producer used to feed input topics for Flink performance tests.  Pattern inspired by Robert Metzger's DataGeneratorJob-style generators.
 
 ## Responsibilities
 
-- Produce records to one or more Kafka topics with configurable:
+- Produce records to one or more Kafka topics with:
   - Target rate (messages per second) or max throughput.
   - Message size and payload format (e.g. JSON with fixed/variable fields).
   - Number of producer threads.

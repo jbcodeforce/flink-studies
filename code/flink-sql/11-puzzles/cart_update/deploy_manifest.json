@@ -1,0 +1,32 @@
+{
+  "user_agent": "flink-studies-cart-update/0.1",
+  "deploy_all": ["ddl", "pipeline", "data"],
+  "undeploy_all": ["scenario", "data", "pipeline"],
+  "drop_tables": [
+    "integrated_cart",
+    "cart_line_items",
+    "cart_events",
+    "products"
+  ],
+  "drop_statement_prefix": "cart-update-drop",
+  "groups": {
+    "ddl": [
+      {"name": "cart-update-ddl-products", "file": "ddl.products.sql"},
+      {"name": "cart-update-ddl-cart-events", "file": "ddl.cart_events.sql"},
+      {"name": "cart-update-ddl-cart-line-items", "file": "ddl.cart_line_items.sql"},
+      {"name": "cart-update-ddl-integrated-cart", "file": "ddl.integrated_cart.sql"}
+    ],
+    "pipeline": [
+      {"name": "cart-update-dml-build-line-items", "file": "dml.build_cart_line_items.sql"},
+      {"name": "cart-update-dml-integrated-cart", "file": "dml.integrated_cart.sql"}
+    ],
+    "data": [
+      {"name": "cart-update-dml-insert-products", "file": "dml.insert_products.sql"},
+      {"name": "cart-update-dml-insert-cart-events", "file": "dml.insert_cart_events.sql"}
+    ],
+    "scenario": [
+      {"name": "cart-update-dml-update-price", "file": "dml.update_product_price.sql"},
+      {"name": "cart-update-dml-update-availability", "file": "dml.update_product_availability.sql"}
+    ]
+  }
+}

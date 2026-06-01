@@ -16,9 +16,11 @@ compiled: false
 
 The [TableAPI](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/overview/) serves as the lower-level API for executing Flink SQL, allowing for stream processing implementations in Java and Python. The Table API encapsulates a stream and physical table, enabling developers to implement streaming processing by programming against these tables.
 
-[See the main concepts](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/common/) and APIs. The structure of a program looks as:
+[See the Apache Flink - Table API main concepts](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/common/). 
 
-1. Create a TableEnvironment for batch or streaming execution. A [table environment](https://nightlies.apache.org/flink/flink-docs-stable/api/java/org/apache/flink/table/api/TableEnvironment.html) is the base class, entry point, and central context for creating Flink Table and SQL API programs. TableEnvironment uses an `EnvironmentSettings` that define the execution mode.
+The structure of a program looks as:
+
+1. Create a TableEnvironment for batch or streaming execution. A [table environment](https://nightlies.apache.org/flink/flink-docs-stable/api/java/org/apache/flink/table/api/TableEnvironment.html) is the base class, entry point, and central context for creating Flink Table and SQL API programs. `TableEnvironment` uses `EnvironmentSettings` to define the execution mode.
 
     === "Apache Flink or Confluent Platform"
     
@@ -45,12 +47,12 @@ The [TableAPI](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/tab
 
     === "Confluent Cloud"
         In the context of **Confluent Cloud**, the Table API program acts as a client-side library for interacting with the Flink engine hosted in the cloud.
-        Use a specific package to interact with Confluent Cloud via REST api. The integration may be defined in properties, program arguments, or environment variables(recommended)
+        Developer needs to use a specific Java or Python package to interact with Confluent Cloud via the REST api. The integration may be defined in properties, program arguments, or environment variables(recommended)
         ```java title="Connect to Remote Environment"
         import io.confluent.flink.plugin.ConfluentSettings;
         import io.confluent.flink.plugin.ConfluentTools;
         ...
-        // With Properties file
+        // With Properties file in the resources folder
         EnvironmentSettings settings = ConfluentSettings.fromResource("/cloud.properties");
         // Env variables:
         EnvironmentSettings settings = ConfluentSettings.fromGlobalVariables();
@@ -61,9 +63,11 @@ The [TableAPI](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/tab
         ```
 
 * Create one or more source table(s)
+    Be sure to set the catalog and database:
     ```java title="Build CTE"
     env.useCatalog(TARGET_CATALOG);
     env.useDatabase(TARGET_DATABASE);
+    // select * from orders
     Table rawTable =  env.from("orders").select(withAllColumns());
     ```
 
@@ -348,14 +352,14 @@ The important classes are:
 * [TableEnvironment](https://nightlies.apache.org/flink/flink-docs-release-1.20/api/java/org/apache/flink/table/api/TableEnvironment.html)
 * [Table](https://nightlies.apache.org/flink/flink-docs-release-1.20/api/java/org/apache/flink/table/api/Table.html)
 * [Row](https://nightlies.apache.org/flink/flink-docs-release-1.20/api/java/org/apache/flink/types/Row.html)
-* [Expressions](https://nightlies.apache.org/flink/flink-docs-release-1.20/api/java/org/apache/flink/table/api/Expressions.html) contains static methods for referencing table columns, creating literals, and building more complex Expression chains. See below.
+* [Expressions](https://nightlies.apache.org/flink/flink-docs-release-1.20/api/java/org/apache/flink/table/api/Expressions.html) contains static methods for referencing table columns, creating literals, and building more complex expression chains. 
 
 ### Confluent Repositories
 * [Confluent Table API Tutorial](//github.com/confluentinc/flink-table-api-java-examples.git)
 * [The Confluent Flink cookbook](https://github.com/confluentinc/flink-cookbook) for more Table API and DataStream examples.
 * [See this git repo: Learn-apache-flink-table-api-for-java-exercises](https://github.com/confluentinc/learn-apache-flink-table-api-for-java-exercises). 
 * See the [Table API in Java documentation](https://docs.confluent.io/cloud/current/flink/reference/table-api.html).
-* [Connecting the Apache Flink Table API to Confluent Cloud](https://developer.confluent.io/courses/flink-table-api-java/exercise-connecting-to-confluent-cloud/) with matching [github](https://github.com/confluentinc/learn-apache-flink-table-api-for-java-exercises) which part of this code was ported into [flink-sql-demos/02-table-api-java](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/02-table-api-java)
+* [Connecting the Apache Flink Table API to Confluent Cloud - tutorial](https://developer.confluent.io/courses/flink-table-api-java/exercise-connecting-to-confluent-cloud/) with the matching [github](https://github.com/confluentinc/learn-apache-flink-table-api-for-java-exercises). Some part of the code was ported into [code/table-api/simplest-table-api-for-flink-oss](https://github.com/jbcodeforce/flink-studies/tree/master/code/table-api/simplest-table-api-for-flink-oss)
 
 ### Flink Experts
 

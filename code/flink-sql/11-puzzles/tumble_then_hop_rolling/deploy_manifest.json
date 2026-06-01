@@ -1,0 +1,19 @@
+{
+  "user_agent": "flink-studies-tumble-hop-rolling/0.1",
+  "deploy_all": ["ddl", "pipeline"],
+  "undeploy_all": ["pipeline"],
+  "drop_tables": [
+    "rolling_features",
+    "events"
+  ],
+  "drop_statement_prefix": "tumble-hop-drop",
+  "groups": {
+    "ddl": [
+      {"name": "tumble-hop-ddl-events", "file": "ddl.events.sql"},
+      {"name": "tumble-hop-ddl-rolling-features", "file": "ddl.rolling_features.sql"}
+    ],
+    "pipeline": [
+      {"name": "tumble-hop-dml-rolling-features", "file": "dml.rolling_features.sql"}
+    ]
+  }
+}

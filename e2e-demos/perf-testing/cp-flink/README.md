@@ -2,7 +2,7 @@
 
 ## Goal
 
-Measure throughput and latency for Flink jobs using Confluent Manager for Flink (CP) or Confluent Cloud for Flink. Same producer and job code as [../README.md](../README.md); this folder documents CP/CC-focused run.
+Measure throughput and latency for Flink jobs using Confluent Manager for Flink (CP) or Confluent Cloud for Flink. Same producer and job code as [../README.md](../README.md); this folder documents CP/CC run.
 
 ## Status
 

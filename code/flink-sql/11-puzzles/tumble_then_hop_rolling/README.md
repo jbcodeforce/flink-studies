@@ -7,7 +7,7 @@ This study explains a state-friendly pattern for rolling features: first collaps
 From this directory, with a local Flink cluster running ([parent readme](../readme.md)):
 
 ```sh
-/path/to/flink/bin/sql-client.sh -f rolling_from_hourly_buckets.sql
+/path/to/flink/bin/sql-client.sh -f flink/rolling_from_hourly_buckets.sql
 ```
 
 Or use the Docker one-liner under [Where to run it](#where-to-run-it).
@@ -32,7 +32,24 @@ You need metrics over long lookbacks (for example 30 days) on a dense event stre
 
 ## Toy example
 
-See [`rolling_from_hourly_buckets.sql`](rolling_from_hourly_buckets.sql): **1 hour** tumbling buckets, then **12 hour** hop with **1 hour** slide; **6 hour** and **12 hour** counts and amount sums. Source is bounded **datagen** so you can run it locally in the SQL Client without CSV paths.
+See [`flink/rolling_from_hourly_buckets.sql`](flink/rolling_from_hourly_buckets.sql): **1 hour** tumbling buckets, then **12 hour** hop with **1 hour** slide; **6 hour** and **12 hour** counts and amount sums. Source is bounded **datagen** so you can run it locally in the SQL Client without CSV paths.
+
+For Confluent Cloud, the same logic is split into `ddl.*.sql` and `dml.rolling_features.sql` with [`deploy_manifest.json`](deploy_manifest.json) (see [Deploy](#deploy-confluent-cloud) below).
+
+## Deploy (Confluent Cloud)
+
+Shared deploy tooling lives in [`../../tools/`](../../tools/). This folder supplies `deploy_manifest.json` and SQL files.
+
+```sh
+make sync
+make deploy-ddl
+make deploy-pipeline
+# or: make deploy
+
+make undeploy   # stop DML, drop rolling_features and events
+```
+
+Prerequisites match other CC demos (`FLINK_API_KEY`, `ENVIRONMENT_ID`, `COMPUTE_POOL_ID`, `DB_NAME`, etc. in `~/.confluent/.env`). See [`cart_update`](../cart_update/README.md#prerequisites) for the variable list.
 
 ## Where to run it
 
@@ -44,7 +61,7 @@ Example (Docker, Flink 2.1.1 image):
 
 ```sh
 docker run --rm -v "$(pwd)":/opt/flink/sql apache/flink:2.1.1-scala_2.12 bash -c \
-  "/opt/flink/bin/start-cluster.sh && sleep 15 && /opt/flink/bin/sql-client.sh -f /opt/flink/sql/rolling_from_hourly_buckets.sql && sleep 45 && /opt/flink/bin/stop-cluster.sh"
+  "/opt/flink/bin/start-cluster.sh && sleep 15 && /opt/flink/bin/sql-client.sh -f /opt/flink/sql/flink/rolling_from_hourly_buckets.sql && sleep 45 && /opt/flink/bin/stop-cluster.sh"
 ```
 
 Run the command from this directory so `$(pwd)` mounts these SQL files at `/opt/flink/sql/`.
