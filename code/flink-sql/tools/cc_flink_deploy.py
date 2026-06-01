@@ -1,19 +1,21 @@
 """
-Deploy or undeploy Flink SQL statements on Confluent Cloud via confluent-sql (REST API).
+Deploy, undeploy, or snapshot-query Flink SQL on Confluent Cloud via confluent-sql (REST API).
 
 Reusable from demo folders: point at a SQL directory and a deploy manifest (JSON).
+Snapshot queries use SNAPSHOT cursor mode (`sql.snapshot.mode = now` is set by the driver).
 """
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable, Literal
 
 import confluent_sql
 from confluent_sql.exceptions import OperationalError, StatementNotFoundError
@@ -391,3 +393,376 @@ def full_undeploy(
         undeploy_statements(statements, config=config, user_agent=manifest.user_agent)
     if drop_tables_after and manifest.drop_tables:
         drop_tables(manifest.drop_tables, manifest=manifest, config=config)
+
+
+OutputFormat = Literal["table", "json", "csv"]
+
+
+@dataclass(frozen=True)
+class SnapshotQueryResult:
+    """Rows and metadata from a completed snapshot query."""
+
+    statement_name: str
+    sql: str
+    columns: list[str]
+    rows: list[tuple | dict[str, Any]]
+    rowcount: int
+    elapsed_sec: float
+
+
+def _sanitize_statement_name(table_or_label: str) -> str:
+    """Build a Flink statement name safe for the REST API."""
+    safe = re.sub(r"[^a-zA-Z0-9-]", "-", table_or_label.strip().lower())
+    safe = re.sub(r"-+", "-", safe).strip("-")
+    return safe[:48] or "table"
+
+
+def build_select_sql(
+    table: str,
+    *,
+    columns: str = "*",
+    limit: int | None = None,
+    where: str | None = None,
+) -> str:
+    """Build a SELECT statement for snapshot execution against a table."""
+    table = table.strip()
+    if not table:
+        raise ValueError("table name is required")
+
+    sql = f"SELECT {columns} FROM {table}"
+    if where:
+        sql = f"{sql} WHERE {where.strip()}"
+    if limit is not None:
+        if limit <= 0:
+            raise ValueError("limit must be a positive integer")
+        sql = f"{sql} LIMIT {limit}"
+    return sql
+
+
+def default_snapshot_statement_name(table: str) -> str:
+    """Ephemeral statement name for a snapshot query."""
+    stamp = time.strftime("%Y%m%d%H%M%S")
+    return f"snapshot-{_sanitize_statement_name(table)}-{stamp}"
+
+
+def run_snapshot_query(
+    sql: str,
+    *,
+    config: dict[str, str] | None = None,
+    statement_name: str | None = None,
+    as_dict: bool = False,
+    timeout: int = STATEMENT_TIMEOUT_SEC,
+    user_agent: str = DEFAULT_USER_AGENT,
+    delete_statement: bool = True,
+) -> SnapshotQueryResult:
+    """
+    Execute a snapshot query and return all rows.
+
+    Uses confluent-sql SNAPSHOT cursor mode so the driver sets
+    `sql.snapshot.mode = now` and waits for the statement to complete
+    before fetching results.
+    """
+    sql = sql.strip()
+    if not sql:
+        raise ValueError("sql is required")
+
+    cfg = config or get_config()
+    name = statement_name or default_snapshot_statement_name("query")
+    props = statement_properties(cfg)
+    pool = cfg["FLINK_COMPUTE_POOL_ID"]
+
+    started = time.monotonic()
+    description: list[tuple] = []
+    rows: list[tuple | dict[str, Any]] = []
+    with flink_connection(cfg, user_agent=user_agent) as conn:
+        with conn.closing_cursor(as_dict=as_dict) as cur:
+            try:
+                cur.execute(
+                    sql,
+                    statement_name=name,
+                    properties=props,
+                    compute_pool_id=pool,
+                    timeout=timeout,
+                )
+                description = cur.description or []
+                rows = cur.fetchall()
+            except OperationalError as exc:
+                detail = str(exc)
+                if exc.http_status_code is not None:
+                    detail = f"{detail} (HTTP {exc.http_status_code})"
+                raise RuntimeError(f"Snapshot query failed: {detail}") from exc
+            finally:
+                if delete_statement and not cur.is_closed:
+                    try:
+                        cur.delete_statement()
+                    except OperationalError:
+                        pass
+
+    columns = [col[0] for col in description]
+    elapsed = time.monotonic() - started
+    return SnapshotQueryResult(
+        statement_name=name,
+        sql=sql,
+        columns=columns,
+        rows=rows,
+        rowcount=len(rows),
+        elapsed_sec=elapsed,
+    )
+
+
+def format_snapshot_rows(
+    result: SnapshotQueryResult,
+    *,
+    output: OutputFormat = "table",
+) -> str:
+    """Format snapshot query rows for stdout."""
+    if output == "json":
+        if result.rows and isinstance(result.rows[0], dict):
+            payload = result.rows
+        else:
+            payload = [dict(zip(result.columns, row, strict=False)) for row in result.rows]
+        return json.dumps(payload, indent=2, default=str)
+
+    if output == "csv":
+        lines = []
+        if result.columns:
+            lines.append(",".join(_csv_escape(col) for col in result.columns))
+        for row in result.rows:
+            if isinstance(row, dict):
+                values = [row.get(col) for col in result.columns]
+            else:
+                values = list(row)
+            lines.append(",".join(_csv_escape(value) for value in values))
+        return "\n".join(lines)
+
+    return _format_snapshot_table(result.columns, result.rows)
+
+
+def print_snapshot_result(
+    result: SnapshotQueryResult,
+    *,
+    output: OutputFormat = "table",
+    show_meta: bool = True,
+) -> None:
+    """Print snapshot query output and optional metadata."""
+    if show_meta:
+        print(
+            f"Statement: {result.statement_name} | "
+            f"rows: {result.rowcount} | "
+            f"elapsed: {result.elapsed_sec:.2f}s",
+            file=sys.stderr,
+        )
+        print(f"SQL: {result.sql}", file=sys.stderr)
+
+    body = format_snapshot_rows(result, output=output)
+    if body:
+        print(body)
+
+
+def _csv_escape(value: Any) -> str:
+    if value is None:
+        return ""
+    text = str(value)
+    if any(ch in text for ch in (",", '"', "\n", "\r")):
+        return '"' + text.replace('"', '""') + '"'
+    return text
+
+
+def _format_snapshot_table(columns: list[str], rows: Iterable[tuple | dict[str, Any]]) -> str:
+    materialized = list(rows)
+    if not materialized:
+        return ""
+
+    if isinstance(materialized[0], dict):
+        col_names = columns or list(materialized[0].keys())
+        values = [[str(row.get(col, "")) for col in col_names] for row in materialized]
+    else:
+        col_names = columns or [f"col{i + 1}" for i in range(len(materialized[0]))]
+        values = [[str(cell) for cell in row] for row in materialized]
+
+    widths = [len(name) for name in col_names]
+    for row in values:
+        for idx, cell in enumerate(row):
+            widths[idx] = max(widths[idx], len(cell))
+
+    header = " | ".join(name.ljust(widths[idx]) for idx, name in enumerate(col_names))
+    divider = "-+-".join("-" * width for width in widths)
+    body = "\n".join(" | ".join(cell.ljust(widths[idx]) for idx, cell in enumerate(row)) for row in values)
+    return f"{header}\n{divider}\n{body}"
+
+
+@dataclass(frozen=True)
+class StreamingQueryStats:
+    """Summary after a streaming query stops."""
+
+    statement_name: str
+    sql: str
+    columns: list[str]
+    rowcount: int
+    elapsed_sec: float
+    returns_changelog: bool
+
+
+def default_streaming_statement_name(table: str) -> str:
+    """Ephemeral statement name for a streaming query."""
+    stamp = time.strftime("%Y%m%d%H%M%S")
+    return f"stream-{_sanitize_statement_name(table)}-{stamp}"
+
+
+def format_streaming_row(
+    row: Any,
+    *,
+    columns: list[str] | None = None,
+    output: OutputFormat = "table",
+    returns_changelog: bool = False,
+) -> str:
+    """Format one streaming row for stdout."""
+    op_label: str | None = None
+    data = row
+    if returns_changelog:
+        op_label = str(row.op)
+        data = row.row
+
+    if isinstance(data, dict):
+        col_names = columns or list(data.keys())
+        values = [data.get(col) for col in col_names]
+    else:
+        values = list(data)
+
+    if output == "json":
+        if isinstance(data, dict):
+            row_payload: Any = data
+        elif columns:
+            row_payload = dict(zip(columns, values, strict=False))
+        else:
+            row_payload = values
+        if op_label is not None:
+            return json.dumps({"op": op_label, "row": row_payload}, default=str)
+        return json.dumps(row_payload, default=str)
+
+    if output == "csv":
+        rendered = ([op_label] if op_label else []) + [str(value) for value in values]
+        return ",".join(_csv_escape(value) for value in rendered)
+
+    rendered = " | ".join(str(value) for value in values)
+    if op_label:
+        return f"{op_label} | {rendered}"
+    return rendered
+
+
+def run_streaming_query(
+    sql: str,
+    *,
+    config: dict[str, str] | None = None,
+    statement_name: str | None = None,
+    as_dict: bool = False,
+    timeout: int = STATEMENT_TIMEOUT_SEC,
+    user_agent: str = DEFAULT_USER_AGENT,
+    output: OutputFormat = "table",
+    max_rows: int | None = None,
+    show_meta: bool = True,
+    delete_statement: bool = True,
+    out=None,
+) -> StreamingQueryStats:
+    """
+    Execute a streaming query and print rows as they arrive.
+
+    Blocks on each row until Ctrl+C, max_rows is reached, or the stream ends.
+    Uses confluent-sql STREAMING_QUERY cursor mode (unbounded, no snapshot mode).
+    """
+    sql = sql.strip()
+    if not sql:
+        raise ValueError("sql is required")
+    if max_rows is not None and max_rows <= 0:
+        raise ValueError("max_rows must be a positive integer")
+
+    cfg = config or get_config()
+    name = statement_name or default_streaming_statement_name("query")
+    props = statement_properties(cfg)
+    pool = cfg["FLINK_COMPUTE_POOL_ID"]
+    sink = out if out is not None else sys.stdout
+
+    started = time.monotonic()
+    rowcount = 0
+    columns: list[str] = []
+    returns_changelog = False
+    csv_header_printed = False
+
+    with flink_connection(cfg, user_agent=user_agent) as conn:
+        cur = conn.streaming_cursor(as_dict=as_dict)
+        try:
+            try:
+                cur.execute(
+                    sql,
+                    statement_name=name,
+                    properties=props,
+                    compute_pool_id=pool,
+                    timeout=timeout,
+                )
+            except OperationalError as exc:
+                detail = str(exc)
+                if exc.http_status_code is not None:
+                    detail = f"{detail} (HTTP {exc.http_status_code})"
+                raise RuntimeError(f"Streaming query failed: {detail}") from exc
+
+            columns = [col[0] for col in (cur.description or [])]
+            returns_changelog = cur.returns_changelog
+
+            if show_meta:
+                print(f"Statement: {name}", file=sys.stderr)
+                print(f"SQL: {sql}", file=sys.stderr)
+                print("Streaming results (Ctrl+C to stop)...", file=sys.stderr)
+
+            try:
+                for row in cur:
+                    if output == "csv" and not csv_header_printed:
+                        header_cols = (["op"] if returns_changelog else []) + columns
+                        if header_cols:
+                            print(
+                                ",".join(_csv_escape(col) for col in header_cols),
+                                file=sink,
+                                flush=True,
+                            )
+                            csv_header_printed = True
+
+                    print(
+                        format_streaming_row(
+                            row,
+                            columns=columns,
+                            output=output,
+                            returns_changelog=returns_changelog,
+                        ),
+                        file=sink,
+                        flush=True,
+                    )
+                    rowcount += 1
+                    if max_rows is not None and rowcount >= max_rows:
+                        if show_meta:
+                            print(f"Reached max_rows={max_rows}.", file=sys.stderr)
+                        break
+            except KeyboardInterrupt:
+                if show_meta:
+                    print("\nStreaming query stopped.", file=sys.stderr)
+        finally:
+            if delete_statement and not cur.is_closed:
+                try:
+                    cur.delete_statement()
+                except OperationalError:
+                    pass
+            cur.close()
+
+    elapsed = time.monotonic() - started
+    if show_meta:
+        print(
+            f"Rows printed: {rowcount} | elapsed: {elapsed:.2f}s",
+            file=sys.stderr,
+        )
+
+    return StreamingQueryStats(
+        statement_name=name,
+        sql=sql,
+        columns=columns,
+        rowcount=rowcount,
+        elapsed_sec=elapsed,
+        returns_changelog=returns_changelog,
+    )

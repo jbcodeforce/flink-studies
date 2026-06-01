@@ -2,6 +2,10 @@
 
 Docker Compose runs Prometheus and Grafana for Confluent Cloud Flink compute pool and statement metrics. See [Getting started with Grafana and Prometheus](https://grafana.com/docs/grafana/latest/fundamentals/getting-started/first-dashboards/get-started-grafana-prometheus/).
 
+The architecture includes a Prometheur scrapper accessing the [Confluent Cloud metrics REST API](), and a Grafana dashboard:
+
+![](../../docs/cookbook/diagrams/monitoring-prom.drawio.png)
+
 ## Prerequisites
 
 1. [deployment/cc-terraform](../cc-terraform/) applied with a local `terraform.tfstate` (base j9r-env infrastructure).
@@ -170,14 +174,13 @@ For windowed statements, Confluent also recommends tracking **in-flight** data a
 
 ```promql
 confluent_flink_current_output_watermark_milliseconds{flink_statement_name="monitoring-dml-user-monthly-totals"}
-  - confluent_flink_current_input_watermark_milliseconds{flink_statement_name="monitoring-dml-user-monthly-totals"}
 ```
 
 For tumbling windows this rises until a window fires, then drops.
 
 **Pipeline mitigations** (see [cc-flink/README.md](./cc-flink/README.md)):
 
-- `scan.watermark.idle-timeout = '1 min'` on the `transactions` table so idle partitions stop blocking watermark advancement
+- `sql.tables.scan.idle-timeout = '1 min'` on the `transactions` table so idle partitions stop blocking watermark advancement
 - Recreate the table after DDL changes: `make undeploy && make deploy` from `cc-flink/`
 
 Raw watermark values (sanity check):

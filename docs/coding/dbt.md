@@ -519,14 +519,28 @@ In Confluent Cloud Flink context, the `dbt run` does not process data; it deploy
 
     ```sql
     {{ config(
-        materialized='streaming_table',
-        with={
+        materialized = 'streaming_table',
+        with         = {
             'changelog.mode: 'upsert'
-              }
+        }
        ) 
     }}
     ```
 
+???+ question "How to define materialized table"
+    Add the config element in the model file
+      ```sql
+    {{ config(
+        materialized       = 'materialized_table',
+        freshness_interval = "INTERVAL '1' MINUTE",
+        distributed_by     = "order_id",
+        start_mode         = 'RESUME_OR_FROM_BEGINNING'
+        with               = {
+            'key.format: 'avro-registry',
+            'value.format: 'avro-registry'
+        }
+       ) 
+    }}
 ## Sources of Information
 
 * [Udemy training from Zoltan C. Toth](https://www.udemy.com/course/complete-dbt-data-build-tool-bootcamp-zero-to-hero-learn-dbt) with [Git Repo](https://github.com/nordquant/complete-dbt-bootcamp-zero-to-hero). Example of data [from Inside AirBnB](https://insideairbnb.com/berlin/).

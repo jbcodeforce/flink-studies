@@ -1,7 +1,7 @@
 [project]
 name = "flink-sql-tools"
 version = "0.1.0"
-description = "Shared Confluent Cloud Flink SQL deploy utilities (confluent-sql REST API)"
+description = "Shared Confluent Cloud Flink SQL deploy, snapshot, and streaming query utilities (confluent-sql REST API)"
 requires-python = ">=3.11"
 dependencies = [
     "confluent-kafka[avro]>=2.4.0",
@@ -11,3 +11,5 @@ dependencies = [
 
 [project.scripts]
 flink-sql-deploy = "deploy_flink_statements:main"
+flink-sql-snapshot = "run_snapshot_query:main"
+flink-sql-stream = "run_streaming_query:main"

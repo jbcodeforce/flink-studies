@@ -1,9 +1,9 @@
 CREATE TABLE IF NOT EXISTS user_monthly_totals (
   user_id      STRING NOT NULL,
-  user_name    STRING NOT NULL,
-  user_email   STRING NOT NULL,
+  full_name    STRING,
+  email   STRING,
   month_start  TIMESTAMP(3) NOT NULL,
-  total_amount DECIMAL(18, 2) NOT NULL,
+  total_amount DECIMAL(18, 2),
   PRIMARY KEY (user_id, month_start) NOT ENFORCED
 ) DISTRIBUTED BY HASH(user_id, month_start) INTO 1 BUCKETS WITH (
   'changelog.mode' = 'upsert',

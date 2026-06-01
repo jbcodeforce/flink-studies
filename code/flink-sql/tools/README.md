@@ -102,7 +102,61 @@ deploy_statements(
 full_undeploy(manifest, config=get_config())
 ```
 
+## Snapshot query
+
+Run a bounded point-in-time query against an existing table. The confluent-sql driver
+sets `sql.snapshot.mode = now` automatically in SNAPSHOT cursor mode.
+
+```sh
+cd code/flink-sql/tools
+
+# Top 10 rows from a table
+uv run python run_snapshot_query.py --table orders --limit 10
+
+# Filter and choose columns
+uv run python run_snapshot_query.py --table orders --columns "order_id, amount" --where "amount > 100"
+
+# Custom SQL (count, joins, etc.)
+uv run python run_snapshot_query.py --sql "SELECT COUNT(*) AS cnt FROM orders" --output json
+```
+
+Library API:
+
+```python
+from cc_flink_deploy import build_select_sql, run_snapshot_query
+
+sql = build_select_sql("orders", limit=5)
+result = run_snapshot_query(sql)
+print(result.rowcount, result.rows)
+```
+
+## Streaming query
+
+Run a continuous query and print rows as they arrive. Press Ctrl+C to stop.
+
+```sh
+cd code/flink-sql/tools
+
+# Stream all rows from a table
+uv run python run_streaming_query.py --table orders
+
+# Filter with custom SQL, stop after 20 rows
+uv run python run_streaming_query.py --sql "SELECT * FROM orders WHERE amount > 100" --max-rows 20
+```
+
+Library API:
+
+```python
+from cc_flink_deploy import build_select_sql, run_streaming_query
+
+sql = build_select_sql("orders", where="amount > 100")
+stats = run_streaming_query(sql)  # prints rows until Ctrl+C
+print(stats.rowcount)
+```
+
 ## Related
 
 - [`cc_flink_rest_client.py`](cc_flink_rest_client.py) — lower-level `requests`-based REST client (legacy)
-- [`cc_flink_deploy.py`](cc_flink_deploy.py) — confluent-sql based deploy library
+- [`cc_flink_deploy.py`](cc_flink_deploy.py) — deploy, undeploy, snapshot, and streaming query library
+- [`run_snapshot_query.py`](run_snapshot_query.py) — snapshot query CLI
+- [`run_streaming_query.py`](run_streaming_query.py) — streaming query CLI
