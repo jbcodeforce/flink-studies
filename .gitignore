@@ -43,3 +43,4 @@ e2e-demos/cc-cdc-tx-demo/cc-flink-sql/staging/
 **/calendar_summary.csv
 **/dbt_old
 **/prometheus.yml
+**/.env

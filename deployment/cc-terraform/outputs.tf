@@ -112,6 +112,14 @@ output "flink_data_gen_pool_id" {
   value       = confluent_flink_compute_pool.data-generation.id
 }
 
+output "flink_compute_pool_ids" {
+  description = "All Flink compute pool IDs in this environment"
+  value = [
+    confluent_flink_compute_pool.dev-j9r-pool.id,
+    confluent_flink_compute_pool.data-generation.id,
+  ]
+}
+
 output "flink_rest_endpoint" {
   description = "Flink region REST endpoint"
   value       = data.confluent_flink_region.flink_region.rest_endpoint

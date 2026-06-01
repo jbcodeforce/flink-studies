@@ -2,21 +2,20 @@ scrape_configs:
   - job_name: Confluent Cloud
     scrape_interval: 1m
     scrape_timeout: 1m
-    # Confluent export embeds timestamps several minutes behind scrape time;
-    # honor_timestamps: true causes instant queries to return empty after each scrape.
     honor_timestamps: false
     static_configs:
       - targets:
         - api.telemetry.confluent.cloud
     scheme: https
     basic_auth:
-      username: ${metrics_api_key_id}
-      password: ${metrics_api_key_secret}
+      username: YOUR_METRICS_API_KEY_ID
+      password: YOUR_METRICS_API_KEY_SECRET
     metrics_path: /v2/metrics/cloud/export
     params:
       "resource.kafka.id":
-        - ${kafka_cluster_id}
+        - lkc-EXAMPLE
       "resource.schema_registry.id":
-        - ${schema_registry_id}
+        - lsrc-EXAMPLE
       "resource.compute_pool.id":
-        - ${compute_pool_ids_yaml}
+        - lfcp-EXAMPLE
+        - lfcp-EXAMPLE2

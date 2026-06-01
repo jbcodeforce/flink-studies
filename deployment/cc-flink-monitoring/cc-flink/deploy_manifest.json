@@ -1,0 +1,27 @@
+{
+  "user_agent": "flink-studies-monitoring-demo/0.1",
+  "deploy_all": ["ddl", "data", "pipeline"],
+  "undeploy_all": ["pipeline", "data"],
+  "drop_tables": [
+    "user_monthly_totals",
+    "transactions",
+    "raw_transactions",
+    "users"
+  ],
+  "drop_statement_prefix": "monitoring-drop",
+  "groups": {
+    "ddl": [
+      {"name": "monitoring-ddl-users", "file": "ddl.users.sql"},
+      {"name": "monitoring-ddl-raw-transactions", "file": "ddl.raw_transactions.sql"},
+      {"name": "monitoring-ddl-transactions", "file": "ddl.transactions.sql"},
+      {"name": "monitoring-ddl-user-monthly-totals", "file": "ddl.user_monthly_totals.sql"}
+    ],
+    "data": [
+      {"name": "monitoring-dml-load-users", "file": "dml.load_users.sql"}
+    ],
+    "pipeline": [
+      {"name": "monitoring-dml-transactions", "file": "dml.transactions.sql"},
+      {"name": "monitoring-dml-user-monthly-totals", "file": "dml.user_monthly_totals.sql"}
+    ]
+  }
+}

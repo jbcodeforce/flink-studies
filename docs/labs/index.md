@@ -341,9 +341,19 @@ End-to-end performance assessment: configurable producer → Kafka → Flink job
 
 **Cookbook lab:** [Flink Tuning on Kubernetes §10 — Tune and Observe a FlinkApplication](../cookbook/k8s_tuning.md#10--lab-overview--tune-and-observe-a-flinkapplication) uses this demo with the [dedup-demo FlinkApplication](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/dedup-demo/cp-flink/flink-table-api/k8s/flink-application.yaml) for hands-on tuning exercises.
 
+**Legend:** ✓ = deployment folder present with README. **Updated** = date from demo root README (e.g. "Created DD/MM/YYYY") when present; otherwise —. **Full automation** = one-command (or scripted) deploy + validation that the demo works; Partial = scripted deploy or validate only; Manual = README steps only.
+
 ---
 
-**Legend:** ✓ = deployment folder present with README. **Updated** = date from demo root README (e.g. "Created DD/MM/YYYY") when present; otherwise —. **Full automation** = one-command (or scripted) deploy + validation that the demo works; Partial = scripted deploy or validate only; Manual = README steps only.
+## 5. Deployment demonstrations
+
+Labs under `deployment/` for infrastructure, observability, and Confluent Cloud Flink operations.
+
+| Sample | Path | Description |
+|--------|------|-------------|
+| **Confluent Cloud Flink monitoring** | [deployment/cc-flink-monitoring](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/cc-flink-monitoring/) | Terraform stack (reads [cc-terraform](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/cc-terraform/) remote state) creates MetricsViewer credentials and renders Prometheus scrape config. Docker Compose runs Prometheus + Grafana with a prebuilt Flink statement dashboard (CFU utilization, records in/out, checkpoint duration, statement lag). Sample SQL pipeline in [cc-flink/](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/cc-flink-monitoring/cc-flink/): 100 users plus bounded faker history (~73k transactions, ~2/user/day over 365 days) → Kafka → TUMBLE 30-day totals (`WATERMARK FOR ts`). Deploy with shared [flink-sql/tools](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/tools/) (`make sync && make deploy`). Statements `monitoring-dml-load-tx-history` and `monitoring-dml-user-monthly-totals`. See also [job lifecycle cookbook — monitoring](../cookbook/job_lifecycle.md). |
+
+---
 
 ## Public repositories with valuable demonstrations
 
