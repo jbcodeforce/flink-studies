@@ -8,6 +8,8 @@ compiled: false
 ---
 # Fit for purpose
 
+The chapter is about comparing some other technology with Apache Flink and when to use one versus the other.
+
 ## Difference between Kafka Streams and Flink
 
 * Flink is a complete streaming computation system that supports HA, Fault-tolerance, self-monitoring, and a variety of deployment models.
@@ -36,6 +38,47 @@ compiled: false
 * KStreams uses the Kafka Record time stamp, while with Flink we need to implement how to deserialize the KafkaRecord and get the timestamp from it.
 * Support of late arrival is easier with KStreams, while Flink uses the concept of watermark.
 
+---
+
+## Apache Nifi and Apache Flink
+
+Apache NiFi is about data logistics (movement), while Flink is about data computation (analytics). In a modern data architecture, these tools rarely fight for the same slot.
+
+NiFi is frequently used to gather and clean messy data from various corporate silos and feed it into a clean topics within Apache Kafka, which Flink then reads to perform heavy calculations
+
+
+At the high level:
+
+- Nifi specializes in moving, routing, transforming, and securing data from Point A to Point B. It features a visual, drag-and-drop interface. If you need to securely ingest data from 100 different retail stores into our cloud data lake," invest in NiFi.
+- flink specializes in performing complex, high-speed mathematical and logical computations on live, massive data streams as they happen. While if you need to detect credit card fraud or recalculate dynamic ride pricing within 5 milliseconds of an events, go with Flink.
+
+| Dimension | Apache NiFi | Apache Flink |
+| --------- | ----------- | ------------ |
+| Primary Focus | Data Ingestion, Routing, & Delivery | Heavy Analytics & Complex Processing |
+| Primary Interface | Visual Drag-and-Drop (No-code) | Code-driven (Java, Python, SQL) |
+| Processing Speed | Low Latency (Seconds) | Ultra-Low Latency (Millisecond)|
+| Historical Lineage | Excellent. Built-in data tracking. | Limited. Focuses on the immediate stream. |
+| Talent Needs | Data Administrators / IT Generalists | Data Engineers / Developers |
+| Typical Use Cases | Feeding Data Lakes, System Migration | Fraud Detection, Live IoT Alerts, Real-Time Dashboards |
+
+While NiFi might require more hardware infrastructure to handle heavy data mutations, Flink requires skill on streaming programming.
+
+### Nifi Technical Features
+
+Nifi supports a Flow driven implementation:
+
+* Data is encapsulated as a FlowFile. A FlowFile is split into two parts: Attributes (key-value metadata held in JVM memory) and Content (the payload, stored on disk in the Content Repository).
+* NiFi operates on a bounded event-by-event queue model. Processors pull FlowFiles from an incoming queue, mutate the attributes or payload, and commit them to an outgoing queue. It acts at the data-transfer layer; it doesn't care about the schemas inside your files unless you explicitly invoke Record-based processors (like QueryRecord).
+* The Concurrency is Thread-driven. You configure the number of concurrent tasks directly on individual processors via the GUI.
+* For fault tolerance, NiFi relies heavily on its write-ahead log repositories (FlowFile Repository and Provenance Repository). If a node crashes, the data stays safe on that node's local disk.
+* State is primarily local to a component or distributed via external caches (e.g., Redis, HBase, DistributedMapCache). While NiFi supports stateless execution modes for short-lived cloud-native jobs, it is fundamentally designed around the guarantee that data is safely buffered on disk between steps. You are not implementing stateful processing with Nifi, only good for deduplication, and basic caching.
+* NiFi uses a structured JSON flow definition format. Flow management is based on git.
+* Testing business logic in NiFi can feel decoupled. You either test via the UI with dummy data or use NiFi’s Java Mock Framework (TestRunner) to write programmatic unit tests for custom processors.
+* NiFi runs natively on Kubernetes using ConfigMaps and native leases for leader election, removing historical external dependencies like ZooKeeper.
+* Custom components are written in Java and bundled into .nar (NiFi Archive) files, which provide strict classloader isolation.
+* NiFi features native, CPython-based processor extensions. It uses uv tooling to dynamically spin up isolated Python environments. If you want to drop a custom script into your pipeline using pandas, scikit-learn, or an LLM/Vector DB client, you can write it in pure Python without writing a single line of Java.
+
+---
 ## When to use rule engine versus Flink
 
 By rule engine, we are talking about libraries / products that are implementing the [Rete Algorithm](https://en.wikipedia.org/wiki/Rete_algorithm) and extends from there. 

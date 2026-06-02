@@ -19,18 +19,18 @@ With Flink SQL statement developers who need to update the pipeline's logic (e.g
 
 Materialized Tables support in-place evolution via the CREATE OR ALTER command. This feature automates complex administrative tasks such as offset management and schema synchronization. 
 
-They use the concept of data freshness as the maximum amount of time that the materialized table’s content should lag behind updates to the base tables. The default refreshness is 3 minutes for CONTINUOUS mode and 1 hours for FULL mode.
+They use the concept of data freshness as the maximum amount of time that the materialized table’s content should lag behind updates to the base tables. The default refreshness is 3 minutes for CONTINUOUS mode and 1 hours for FULL mode. The query results are updated to the materialized table continuously, while in FULL mode, the query results overwrite the materialized table each time
 
 * With full mode, there is a scheduler that triggers a batch job to refresh the materialized table data. 
 * With CONTINUOUS, data freshness is converted into the checkpoint interval of the Flink streaming job.
-* Materialized Tables are defined as other Flink tables, with the MATERIALIZED keywords. [See the syntax](https://nightlies.apache.org/flink/flink-docs-release-2.2/docs/dev/table/materialized-table/statements/), and a CTAS structure
+* Materialized Tables are defined as other Flink tables, with the MATERIALIZED keywords. [See the syntax](https://nightlies.apache.org/flink/flink-docs-release-2.2/docs/dev/table/materialized-table/statements/), and uses a CTAS structure
     ```sql
     CREATE MATERIALIZED TABLE orders_table
     FRESHNESS = INTERVAL '10' SECOND
     AS SELECT * FROM kafka_catalog.db1.orders;
     ```
 
-* Use ALTER MATERIALIZED TABLE, to suspend and resume refresh pipeline of materialized tables and manually trigger data refreshes, and modify the query definition of materialized tables. Users can control how much historical data is processed during these updates by configuring the START_MODE parameter. 
+* Use ALTER MATERIALIZED TABLE, to suspend and resume refresh pipeline of materialized tables, to manually trigger data refreshes, and to modify the query definition of materialized tables. Users can control how much historical data is processed during these updates by configuring the START_MODE parameter. 
 
 * SUSPEND needs to set the savepoint directory:
     ```sql
@@ -44,6 +44,12 @@ They use the concept of data freshness as the maximum amount of time that the ma
     ALTER MATERIALIZED TABLE my_materialized_table REFRESH;
     ```
 * `ALTER... AS` will change the table schema, and then refresh the data. In FULL mode, not partitioned, the table will be overwritten. With partioning it will refresh the latest partition. With CONTINUOUS, the new refresh job starts from the beginning and does not restore from the previous state.
+
+## Architecture
+
+The SQL Gateway is the important component to manage the life cycle of MT. It includes a workflow scheduler to manage periodic refresh jobs.
+
+![](https://nightlies.apache.org/flink/flink-docs-release-2.2//fig/materialized-table-architecture.svg)
 
 ## Limitations
 
@@ -60,15 +66,15 @@ They use the concept of data freshness as the maximum amount of time that the ma
 
     This will execute a Flink Statement to create the table, topic and schema, and it will complete.
     
-* Looking the default configuration of the table:
+* Looking at the default configuration of the table (`show create materialized table`):
 
     ```sql
     CREATE OR ALTER MATERIALIZED TABLE `j9r-env`.`j9r-kafka`.`orders_with_customer_details` (
-    `order_id` VARCHAR(2147483647) NOT NULL,
-    `name` VARCHAR(2147483647) NOT NULL,
-    `address` VARCHAR(2147483647) NOT NULL,
-    `postcode` VARCHAR(2147483647) NOT NULL,
-    `city` VARCHAR(2147483647) NOT NULL
+        `order_id` VARCHAR(2147483647) NOT NULL,
+        `name` VARCHAR(2147483647) NOT NULL,
+        `address` VARCHAR(2147483647) NOT NULL,
+        `postcode` VARCHAR(2147483647) NOT NULL,
+        `city` VARCHAR(2147483647) NOT NULL
     )
     DISTRIBUTED INTO 6 BUCKETS
     WITH (
@@ -95,7 +101,7 @@ They use the concept of data freshness as the maximum amount of time that the ma
 
     ![](./images/mt-schemas.png)
 
-* And the table is visible in Materialized Table view:
+* And the table is visible in `Flink/Materialized Tables` view:
 
     ![](./images/mt-view.png)
 

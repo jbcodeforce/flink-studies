@@ -1,0 +1,17 @@
+sources:
+  - name: airbnb  # This is the internal dbt name for the source
+    schema: raw   # The actual schema name in your warehouse
+    tables:
+      - name: listings # This is the name of the raw table in the data warehouse
+        identifier: raw_listings
+
+      - name: hosts # This is the name of the raw table in the data warehouse
+        identifier: raw_hosts
+
+      - name: reviews
+        identifier: raw_reviews
+        config:
+          loaded_at_field: date
+          freshness:
+            warn_after: {count: 1, period: hour}
+            error_after: {count: 24, period: hour}

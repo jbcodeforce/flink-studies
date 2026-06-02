@@ -19,6 +19,6 @@ provider "confluent" {
 data "terraform_remote_state" "cc" {
   backend = "local"
   config = {
-    path = abspath("${path.module}/../cc-terraform/terraform.tfstate")
+    path = abspath("${path.module}/../../cc-terraform/terraform.tfstate")
   }
 }

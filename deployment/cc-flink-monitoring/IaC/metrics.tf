@@ -20,7 +20,4 @@ resource "confluent_api_key" "metrics" {
     kind        = confluent_service_account.metrics_viewer.kind
   }
 
-  lifecycle {
-    prevent_destroy = true
-  }
 }

@@ -1,17 +1,6 @@
-resource "local_file" "prometheus_env" {
-  filename = "${path.module}/.env"
-  content = templatefile("${path.module}/templates/prometheus.env.tpl", {
-    metrics_api_key_id     = confluent_api_key.metrics.id
-    metrics_api_key_secret = confluent_api_key.metrics.secret
-    kafka_cluster_id       = local.kafka_cluster_id
-    schema_registry_id     = local.schema_registry_id
-    compute_pool_ids       = join(",", local.compute_pool_ids)
-  })
-}
-
 resource "local_file" "prometheus_config" {
-  filename = "${path.module}/prometheus/prometheus.yml"
-  content = templatefile("${path.module}/prometheus/prometheus.tmpl.yml", {
+  filename = "${path.module}/../prometheus/prometheus.yml"
+  content = templatefile("${path.module}/../prometheus/prometheus.tmpl.yml", {
     metrics_api_key_id    = confluent_api_key.metrics.id
     metrics_api_key_secret = confluent_api_key.metrics.secret
     kafka_cluster_id      = local.kafka_cluster_id

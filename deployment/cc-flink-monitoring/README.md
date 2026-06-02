@@ -18,15 +18,21 @@ Terraform in this folder reads resource IDs from `cc-terraform` remote state, cr
 - `.env` — environment variables for scripts and tooling
 - `prometheus/prometheus.yml` — Prometheus scrape config (contains secrets; gitignored)
 
+|Resource	| Terraform address |
+| --- | --- |
+| Service account |`confluent_service_account.metrics_viewer` |
+| MetricsViewer role binding | `confluent_role_binding.metrics_viewer` |
+| Cloud API key | `confluent_api_key.metrics` |
+
 ```bash
 # 1. Ensure base infrastructure is applied
-cd ../cc-terraform
+cd ../cc-terraform/IaC
 export TF_VAR_confluent_cloud_api_key="<org-admin-key>"
 export TF_VAR_confluent_cloud_api_secret="<org-admin-secret>"
 terraform apply
 
 # 2. Apply monitoring stack
-cd ../cc-flink-monitoring
+cd ../cc-flink-monitoring/IaC
 export TF_VAR_confluent_cloud_api_key="<org-admin-key>"
 export TF_VAR_confluent_cloud_api_secret="<org-admin-secret>"
 terraform init
@@ -218,3 +224,35 @@ Teardown: `make undeploy` from `cc-flink/`.
 ## Build dashboards
 
 See [Create dashboard](https://grafana.com/docs/grafana/latest/visualizations/dashboards/build-dashboards/create-dashboard/).
+
+
+## Cleaning
+
+* set env variables
+  ```sh
+  cd deployment/cc-flink-monitoring/IaC
+
+  export TF_VAR_confluent_cloud_api_key="<org-admin-key>"
+  export TF_VAR_confluent_cloud_api_secret="<org-admin-secret>"
+  ```
+
+* Destroy in dependency order (key → role binding → service account):
+  ```sh
+  terraform destroy \
+    -target=confluent_api_key.metrics \
+    -target=confluent_role_binding.metrics_viewer \
+    -target=confluent_service_account.metrics_viewer
+  ```
+
+  Terraform accepts multiple -target flags and resolves order. You can also run three separate commands in that order.
+
+
+* The generated prometheus/prometheus.yml still contains the old key until you re-apply or delete it manually. After destroy:
+  ```sh
+  # Either remove the stale scrape config
+  rm -f ../prometheus/prometheus.yml
+  # Or re-apply to regenerate from remaining resources (remote state only)
+  terraform apply
+  ```
+
+  d s

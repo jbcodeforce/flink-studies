@@ -83,7 +83,7 @@ This example is in [code/dbt/airbnb](https://github.com/jbcodeforce/flink-studie
       target: dev
     ```
 
-    It specifies two configurations, dev and prod, with different connections to data warehouses. The path specifies where in the working directory (e.g. airbnd) the database will be created.
+    It specifies two configurations, `dev` and `prod`, with different data warehouse connections. The path specifies where in the working directory (e.g. airbnd) the database will be created.
 
     This will also create a set of folders to manage all the needed elements of data pipelines:
       
@@ -112,12 +112,12 @@ This example is in [code/dbt/airbnb](https://github.com/jbcodeforce/flink-studie
             +materialized: view
       ```
 
-Next we will cover the [main concepts](#major-concepts) with concrete examples.
+Next we will cover the dbt [main concepts](#major-concepts) with concrete examples.
 
 ### A Confluent Cloud Flink example
 
 
-[Confluent dbt adapter](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/deploy-flink-dbt.html) aims to support standard dbt commands (init, debug, run, test, docs generate, etc.) against Confluent Cloud Flink, so teams can manage pipelines end-to-end from dbt rather than Terraform/REST only.
+[Confluent dbt adapter](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/deploy-flink-dbt.html) aims to support standard dbt commands (init, debug, run, test, docs generate, etc.) against Confluent Cloud for Flink, so teams can manage pipelines end-to-end from dbt rather than using Terraform or confluent cli.
 
 * For Confluent the adapter is installed via:
     ```sh
@@ -130,38 +130,36 @@ Next we will cover the [main concepts](#major-concepts) with concrete examples.
   ```
   
   The profile may include references to environment variables for API KEY and SECRET.
-
-  ```yaml
-  airbnb_streaming:
-  outputs:
-    dev:
-      cloud_provider: aws
-      cloud_region: us-west-2
-      compute_pool_id: lfcp-
-      dbname: j9r-kafka
-      environment_id: env-
-      execution_mode: streaming_query
-      flink_api_key: "{{ env_var('CONFLUENT_FLINK_API_KEY') }}"
-      flink_api_secret: "{{ env_var('CONFLUENT_FLINK_API_SECRET') }}"
-      organization_id: 49......44
-      statement_label: dbt-confluent
-      statement_name_prefix: dbt-
-      threads: 1
-      type: confluent
+    ```yaml
+    airbnb_streaming:
+    outputs:
+      dev:
+        cloud_provider: aws
+        cloud_region: us-west-2
+        compute_pool_id: lfcp-
+        dbname: j9r-kafka
+        environment_id: env-
+        execution_mode: streaming_query
+        flink_api_key: "{{ env_var('CONFLUENT_FLINK_API_KEY') }}"
+        flink_api_secret: "{{ env_var('CONFLUENT_FLINK_API_SECRET') }}"
+        organization_id: 49......44
+        statement_label: dbt-confluent
+        statement_name_prefix: dbt-
+        threads: 1
+        type: confluent
     ```
 
 ## Major Concepts
 
-* Batching in dbt with a datawarehouse, like DuckDB or Snowflake, is primarily managed through different materialization strategies: 
+* Batching in dbt with a data warehouse, like DuckDB or Snowflake, is primarily managed through different materialization strategies: 
     * *Table*: Replaces the entire target table with each run. Ideal for smaller datasets or full-refresh batches.
     * *Incremental*: Updates only new or changed data using append, merge, or delete+insert.
     * *Microbatch*: Breaks massive datasets into smaller, time-based segments (e.g., daily) that process independently.
     * *External*: Reads from and exports results directly to files (Parquet, CSV, JSON) on local storage or S3.
 
 * It encourages building complex transformations in smaller, reusable SQL steps, reducing repetitive code.
-* 
 * dbt uses a template mechanism (jinja), functions and a set of features to organize SQL and cross reference them. 
-* The mandatory file for a project is the `dbt_project.yml` file as it contains information that tells dbt how to operate your project. dbt demarcates between a folder name and a configuration by using a + prefix before the configuration name.
+* The mandatory file for a project is the `dbt_project.yml` file as it contains information that tells dbt how to operate the project. dbt demarcates between a folder name and a configuration by using a + prefix before the configuration name.
 * **Models**: are the basic building blocks of the business logic. They includes materialized tables and views, and SQL files. Models can reference each others and use templates and macros. 
 * **Resources types** includes models, seeds, snapshots, tests, sources
 * **Properties** describe resources
@@ -169,7 +167,7 @@ Next we will cover the [main concepts](#major-concepts) with concrete examples.
 
 ### Models
 
-Models are built in logical layers to keep the pipeline clean and scalable. The will be dependent on each other, forming a Direct Acyclic Graph.
+Models are built in logical layers to keep the pipeline clean and scalable. They are dependent on each other, forming a Direct Acyclic Graph.
 
 * Staging (stg_): Clean and rename the raw data (e.g., lowercase names, fix boolean types).
 * Intermediate (int_): Perform complex joins, aggregations, and business logic here.
@@ -188,6 +186,74 @@ The table below lists when to use View vs Table:
 * **schema** is the data contract of elements of the model, and define in a separate yaml file.
 * There are two macros to cross reference tables: `{{ ref() }}` used to reference a table within a model and `{{source() }}` to reference external data sources. 
 
+???+ handson "Create the first model"
+    [See the duckdb example](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/airbnb). Let start by seeding reference data into the warehouse from a csv file. The seeds/ folder includes all the csv to map to table inside duckdb. The following command let dbt to look inside the seeds/ folder of your project, find any .csv files, and upload them as physical tables into your database.
+
+    ```sh
+    dbt seed --target dev
+    ```
+
+    Raw data are created in tables in a raw schema, as data landing zone.
+
+    ![](./diagrams/arch.drawio.png)
+
+    Once created, the second step, is to add dbt sources
+
+
+#### Create sources
+
+Sources are defined using YAML files inside your `models/` directory.
+
+```yaml
+sources:
+  - name: airbnb  # This is the internal dbt name for the source
+    schema: raw   # The actual schema name in your warehouse
+    tables:
+      - name: listings # This is the name of the raw table in the data warehouse
+        identifier: raw_listings
+```
+
+Then adding a sql for deduplicating the raw.raw_hosts data. Create a `models/sources` folder and add:
+
+```sql
+WITH ranked_hosts AS (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY id
+            ORDER BY updated_at DESC, created_at DESC
+        ) AS row_num
+    FROM
+        {{ source('airbnb', 'hosts') }}
+    WHERE id IS NOT NULL
+)
+SELECT
+    id AS host_id,
+    name AS host_name,
+    is_superhost,
+    created_at,
+    updated_at
+FROM
+    ranked_hosts
+WHERE
+    row_num = 1
+```
+
+So running the following command
+
+```sh
+dbt run --target dev
+# returns
+Found 1 seed, 3 sources, 474 macros
+```
+
+which can be validated by opening the duckdb database:
+
+```sql
+duckdb data/airbnb.duckdb
+# in the shell
+select * from main.src_hosts;
+```
 
 ### Materializations
 
@@ -530,22 +596,27 @@ In Confluent Cloud Flink context, the `dbt run` does not process data; it deploy
 ???+ question "How to define materialized table"
     Add the config element in the model file
       ```sql
-    {{ config(
-        materialized       = 'materialized_table',
-        freshness_interval = "INTERVAL '1' MINUTE",
-        distributed_by     = "order_id",
-        start_mode         = 'RESUME_OR_FROM_BEGINNING'
-        with               = {
-            'key.format: 'avro-registry',
-            'value.format: 'avro-registry'
-        }
-       ) 
-    }}
+      {{ config(
+          materialized       = 'materialized_table',
+          freshness_interval = "INTERVAL '1' MINUTE",
+          distributed_by     = "order_id",
+          start_mode         = 'RESUME_OR_FROM_BEGINNING'
+          with               = {
+              'key.format: 'avro-registry',
+              'value.format: 'avro-registry'
+          }
+        ) 
+      }}
+      ```
+
 ## Sources of Information
 
 * [Udemy training from Zoltan C. Toth](https://www.udemy.com/course/complete-dbt-data-build-tool-bootcamp-zero-to-hero-learn-dbt) with [Git Repo](https://github.com/nordquant/complete-dbt-bootcamp-zero-to-hero). Example of data [from Inside AirBnB](https://insideairbnb.com/berlin/).
 * [Dbt core](https://github.com/dbt-labs/dbt-core)
+- Learn more about dbt [in the docs](https://docs.getdbt.com/docs/introduction)
 * [Preset](https://preset.io/product/) is a SaaS for [Apache Superset](https://superset.apache.org/) to develop BI dashboard, on cloud with dbt integration. It also includes a SQL Editor.
 * [Snowflake](https://app.snowflake.com)  username: jbcodeforce. Using key-pair authentication. Public [key in Snowlflake](https://docs.snowflake.com/en/user-guide/opencatalog/key-pair-auth-configure#generate-a-private-and-public-key)
 * [Youtube tutorial](https://www.youtube.com/watch?v=cW7KFaos2cw)
 * [Patrick Neff's git repo: Stream Processing in Confluent Cloud Flink with data build tool (dbt)](https://github.com/pneff93/dbt-cc-stream-processing)
+- Check out [Discourse](https://discourse.getdbt.com/) for commonly asked questions and answers
+- Check out [the blog](https://blog.getdbt.com/) for the latest news on dbt's development and best practices
