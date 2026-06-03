@@ -1,19 +1,24 @@
-# Flink SQL Only (Optional)
+# Flink SQL files (local gateway / reference)
 
-Pure Flink SQL deployment for environments where jobs are submitted as SQL (e.g. SQL gateway, Confluent Cloud for Flink SQL, or OSS Flink SQL client).
+SQL equivalents of the sql-executor pipeline. Used as the source for [../../cccloud/](../../cccloud/) on Confluent Cloud.
 
-## Role in Perf Assessment
+## Files
 
-- Same logical pipeline as `../sql-executor/` but submitted as SQL only (no Java Table API driver).
-- Use when assessing SQL-only submission path or managed Flink SQL services.
+| File | Role |
+|------|------|
+| [ddl_source.sql](ddl_source.sql) | `perf_source` table |
+| [ddl_sink.sql](ddl_sink.sql) | `perf_sink` table |
+| [dml_passthrough.sql](dml_passthrough.sql) | `INSERT INTO ... SELECT` |
 
-## Contents
+Replace `<BOOTSTRAP_SERVERS>` in DDL before submit.
 
-- SQL files: DDL for Kafka source/sink tables and DML (e.g. INSERT INTO ... SELECT).
-- Optional script or instructions to submit these statements to the target Flink SQL endpoint.
-- Schema and topic names must match `../../producer/` and topic creation in `../../scripts/`.
+## Local SQL client
 
-## Running
+```bash
+export BOOTSTRAP_SERVERS=localhost:9092
+# Submit in order via Flink SQL Gateway or sql-client.sh from deployment/
+```
 
-- Submit DDL then DML via SQL gateway REST API, Flink SQL client, or platform UI.
-- Ensure Kafka connectivity and catalog/database configuration point to the same topics as the producer.
+## Confluent Cloud
+
+Use [../../cccloud/](../../cccloud/) (distributed-by-hash DDL for CC Flink).

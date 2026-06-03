@@ -154,6 +154,49 @@ stats = run_streaming_query(sql)  # prints rows until Ctrl+C
 print(stats.rowcount)
 ```
 
+## Migrate Flink DML to dbt
+
+Convert Flink `INSERT INTO ... SELECT` pipeline statements into dbt `streaming_table` models for [dbt-confluent](https://pypi.org/project/dbt-confluent/). Column types and table options are taken from the paired DDL file.
+
+```sh
+cd code/flink-sql/tools
+
+# Dry-run (prints model SQL + schema.yml to stdout)
+uv run python migrate_dml_to_dbt.py \
+  ../10-windowing/tumble_then_hop_rolling/dml.rolling_features.sql \
+  ../../dbt/airbnb_streaming/models/intermediates/
+
+# Write files
+uv run python migrate_dml_to_dbt.py \
+  ../11-puzzles/cart_update/dml.build_cart_line_items.sql \
+  ../../dbt/airbnb_streaming/models/intermediates/ \
+  --write
+
+# Override DDL discovery or ref() mapping
+uv run python migrate_dml_to_dbt.py \
+  ../10-windowing/tumble_then_hop_rolling/dml.rolling_features.sql \
+  ../../dbt/airbnb_streaming/models/intermediates/ \
+  --ddl-file ../10-windowing/tumble_then_hop_rolling/ddl.rolling_features.sql \
+  --ref-table events=src_events \
+  --write
+```
+
+DDL auto-discovery (override with `--ddl-file`):
+
+1. `dml.{stem}.sql` → sibling `ddl.{stem}.sql`
+2. Else `ddl.{target_table}.sql` in the same folder
+
+Outputs:
+
+- `{model_name}.sql` — `{{ config(materialized='streaming_table', with={...}) }}` plus SELECT body (no `INSERT INTO`)
+- `schema.yml` — merged model entry with `columns[].data_type` from DDL
+
+Upstream tables in `FROM` / `JOIN` are rewritten to `{{ ref('table') }}` automatically (CTE names are skipped). Downstream `dbt run` still requires those upstream tables to exist as other dbt models or `sources.yaml` entries.
+
+Limitations (v1): `INSERT INTO ... VALUES` and CTAS are not supported; batch migration from `deploy_manifest.json` is one file per invocation.
+
+Entry point: `flink-sql-migrate-dbt` (when the tools package is installed with entry points).
+
 ## Related
 
 - [`cc_flink_rest_client.py`](cc_flink_rest_client.py) — lower-level `requests`-based REST client (legacy)

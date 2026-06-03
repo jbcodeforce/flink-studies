@@ -476,7 +476,7 @@ Create table statements do not changes between managed services and standalone F
 
 
 ???+ question "How to generate data using Flink Faker? (Flink OSS)"
-    Create at table with records generated with [Flink faker](https://github.com/knaufk/flink-faker) connector using the [DataFaker expressions.](https://github.com/datafaker-net/datafaker). 
+    Create at table with records generated with [Flink faker](https://github.com/knaufk/flink-faker) connector using the [DataFaker expressions.](https://www.datafaker.net/documentation/expressions/). 
 
     ```sql
     CREATE TABLE `bounded_pageviews` (
@@ -497,6 +497,7 @@ Create table statements do not changes between managed services and standalone F
     ```
     
     Attention on Confluent Cloud, this is a connector, there is no matching Kafka Topic created. The faker will run as part of the platform and use resources. Better to drop the table once demonstrations are done.
+    **Projects using faker:** [01-kafka-flink](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-sql/01-kafka-flink/starting_script.sql), or  [10-windowing/grouping_message](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-sql/10-windowing/grouping_messages/cc-flink/dml.flatten_leads.sql)
 
 ???- info "Deeper dive into Faker Connector"
     **flink-faker** is a specialized table source that bridges Apache Flink’s SQL engine with the Java DataFaker. It acts as a ScanTableSource. It creates an internal generator that produces rows on-the-fly. Each column is mapped to a "Faker expression" using the syntax #{className.methodName 'parameter'}. By default, it generates an infinite stream of data. You can make it "bounded" (stop after a certain number of rows) for batch-style testing.

@@ -27,6 +27,8 @@ Flink SQLs are defined in Models and dbt processes to the deployment to Confluen
 
 We will first work on a concrete [example on a database](), and then work on a [Flink project]().
 
+[See Confluent cloud product documentation on dbt.](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/deploy-flink-dbt.html)
+
 ## Use Cases
 
 * Modelling changes are easy to follow and revert
@@ -239,7 +241,7 @@ WHERE
     row_num = 1
 ```
 
-So running the following command
+So running the following command:
 
 ```sh
 dbt run --target dev
@@ -253,6 +255,39 @@ which can be validated by opening the duckdb database:
 duckdb data/airbnb.duckdb
 # in the shell
 select * from main.src_hosts;
+```
+
+### Project structure
+
+dbt recursively scans everything under model-paths (by default models/). `dbt run`, `dbt build`, and `dbt seed` will all find those `.sql` files and deploy/run them.
+
+The folder structure under the models folder can be a hierarchy based on the kimball architecture or star schema:
+```sh
+models/
+  sources/
+    hosts/
+      src_hosts.sql
+    listings/
+      src_listings.sql
+  dimensions/
+    hosts/
+      dim_hosts_cleansed.sql
+  facts/
+    reviews/
+      fct_reviews.sql
+```
+
+dbt names a model from the file name, not the folder path.
+
+* models/sources/hosts/src_hosts.sql → model name src_hosts
+* ref('src_hosts') — not ref('sources.hosts.src_hosts')
+
+So if two subfolders both contain model.sql, you get a name collision. Use distinct filenames (dim_hosts.sql, fct_reviews.sql), or set an explicit alias in config.
+
+For incremental deployment it should be possible to run dbt as:
+```sh
+dbt run --select path:models/dimensions/hosts 
+# or --select dimensions.*
 ```
 
 ### Materializations
@@ -277,7 +312,7 @@ models:
 ```
 
 
-#### Incremental
+### Incremental
 
 * Specifying a fact table is incremental and add conditions for which the records are added to the table. The review_date of the record needs to be after the last record in the fct_reviews table:
   ```sql
@@ -557,10 +592,9 @@ The goal is to keep history of changes to the records over time and not just the
 
 ## Confluent Cloud Flink Specifics
 
+In Confluent Cloud for Flink context, the `dbt run` does not process data; it deploys or updates the definition of a continuous dataflow to the streaming engine. User runs `dbt run` only when the SQL queries changes. Important chapter from [Confluent cloud product documentation on dbt.](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/deploy-flink-dbt.html)
 
-In Confluent Cloud Flink context, the `dbt run` does not process data; it deploys or updates the definition of a continuous dataflow to the streaming engine. User runs `dbt run` only when the SQL queries changes.
-
-* dbt concept mapping. A dbt schema is a Flink database, while a dbt database is a Flink Catalog, and finally a dbt identifier is a Flink Table. The `schema` field in `profiles.yml` actually refers to a Kafka cluster name. The `database` field refers to an environment ID. Some error messages reference "schema" when they mean "Kafka cluster/database".
+* A dbt schema is a Flink database, while a dbt database is a Flink Catalog, and finally a dbt identifier is a Flink Table. The `schema` field in `profiles.yml` actually refers to a Kafka cluster name. The `database` field refers to an environment ID. Some error messages reference "schema" when they mean "Kafka cluster/database". It is confusing to set the environment_id where is Confluent Cloud the environment name is used.
 
 * The dbt mapping:
 
@@ -570,18 +604,38 @@ In Confluent Cloud Flink context, the `dbt run` does not process data; it deploy
 | table     | snapshot query | streaming_table  |
 | incremental | not-supported | | 
 | ephemeral | not supported | | 
-| materialized_view | create table ... as select |
-| seed |Faker /datagen connector | streaming_source | 
+| materialized_view | create table ... as select | streaming_table |
+| seeds | CREATE TABLE + INSERT VALUES (point-in-time) | seed (default) |
 
-
-* Flink Demos using dbt:
-    * [Research on PTF](https://github.com/jbcodeforce/research/tree/main/flink-ptf-multitenant-debezium-spanout/sql/order_pipeline)
-    * [wd-flink-demo](https://github.com/jbcodeforce/wd-flink-demo)
 
 ### How to
 
+???+ handson "Seed reference data on Confluent Cloud for Flink"
+    The [airbnb_streaming](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/airbnb_streaming) project loads small reference CSVs into Flink tables with `dbt seed`. The dbt-confluent adapter infers column types from the CSV (via agate) and issues `CREATE TABLE` followed by `INSERT INTO ... VALUES`. Override types in `seeds/seeds.yml` when inference is too coarse (e.g. map date strings to `DATE`).
+
+    ```yaml
+    # seeds/seeds.yml (dbt properties format)
+    version: 2
+    seeds:
+      - name: seed_full_moon_dates
+        config:
+          alias: raw_full_moon_dates
+          column_types:
+            full_moon_date: DATE
+    ```
+
+    Set `+execution_mode: snapshot` on seeds in `dbt_project.yml` so DDL and INSERT run as point-in-time statements (not streaming queries). Seeds are limited to 10,000 rows per file.
+
+    ```bash
+    cd code/dbt/airbnb_streaming
+    dbt seed --target dev
+    ```
+
+    Optionally run `make seed` to regenerate `seeds.yml` column types from CSV headers before seeding.
+
+
 ???+ question "How to specify table properties?"
-    Use the config function:
+    Use the config function, and the `with` as json.
 
     ```sql
     {{ config(
@@ -608,6 +662,12 @@ In Confluent Cloud Flink context, the `dbt run` does not process data; it deploy
         ) 
       }}
       ```
+
+### Flink Demos using dbt:
+    
+* [Research on PTF](https://github.com/jbcodeforce/research/tree/main/flink-ptf-multitenant-debezium-spanout/sql/order_pipeline)
+* [wd-flink-demo](https://github.com/jbcodeforce/wd-flink-demo)
+* [Airbnb streaming](https://github.com/jbcodeforce/flink-studies/tree/main/code/dbt/airbnb)
 
 ## Sources of Information
 

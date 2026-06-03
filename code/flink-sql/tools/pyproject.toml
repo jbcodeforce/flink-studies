@@ -7,9 +7,19 @@ dependencies = [
     "confluent-kafka[avro]>=2.4.0",
     "confluent-sql>=0.3.1",
     "python-dotenv>=1.0.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
 ]
 
 [project.scripts]
 flink-sql-deploy = "deploy_flink_statements:main"
 flink-sql-snapshot = "run_snapshot_query:main"
 flink-sql-stream = "run_streaming_query:main"
+flink-sql-migrate-dbt = "migrate_dml_to_dbt:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

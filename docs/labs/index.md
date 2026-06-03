@@ -331,11 +331,11 @@ Package morning cutoff (11:30): emit only when expected_delivery changes; at cut
 
 ### 4.16 perf-testing
 
-End-to-end performance assessment: configurable producer → Kafka → Flink job(s) (sql-executor, datastream, flink-sql). Throughput and latency metrics. Scripts for topics, run producer, deploy jobs.
+End-to-end performance assessment: configurable producer → Kafka → Flink job(s) (sql-executor, datastream, flink-sql). Flink **2.2.0**. Three phases: local scripts, K8s OSS/CMF, Confluent Cloud SQL.
 
 | Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
 |--------|---------|----------|-----------|---------|-----------------|
-| Ready | — | ✓ | ✓ | — | Partial (build + scripts; no automated metric assertion) |
+| Ready | ✓ | ✓ | ✓ | 02/06/2026 | Partial (build-all + validate-run; K8s deploy scripts) |
 
 **Path:** [e2e-demos/perf-testing](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/perf-testing)
 

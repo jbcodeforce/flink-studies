@@ -284,7 +284,7 @@ State backends determine how the state is physically stored. Options typically i
 </figure>
 
 
-* See example [TumblingWindowOnSale.java](https://github.com/jbcodeforce/flink-studies/blob/master/flink-java/my-flink/src/main/java/jbcodeforce/windows/TumblingWindowOnSale.java) in the `my-flink` folder. To test it, do the following:
+* See example [TumblingWindowOnSale.java](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-java/my-flink/src/main/java/jbcodeforce/windows/TumblingWindowOnSale.java) in the `my-flink` folder. To test it, do the following:
 
 ```shell
 # Start SaleDataServer: it listens on socket 9181, reads avg.txt, and sends each line to the socket

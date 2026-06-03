@@ -1,0 +1,37 @@
+apiVersion: cmf.confluent.io/v1alpha1
+kind: FlinkApplication
+metadata:
+  name: perf-sql-executor
+  namespace: flink
+spec:
+  image: perf-sql-executor-cp:0.1.0
+  flinkVersion: v2_1
+  serviceAccount: flink
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "2"
+    execution.checkpointing.interval: "30s"
+  jobManager:
+    resource:
+      memory: 1024m
+      cpu: 0.5
+  taskManager:
+    resource:
+      memory: 1024m
+      cpu: 0.5
+  job:
+    jarURI: local:///opt/flink/usrlib/perf-sql-executor-0.1.0.jar
+    entryClass: io.github.flinkstudies.perf.sqlexecutor.SqlExecutor
+    parallelism: 1
+    upgradeMode: stateless
+    state: running
+  podTemplate:
+    spec:
+      containers:
+        - name: flink-main-container
+          env:
+            - name: BOOTSTRAP_SERVERS
+              value: "kafka.confluent.svc.cluster.local:9092"
+            - name: INPUT_TOPIC
+              value: "perf-input"
+            - name: OUTPUT_TOPIC
+              value: "perf-output"

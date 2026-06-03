@@ -6,7 +6,7 @@ name: 'airbnb_streaming'
 version: '1.0.0'
 
 # This setting configures which "profile" dbt uses for this project.
-profile: 'airbnb_streaming'
+profile: 'cc_flink'
 
 # These configurations specify where dbt should look for different types of files.
 # The `model-paths` config, for example, states that models in this project can be
@@ -34,3 +34,8 @@ models:
     # Config indicated by + and applies to all files under models/example/
     example:
       +materialized: view
+
+seeds:
+  airbnb_streaming:
+    +execution_mode: snapshot
+    +full_refresh: true

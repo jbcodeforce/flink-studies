@@ -1,14 +1,32 @@
 # Automation Scripts
 
-Scripts to drive the e2e performance assessment: environment, topics, producer, Flink jobs, and metrics.
+Scripts for the perf-testing demo. Run Phase 1 end-to-end in order.
 
-## Suggested Scripts
+## Phase 1 — Local
 
-- **Topics**: Create (and optionally delete) Kafka topics used by the producer and Flink jobs; set partition count and retention.
-- **Producer**: Run the data generator in `../producer/` with a given profile (rate, message size, duration, topic).
-- **Flink**: Submit or deploy the chosen job from `../flink-jobs/` (e.g. `flink run` JAR, or platform-specific deploy).
-- **Metrics**: Query Flink REST (throughput, backpressure) and/or Prometheus; optionally export consumer lag (e.g. kafka-consumer-groups or admin API).
+| Script | Purpose |
+|--------|---------|
+| [build-all.sh](build-all.sh) | `mvn package` for producer, sql-executor, datastream (`SKIP_TESTS=true` to skip tests) |
+| [create-topics-local.sh](create-topics-local.sh) | Create topics via `kafka-topics` (needs `BOOTSTRAP_SERVERS`) |
+| [run-producer.sh](run-producer.sh) | Run data generator JAR |
+| [run-flink-job.sh](run-flink-job.sh) | `flink run` for `sql-executor` or `datastream` |
+| [validate-run.sh](validate-run.sh) | Consume sample records from `perf-output` |
 
-## Usage
+## Phase 2 — Kubernetes
 
-Run in order for a full benchmark: (1) create topics, (2) start producer, (3) deploy Flink job, (4) collect metrics for a fixed window, (5) stop producer and job. See parent [README](../README.md) for the full approach.
+| Script | Purpose |
+|--------|---------|
+| [create-topics.sh](create-topics.sh) | Apply CP `KafkaTopic` CRs (`kubectl`, namespace `kafka`) |
+| [deploy-k8s-oss.sh](deploy-k8s-oss.sh) | Build OSS image + apply `oss-flink/k8s/flink-deployment.yaml` |
+| [deploy-k8s-cp.sh](deploy-k8s-cp.sh) | Build CP image + apply topics + `cp-flink/k8s/flink-application.yaml` |
+| [run-benchmark-k8s.sh](run-benchmark-k8s.sh) | Topics → deploy job → producer Job → validate |
+
+## Helpers
+
+| Script | Purpose |
+|--------|---------|
+| [helpers/port-forward-kafka-macos.sh](helpers/port-forward-kafka-macos.sh) | macOS: open Terminal with `kubectl port-forward` to Kafka |
+
+## Metrics
+
+Flink UI and `kafka-consumer-groups` are manual for now. See parent [README](../README.md).

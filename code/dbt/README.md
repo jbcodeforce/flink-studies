@@ -100,3 +100,58 @@ select * from main.src_hosts;
 ```
 
 Same can be done for listings and reviews. Those sources SQL can do schema mapping, and filtering.
+
+
+## With dbt-confluent - airbnb_streaming project
+
+The [airbnb_streaming](airbnb_streaming/) project targets Confluent Cloud for Flink via the `cc_flink` profile. Unlike DuckDB, `dbt run` deploys streaming SQL statements rather than batch-transforming warehouse tables.
+
+### Prerequisites
+
+1. From `code/dbt/`, install deps: `uv sync`.
+2. Configure `~/.dbt/profiles.yml` with a `cc_flink` profile (see [docs/coding/dbt.md](../../docs/coding/dbt.md)).
+3. Export Flink API credentials:
+   ```bash
+   export CONFLUENT_FLINK_API_KEY=...
+   export CONFLUENT_FLINK_API_SECRET=...
+   ```
+
+### Seed reference data from CSV
+
+Place CSV files in `airbnb_streaming/seeds/`. Column types are inferred from the CSV; override them in `seeds/seeds.yml` when needed (e.g. `DATE` instead of `STRING`).
+
+```bash
+cd code/dbt/airbnb_streaming
+export CONFLUENT_FLINK_API_KEY=...
+export CONFLUENT_FLINK_API_SECRET=...
+make debug
+make seed
+```
+
+Or without Make:
+
+```bash
+cd code/dbt
+uv run dbt seed --project-dir airbnb_streaming --profiles-dir ~/.dbt --target dev
+```
+
+Validate in the Flink SQL workspace:
+
+```sql
+SELECT * FROM raw_full_moon_dates LIMIT 5;
+```
+
+Reference seeded tables in downstream models via `models/sources.yaml` and `{{ source('reference', 'full_moon_dates') }}`.
+
+### Migrate existing Flink DML to dbt models
+
+Use [`code/flink-sql/tools/migrate_dml_to_dbt.py`](../flink-sql/tools/migrate_dml_to_dbt.py) to convert demo `dml.*.sql` files into dbt models with matching `schema.yml` column types from the paired `ddl.*.sql`. See [flink-sql tools README](../flink-sql/tools/README.md#migrate-flink-dml-to-dbt).
+
+
+## Gap analysis with shift_left
+
+* Kimball structure under `models/` can be bootstrapped with `migrate_dml_to_dbt.py` (see above).
+* No metada data for statement children relationship.
+* no undeploy command
+* how to support data product cross dimension
+* no concept of statefulness

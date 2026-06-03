@@ -1,126 +1,138 @@
 # End-to-End Performance Assessment for Flink Jobs
 
-This demo implements a repeatable approach to measure Flink job performance: from a dedicated Kafka producer (data generator) through one or more Flink jobs to measure. The design follows the performance testing approach (see the [cookbook chapter](https://jbcodeforce.github.io/flink-studies/cookbook/job_lifecycle/#60-establish-a-performance-testing-platform)) and the timing model as depicted in the figure below:
+Created 02/06/2026 · Updated 02/06/2026
+
+Repeatable throughput and latency benchmarking: a standalone Kafka producer feeds Flink job variants; results land on an output topic for validation and observability.
 
 ![](../../docs/cookbook/images/perf_test_basic.drawio.png)
 
+Architecture overview: [docs/arch.drawio.png](./docs/arch.drawio.png)
+
 ## Goals
 
-- Measure **throughput** (events/second) and **latency** (source to sink time) for Flink jobs.
-- Compare different job types: Table API + SQL, DataStream, and pure Flink SQL.
-- Keep the **data generator** separate from Flink so producer rate and message size can be tuned independently (see [Optimize Kafka producer throughput](https://developer.confluent.io/confluent-tutorials/optimize-producer-throughput/kafka/)).
+- Measure throughput (events/s) and latency (source → sink) for Flink jobs.
+- Compare Table API + SQL (`sql-executor`), DataStream (`datastream`), and Flink SQL (`flink-sql` / `cccloud`).
+- Keep the data generator separate from Flink so rate and message size are tuned independently.
 
-## Architecture
+## Flink and platform versions
 
-![](./docs/arch.drawio.png)
+| Component | Version |
+|-----------|---------|
+| Apache Flink (jobs) | **2.2.0** |
+| Kafka connector | `flink-connector-kafka` **5.0.0-2.2** |
+| CP / CMF image (Phase 2) | `confluentinc/cp-flink:2.2.0-cp2-java21` |
+| OSS image (Phase 2) | `flink:2.2.0-scala_2.12-java17` |
 
-- **Data generator**: Standalone Java (or other) process that produces records to Kafka with configurable rate, message size, and payload shape. Inspired by patterns such as Confluent's DataGeneratorJob (e.g. flight or generic event generation).
-- **Flink jobs**: Several example jobs under `flink-jobs/` consume from those topics and write to a sink. Each subfolder holds one job variant to assess.
-- **Metrics**: Flink processing time, consumer lag, and end-to-end latency from production to consumption (aligned with the diagram: Flink processing time, messaging times, end-to-end from creation to consumption).
+Align local clusters with [deployment/k8s/cmf](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cmf) and [deployment/product-tar/install-flink-local.sh](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/product-tar/install-flink-local.sh) (`./install-flink-local.sh 2.2.0`). Do not use [deployment/docker/flink-oss-docker-compose.yaml](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/docker/flink-oss-docker-compose.yaml) (still on 1.19.1) for this demo.
 
-## Deployment
+## Deployment matrix
 
-- **[oss-flink/](oss-flink/)** – Run with OSS Flink (SQL gateway, standalone, or plain K8s).
-- **[cp-flink/](cp-flink/)** – Run with Confluent Platform or Confluent Cloud Flink.
+| Phase | Path | Flink runtime | Kafka | Job form |
+|-------|------|---------------|-------|----------|
+| 1 | [Phase 1 — Local](#phase-1--local) | `flink run` or CMF 2.2 | Any reachable bootstrap | Java JAR |
+| 2 | [oss-flink/](oss-flink/) · [cp-flink/](cp-flink/) | K8s FKO or CMF | In-cluster / port-forward | JAR in image |
+| 3 | [cccloud/](cccloud/) | Confluent Cloud for Flink | CC Kafka | SQL statements |
 
-Producer, flink-jobs, and scripts are shared at demo root.
+## Environment variables
 
-## Quick start
+| Variable | Required | Default | Used by |
+|----------|----------|---------|---------|
+| `BOOTSTRAP_SERVERS` | yes | — | producer, Flink jobs, scripts |
+| `INPUT_TOPIC` | no | `perf-input` | jobs, producer |
+| `OUTPUT_TOPIC` | no | `perf-output` | jobs, validate |
+| `RATE_PER_SEC` | no | `1000` | producer |
+| `MESSAGE_SIZE_BYTES` | no | `256` | producer |
+| `DURATION_SECONDS` | no | `60` | producer |
+| `NUM_THREADS` | no | `1` | producer |
+| `FLINK_HOME` | Phase 1 | — | `run-flink-job.sh` (`flink` CLI) |
 
-Prerequisites: 
-* Java 17+, Maven, 
-* Kubernetes with Flink and Kafka deployed.
+---
+
+## Phase 1 — Local
+
+**Prerequisites:** Java 17+, Maven, Kafka bootstrap, Flink **2.2.0** on `PATH` (`$FLINK_HOME/bin/flink`).
+
+### Steps
 
 ```bash
-# Build all components
-mvn -f producer clean package -DskipTests
-mvn -f flink-jobs/sql-executor clean package -DskipTests
-mvn -f flink-jobs/datastream clean package -DskipTests
+cd e2e-demos/perf-testing
 
-# Create topics (input perf-input, output perf-output)
-./scripts/create-topics.sh
+# 1. Build
+./scripts/build-all.sh
 
-# Run producer (default 1000 msg/s, 60s)
+# 2. Topics (kafka-topics CLI)
 export BOOTSTRAP_SERVERS=localhost:9092
-./scripts/run-producer.sh
+./scripts/create-topics-local.sh
 
-# Submit Flink job (sql-executor or datastream)
+# 3. Start Flink job (separate terminal; blocks)
+export BOOTSTRAP_SERVERS=localhost:9092
 ./scripts/run-flink-job.sh sql-executor
+# or: ./scripts/run-flink-job.sh datastream
+
+# 4. Generate load
+./scripts/run-producer.sh 1000 60
+
+# 5. Validate output topic
+./scripts/validate-run.sh
 ```
 
-Producer CLI/env: `topic`, `rate` (msg/s), `messageSize` (bytes), `duration` (s), `threads`. Flink jobs use env `INPUT_TOPIC` (default `perf-input`), `OUTPUT_TOPIC` (default `perf-output`).
+### Metrics (manual)
 
-## Approach
+- Flink Web UI: records in/out, backpressure, checkpoints.
+- `kafka-consumer-groups --bootstrap-server $BOOTSTRAP_SERVERS --describe --group perf-datastream` (DataStream job).
+- Payload `event_time` field supports end-to-end latency analysis if you compare with consume time.
 
-### 1. Environment
+### Troubleshooting
 
-- Provision a Kubernetes cluster with Kafka, Flink, and Prometheus (e.g. [Rick Osowki's confluent-platform-gitops repository](https://github.com/jbcodeforce/confluent-platform-gitops) to get everything runnig on Kubernetes platoform).
-- Ensure Kafka bootstrap and (if used) Schema Registry are reachable from the producer and from the Flink job manager/task managers.
+| Symptom | Check |
+|---------|--------|
+| `BOOTSTRAP_SERVERS is required` | Export bootstrap before scripts |
+| JAR not found | Run `./scripts/build-all.sh` |
+| No output on validate | Job running? Producer on `perf-input`? Topics exist? |
+| JSON / planner errors on `flink run` | Use Flink **2.2.0**; shaded JAR includes kafka + json connectors |
+| macOS Kafka port-forward | `./scripts/helpers/port-forward-kafka-macos.sh` |
 
-### 2. Kafka Topics
+---
 
-- Create and configure input/output topics (partitions, retention) before the run.
-- Scripts under `scripts/` can create topics.
-    ```sh
-    ./scripts/create-topics.sh
-    ```
+## Phase 2 — Kubernetes
 
-### 3. Calibrate the Data Generator
+Deploy the same JARs on Kubernetes after Phase 1 builds succeed.
 
-- Run the producer in `producer/` with different settings:
-  - Number of producer threads.
-  - Message size and payload type (e.g. JSON with fixed or variable fields).
-  - Target rate (messages per second) or maximum throughput.
-- Tune Kafka producer settings (batch size, linger, compression) for throughput or latency as needed.
+| Variant | Folder | Apply |
+|---------|--------|-------|
+| OSS Flink Kubernetes Operator | [oss-flink/](oss-flink/) | `./oss-flink/flink-sql-executor/build.sh` then `./scripts/deploy-k8s-oss.sh` |
+| Confluent Manager for Flink (CP) | [cp-flink/](cp-flink/) | `./cp-flink/build.sh` then `./scripts/deploy-k8s-cp.sh` |
 
-To run the producer, you can use java directly or deploy to the same kubernetes cluster as the Kafka cluster.
+Shared assets:
 
-### 4. Run the Benchmark
+- Topics (CP operator): `./scripts/create-topics.sh` → [k8s/perf-input.yaml](k8s/perf-input.yaml), [perf-output.yaml](k8s/perf-output.yaml)
+- Producer Job: [producer/k8s/](producer/k8s/)
+- Full benchmark: `./scripts/run-benchmark-k8s.sh cp|oss`
 
-1. Start the data generator; record start time and configuration (rate, size, topic).
-2. Deploy and start the Flink job(s) under test from `flink-jobs/` (one variant per run for clear metrics).
-3. Let the system reach steady state (e.g. lag stable).
-4. Collect metrics over a fixed window (e.g. 5–10 minutes).
+See [oss-flink/README.md](oss-flink/README.md) and [cp-flink/README.md](cp-flink/README.md).
 
-### 5. Metrics to Collect
+---
 
-- **Flink**: Processing rate (records in/out per second), backpressure, checkpoint duration, task manager CPU/memory (Flink Web UI and/or Prometheus).
-- **Kafka**: Consumer lag per partition for the job’s source topics.
-- **End-to-end**: Timestamp at production to timestamp at sink (if payloads carry a creation time and sink is Kafka or another queryable sink).
+## Phase 3 — Confluent Cloud for Flink
 
-See also the metrics list in [shift_left_utils perf_test](../../../shift_left_utils/docs/perf_test.md) (e.g. deploy time, lag processing time, messages per second per statement).
+SQL-only path: [cccloud/](cccloud/) — DDL/DML for `perf_source` → `perf_sink`, plus optional `deploy-statements.sh`.
 
-### 6. Assess Results
+Use Phase 1 producer against CC Kafka bootstrap (SASL/SSL via standard Kafka client env). See [cccloud/README.md](cccloud/README.md).
 
-- Use the Flink console and Prometheus/Grafana to assess throughput, latency, and resource usage.
-- Compare runs across job types (sql-executor vs datastream vs flink-sql) and across producer configurations.
+---
 
-## Component Details
+## Components
 
-### Producer (`producer/`)
-
-- **Role**: Standalone Kafka producer that emits records to the input topic(s) used by Flink jobs.
-- **Pattern**: Similar to [DataGeneratorJob](https://github.com/confluentinc/cp-flink-labs) style: configurable schema (e.g. key/value), rate, and optional payload size. Implemented in Java (Kafka client) so it can be tuned without touching Flink.
-- **Output**: Topics and formats must match what the Flink jobs in `flink-jobs/` expect (e.g. JSON, Avro, keyed by a field for partitioning).
-
-### Flink Jobs (`flink-jobs/`)
-
-- **sql-executor**: Table API + SQL executed from a file (e.g. DDL + DML), analogous to SqlExecutor: create table environment, register Kafka source/sink, run `executeSql` for each statement. Use this to assess Table API/SQL pipeline performance.
-- **datastream**: Optional DataStream job (e.g. keyed aggregation, windowing) for comparison with the SQL-based pipeline.
-- **flink-sql**: Optional pure Flink SQL (e.g. SQL files or SQL gateway) for environments where only SQL is deployed.
-
-Each subfolder contains the build (Maven/Gradle), a short README, and instructions to point the job at the same Kafka topics and bootstrap used by the producer.
-
-### Scripts (`scripts/`)
-
-- Create/delete Kafka topics for the benchmark.
-- Launch the producer with a given profile (rate, size, duration).
-- Submit or deploy the chosen Flink job (e.g. `flink run` or platform-specific CLI).
-- Optionally export or query metrics (Prometheus, Flink REST) for post-processing.
+| Folder | Role |
+|--------|------|
+| [producer/](producer/) | Standalone Kafka load generator |
+| [flink-jobs/](flink-jobs/) | `sql-executor`, `datastream`, `flink-sql` |
+| [scripts/](scripts/) | Build, topics, run, validate, K8s deploy |
+| [k8s/](k8s/) | CP `KafkaTopic` CRs |
 
 ## References
 
-- [flink-studies – Job lifecycle and state](https://github.com/jbcodeforce/flink-studies/blob/master/docs/cookbook/job_lifecycle.md)
-- [Confluent – Optimize producer throughput](https://developer.confluent.io/confluent-tutorials/optimize-producer-throughput/kafka/)
-- Apache Flink []()
-- Robert Metzger's work on performance testing.
+- [Job lifecycle — performance testing](https://jbcodeforce.github.io/flink-studies/cookbook/job_lifecycle/#60-establish-a-performance-testing-platform)
+- [K8s tuning lab §10](https://jbcodeforce.github.io/flink-studies/cookbook/k8s_tuning/#10--lab-overview--tune-and-observe-a-flinkapplication)
+- [Optimize Kafka producer throughput](https://developer.confluent.io/confluent-tutorials/optimize-producer-throughput/kafka/)
+- [Apache Flink 2.2 documentation](https://nightlies.apache.org/flink/flink-docs-release-2.2/)

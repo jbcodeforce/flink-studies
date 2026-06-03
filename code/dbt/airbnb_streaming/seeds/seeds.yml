@@ -1,0 +1,7 @@
+version: 2
+seeds:
+- name: seed_full_moon_dates
+  config:
+    alias: raw_full_moon_dates
+    column_types:
+      full_moon_date: DATE

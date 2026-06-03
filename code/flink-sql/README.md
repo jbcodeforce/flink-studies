@@ -215,3 +215,6 @@ Quarkus app integrating Flink SQL (Table API / Java).
 |-------|------------------|-------------------|------------|
 | `common.mk` | Complete | Confluent Cloud | Used by 04-joins/cc, 05-changelog Makefiles |
 | `data/*.csv`, `data/cab_rides.txt` | Complete | — | — |
+
+
+## Migrating all those cc-flinkg examples with dbt

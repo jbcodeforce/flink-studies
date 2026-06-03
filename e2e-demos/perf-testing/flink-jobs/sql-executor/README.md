@@ -1,26 +1,33 @@
-# SqlExecutor-Style Job (Table API + SQL)
+# SqlExecutor (Table API + SQL)
 
-Flink job that uses the Table API and executes SQL statements from a file. Pattern aligned with Confluent cp-flink-labs SqlExecutor: create a TableEnvironment, execute DDL (e.g. Kafka source/sink tables), then DML (e.g. INSERT INTO ... SELECT).
+Flink **2.2.0** job that runs [src/main/resources/pipeline.sql](src/main/resources/pipeline.sql): Kafka JSON source → Kafka JSON sink (passthrough).
 
-## Role in Perf Assessment
+## Build
 
-- Measures throughput and latency for a Table API + SQL pipeline reading from Kafka and writing to a sink.
-- Same input topic/schema as the producer in `../../producer/`.
+```bash
+mvn -f pom.xml clean package
+```
 
-## Implementation Outline
+## Run (local)
 
-- Entry point: main class that accepts a SQL script path (or resource).
-- Parse and execute statements in order; handle `SET` and comments if needed (see `code/flink-java/sql-runner` in this repo for a reference).
-- Use Kafka table descriptors (or Flink Kafka connector) for source and sink; align key/value format (JSON, Avro) with the producer.
-- Build as a standard Flink application JAR for `flink run` or deployment to Confluent Platform via manifest.
+```bash
+export BOOTSTRAP_SERVERS=localhost:9092
+export INPUT_TOPIC=perf-input
+export OUTPUT_TOPIC=perf-output
+flink run target/perf-sql-executor-0.1.0.jar
+```
 
-## SQL Script
+Or: `../../scripts/run-flink-job.sh sql-executor`
 
-- DDL: CREATE TABLE for Kafka source (topic, format, schema).
-- DDL: CREATE TABLE for sink (topic or print).
-- DML: INSERT INTO sink_table SELECT ... FROM source_table (with optional filters, aggregations, windows).
+## Custom SQL file
 
-## Running
+```bash
+flink run target/perf-sql-executor-0.1.0.jar /path/to/script.sql
+```
 
-- Set Kafka bootstrap (and Schema Registry if used) via config or env.
-- Run with: path to SQL script; ensure topic names match those used by `../../producer/` and `../../scripts/` topic creation.
+Placeholders `${BOOTSTRAP_SERVERS}`, `${INPUT_TOPIC}`, `${OUTPUT_TOPIC}` are replaced from the environment.
+
+## Kubernetes
+
+- OSS: [../../oss-flink/README.md](../../oss-flink/README.md)
+- CP/CMF: [../../cp-flink/README.md](../../cp-flink/README.md)

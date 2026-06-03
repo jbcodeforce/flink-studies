@@ -696,7 +696,7 @@ Hands-on exercise applying §1–9: deploy a stateful Flink job on Kubernetes, g
 |-------|------|------|
 | Stateful FlinkApplication (CMF) | [dedup-demo/flink-application.yaml](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/dedup-demo/cp-flink/flink-table-api/k8s/flink-application.yaml) | Baseline manifest: RocksDB, checkpoints, 1024m TM |
 | Load generator | [perf-testing/producer](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/perf-testing/producer) | Configurable Kafka throughput |
-| OSS deployment | [perf-testing/oss-flink](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/perf-testing/oss-flink) or [e-com-sale OSS manifest](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale/k8s/oss_app_deployment.yaml) | OSS FlinkDeployment with Prometheus reporter |
+| OSS deployment | [perf-testing/oss-flink/k8s](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/perf-testing/oss-flink/k8s) (Flink 2.2.0) or [e-com-sale OSS manifest](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale/k8s/oss_app_deployment.yaml) | OSS FlinkDeployment with Prometheus reporter |
 
 ### Procedure
 
@@ -714,9 +714,12 @@ Hands-on exercise applying §1–9: deploy a stateful Flink job on Kubernetes, g
 === "Open Source Approach"
 
     ```bash
-    # Build and deploy perf-testing job
-    mvn -f e2e-demos/perf-testing/flink-jobs/sql-executor clean package -DskipTests
-    kubectl apply -f e2e-demos/perf-testing/oss-flink/
+    # Build and deploy perf-testing passthrough job (Flink 2.2.0)
+    cd e2e-demos/perf-testing
+    ./scripts/build-all.sh
+    ./oss-flink/flink-sql-executor/build.sh
+    ./scripts/deploy-k8s-oss.sh
+    # Load: ./scripts/run-producer.sh (with BOOTSTRAP_SERVERS / port-forward)
     ```
 
 #### Step 2 — Generate load

@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "confluent-kafka>=2.0",
+    "dbt-confluent>=0.2.1",
     "psycopg2>=2.9.11",
     "python-dotenv>=1.0",
     "requests>=2.28",

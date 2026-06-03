@@ -1,0 +1,5 @@
+sources:
+  - name: reference
+    tables:
+      - name: full_moon_dates
+        identifier: raw_full_moon_dates

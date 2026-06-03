@@ -1,0 +1,38 @@
+apiVersion: flink.apache.org/v1beta1
+kind: FlinkDeployment
+metadata:
+  name: perf-sql-executor
+  namespace: flink
+spec:
+  image: perf-sql-executor:0.1.0
+  imagePullPolicy: IfNotPresent
+  flinkVersion: v2_2
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "2"
+    metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory
+    metrics.reporter.prom.port: "9249"
+  serviceAccount: flink
+  jobManager:
+    resource:
+      memory: "1024m"
+      cpu: 1
+  taskManager:
+    resource:
+      memory: "1024m"
+      cpu: 1
+  job:
+    jarURI: local:///opt/flink/usrlib/perf-sql-executor-0.1.0.jar
+    entryClass: io.github.flinkstudies.perf.sqlexecutor.SqlExecutor
+    parallelism: 1
+    upgradeMode: stateless
+  podTemplate:
+    spec:
+      containers:
+        - name: flink-main-container
+          env:
+            - name: BOOTSTRAP_SERVERS
+              value: "kafka.kafka.svc.cluster.local:9092"
+            - name: INPUT_TOPIC
+              value: "perf-input"
+            - name: OUTPUT_TOPIC
+              value: "perf-output"

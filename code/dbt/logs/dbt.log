@@ -114,3 +114,42 @@ Happy modeling!
 [0m18:38:30.954081 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10dbabb90>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10dc5b170>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10ca90710>]}
 [0m18:38:30.954664 [debug] [MainThread]: Flushing usage events
 [0m18:38:31.423970 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m16:04:27.076877 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x107133e30>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x108cca240>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x108cca1b0>]}
+
+
+============================== 16:04:27.080379 | 825d6b48-e581-4497-baf9-0f4c74ec7de8 ==============================
+[0m16:04:27.080379 [info ] [MainThread]: Running with dbt=1.11.6
+[0m16:04:27.080673 [debug] [MainThread]: running dbt with arguments {'empty': 'None', 'write_json': 'True', 'partial_parse': 'True', 'log_format': 'default', 'log_path': 'logs', 'static_parser': 'True', 'profiles_dir': '/Users/jerome/.dbt', 'fail_fast': 'False', 'version_check': 'True', 'use_experimental_parser': 'False', 'introspect': 'True', 'no_print': 'None', 'use_colors': 'True', 'printer_width': '80', 'send_anonymous_usage_stats': 'True', 'debug': 'False', 'warn_error': 'None', 'indirect_selection': 'eager', 'log_cache_events': 'False', 'cache_selected_only': 'False', 'invocation_command': 'dbt debug --target dev', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'quiet': 'False', 'target_path': 'None'}
+[0m16:04:27.092413 [info ] [MainThread]: dbt version: 1.11.6
+[0m16:04:27.092626 [info ] [MainThread]: python version: 3.12.11
+[0m16:04:27.092753 [info ] [MainThread]: python path: /Users/jerome/Documents/Code/flink-studies/code/dbt/.venv/bin/python3
+[0m16:04:27.092916 [info ] [MainThread]: os info: macOS-26.5-arm64-arm-64bit
+[0m16:04:27.246203 [error] [MainThread]: Encountered an error:
+Parsing Error
+  Env var required but not provided: 'CONFLUENT_FLINK_API_KEY'
+[0m16:04:27.246616 [debug] [MainThread]: Resource report: {"command_name": "debug", "command_success": false, "command_wall_clock_time": 0.24557646, "process_in_blocks": "0", "process_kernel_time": 0.187461, "process_mem_max_rss": "128008192", "process_out_blocks": "0", "process_user_time": 0.700103}
+[0m16:04:27.246829 [debug] [MainThread]: Command `dbt debug` failed at 16:04:27.246787 after 0.25 seconds
+[0m16:04:27.246981 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x108c59550>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x109ae17f0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x109ae1400>]}
+[0m16:04:27.247135 [debug] [MainThread]: Flushing usage events
+[0m16:04:27.691676 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m16:04:37.346406 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1088adcd0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x108909820>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10890a630>]}
+
+
+============================== 16:04:37.349057 | 96eb53e7-a32a-40e3-a2f4-35a034bd7442 ==============================
+[0m16:04:37.349057 [info ] [MainThread]: Running with dbt=1.11.6
+[0m16:04:37.349369 [debug] [MainThread]: running dbt with arguments {'send_anonymous_usage_stats': 'True', 'debug': 'False', 'log_path': 'logs', 'empty': 'None', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'warn_error': 'None', 'version_check': 'True', 'log_cache_events': 'False', 'quiet': 'False', 'log_format': 'default', 'partial_parse': 'True', 'no_print': 'None', 'indirect_selection': 'eager', 'introspect': 'True', 'invocation_command': 'dbt debug --target dev', 'use_colors': 'True', 'printer_width': '80', 'write_json': 'True', 'profiles_dir': '/Users/jerome/.dbt', 'fail_fast': 'False', 'cache_selected_only': 'False', 'target_path': 'None', 'static_parser': 'True', 'use_experimental_parser': 'False'}
+[0m16:04:37.357696 [info ] [MainThread]: dbt version: 1.11.6
+[0m16:04:37.357992 [info ] [MainThread]: python version: 3.12.11
+[0m16:04:37.358144 [info ] [MainThread]: python path: /Users/jerome/Documents/Code/flink-studies/code/dbt/.venv/bin/python3
+[0m16:04:37.358279 [info ] [MainThread]: os info: macOS-26.5-arm64-arm-64bit
+[0m16:04:37.481584 [info ] [MainThread]: Using profiles dir at /Users/jerome/.dbt
+[0m16:04:37.481880 [info ] [MainThread]: Using profiles.yml file at /Users/jerome/.dbt/profiles.yml
+[0m16:04:37.482036 [info ] [MainThread]: Using dbt_project.yml file at /Users/jerome/Documents/Code/flink-studies/code/dbt/dbt_project.yml
+[0m16:04:37.482222 [error] [MainThread]: Encountered an error:
+Internal Error
+  Profile should not be None if loading profile completed
+[0m16:04:37.482526 [debug] [MainThread]: Resource report: {"command_name": "debug", "command_success": false, "command_wall_clock_time": 0.18180962, "process_in_blocks": "0", "process_kernel_time": 0.144782, "process_mem_max_rss": "133382144", "process_out_blocks": "0", "process_user_time": 0.707656}
+[0m16:04:37.482750 [debug] [MainThread]: Command `dbt debug` failed at 16:04:37.482709 after 0.18 seconds
+[0m16:04:37.482933 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x109647e60>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1099ed040>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x108d521b0>]}
+[0m16:04:37.483129 [debug] [MainThread]: Flushing usage events
+[0m16:04:37.869359 [debug] [MainThread]: An error was encountered while trying to flush usage events

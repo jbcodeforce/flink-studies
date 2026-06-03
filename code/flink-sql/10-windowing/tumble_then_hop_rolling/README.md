@@ -14,12 +14,12 @@ Or use the Docker one-liner under [Where to run it](#where-to-run-it).
 
 ## Problem
 
-You need metrics over long lookbacks (for example 30 days) on a dense event stream, but you also want a fixed output cadence (for example every 6 hours) and several nested horizons (1d, 3d, 7d, 30d). Applying a large hop directly on raw rows makes each event participate in many overlapping windows, which grows **state and shuffle**.
+You need metrics over long lookbacks (for example 30 days) on a dense event stream, but you also want a fixed output cadence (for example every 6 hours) and several nested horizons (1d, 3d, 7d, 30d). Applying a large hop directly on raw rows makes each event participate in many overlapping windows, which grows state and shuffle.
 
 ## Pattern
 
-1. **Stage A — tumble (pre-aggregate):** `TUMBLE` on event time with a coarse step (for example 6 hours). Per group key you keep at most **one bucket row per interval** with aggregates (`SUM`, `COUNT`, `MAX`, sums of squares for std dev, and so on).
-2. **Stage B — hop on buckets:** `HOP` on the bucket table’s time column with **slide equal to the tumble size** and **size equal to the longest lookback**. Each emitted row still aligns to the same grid, but each evaluation touches **O(long_horizon / bucket_size)** bucket rows instead of every raw event.
+1. **Stage A — tumble (pre-aggregate):** `TUMBLE` on event time with a coarse step (for example 6 hours). Per group key you keep at most one bucket row per interval with aggregates (`SUM`, `COUNT`, `MAX`, sums of squares for std dev, and so on).
+2. **Stage B — hop on buckets:** `HOP` on the bucket table’s time column with slide equal to the tumble size and size equal to the longest lookback. Each emitted row still aligns to the same grid, but each evaluation touches **O(long_horizon / bucket_size)** bucket rows instead of every raw event.
 3. **Nested horizons in one hop:** For the **full** hop range, use plain `SUM` / `MAX` over buckets in the window. For **shorter** ranges, use `SUM(CASE WHEN bucket_end >= window_end - INTERVAL '…' THEN … END)` (and the same for `MAX` on per-bucket maxima, and so on) so shorter windows are **slices** of the same hop grouping.
 
 **Alignment rule:** When **hop slide = tumble size**, bucket boundaries line up with hop slides so the compact time series stays consistent with the desired output cadence.

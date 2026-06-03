@@ -1,18 +1,35 @@
-# Perf testing – Confluent Platform / Confluent Cloud Flink
+# Perf testing — Confluent Platform / CMF (Kubernetes)
 
 ## Goal
 
-Measure throughput and latency for Flink jobs using Confluent Manager for Flink (CP) or Confluent Cloud for Flink. Same producer and job code as [../README.md](../README.md); this folder documents CP/CC run.
+Run the perf passthrough job on **Confluent Manager for Flink** using `confluentinc/cp-flink:2.2.0-cp2-java21`, aligned with [deployment/k8s/cmf](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/k8s/cmf).
 
-## Status
+## Prerequisites
 
-Ready. Use with Confluent Platform (K8s) or Confluent Cloud. Producer and jobs at demo root: [../producer/](../producer/), [../flink-jobs/](../flink-jobs/), [../scripts/](../scripts/), [../k8s/](../k8s/).
+- CMF deployed (`make deploy` in `deployment/k8s/cmf`)
+- Confluent Kafka (CFK) in cluster
+- Docker, Maven, `kubectl`
 
-## Implementation approach
+## Build and deploy
 
-- **K8s:** Manifests at [../k8s/](../k8s/) for CP deployment. Scripts at [../scripts/](../scripts/).
-- **Application logic:** Shared at root. Deploy job via CMF or CC Flink workspace.
+```bash
+cd e2e-demos/perf-testing
+./scripts/build-all.sh
+./cp-flink/build.sh
+./scripts/deploy-k8s-cp.sh
+```
 
-## How to run
+Update Kafka bootstrap in [k8s/flink-application.yaml](k8s/flink-application.yaml) to match your namespace (default `kafka.confluent.svc.cluster.local:9092`).
 
-From **demo root**: build producer and flink-jobs, deploy topics (scripts or k8s), run producer, deploy Flink job to CMF/CC, collect metrics. See root [README.md](../README.md).
+## Topics and load
+
+```bash
+./scripts/create-topics.sh          # CP KafkaTopic CRs in namespace kafka
+kubectl apply -f producer/k8s/      # producer Job
+```
+
+Or use [run-benchmark-k8s.sh](../scripts/run-benchmark-k8s.sh).
+
+## Tuning lab
+
+For TM memory / checkpoint exercises, you can still use [dedup-demo FlinkApplication](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/dedup-demo/cp-flink/flink-table-api/k8s/flink-application.yaml) as the stateful baseline and this demo only for load ([k8s tuning §10](https://jbcodeforce.github.io/flink-studies/cookbook/k8s_tuning/#10--lab-overview--tune-and-observe-a-flinkapplication)).
