@@ -127,6 +127,91 @@ Cross-cutting items that complement **Design** (per-stream detail).
 * Assess if data is unbounded or bounded. Per-stage **Source of data** and **Processing** questions apply differently when data is bounded.
 * For bounded data, how often is a new record added or an existing one modified?
 
+In business analytics, there is a need to differentiate data tables according to their usage and reusability. There are two important concepts of this practice:
+
+* The **Dimensions**, which provide the “who, what, where, when, why, and how” context surrounding a business process event. Dimension tables contain the descriptive attributes used by BI applications for ﬁltering and grouping the facts. 
+* The **Facts**, which are the measurements that result from a business process event and are almost always numeric. The design of a fact table is entirely based on a physical activity, and not by the reports to produce from those facts. A fact table always contains foreign keys for each of its associated dimensions, as well as optional degenerate dimension keys and date/time stamps.
+
+### The star schema
+
+The star schema was defined in the late 1980s as a multidimensional data model to organize data in a data warehouse, preserve history, and reduce duplication. A star schema is used to denormalize business data into dimensions and facts. The fact table connects to multiple other dimension tables along "dimensions" like time, or product.
+
+![](./diagrams/star_schema.drawio.png)
+
+The following project illustrates how to implement the star schema using Flink:
+
+* [Customer 360](https://jbcodeforce.github.io/flink_project_demos/c360/flink_project/#define-the-shift_left-utils-configuration)
+* [Transaction analytics](https://github.com/jbcodeforce/flink_project_demos/tree/main/tx_processing)
+
+In Flink, a dimension may be created via a SQL statement and persisted as a table backed by a Kafka topic, JDBC, or files. When it is less reusable, a dimension can be a CTE within a larger Flink SQL statement.
+
+???+ info "How to support Type 2 slowly changing dimension (SCD) table?"
+    Type 2 SCDs are designed to maintain a complete history of all changes to dimension data. When a change occurs, a new row is inserted into the table, representing the updated record, while the original record remains untouched. Each record in the table is typically assigned a unique identifier (often a surrogate key) to distinguish between different versions of the same dimension member. 
+
+### Organizing the project repository
+
+Medaillon architecture, star schema and data as a product leads to be prescriptive on the way to manage the project. From years of experience, we arrive to this structure. (Not all files are presented to this view). The sources, dimension, facts, views are represented in separate folder, so deployment CLI can deploy in layers. Data product are separated also in folder, so the same CLI can deploy per product.
+
+```sh
+pipelines
+├── dimensions
+│   ├── c360
+│   │   └── dim_customer_transactions
+│   │       ├── Makefile
+│   │       ├── pipeline_definition.json
+│   │       ├── sql-scripts
+│   │       │   ├── ddl.dim_c360_customer_transactions.sql
+│   │       │   └── dml.dim_c360_customer_transactions.sql
+│   │       ├── tests
+│   │       └── tracking.md
+│   └── sdp
+│       ├── dim_estimated_delivery
+│       └── dim_order_fulfillment
+├── facts
+│   ├── c360
+│   │   └── fct_customer_360_profile
+│   │       ├── Makefile
+│   │       ├── pipeline_definition.json
+│   │       ├── sql-scripts
+│   │       │   ├── ddl.c360_fct_customer_profile.sql
+│   │       │   └── dml.c360_fct_customer_profile.sql
+│   │       ├── tests
+│   │       │   ├── ddl_dim_c360_customer_transactions.sql
+│   │       │   ├── ddl_src_c360_app_usage.sql
+│   │       │   ├── ddl_src_c360_customers.sql
+│   │       │   ├── ddl_src_c360_loyalty_program.sql
+│   │       │   ├── ddl_src_c360_support_ticket.sql
+│   │       │   ├── insert_dim_c360_customer_transactions_1.sql
+│   │       │   ├── insert_src_c360_app_usage_1.sql
+│   │       │   ├── insert_src_c360_customers_1.sql
+│   │       │   ├── insert_src_c360_loyalty_program_1.sql
+│   │       │   ├── insert_src_c360_support_ticket_1.sql
+│   │       │   ├── README.md
+│   │       │   ├── test_definitions.yaml
+│   │       │   └── validate_c360_fct_customer_profile_1.sql
+│   │       └── tracking.md
+│   └── sdp
+│       └── fct_order_fulfillment
+├── sources
+│   ├── c360
+│   │   ├── src_app_usage
+│   │   ├── src_customers
+│   │   ├── src_loyalty_program
+│   │   ├── src_products
+│   │   ├── src_support_ticket
+│   │   ├── src_transactions
+│   │   └── src_tx_items
+│   └── sdp
+│       ├── src_shipments
+│       └── src_tracking_events
+└── views
+    ├── c360
+    │   └── customer_analytics_c360
+    └── sdp
+        └── fulfillment_analytics
+   
+```
+
 ## Design
 
 Design is embedded in development. For each stream of records, assess the following (see also **Per-stage review questions** and **Generic streaming review**).

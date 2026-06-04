@@ -193,13 +193,18 @@ Confluent’s stream processing and governance offerings help you build event-dr
 
 [Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/ai/overview.html) combines, at a high level:
 
-1. **Built-in ML in SQL:** [model-oriented functions](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html) for anomaly, forecasting, and similar use cases, with downstream routing to topics or agents.
+1. **Built-in ML in SQL:** [model-oriented functions](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html) for anomaly detection, forecasting, and similar use cases, with downstream routing to topics or agents.
 2. **Streaming agents:** [Streaming Agents](https://docs.confluent.io/cloud/current/ai/overview.html) run as Flink-backed, stateful units with timers and replay-friendly testing story (see Confluent docs for current limits and regions).
 3. **Real-time Context Engine:** can expose governed, materialized data to other apps, in some flows via MCP, so not every team must hand-wire Kafka details.
 
 Layers Confluent often highlights:
 
 * **Real-time processing:** Kafka paired with Flink, with [ML](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html) and [preprocessing](https://docs.confluent.io/cloud/current/flink/reference/functions/ml-preprocessing-functions.html) helpers in SQL, including [anomaly](https://docs.confluent.io/cloud/current/ai/builtin-functions/detect-anomalies.html) examples (for example ARIMA-style and MAD, per documentation).
+
+* [Anomaly detection predefined function for Flink processing](https://docs.confluent.io/cloud/current/ai/builtin-functions/detect-anomalies.html):
+    * Detect anomalies in your data using a forecasting model based on Autoregressive Integrated Moving Average (ARIMA). - ML_DETECT_ANOMALIES
+    * Detect univariate and multivariate anomalies in your data by using Median Absolute Deviation (MAD) - ML_DETECT_ANOMALIES_ROBUST 
+    * Detect anomalies in time-series data using model-based inference with foundation models like TimesFM - AI_DETECT_ANOMALIES uses models that are managed by Confluent and hosted in Confluent Cloud.
 * **Interoperability:** MCP for context to diverse clients; your stream platform remains the system of record for *what happened*.
 * **Governance and replayability:** Security, lineage, and using the log to re-run and debug model behavior.
 * [Confluent AI with Flink SQL](https://docs.confluent.io/cloud/current/ai/overview.html) to decouple producers, processors, and consumers, including agents.

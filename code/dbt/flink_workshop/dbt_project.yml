@@ -1,0 +1,27 @@
+
+# Confluent Cloud for Flink — Flink SQL workshop
+name: 'flink_workshop'
+version: '1.0.0'
+
+profile: 'cc_flink'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  flink_workshop:
+    crm:
+      sources:
+        +materialized: streaming_source
+        +tags: ['crm']
+      marts:
+        +materialized: streaming_table
+        +tags: ['crm']

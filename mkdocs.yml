@@ -42,6 +42,7 @@ nav:
   - Methodology:
     - Data as a product: methodology/data_as_a_product.md
     - Event Storming: https://jbcodeforce.github.io/eda-studies/methodology/event-storming/
+    - Flink Project Management: cookbook/pm.md
     - Migrate to real-time processing tools: https://jbcodeforce.github.io/shift_left_utils/
     - Center of Excellence: methodology/coe.md
     - A C360 data product demo: https://jbcodeforce.github.io/flink_project_demos/c360/spark_project/

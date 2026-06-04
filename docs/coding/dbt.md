@@ -8,7 +8,7 @@ compiled: false
 ---
 # Data Build Tool Summary
 
-* [Dbt core](https://github.com/dbt-labs/dbt-core) is an open source CLI and database agnostic used to allow data analysts and engineers to build reliable, modular data pipelines, creating "models" (SELECT statements) that are version-controlled, automatically documented, and tested for quality before consumption by analytics tools.  Learn more about dbt [in the docs](https://docs.getdbt.com/docs/introduction).
+* [Dbt core](https://github.com/dbt-labs/dbt-core) is an open source ELT CLI and database agnostic used to allow data analysts and engineers to build reliable, modular data pipelines, creating "models" (SELECT statements) that are version-controlled, automatically documented, and tested for quality before consumption by analytics tools.  Learn more about dbt [in the docs](https://docs.getdbt.com/docs/introduction).
 * [dbt Cloud](https://www.getdbt.com/product/dbt): A managed service with a web-based IDE, scheduler, job orchestration, and monitoring
 
 Supported by ISVs in lake house market. 
@@ -128,7 +128,7 @@ Next we will cover the dbt [main concepts](#major-concepts) with concrete exampl
 
 * Create the project
   ```sh
-  dbt init airbnb-streaming
+  dbt init flink_workshop
   ```
   
   The profile may include references to environment variables for API KEY and SECRET.
@@ -204,7 +204,7 @@ The table below lists when to use View vs Table:
 
 #### Create sources
 
-Sources are defined using YAML files inside your `models/` directory.
+Sources are defined using a YAML file `sources.yml` inside your `models/` directory.
 
 ```yaml
 sources:
@@ -215,7 +215,7 @@ sources:
         identifier: raw_listings
 ```
 
-Then adding a sql for deduplicating the raw.raw_hosts data. Create a `models/sources` folder and add:
+Then adding the SQLs for deduplicating the  raw.raw_hosts.  Create a `models/sources` folder and add:
 
 ```sql
 WITH ranked_hosts AS (
@@ -257,6 +257,7 @@ duckdb data/airbnb.duckdb
 select * from main.src_hosts;
 ```
 
+Same may be done for `raw_reviews`
 ### Project structure
 
 dbt recursively scans everything under model-paths (by default models/). `dbt run`, `dbt build`, and `dbt seed` will all find those `.sql` files and deploy/run them.

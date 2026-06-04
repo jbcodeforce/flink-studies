@@ -153,3 +153,24 @@ Internal Error
 [0m16:04:37.482933 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x109647e60>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1099ed040>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x108d521b0>]}
 [0m16:04:37.483129 [debug] [MainThread]: Flushing usage events
 [0m16:04:37.869359 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m10:27:52.553384 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10a956300>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10bad1f10>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10bad1be0>]}
+
+
+============================== 10:27:52.556639 | 7314a542-1be5-4bb0-bcf3-a6b34f69cc0f ==============================
+[0m10:27:52.556639 [info ] [MainThread]: Running with dbt=1.11.11
+[0m10:27:52.556964 [debug] [MainThread]: running dbt with arguments {'no_print': 'None', 'fail_fast': 'False', 'use_colors': 'True', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'target_path': 'None', 'printer_width': '80', 'quiet': 'False', 'indirect_selection': 'eager', 'static_parser': 'True', 'profiles_dir': '/Users/jerome/.dbt', 'introspect': 'True', 'log_path': 'logs', 'send_anonymous_usage_stats': 'True', 'write_json': 'True', 'log_cache_events': 'False', 'empty': 'None', 'log_format': 'default', 'debug': 'False', 'invocation_command': 'dbt debug --target dev --profiles-dir /Users/jerome/.dbt', 'cache_selected_only': 'False', 'version_check': 'True', 'warn_error': 'None', 'partial_parse': 'True', 'use_experimental_parser': 'False'}
+[0m10:27:52.586646 [info ] [MainThread]: dbt version: 1.11.11
+[0m10:27:52.586880 [info ] [MainThread]: python version: 3.12.11
+[0m10:27:52.587027 [info ] [MainThread]: python path: /Users/jerome/Documents/Code/flink-studies/code/dbt/.venv/bin/python3
+[0m10:27:52.587166 [info ] [MainThread]: os info: macOS-26.5-arm64-arm-64bit
+[0m10:27:52.752466 [info ] [MainThread]: Using profiles dir at /Users/jerome/.dbt
+[0m10:27:52.752718 [info ] [MainThread]: Using profiles.yml file at /Users/jerome/.dbt/profiles.yml
+[0m10:27:52.752872 [info ] [MainThread]: Using dbt_project.yml file at /Users/jerome/Documents/Code/flink-studies/code/dbt/dbt_project.yml
+[0m10:27:52.753058 [error] [MainThread]: Encountered an error:
+Internal Error
+  Profile should not be None if loading profile completed
+[0m10:27:52.753338 [debug] [MainThread]: Resource report: {"command_name": "debug", "command_success": false, "command_wall_clock_time": 0.27990374, "process_in_blocks": "0", "process_kernel_time": 0.13729, "process_mem_max_rss": "135364608", "process_out_blocks": "0", "process_user_time": 0.666002}
+[0m10:27:52.753568 [debug] [MainThread]: Command `dbt debug` failed at 10:27:52.753521 after 0.28 seconds
+[0m10:27:52.753749 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10bdb8d40>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10be737a0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10bad1df0>]}
+[0m10:27:52.753938 [debug] [MainThread]: Flushing usage events
+[0m10:27:53.195867 [debug] [MainThread]: An error was encountered while trying to flush usage events

@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: transactions_faker
+    description: Lab 1.1 — Faker connector source for transaction events (append changelog).
+    columns:
+      - name: txn_id
+        data_type: varchar(36)
+      - name: account_number
+        data_type: varchar(255)
+      - name: timestamp
+        data_type: timestamp(3) with local time zone
+      - name: amount
+        data_type: decimal(10, 2)
+      - name: currency
+        data_type: varchar(5)
+      - name: merchant
+        data_type: varchar(255)
+      - name: location
+        data_type: varchar(255)
+      - name: status
+        data_type: varchar(255)
+      - name: transaction_type
+        data_type: varchar(50)
+
+  - name: customers_faker
+    description: Lab 1.2 — Faker connector source for customer dimension rows.
+    columns:
+      - name: account_number
+        data_type: varchar(2147483647)
+      - name: customer_name
+        data_type: varchar(2147483647)
+      - name: email
+        data_type: varchar(2147483647)
+      - name: phone_number
+        data_type: varchar(2147483647)
+      - name: date_of_birth
+        data_type: timestamp(3)
+      - name: city
+        data_type: varchar(2147483647)
+      - name: created_at
+        data_type: timestamp(3) with local time zone
+
+  - name: customers_pk
+    description: Lab 3 — Customers with primary key and upsert changelog (CTAS equivalent).
+    columns:
+      - name: account_number
+        data_type: varchar(2147483647)
+        constraints:
+          - type: not_null
+          - type: primary_key
+            expression: "not enforced"
+      - name: customer_name
+        data_type: varchar(2147483647)
+      - name: email
+        data_type: varchar(2147483647)
+      - name: phone_number
+        data_type: varchar(2147483647)
+      - name: date_of_birth
+        data_type: timestamp(3)
+      - name: city
+        data_type: varchar(2147483647)
+      - name: created_at
+        data_type: timestamp(3) with local time zone

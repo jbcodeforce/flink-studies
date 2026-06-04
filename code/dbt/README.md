@@ -1,8 +1,8 @@
 # dbt Studies - Samples
 
-## Using duckdb as data warehouse
+The approach is to use [duckdb](#using-duckdb-as-data-warehouse) as target of the dbt processing for data warehouse demo and Confluent Cloud for Flink for [dbt-confluent](#with-dbt-confluent---flink_workshop-project) demonstration.
 
-The approach is to use duckdb as target of the dbt processing. 
+## Using duckdb as data warehouse
 
 ### Raw landing zone
 
@@ -143,15 +143,37 @@ SELECT * FROM raw_full_moon_dates LIMIT 5;
 
 Reference seeded tables in downstream models via `models/sources.yaml` and `{{ source('reference', 'full_moon_dates') }}`.
 
+## With dbt-confluent - flink_workshop project
+
+The [flink_workshop](flink_workshop/) project deploys [Jan Svoboda's Flink workshop](https://github.com/grigra23/flink-workshop).
+
+### General command
+
+```bash
+cd code/dbt/flink_workshop
+export CONFLUENT_FLINK_API_KEY=...
+export CONFLUENT_FLINK_API_SECRET=...
+make  debug
+make -C flink_workshop run-full
+```
+
+### Lab1
+
+Faker sources, a primary-key customer table, and ALTER steps via dbt post-hooks.
+
+
+
+See [flink_workshop/README.md](flink_workshop/README.md) for lab mapping, full-refresh behavior, and manual verification queries.
+
 ### Migrate existing Flink DML to dbt models
 
 Use [`code/flink-sql/tools/migrate_dml_to_dbt.py`](../flink-sql/tools/migrate_dml_to_dbt.py) to convert demo `dml.*.sql` files into dbt models with matching `schema.yml` column types from the paired `ddl.*.sql`. See [flink-sql tools README](../flink-sql/tools/README.md#migrate-flink-dml-to-dbt).
 
 
-## Gap analysis with shift_left
+## Gap analysis with shift_left utils CLI
 
 * Kimball structure under `models/` can be bootstrapped with `migrate_dml_to_dbt.py` (see above).
-* No metada data for statement children relationship.
+* No metada data for statement children relationship, but could be kept as-is with shift_left. (medium term this)
 * no undeploy command
 * how to support data product cross dimension
 * no concept of statefulness
