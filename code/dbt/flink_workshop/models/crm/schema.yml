@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: transactions_faker
-    description: Lab 1.1 — Faker connector source for transaction events (append changelog).
+    description: Faker source for transaction events (append changelog).
     columns:
       - name: txn_id
         data_type: varchar(36)
@@ -24,7 +24,7 @@ models:
         data_type: varchar(50)
 
   - name: customers_faker
-    description: Lab 1.2 — Faker connector source for customer dimension rows.
+    description: Faker source for customer rows.
     columns:
       - name: account_number
         data_type: varchar(2147483647)
@@ -41,8 +41,25 @@ models:
       - name: created_at
         data_type: timestamp(3) with local time zone
 
+  - name: mongodb_movies
+    description: External movies collection (sample_mflix) for KEY_SEARCH_AGG lookup joins. Requires crm_enable_mongodb.
+    columns:
+      - name: title
+        data_type: string
+      - name: genres
+        data_type: array<string>
+      - name: rated
+        data_type: string
+      - name: plot
+        data_type: string
+      - name: year
+        data_type: int
+
   - name: customers_pk
-    description: Lab 3 — Customers with primary key and upsert changelog (CTAS equivalent).
+    description: Versioned customer dimension with primary key and upsert changelog.
+    config:
+      contract:
+        enforced: true
     columns:
       - name: account_number
         data_type: varchar(2147483647)
@@ -62,3 +79,178 @@ models:
         data_type: varchar(2147483647)
       - name: created_at
         data_type: timestamp(3) with local time zone
+
+  - name: txn_customer_temporal
+    description: Transactions enriched with customers_pk at transaction time (temporal join).
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: txn_id
+        data_type: varchar(36)
+      - name: amount
+        data_type: decimal(10, 2)
+      - name: txn_time
+        data_type: timestamp(3) with local time zone
+      - name: customer_name
+        data_type: varchar(2147483647)
+      - name: signup_time
+        data_type: timestamp(3) with local time zone
+
+  - name: txn_customer_interval
+    description: Transactions joined to customers_faker within a 10-second creation window (interval join).
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: txn_id
+        data_type: varchar(36)
+      - name: amount
+        data_type: decimal(10, 2)
+      - name: txn_time
+        data_type: timestamp(3) with local time zone
+      - name: customer_name
+        data_type: varchar(2147483647)
+      - name: signup_time
+        data_type: timestamp(3) with local time zone
+
+  - name: txn_customer_equi
+    description: Equi-join of transactions to customers_faker (unbounded state; use EXPLAIN in workspace).
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: txn_id
+        data_type: varchar(36)
+      - name: amount
+        data_type: decimal(10, 2)
+      - name: txn_time
+        data_type: timestamp(3) with local time zone
+      - name: customer_name
+        data_type: varchar(2147483647)
+      - name: signup_time
+        data_type: timestamp(3) with local time zone
+
+  - name: txn_customer_equi_ttl
+    description: Equi-join with sql.state-ttl from project var crm_state_ttl (default 2d).
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: txn_id
+        data_type: varchar(36)
+      - name: amount
+        data_type: decimal(10, 2)
+      - name: txn_time
+        data_type: timestamp(3) with local time zone
+      - name: customer_name
+        data_type: varchar(2147483647)
+      - name: signup_time
+        data_type: timestamp(3) with local time zone
+
+  - name: customer_movies_lookup
+    description: Customers joined to MongoDB movies by birth year via KEY_SEARCH_AGG.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: customer_name
+        data_type: varchar(2147483647)
+      - name: date_of_birth
+        data_type: timestamp(3)
+      - name: search_results
+        data_type: array<string>
+
+  - name: withdrawals_by_account
+    description: Sum of withdrawals per account with HAVING total > 500.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: account_number
+        data_type: varchar(255)
+      - name: transaction_type
+        data_type: varchar(50)
+      - name: total_withdrawn
+        data_type: decimal(38, 2)
+
+  - name: withdrawal_running_totals
+    description: Running withdrawal sum per account with 1-hour OVER window and 500 threshold flag.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: account_number
+        data_type: varchar(255)
+      - name: transaction_type
+        data_type: varchar(50)
+      - name: amount
+        data_type: decimal(10, 2)
+      - name: total_value
+        data_type: decimal(38, 2)
+      - name: flag
+        data_type: varchar(3)
+
+  - name: failed_payments_tumble_1m
+    description: Failed payment counts per merchant in 1-minute tumble windows.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: window_start
+        data_type: timestamp(3)
+      - name: window_end
+        data_type: timestamp(3)
+      - name: merchant
+        data_type: varchar(255)
+      - name: total_tx_failed
+        data_type: bigint
+
+  - name: merchant_session_counts
+    description: Transaction counts per merchant in 5-second session windows.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: window_start
+        data_type: timestamp(3)
+      - name: sec_duration
+        data_type: int
+      - name: merchant
+        data_type: varchar(255)
+      - name: total_tx
+        data_type: bigint
+
+  - name: failed_payments_over_1m
+    description: Rolling count of failed payments per merchant (1-minute OVER window).
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: timestamp
+        data_type: timestamp(3) with local time zone
+      - name: merchant
+        data_type: varchar(255)
+      - name: total_tx_failed_last_minute
+        data_type: bigint
+
+  - name: successful_payments_tumble_lag
+    description: Successful payment tumble counts with LAG vs previous window per merchant.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: window_start
+        data_type: timestamp(3)
+      - name: window_end
+        data_type: timestamp(3)
+      - name: merchant
+        data_type: varchar(255)
+      - name: transaction_type
+        data_type: varchar(50)
+      - name: total_successful
+        data_type: bigint
+      - name: prev_total_successful
+        data_type: bigint
+      - name: delta
+        data_type: bigint

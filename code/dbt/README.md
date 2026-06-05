@@ -145,25 +145,17 @@ Reference seeded tables in downstream models via `models/sources.yaml` and `{{ s
 
 ## With dbt-confluent - flink_workshop project
 
-The [flink_workshop](flink_workshop/) project deploys [Jan Svoboda's Flink workshop](https://github.com/grigra23/flink-workshop).
-
-### General command
+The [flink_workshop](flink_workshop/) project deploys the [Confluent Flink SQL workshop](https://github.com/confluentinc/flink-workshop) as the `crm` data product: Faker sources, customer dimension, joins, aggregations/windowing, and optional MongoDB lookup.
 
 ```bash
 cd code/dbt/flink_workshop
 export CONFLUENT_FLINK_API_KEY=...
 export CONFLUENT_FLINK_API_SECRET=...
-make  debug
-make -C flink_workshop run-full
+make debug
+make run-full
 ```
 
-### Lab1
-
-Faker sources, a primary-key customer table, and ALTER steps via dbt post-hooks.
-
-
-
-See [flink_workshop/README.md](flink_workshop/README.md) for lab mapping, full-refresh behavior, and manual verification queries.
+See [flink_workshop/README.md](flink_workshop/README.md) for model catalog, dbt patterns (`statement_name`, state TTL, MongoDB vars), and verification queries.
 
 ### Migrate existing Flink DML to dbt models
 
@@ -174,6 +166,8 @@ Use [`code/flink-sql/tools/migrate_dml_to_dbt.py`](../flink-sql/tools/migrate_dm
 
 * Kimball structure under `models/` can be bootstrapped with `migrate_dml_to_dbt.py` (see above).
 * No metada data for statement children relationship, but could be kept as-is with shift_left. (medium term this)
-* no undeploy command
-* how to support data product cross dimension
+* no undeploy statements command
+* no drop a list of table
+* how to support data product cross dimensions
 * no concept of statefulness
+* no children relationship understanding

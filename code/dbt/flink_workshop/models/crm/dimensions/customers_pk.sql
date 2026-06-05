@@ -1,5 +1,6 @@
 {{ config(
     materialized='streaming_table',
+    statement_name='fw_crm_customers_pk',
     tags=['crm'],
     with={
         'changelog.mode': 'upsert',

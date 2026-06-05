@@ -1,5 +1,5 @@
 
-# Confluent Cloud for Flink — Flink SQL workshop
+# Confluent Cloud for Flink — CRM workshop data product (dbt-confluent)
 name: 'flink_workshop'
 version: '1.0.0'
 
@@ -16,11 +16,22 @@ clean-targets:
   - "target"
   - "dbt_packages"
 
+vars:
+  # Set true (or export CRM_ENABLE_MONGODB=true) when Atlas credentials are configured.
+  crm_enable_mongodb: false
+  crm_mongodb_endpoint: "{{ env_var('CRM_MONGODB_ENDPOINT', '') }}"
+  crm_mongodb_username: "{{ env_var('CRM_MONGODB_USERNAME', '') }}"
+  crm_mongodb_password: "{{ env_var('CRM_MONGODB_PASSWORD', '') }}"
+  crm_state_ttl: '2d'
+
 models:
   flink_workshop:
     crm:
       sources:
         +materialized: streaming_source
+        +tags: ['crm']
+      dimensions:
+        +materialized: streaming_table
         +tags: ['crm']
       marts:
         +materialized: streaming_table
