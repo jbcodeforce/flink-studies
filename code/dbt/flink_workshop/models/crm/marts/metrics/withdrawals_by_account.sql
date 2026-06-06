@@ -2,6 +2,9 @@
     materialized='streaming_table',
     statement_name='fw_crm_withdrawals_by_account',
     tags=['crm'],
+    with = {
+    'changelog.mode': 'upsert'
+    }
 ) }}
 
 select

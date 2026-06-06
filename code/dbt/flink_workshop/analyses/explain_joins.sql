@@ -4,6 +4,6 @@
 --
 -- Interval join:
 -- select ... from transactions_faker t join customers_faker c on ...
--- where t.`timestamp` between c.created_at and c.created_at + interval '10' second;
+-- where t.pay_timestamp between c.created_at and c.created_at + interval '10' second;
 
 select * from {{ ref('transactions_faker') }} limit 0

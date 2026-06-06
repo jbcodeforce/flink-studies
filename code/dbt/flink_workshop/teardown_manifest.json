@@ -1,0 +1,45 @@
+{
+  "user_agent": "flink-workshop-dbt/0.1",
+  "undeploy_all": ["sources", "dimensions", "marts"],
+  "drop_statement_prefix": "fw-crm-drop",
+  "drop_tables": [
+    "successful_payments_tumble_lag",
+    "failed_payments_over_1m",
+    "merchant_session_counts",
+    "failed_payments_tumble_1m",
+    "withdrawal_running_totals",
+    "withdrawals_by_account",
+    "customer_movies_lookup",
+    "txn_customer_equi_ttl",
+    "txn_customer_equi",
+    "txn_customer_interval",
+    "txn_customer_temporal",
+    "customers_pk",
+    "mongodb_movies",
+    "customers_faker",
+    "transactions_faker"
+  ],
+  "groups": {
+    "sources": [
+      {"name": "fw_crm_transactions_faker", "file": "_noop"},
+      {"name": "fw_crm_customers_faker", "file": "_noop"},
+      {"name": "fw_crm_mongodb_movies", "file": "_noop"}
+    ],
+    "dimensions": [
+      {"name": "fw_crm_customers_pk", "file": "_noop"}
+    ],
+    "marts": [
+      {"name": "fw_crm_txn_customer_temporal", "file": "_noop"},
+      {"name": "fw_crm_txn_customer_interval", "file": "_noop"},
+      {"name": "fw_crm_txn_customer_equi", "file": "_noop"},
+      {"name": "fw_crm_txn_customer_equi_ttl", "file": "_noop"},
+      {"name": "fw_crm_customer_movies_lookup", "file": "_noop"},
+      {"name": "fw_crm_withdrawals_by_account", "file": "_noop"},
+      {"name": "fw_crm_withdrawal_running_totals", "file": "_noop"},
+      {"name": "fw_crm_failed_payments_tumble_1m", "file": "_noop"},
+      {"name": "fw_crm_merchant_session_counts", "file": "_noop"},
+      {"name": "fw_crm_failed_payments_over_1m", "file": "_noop"},
+      {"name": "fw_crm_successful_payments_tumble_lag", "file": "_noop"}
+    ]
+  }
+}

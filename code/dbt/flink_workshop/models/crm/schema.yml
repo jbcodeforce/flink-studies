@@ -8,8 +8,8 @@ models:
         data_type: varchar(36)
       - name: account_number
         data_type: varchar(255)
-      - name: timestamp
-        data_type: timestamp(3) with local time zone
+      - name: pay_timestamp
+        data_type: TIMESTAMP_LTZ(3)
       - name: amount
         data_type: decimal(10, 2)
       - name: currency
@@ -35,11 +35,11 @@ models:
       - name: phone_number
         data_type: varchar(2147483647)
       - name: date_of_birth
-        data_type: timestamp(3)
+        data_type: TIMESTAMP(3)
       - name: city
         data_type: varchar(2147483647)
       - name: created_at
-        data_type: timestamp(3) with local time zone
+        data_type: TIMESTAMP_LTZ(3)
 
   - name: mongodb_movies
     description: External movies collection (sample_mflix) for KEY_SEARCH_AGG lookup joins. Requires crm_enable_mongodb.
@@ -74,11 +74,11 @@ models:
       - name: phone_number
         data_type: varchar(2147483647)
       - name: date_of_birth
-        data_type: timestamp(3)
+        data_type: TIMESTAMP(3)
       - name: city
         data_type: varchar(2147483647)
       - name: created_at
-        data_type: timestamp(3) with local time zone
+        data_type: TIMESTAMP_LTZ(3)
 
   - name: txn_customer_temporal
     description: Transactions enriched with customers_pk at transaction time (temporal join).
@@ -91,11 +91,11 @@ models:
       - name: amount
         data_type: decimal(10, 2)
       - name: txn_time
-        data_type: timestamp(3) with local time zone
+        data_type: TIMESTAMP_LTZ(3)
       - name: customer_name
         data_type: varchar(2147483647)
       - name: signup_time
-        data_type: timestamp(3) with local time zone
+        data_type: TIMESTAMP_LTZ(3)
 
   - name: txn_customer_interval
     description: Transactions joined to customers_faker within a 10-second creation window (interval join).
@@ -108,11 +108,11 @@ models:
       - name: amount
         data_type: decimal(10, 2)
       - name: txn_time
-        data_type: timestamp(3) with local time zone
+        data_type: TIMESTAMP_LTZ(3)
       - name: customer_name
         data_type: varchar(2147483647)
       - name: signup_time
-        data_type: timestamp(3) with local time zone
+        data_type: TIMESTAMP_LTZ(3)
 
   - name: txn_customer_equi
     description: Equi-join of transactions to customers_faker (unbounded state; use EXPLAIN in workspace).
@@ -125,11 +125,11 @@ models:
       - name: amount
         data_type: decimal(10, 2)
       - name: txn_time
-        data_type: timestamp(3) with local time zone
+        data_type: TIMESTAMP_LTZ(3)
       - name: customer_name
         data_type: varchar(2147483647)
       - name: signup_time
-        data_type: timestamp(3) with local time zone
+        data_type: TIMESTAMP_LTZ(3)
 
   - name: txn_customer_equi_ttl
     description: Equi-join with sql.state-ttl from project var crm_state_ttl (default 2d).
@@ -142,11 +142,11 @@ models:
       - name: amount
         data_type: decimal(10, 2)
       - name: txn_time
-        data_type: timestamp(3) with local time zone
+        data_type: TIMESTAMP_LTZ(3)
       - name: customer_name
         data_type: varchar(2147483647)
       - name: signup_time
-        data_type: timestamp(3) with local time zone
+        data_type: TIMESTAMP_LTZ(3)
 
   - name: customer_movies_lookup
     description: Customers joined to MongoDB movies by birth year via KEY_SEARCH_AGG.
@@ -157,7 +157,7 @@ models:
       - name: customer_name
         data_type: varchar(2147483647)
       - name: date_of_birth
-        data_type: timestamp(3)
+        data_type: TIMESTAMP(3)
       - name: search_results
         data_type: array<string>
 
@@ -173,6 +173,10 @@ models:
         data_type: varchar(50)
       - name: total_withdrawn
         data_type: decimal(38, 2)
+    constraints:
+      - type: primary_key
+        columns: [account_number, transaction_type]
+        expression: "NOT ENFORCED"
 
   - name: withdrawal_running_totals
     description: Running withdrawal sum per account with 1-hour OVER window and 500 threshold flag.
@@ -198,9 +202,9 @@ models:
         enforced: true
     columns:
       - name: window_start
-        data_type: timestamp(3)
+        data_type: TIMESTAMP(3)
       - name: window_end
-        data_type: timestamp(3)
+        data_type: TIMESTAMP(3)
       - name: merchant
         data_type: varchar(255)
       - name: total_tx_failed
@@ -213,7 +217,7 @@ models:
         enforced: true
     columns:
       - name: window_start
-        data_type: timestamp(3)
+        data_type: TIMESTAMP(3)
       - name: sec_duration
         data_type: int
       - name: merchant
@@ -226,9 +230,10 @@ models:
     config:
       contract:
         enforced: true
+        alias_types: false
     columns:
-      - name: timestamp
-        data_type: timestamp(3) with local time zone
+      - name: pay_timestamp
+        data_type: TIMESTAMP_LTZ(3)
       - name: merchant
         data_type: varchar(255)
       - name: total_tx_failed_last_minute
@@ -241,9 +246,9 @@ models:
         enforced: true
     columns:
       - name: window_start
-        data_type: timestamp(3)
+        data_type: TIMESTAMP(3)
       - name: window_end
-        data_type: timestamp(3)
+        data_type: TIMESTAMP(3)
       - name: merchant
         data_type: varchar(255)
       - name: transaction_type

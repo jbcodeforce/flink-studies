@@ -14,6 +14,6 @@ from {{ ref('transactions_faker') }}
 where transaction_type = 'withdrawal'
 window w as (
     partition by account_number, transaction_type
-    order by `timestamp` asc
+    order by pay_timestamp asc
     range between interval '1' hour preceding and current row
 )

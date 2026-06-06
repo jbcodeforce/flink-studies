@@ -133,7 +133,7 @@ Next we will cover the dbt [main concepts](#major-concepts) with concrete exampl
   
   The profile may include references to environment variables for API KEY and SECRET.
     ```yaml
-    airbnb_streaming:
+    flink_workshop:
     outputs:
       dev:
         cloud_provider: aws
@@ -257,7 +257,8 @@ duckdb data/airbnb.duckdb
 select * from main.src_hosts;
 ```
 
-Same may be done for `raw_reviews`
+Same may be done for `raw_reviews`, `raw_listings`
+
 ### Project structure
 
 dbt recursively scans everything under model-paths (by default models/). `dbt run`, `dbt build`, and `dbt seed` will all find those `.sql` files and deploy/run them.
@@ -287,8 +288,11 @@ So if two subfolders both contain model.sql, you get a name collision. Use disti
 
 For incremental deployment it should be possible to run dbt as:
 ```sh
-dbt run --select path:models/dimensions/hosts 
+uv run dbt run --select dimensions.hosts 
 # or --select dimensions.*
+
+# Select a unique model
+uv run dbt  run --project-dir . --select withdrawals_by_account.sql --target dev --profiles-dir ~/.dbt --full-refresh
 ```
 
 ### Materializations
@@ -646,6 +650,32 @@ In Confluent Cloud for Flink context, the `dbt run` does not process data; it de
         }
        ) 
     }}
+    ```
+
+???+ question "How to define primary key for non source tables?"
+    This is done in the schema.yml file. For a column: 
+    ```yaml
+    columns:
+      - name: account_number
+        data_type: varchar(2147483647)
+        constraints:
+          - type: not_null
+          - type: primary_key
+            expression: "not enforced"
+    ``` 
+    or as combined keys set with external contraints:
+    ```yaml
+    columns:
+      - name: account_number
+        data_type: varchar(255)
+      - name: transaction_type
+        data_type: varchar(50)
+      - name: total_withdrawn
+        data_type: decimal(38, 2)
+    constraints:
+      - type: primary_key
+        columns: [account_number, transaction_type]
+        expression: "NOT ENFORCED"
     ```
 
 ???+ question "How to define materialized table"

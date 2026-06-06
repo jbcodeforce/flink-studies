@@ -11,7 +11,7 @@ select
     count(*) as total_tx_failed
 from tumble(
     table {{ ref('transactions_faker') }},
-    descriptor (`timestamp`),
+    descriptor (pay_timestamp),
     interval '1' minute
 )
 where transaction_type = 'payment' and status = 'Failed'

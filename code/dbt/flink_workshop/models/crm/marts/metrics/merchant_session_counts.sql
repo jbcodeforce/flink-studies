@@ -4,17 +4,17 @@
     tags=['crm'],
 ) }}
 
-select
+SELECT
     window_start,
     timestampdiff(second, window_start, window_end) as sec_duration,
     merchant,
     count(*) as total_tx
-from session(
-    data => table {{ ref('transactions_faker') }} partition by merchant,
-    timecol => descriptor (`timestamp`),
-    gap => interval '5' seconds
+FROM SESSION(
+    DATA => table {{ ref('transactions_faker') }} PARTITION BY merchant,
+    TIMECOL => descriptor (pay_timestamp),
+    GAP => interval '5' seconds
 )
-group by
+GROUP BY
     window_start,
     window_end,
     merchant

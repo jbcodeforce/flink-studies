@@ -5,13 +5,13 @@
 ) }}
 
 select
-    `timestamp`,
+    pay_timestamp,
     merchant,
     count(*) over w as total_tx_failed_last_minute
 from {{ ref('transactions_faker') }}
 where transaction_type = 'payment' and status = 'Failed'
 window w as (
     partition by merchant
-    order by `timestamp`
+    order by pay_timestamp
     range between interval '1' minute preceding and current row
 )

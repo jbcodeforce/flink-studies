@@ -140,15 +140,23 @@ Tumble metrics emit after the first window closes (about one minute).
 
 ## Drop and redeploy
 
-```sql
-DROP TABLE IF EXISTS txn_customer_temporal;
--- ... other marts ...
-DROP TABLE IF EXISTS customers_pk;
-DROP TABLE IF EXISTS customers_faker;
-DROP TABLE IF EXISTS transactions_faker;
+Full teardown (stop Flink statements, then drop tables). Uses [cc_flink_deploy.py](../../flink-sql/tools/cc_flink_deploy.py) via `scripts/drop_crm.py` and `teardown_manifest.json`. Credentials: `~/.confluent/.env` (or `CONFLUENT_ENV_FILE`).
+
+```bash
+make teardown      # stop statements + drop tables
+make drop-tables   # drop only (statements still running)
+make undeploy      # delete statements only
+make run-full      # redeploy
 ```
 
-Then `make run-full`.
+Direct CLI:
+
+```bash
+cd code/flink-sql/tools
+uv run python ../../dbt/flink_workshop/scripts/drop_crm.py teardown
+```
+
+When adding a CRM model, update `teardown_manifest.json`: append its `statement_name` to the matching `groups` entry and its table name to `drop_tables` (dependents before sources).
 
 ## Related
 

@@ -7,9 +7,9 @@
 select
     t.txn_id,
     t.amount,
-    t.`timestamp` as txn_time,
+    t.pay_timestamp as txn_time,
     c.customer_name,
     c.created_at as signup_time
 from {{ ref('transactions_faker') }} as t
-join {{ ref('customers_pk') }} for system_time as of t.`timestamp` as c
+join {{ ref('customers_pk') }} for system_time as of t.pay_timestamp as c
     on t.account_number = c.account_number

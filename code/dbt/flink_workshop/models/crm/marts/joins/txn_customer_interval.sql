@@ -7,10 +7,10 @@
 select
     t.txn_id,
     t.amount,
-    t.`timestamp` as txn_time,
+    t.pay_timestamp as txn_time,
     c.customer_name,
     c.created_at as signup_time
 from {{ ref('transactions_faker') }} as t
 join {{ ref('customers_faker') }} as c
     on t.account_number = c.account_number
-where t.`timestamp` between c.created_at and c.created_at + interval '10' second
+where t.pay_timestamp between c.created_at and c.created_at + interval '10' second

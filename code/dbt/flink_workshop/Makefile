@@ -1,7 +1,9 @@
-.PHONY: debug run run-full compile run-crm run-crm-full
+.PHONY: debug run run-full compile run-crm run-crm-full teardown undeploy drop-tables
 
 TARGET ?= dev
 DBT := cd .. && uv run dbt
+TOOLS := $(abspath ../../flink-sql/tools)
+DROP := cd $(TOOLS) && uv run python ../../dbt/flink_workshop/scripts/drop_crm.py
 
 debug:
 	$(DBT) debug --project-dir flink_workshop --target $(TARGET) --profiles-dir $(HOME)/.dbt
@@ -19,3 +21,13 @@ run-crm-full: run-full
 
 compile:
 	$(DBT) compile --project-dir flink_workshop --target $(TARGET) --profiles-dir $(HOME)/.dbt
+
+# Teardown CRM resources on Confluent Cloud (uses flink-sql/tools + cc_flink_deploy).
+teardown:
+	$(DROP) teardown
+
+undeploy:
+	$(DROP) undeploy
+
+drop-tables:
+	$(DROP) drop-tables

@@ -1,6 +1,7 @@
 {{ config(
     materialized='streaming_source',
     connector='faker',
+    statement_name='fw_crm_customers_faker',
     tags=['crm'],
     with={
         'changelog.mode': 'append',
@@ -20,4 +21,5 @@
 `phone_number` VARCHAR(2147483647),
 `date_of_birth` TIMESTAMP(3),
 `city` VARCHAR(2147483647),
-`created_at` TIMESTAMP(3) WITH LOCAL TIME ZONE
+`created_at` TIMESTAMP_LTZ(3),
+WATERMARK FOR `created_at` AS `created_at` - INTERVAL '5' SECONDS

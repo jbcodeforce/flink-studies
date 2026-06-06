@@ -1,7 +1,8 @@
 {{ config(
     materialized='streaming_source',
     connector='faker',
-    tags=['lab01'],
+    statement_name='fw_crm_transactions_faker',
+    tags=['crm'],
     with={
         'changelog.mode': 'append',
         'fields.account_number.expression': "ACC#{Number.numberBetween ''1000000'',''1000010''}",
@@ -12,17 +13,17 @@
         'fields.transaction_type.expression': "#{Options.option ''payment'',''payment'', ''payment'' ,''refund'', ''withdrawal''}",
         'fields.status.expression': "#{Options.option ''Successful'',''Successful'', ''Failed'' }",
         'fields.txn_id.expression': '#{IdNumber.valid}',
-        'fields.timestamp.expression': "#{date.past ''5'',''SECONDS''}",
+        'fields.pay_timestamp.expression': "#{date.past ''5'',''SECONDS''}",
         'rows-per-second': '3',
     }
 ) }}
 `txn_id` VARCHAR(36) NOT NULL,
 `account_number` VARCHAR(255),
-`timestamp` TIMESTAMP(3) WITH LOCAL TIME ZONE,
+`pay_timestamp` TIMESTAMP_LTZ(3),
 `amount` DECIMAL(10, 2),
 `currency` VARCHAR(5),
 `merchant` VARCHAR(255),
 `location` VARCHAR(255),
 `status` VARCHAR(255),
 `transaction_type` VARCHAR(50),
-WATERMARK FOR `timestamp` AS `timestamp` - INTERVAL '5' SECONDS
+WATERMARK FOR `pay_timestamp` AS `pay_timestamp` - INTERVAL '5' SECONDS

@@ -14,7 +14,7 @@ select
     count(*) - lag(count(*), 1) over w as delta
 from tumble(
     table {{ ref('transactions_faker') }},
-    descriptor (`timestamp`),
+    descriptor (pay_timestamp),
     interval '1' minute
 )
 where transaction_type = 'payment' and status = 'Successful'
