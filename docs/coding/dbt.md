@@ -8,7 +8,7 @@ compiled: false
 ---
 # Data Build Tool Summary
 
-* [Dbt core](https://github.com/dbt-labs/dbt-core) is an open source ELT CLI and database agnostic used to allow data analysts and engineers to build reliable, modular data pipelines, creating "models" (SELECT statements) that are version-controlled, automatically documented, and tested for quality before consumption by analytics tools.  Learn more about dbt [in the docs](https://docs.getdbt.com/docs/introduction).
+* [Dbt core](https://github.com/dbt-labs/dbt-core) is an open source ELT CLI and database agnostic used to allow data analysts and engineers to build reliable, modular data pipelines, creating "models" (SELECT statements) that are version-controlled, automatically documented, and tested for quality before consumption by analytics tools.  Learn more about `dbt` [in the docs](https://docs.getdbt.com/docs/introduction).
 * [dbt Cloud](https://www.getdbt.com/product/dbt): A managed service with a web-based IDE, scheduler, job orchestration, and monitoring
 
 Supported by ISVs in lake house market. 
@@ -23,7 +23,7 @@ pip install dbt-confluent
 uv add  dbt-confluent
 ```
 
-Flink SQLs are defined in Models and dbt processes to the deployment to Confluent Cloud using the REST API. When adopting a 'shift left' strategy of moving part of the star model to real time processing, it makes sense to manage real-time streaming project as data engineers manages datawarehouse or lakehouse projects.
+Flink SQLs are defined in Models and `dbt` processes to the deployment to Confluent Cloud using the REST API. When adopting a 'shift left' strategy of moving part of the star model to real time processing, it makes sense to manage real-time streaming project as data engineers manages datawarehouse or lakehouse projects.
 
 We will first work on a concrete [example on a database](), and then work on a [Flink project]().
 
@@ -40,14 +40,14 @@ We will first work on a concrete [example on a database](), and then work on a [
 
 ## Install
 
-* We need Python, as dbt should be installed in a virtual environment. [See installation instructions](https://docs.getdbt.com/docs/core/installation-overview). See the [supported Python database](https://docs.getdbt.com/faqs/Core/install-python-compatibility)
-* Create a `$HOME/.dbt` folder to let dbt persists the `profile.yaml` file to keep user and Database credentials. 
+* We need Python, as `dbt` should be installed in a virtual environment. [See installation instructions](https://docs.getdbt.com/docs/core/installation-overview). See the [supported Python database](https://docs.getdbt.com/faqs/Core/install-python-compatibility)
+* Create a `$HOME/.dbt` folder to let `dbt` persists the `profile.yaml` file to keep user and Database credentials. 
 1. Start a new python session under your working folder (e.g. dbt)
   ```sh
   uv venv
   source .venv/bin/activate
   ```
-1. Install dbt, and dbt adapters
+1. Install `dbt`, and dbt adapters
   ```sh
   uv add dbt-duckdb
   ```
@@ -56,18 +56,18 @@ We will first work on a concrete [example on a database](), and then work on a [
 
 We will go over the getting the foundations of a project, and then go over the main concepts while implementing the examples.
 
-a dbt project is a directory on the data engineer's machine containing a lot of .sql files (called models) and YAML files for configurations.
+a `dbt` project is a directory on the data engineer's machine containing a lot of .sql files (called models) and YAML files for configurations.
 
 ### A data warehouse example
 
 This example is in [code/dbt/airbnb](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/airbnb).
 
-1. Create the dbt project
+1. Create the `dbt` project
     ```sh
     dbt init airbnb
     ```
 
-    while running this, it will ask to set the dbt profile for this project (I selected duckdb). A project profile is a YAML file containing the connection details for your chosen data platform.  When there is an existing `~/.dbt/profiles.yml`, the previous command will add a new stanza to it.
+    while running this, it will ask to set the `dbt` profile for this project (I selected duckdb). A project profile is a YAML file containing the connection details for your chosen data platform.  When there is an existing `~/.dbt/profiles.yml`, the previous command will add a new stanza to it.
 
     ```yaml
     airbnb:
@@ -98,7 +98,7 @@ This example is in [code/dbt/airbnb](https://github.com/jbcodeforce/flink-studie
       snapshots
       ```
 
-      and the `dbt_project.yml`file to define dbt settings. 
+      and the `dbt_project.yml`file to define `dbt` settings. 
 
 1. Understand the `dbt_project.yml`
     * It refences the profile to use, the different paths to use
@@ -114,12 +114,12 @@ This example is in [code/dbt/airbnb](https://github.com/jbcodeforce/flink-studie
             +materialized: view
       ```
 
-Next we will cover the dbt [main concepts](#major-concepts) with concrete examples.
+Next we will cover the `dbt` [main concepts](#major-concepts) with concrete examples.
 
 ### A Confluent Cloud Flink example
 
 
-[Confluent dbt adapter](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/deploy-flink-dbt.html) aims to support standard dbt commands (init, debug, run, test, docs generate, etc.) against Confluent Cloud for Flink, so teams can manage pipelines end-to-end from dbt rather than using Terraform or confluent cli.
+[Confluent dbt adapter](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/deploy-flink-dbt.html) aims to support standard `dbt` commands (init, debug, run, test, docs generate, etc.) against Confluent Cloud for Flink, so teams can manage pipelines end-to-end from `dbt` rather than using Terraform or confluent cli.
 
 * For Confluent the adapter is installed via:
     ```sh
@@ -153,19 +153,19 @@ Next we will cover the dbt [main concepts](#major-concepts) with concrete exampl
 
 ## Major Concepts
 
-* Batching in dbt with a data warehouse, like DuckDB or Snowflake, is primarily managed through different materialization strategies: 
+* Batching in `dbt` with a data warehouse, like DuckDB or Snowflake, is primarily managed through different materialization strategies: 
     * *Table*: Replaces the entire target table with each run. Ideal for smaller datasets or full-refresh batches.
     * *Incremental*: Updates only new or changed data using append, merge, or delete+insert.
     * *Microbatch*: Breaks massive datasets into smaller, time-based segments (e.g., daily) that process independently.
     * *External*: Reads from and exports results directly to files (Parquet, CSV, JSON) on local storage or S3.
 
-* It encourages building complex transformations in smaller, reusable SQL steps, reducing repetitive code.
-* dbt uses a template mechanism (jinja), functions and a set of features to organize SQL and cross reference them. 
-* The mandatory file for a project is the `dbt_project.yml` file as it contains information that tells dbt how to operate the project. dbt demarcates between a folder name and a configuration by using a + prefix before the configuration name.
+* `dbt` encourages building complex transformations in smaller, reusable SQL steps, reducing repetitive code.
+* `dbt` uses a template mechanism (jinja), functions and a set of features to organize SQL and cross reference them. 
+* The mandatory file for a project is the `dbt_project.yml` file as it contains information that tells `dbt` how to operate the project. `dbt` demarcates between a folder name and a configuration by using a + prefix before the configuration name.
 * **Models**: are the basic building blocks of the business logic. They includes materialized tables and views, and SQL files. Models can reference each others and use templates and macros. 
 * **Resources types** includes models, seeds, snapshots, tests, sources
 * **Properties** describe resources
-* **Configurations** control how dbt builds resources in the warehouse. Could be set cross resources in `dbt_project.yml`, in a `properties.yml` under a folder, `config()` in a sql or resource file.
+* **Configurations** control how `dbt` builds resources in the warehouse. Could be set cross resources in `dbt_project.yml`, in a `properties.yml` under a folder, `config()` in a sql or resource file.
 
 ### Models
 
@@ -184,27 +184,27 @@ The table below lists when to use View vs Table:
 | **Storage** | None | Need Storage space for materialized tables |
 | **Performance** | Lot of steps leads to slower performance | Chained processes get improved perf. | 
 
-* dbt provides built-in testing (e.g., uniqueness, non-null checks) to catch broken logic 
-* **schema** is the data contract of elements of the model, and define in a separate yaml file.
+* `dbt` provides built-in testing (e.g., uniqueness, non-null checks) to catch broken logic 
+* **schema** is the data contract of elements of the model, and defined in a separate yaml file.
 * There are two macros to cross reference tables: `{{ ref() }}` used to reference a table within a model and `{{source() }}` to reference external data sources. 
 
 ???+ handson "Create the first model"
-    [See the duckdb example](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/airbnb). Let start by seeding reference data into the warehouse from a csv file. The seeds/ folder includes all the csv to map to table inside duckdb. The following command let dbt to look inside the seeds/ folder of your project, find any .csv files, and upload them as physical tables into your database.
+    [See the duckdb example](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/airbnb). Let start by seeding reference data into the warehouse from a csv file. The `seeds/` folder includes all the csv to map to table inside duckdb. The following command let `dbt` to look inside the `seeds/` folder of your project, find any .csv files, and upload them as physical tables into your database.
 
     ```sh
     dbt seed --target dev
     ```
 
-    Raw data are created in tables in a raw schema, as data landing zone.
+    Raw data are created in tables in a `raw` schema, as data landing zone.
 
     ![](./diagrams/arch.drawio.png)
 
-    Once created, the second step, is to add dbt sources
+    Once created, the second step, is to add `dbt` sources
 
 
 #### Create sources
 
-Sources are defined using a YAML file `sources.yml` inside your `models/` directory.
+Sources are defined using a YAML file [`sources.yml`](https://docs.getdbt.com/reference/source-properties) inside your `models/` directory.
 
 ```yaml
 sources:
@@ -215,7 +215,7 @@ sources:
         identifier: raw_listings
 ```
 
-Then adding the SQLs for deduplicating the  raw.raw_hosts.  Create a `models/sources` folder and add:
+When in sources, it is possible to reference the table with: `select * from {{ source('airbnb', 'listings') }}`. One first examples is to implement deeduplication, filtering and column renaming. This can be done by adding a `models/sources` folder and add a SQL like:
 
 ```sql
 WITH ranked_hosts AS (
@@ -241,7 +241,7 @@ WHERE
     row_num = 1
 ```
 
-So running the following command:
+So running the following command will create the new table for cleaned records:
 
 ```sh
 dbt run --target dev
@@ -259,11 +259,25 @@ select * from main.src_hosts;
 
 Same may be done for `raw_reviews`, `raw_listings`
 
+* For source freshness, we need to consider one DATE column and add a config element to the table to define refreshness condition:
+    ```yaml
+    - name: reviews
+      identifier: raw_reviews
+      config:
+        loaded_at_field: date
+        freshness:
+            warn_after: {count: 1, period: hour}
+            error_after: {count: 24, period: hour}
+    ```
+
+* Run the command: `dbt source freshness` to validate the data freshness.
+
+
 ### Project structure
 
-dbt recursively scans everything under model-paths (by default models/). `dbt run`, `dbt build`, and `dbt seed` will all find those `.sql` files and deploy/run them.
+`dbt` recursively scans everything under model-paths (by default models/). `dbt run`, `dbt build`, and `dbt seed` will all find those `.sql` files and deploy/run them.
 
-The folder structure under the models folder can be a hierarchy based on the kimball architecture or star schema:
+The folder structure under the models folder can be a hierarchy based on the kimball architecture or star schema [See PM methodology](../cookbook/pm.md#flink-project-management):
 ```sh
 models/
   sources/
@@ -279,14 +293,14 @@ models/
       fct_reviews.sql
 ```
 
-dbt names a model from the file name, not the folder path.
+`dbt` names a model from the file name, not from the folder path.
+`
+* For `models/sources/src_hosts.sql` the model name is `src_hosts`
+* Use `ref('src_hosts')`, not `ref('sources.hosts.src_hosts')`
 
-* models/sources/hosts/src_hosts.sql → model name src_hosts
-* ref('src_hosts') — not ref('sources.hosts.src_hosts')
+So if two subfolders both contain model.sql, you get a name collision, therefore it is recommended to use distinct filenames (dim_hosts.sql, fct_reviews.sql), or set an explicit alias in config.
 
-So if two subfolders both contain model.sql, you get a name collision. Use distinct filenames (dim_hosts.sql, fct_reviews.sql), or set an explicit alias in config.
-
-For incremental deployment it should be possible to run dbt as:
+For incremental deployment it should be possible to run `dbt` as:
 ```sh
 uv run dbt run --select dimensions.hosts 
 # or --select dimensions.*
@@ -304,7 +318,7 @@ There are four possible materializations for a model:
 * **Incremental:** fact tables appends to tables - more like event data - table is not recreated each time.
 * **Ephemeral (CTEs):** aliasing of the data and filtering data. Not adversitized in the data warehouse. For example all the sql under the `sources` are becoming CTEs
 
-Materialization can be set globally in the `dbt_profile.yaml`: all models are views, except in the dimensions folder where there are tables:
+Materialization can be set globally in the `dbt_profile.yaml`: all models are views, except in the `dimensions` folder where there are tables:
 
 ```yaml
 models:
@@ -316,6 +330,33 @@ models:
       +materialized: ephemeral
 ```
 
+As an example we can add dimensions as views:
+
+* Create dimensions folder, add sql with config:
+  ```sql 
+  {{
+    config(
+      materialized = 'view'
+      )
+  }}
+  SELECT
+    listing_id,
+    listing_name,
+    room_type,
+    CASE
+      WHEN minimum_nights = 0 THEN 1
+      ELSE minimum_nights
+    END AS minimum_nights,
+    host_id,
+    CAST(
+      REPLACE(price_str, '$', '') AS DECIMAL(10, 2)
+    ) AS price,
+    created_at,
+    updated_at
+  FROM    {{ ref('src_listings') }}
+  ```
+
+! STOPPED HERE
 
 ### Incremental
 
@@ -343,7 +384,7 @@ models:
   dbt run --full-refresh
   ```
 
-* With the sources as ephemeral the output of dbt run becomes:
+* With the sources as ephemeral the output of `dbt` run becomes:
   ```sh
   23:16:16  1 of 4 START sql table model DEV.dim_hosts_cleansed ............................ [RUN]
   23:16:18  1 of 4 OK created sql table model DEV.dim_hosts_cleansed ....................... [SUCCESS 14111 in 1.93s]
@@ -366,58 +407,10 @@ models:
     23:39:50  Concurrency: 1 threads (target='dev')
     ```
 
-### Sources and Seeds
-
-* Seeds are local files that is uploaded to the data warehouse from dbt
-* Sources is an abstraction layer on top of the input tables. The source freshness can be checked automatically.
-* use `dbt seed` to populate the seed (csv file) to the data warehouse.
-    ```sh
-    23:29:14  1 of 1 START seed file DEV.seed_full_moon_dates ................................ [RUN]
-    23:29:17  1 of 1 OK loaded seed file DEV.seed_full_moon_dates ............................ [INSERT 272 in 2.76s]
-    ```
-
-* Sources may be defined in a yaml:
-  ```yaml
-  sources:
-    - name: airbnb
-      schema: raw
-      tables:
-        - name: listings
-          identifier: raw_listings
-
-        - name: hosts
-          identifier: raw_hosts
-
-        - name: reviews
-          identifier: raw_reviews
-  ```
-
-* From there, the src_*.sql needs to be modified to do not reference any table name in the data warehouse, but use the source aliases.
-  ```sql
-  WITH raw_hosts AS (
-      SELECT
-          *
-      FROM
-          {{ source('airbnb', 'hosts') }}
-  )
-  ```
-
-* For source freshness, we need to consider one DATE column and add a config element to the table to define refreshness condition:
-    ```yaml
-    - name: reviews
-      identifier: raw_reviews
-      config:
-        loaded_at_field: date
-        freshness:
-            warn_after: {count: 1, period: hour}
-            error_after: {count: 24, period: hour}
-    ```
-
-* Run the command: `dbt source freshness` to validate the data freshness.
 
 ### Type-2 slowly changing dimensions
 
-The goal is to keep history of changes to the records over time and not just the last record per key. dbt adds `dbt_valid_from` and `dbt_valid_to` columns to mark each records to be valid time from and to. A current correct records have `dbt_valid_to` sets to null.
+The goal is to keep history of changes to the records over time and not just the last record per key. `dbt` adds `dbt_valid_from` and `dbt_valid_to` columns to mark each records to be valid time from and to. A current correct records have `dbt_valid_to` sets to null.
 
 **snapshots** live in the snapshot folder. There are two strategies for assessing data changes:
 * *Timestamp*: a unique key and updated_at fields is defined at the source model. These columns are used for determining changes
@@ -510,7 +503,7 @@ The goal is to keep history of changes to the records over time and not just the
   # -x it to continue even if one test fails
   ```
 
-* To debug a test, we can always look at where the dbt created the SQL to run, and execute this SQL in a SQL client, like duckdb cli.
+* To debug a test, we can always look at where the `dbt` created the SQL to run, and execute this SQL in a SQL client, like duckdb cli.
 * By setting in the dbt_project.yaml
   ```yaml
   data_tests:
@@ -542,7 +535,7 @@ The goal is to keep history of changes to the records over time and not just the
 
 ## Other Databases
 
-### Using dbt with DuckDB
+### Using `dbt` with DuckDB
 
 * Install dbt-duckdb python module: `uv add dbt-duckd`
 * Import raw data to the Duckdb table or use Airflow to ETL such data.  For example in `code/dbt/airbnb/`, bootstrap the DuckDB raw tables with:
@@ -550,7 +543,7 @@ The goal is to keep history of changes to the records over time and not just the
    export DBT_DUCKDB_PATH=./data/airbnb.duckdb
    duckdb "${DBT_DUCKDB_PATH:-./data/airbnb.duckdb}" < scripts/bootstrap_duckdb_raw.sql
    ```
-* Run dbt against DuckDB:
+* Run `dbt` against DuckDB:
    ```bash
    cd airbnd
    dbt seed --target duckdb
@@ -569,7 +562,7 @@ The goal is to keep history of changes to the records over time and not just the
 
 * As duckDb can be embedded into Python code, it is possible to load a Pandas dataframe from a table in duckdb.
 
-### Using dbt with postgresql
+### Using `dbt` with postgresql
 
 * Install Kubernetes Postgresql operator, then a postgres cluster and PGadmin webapp. See the minikube/posgresql folder 
 * Do port forwarding for both Postgresql server and pgadmin webapp
@@ -599,9 +592,9 @@ The goal is to keep history of changes to the records over time and not just the
 
 In Confluent Cloud for Flink context, the `dbt run` does not process data; it deploys or updates the definition of a continuous dataflow to the streaming engine. User runs `dbt run` only when the SQL queries changes. Important chapter from [Confluent cloud product documentation on dbt.](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/deploy-flink-dbt.html)
 
-* A dbt schema is a Flink database, while a dbt database is a Flink Catalog, and finally a dbt identifier is a Flink Table. The `schema` field in `profiles.yml` actually refers to a Kafka cluster name. The `database` field refers to an environment ID. Some error messages reference "schema" when they mean "Kafka cluster/database". It is confusing to set the environment_id where is Confluent Cloud the environment name is used.
+* A `dbt` schema is a Flink database, while a `dbt` database is a Flink Catalog, and finally a `dbt` identifier is a Flink Table. The `schema` field in `profiles.yml` actually refers to a Kafka cluster name. The `database` field refers to an environment ID. Some error messages reference "schema" when they mean "Kafka cluster/database". It is confusing to set the environment_id where is Confluent Cloud the environment name is used.
 
-* The dbt mapping:
+* The `dbt` mapping:
 
 | Dbt construct | CC Flink | dbt confluent materialization |
 | --------- | -------- | ------- |

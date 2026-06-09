@@ -45,3 +45,4 @@ e2e-demos/cc-cdc-tx-demo/cc-flink-sql/staging/
 **/prometheus.yml
 **/.env
 **/*.duckdb
+**/dbt.log

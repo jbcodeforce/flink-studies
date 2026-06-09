@@ -22,7 +22,7 @@ At a high-level there are some mandatory components we need to consider when des
 * Serve: the data product to external consumers
 * Consumers: Apps, Business Intelligence dashboard, Devices, MLops to prepare for machine learning model, and Agents/LLM
 
-To support the scoping of those different sources and processing components, this chapter lists project activities and review questions by stage. Detailed event-level questions sit under **Design**; bounded vs unbounded data under **Migrating from Batch Processing**. 
+To support the scoping of those different sources and processing components, this chapter lists project activities and review questions by stage. Detailed event-level questions sit under Design; bounded vs unbounded data under [Shifting to real-time processing](#shifting-to-real-time-processing). 
 
 ## Target Architecture
 
@@ -40,14 +40,14 @@ Even if we embrace building by iterations, and tune the scope over time, address
 * Who owns the data product and who consumes it (roles, not only systems)?
 * Data loading patterns: snapshot, incremental, frequency of change; volume per source and frequency of new or updated records
 * Data structure (structured vs unstructured); who owns schema definition and change approval
-* Business logic to apply; state and time semantics of each pipeline (see **Design**)
+* Business logic to apply; state and time semantics of each pipeline (see Design**)
 * Source semantics and data update pattern at origin
 
-Use **Per-stage review questions** for workshop-style coverage by diagram component. Use **Data mesh alignment** and **Generic streaming review** when architecture spans domains or platforms.
+Use per-stage review questions for workshop-style coverage by diagram component. Use Data mesh alignment and generic streaming review when architecture spans domains or platforms.
 
 ## Per-stage review questions
 
-Questions below map to the diagram: Sources, Ingestion, Processing, Serve, Consumers. Each stage implies **contracts**: schema/registry, SLAs, and ownership of changes.
+Questions below map to the diagram: Sources, Ingestion, Processing, Serve, Consumers. Each stage impliescontracts**: schema/registry, SLAs, and ownership of changes.
 
 ### Source of data
 
@@ -55,7 +55,7 @@ Apps, databases, transactional systems, devices.
 
 * Who owns each source domain and who can approve schema or behavior changes?
 * CDC vs application events vs files/APIs: which pattern per source, and why?
-* Ordering guarantees at source (per key, per partition, none)? See **Design** → Event semantic.
+* Ordering guarantees at source (per key, per partition, none)? See Design → Event semantic.
 * Idempotency and retry behavior of producers; risk of duplicates or gaps?
 * Initial load vs ongoing change capture: full snapshot needed? Retention of source logs or binlog?
 * Network and security path to ingestion (VPC, private link, credential rotation).
@@ -66,17 +66,17 @@ Apps, databases, transactional systems, devices.
 * Topic or stream naming, environment isolation, and access control model.
 * Schema registration strategy: who registers, compatibility rules, subject or topic layout.
 * Dead-letter or quarantine path for poison messages; replay from landing vs re-source.
-* Ingestion SLAs (lag, completeness) and how they are measured. See **Design** → Scalability.
+* Ingestion SLAs (lag, completeness) and how they are measured. See Design → Scalability.
 
 ### Processing
 
 Transformations, business rules, analytical data product.
 
-* Clear definition of the data product: granularity, keys, refresh semantics, intended consumers.
+* Clear definition of the data product: granularity, keys, refresh semantics, intended consumers. [See the Open Data Product Specification](https://opendataproducts.org/) to define metadata per data product.
 * Stateful vs stateless operations; state TTL and cleanup; changelog vs upsert outputs.
-* Joins across streams: watermark strategy, allowed lateness, handling late data. See **Design** → Event semantic.
-* Versioning of business rules and safe rollout (feature flags, backfill strategy). See **Migrating from Batch Processing** for bounded recompute.
-* Tests for pipelines: unit and integration, contract tests against schemas. See **Design** → Data Integrity.
+* Joins across streams: watermark strategy, allowed lateness, handling late data. See Design/Event semantic.
+* Versioning of business rules and safe rollout (feature flags, backfill strategy). See [shifting to real-time processing](#shifting-to-real-time-processing) for bounded recompute.
+* Tests for pipelines: unit and integration, contract tests against schemas. See Design/Data Integrity.
 
 ### Serve
 
@@ -94,7 +94,7 @@ Apps, BI, devices, MLOps, agents/LLM.
 * Latency and freshness requirements per consumer class.
 * BI: materialized views vs direct stream subscribe; snapshot intervals.
 * MLOps: training vs online features; point-in-time correctness if applicable.
-* Agents and LLM: PII handling, grounding and source of truth, rate limits and cost controls. See **Design** → Privacy.
+* Agents and LLM: PII handling, grounding and source of truth, rate limits and cost controls. See Design → Privacy.
 
 ## Data mesh alignment
 
@@ -109,22 +109,22 @@ Use when multiple domains or teams own data and platforms.
 
 ## Generic streaming review
 
-Cross-cutting items that complement **Design** (per-stream detail).
+Cross-cutting items that complement Design (per-stream detail).
 
-* **Delivery semantics**: At-least-once vs exactly-once end-to-end; where idempotent sinks are required. Ties to **Design** → Event semantic.
+* **Delivery semantics**: At-least-once vs exactly-once end-to-end; where idempotent sinks are required. Ties to Design → Event semantic.
 * **Time semantics**: Processing time vs event time; clock skew; business definition of on-time delivery.
 * **State and recovery**: Checkpoint interval, expected recovery time, savepoint strategy for upgrades.
 * **Backfill and reprocessing**: Historical recompute without double-counting or inconsistent downstream state.
-* **Schema evolution**: Forward and backward compatibility, consumer upgrade order, emergency rollback. Ties to **Design** → Data Integrity.
+* **Schema evolution**: Forward and backward compatibility, consumer upgrade order, emergency rollback. Ties to Design→ Data Integrity.
 * **Observability**: Lag, throughput, error rate; data quality checks in-stream vs offline.
 * **Capacity and cost**: Peak vs steady state; autoscaling limits; growth of state, topics, and logs.
 * **Multi-region and DR**: RPO and RTO for the streaming path; active-active vs failover.
 
-## Migrating from Batch Processing
+## Shifting to Real-time Processing
 
 *Some important elements: Flink can run batch or streaming. Connectors will not be the same, and most likely the business logic may differ too.*
 
-* Assess if data is unbounded or bounded. Per-stage **Source of data** and **Processing** questions apply differently when data is bounded.
+* Assess if data is unbounded or bounded. Per-stage source of data and processing questions apply differently when data is bounded.
 * For bounded data, how often is a new record added or an existing one modified?
 
 In business analytics, there is a need to differentiate data tables according to their usage and reusability. There are two important concepts of this practice:
@@ -150,7 +150,7 @@ In Flink, a dimension may be created via a SQL statement and persisted as a tabl
 
 ### Organizing the project repository
 
-Medaillon architecture, star schema and data as a product leads to be prescriptive on the way to manage the project. From years of experience, we arrive to this structure. (Not all files are presented to this view). The sources, dimension, facts, views are represented in separate folder, so deployment CLI can deploy in layers. Data product are separated also in folder, so the same CLI can deploy per product.
+Medaillon architecture, star schema and data as a product lead to be prescriptive on the way to manage the project. From years of experience, we arrive to the following structure which helps support clear spearation of concerns and data engineers navigating code source. (Not all files are presented to this view). The sources, dimension, facts, views are represented in separate folders, so deployment CLI can deploy in layers. Data product are separated also in folder too, so the same CLI can deploy statements  per product.
 
 ```sh
 pipelines
@@ -212,9 +212,21 @@ pipelines
    
 ```
 
+The following commands are used (see [shift_left utils](https://github.com/jbcodeforce/shift_left_utils)):
+
+* **Create a project:** `shift_left project init a_project_name a_project_path --project-type kimball`
+* **Adding table:** `shift_left table init fct_user $PIPELINES/facts --product-name c360`
+* **Adding unit tests:**  `shift_left table init-unit-tests <table_name> --nb-test-cases 1 `
+* **Deploying per layer:** `shift_left pipeline deploy --dir $PIPELINE/facts --compute-pool-id $CP_ID --may-start-descendants`
+* **Deploying a product:** `shift_left pipeline deploy --product-name c360 --compute-pool-id $CP_ID`
+* **Deploying a unique table:** `shift_left pipeline deploy --table-name fct_user --compute-pool-id $CP_ID --may-start-descendants`
+
+This structure is compatible with `dbt` Confluent plugin (see [dbt chapter](../coding/dbt.md)). 
+
+
 ## Design
 
-Design is embedded in development. For each stream of records, assess the following (see also **Per-stage review questions** and **Generic streaming review**).
+Design is embedded in development. For each stream of records, assess the following (see also Per-stage review questions and Generic streaming review).
 
 ### Event semantic
 

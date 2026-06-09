@@ -134,3 +134,8 @@
 - Priority levels may shift based on community feedback
 - Each task should have clear acceptance criteria
 - Tasks should be broken down into smaller sub-tasks when needed 
+
+## Supporting tooling
+
+- [ ] Integrate with km-agent
+- [ ] Researcher of new information and maintaining research finding

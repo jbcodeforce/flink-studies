@@ -23,6 +23,25 @@ Developers can leverage ny existing libraries like Geospatial calculation, Math 
 | Aggregate Function| Maps the values of multiple input rows to a single scalar aggregate value.| N rows -> 1 row | Calculating a custom weighted average or variance.|
 | Table Aggregate Function | Maps the values of multiple input rows to multiple output rows. | N rows -> M rows | Calculating a running "top-N" list for each group. |
 
+## Use Cases
+
+* When it is not possible to deserialize json payload with the SerDes integrated in Confluent Cloud, a solution is to use an UDF to parse the json and convert the payload to expected data types. As an example, currently JSON tuples are not supported. When Kafka connect is in place, it is possible to add a SMT to convert a JSON message into either JSON-Schema or AVRO Schema.
+
+???- info "JSON schema tuples?"
+    ```json
+    {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "GeoLocationTuple",
+    "type": "array",
+    "prefixItems": [
+        { "type": "number", "description": "Latitude" },
+        { "type": "number", "description": "Longitude" },
+        { "type": "string", "description": "City Name" }
+    ],
+    "items": false
+    }
+    ```
+
 ## Implementation approach
 
 See [Apache flink UDF implementation guide](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/udfs/#implementation-guide).
