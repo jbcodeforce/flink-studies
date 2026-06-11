@@ -58,6 +58,11 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 [See this lab in changelog mode](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/05-changelog) and [this section in SQL concepts chapter](../concepts/flink-sql.md#changelog-mode).
 
+### Playing with Inserts
+
+* Add a NULL to a string column:  `insert into sl_raw_groups values('grp_001','tenant-01','gp_n1', 'g_typ_1', CAST(NULL AS STRING), false)`
+* Specifying the columns to use: `insert into sl_raw_groups(group_id,tenant_id) VALUES('grp_001','tenant-01')`, this will populate the missing columns with null.
+
 ### Filtering
 
 * [Start with this Confluent tutorial](https://developer.confluent.io/confluent-tutorials/filtering/flinksql/) or [the Apache Flink `SELECT` documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/select/).
@@ -259,6 +264,12 @@ Some **important resources:**
     ```
 
     See all the [date and time functions](https://docs.confluent.io/cloud/current/flink/reference/functions/datetime-functions.html).
+
+???+ trick "Use the kafka timestamp for a null timestamp"
+    If `created_date` is NULL then use the $rowtime.
+    ```sql
+    coalesce(to_timestamp_ltz(created_date), $rowtime) as ts
+    ```
 
 ???+ question "How to compare a date field with current system time?"
 

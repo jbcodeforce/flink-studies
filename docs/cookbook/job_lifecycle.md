@@ -54,7 +54,35 @@ There is only yaml manifest to deploy application that will take into account en
 
 * For end-to-end validation of CP Flink with the employee demo, see [code/flink-sql/00-basic-sql](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/00-basic-sql#readme.md#confluent-platform-for-flink-on-kubernetes) and run `cp_flink_employees_demo.py`.
 
-## 2- Upgrading Jobs Safely
+## 2- Understanding the Flink UI
+
+#### Context
+The Flink Web UI helps to debug misbehaving jobs. 
+
+The Flink Web UI is  well described [in Confluent David Anderson's article](https://developer.confluent.io/courses/apache-flink/web-ui-exercise/), The Apache Flink doc for Web UI, and link to the important [execution plan understanding with EXPLAIN](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/sql/explain/).
+
+#### Preconditions / Checklist
+With OSS the Web UI is accessible when the `start_cluster.sh` is started. Local URL is [http://localhost:8081](http://localhost:8081). 
+#### Procedure
+The Web UI offers the following important features:
+
+* Task Managers View: Shows the number of TaskManagers (the worker nodes executing your jobs) and available Task Slots.
+* Navigating to get the running Jobs, the view is updated periodically. The job graph, which matches the EXPLAIN output, presents the tasks running one or more operators of the DAG.
+* Task metrics are **backpressure, busyness, and data skew**.
+    * **backpressure:** percentage of time that the subtask was unable to send output downstream because the downstream subtask had fallen behind, and (temporarily) couldn't receive any more records. `Backpressured max` is the maximum backpressure across all of the parallel subtasks for a given period.
+    * **busy** reports percentage of time spent doing useful work, aggregated at the task level for a time period.
+    * **data skew** measures the degree of variation in the number of records processed per second by each of the parallel subtasks. 100% is max skew.
+* Examining the history of checkpoints
+* Monitoring for any potential backpressure
+* Analyzing watermarks
+* Retrieving the job logs
+
+Network metrics (Bytes Received / Records Received ) are inside the Flink cluster, not for source and sink to external systems.
+
+In Concluent Cloud the Query Profiler has the same capability then the Flink UI and accessible at the Statement View level:
+![](./images/query-profiler.png)
+
+## 3- Upgrading Jobs Safely
 
 With compatible changes (resume from savepoint).
 #### Context
@@ -63,7 +91,7 @@ With compatible changes (resume from savepoint).
 #### Procedure
 #### Rollback
 #### Gotchas
-### 2.1- Recipe: Safely Upgrade a Flink Job Using Savepoints
+### 3.1- Recipe: Safely Upgrade a Flink Job Using Savepoints
 
 Upgrade a Production Flink Job with Savepoint (Minimal Downtime)
 
@@ -127,7 +155,7 @@ If you detect errors, anomalies, or instability:
 * Incompatible changes to keyed state serialization often only show up at restore time; always test in staging with a copy of prod state before running this recipe in production.
 * If your platform supports “upgrade in place” semantics (e.g., via an operator or managed UI), integrate those flows but preserve this mental model: take consistent state → deploy new logic from that state → validate → rollback if needed.
 
-### 2.2 With incompatible state changes (state migration strategies).
+### 3.2 With incompatible state changes (state migration strategies).
 #### Context
 #### Preconditions / Checklist
 #### Inputs / Parameters
@@ -135,9 +163,9 @@ If you detect errors, anomalies, or instability:
 #### Rollback
 #### Gotchas
 
-## 3- Scaling Jobs
+## 4- Scaling Jobs
 
-### 3.1- Recipe: Scale a Flink Job to Handle Increased Load
+### 4.1- Recipe: Scale a Flink Job to Handle Increased Load
 
 #### Context
 You see sustained backpressure in the Flink UI or high operator utilization, and the job is falling behind (increasing end-to-end latency, growing Kafka lag, etc.).
@@ -201,15 +229,15 @@ If errors appear or performance worsens:
 * Reevaluate resource allocation or code hot spots before attempting scale-out again.
 
 
-### 3.2  Handling backpressure and hot keys.
+### 4.2  Handling backpressure and hot keys.
 #### Context
 #### Preconditions / Checklist
 #### Inputs / Parameters
 #### Procedure
 #### Rollback
 #### Gotchas
-## 4- Backfills and Reprocessing
-### 4.1- Recipe: Replaying Kafka topics from older offsets.
+## 5- Backfills and Reprocessing
+### 5.1- Recipe: Replaying Kafka topics from older offsets.
 #### Context
 
 You need to recompute results for a historical period (e.g., due to a code bug or schema issue), typically from Kafka-based sources.
@@ -253,7 +281,7 @@ You need to recompute results for a historical period (e.g., due to a code bug o
 * If backfill misbehaves (e.g., wrong logic), stop job and discard backfill outputs if isolated.
 * For shared sinks, you may need a corrective cleanup step (e.g., delete or overwrite bad window).
 
-### 4.2- Running temporary backfill jobs vs. reusing production pipelines.
+### 5.2- Running temporary backfill jobs vs. reusing production pipelines.
 #### Context
 #### Preconditions / Checklist
 #### Inputs / Parameters
@@ -261,9 +289,9 @@ You need to recompute results for a historical period (e.g., due to a code bug o
 #### Rollback
 #### Gotchas
 
-## 5- Monitoring & Alerting
+## 6- Monitoring & Alerting
 
-### 5.1- Key metrics to watch (checkpointing, backpressure, task failures, JVM).
+### 6.1- Key metrics to watch (checkpointing, backpressure, task failures, JVM).
 
 
 #### What to monitor in a custom Flink dashboard
@@ -274,7 +302,7 @@ You need to recompute results for a historical period (e.g., due to a code bug o
 * Compute pool saturation: compare current CFUs vs CFU limit for the pool; docs call this out as a best-practice alert. 
 
 
-### 5.2 Baseline dashboards and alerts.
+### 6.2 Baseline dashboards and alerts.
 
 #### Context
 
@@ -298,9 +326,9 @@ You need to recompute results for a historical period (e.g., due to a code bug o
 
 #### Gotchas
 
-## 6- Performance Testing
+## 7- Performance Testing
 
-### 6.0 Establish a Performance Testing Platform
+### 7.1 Establish a Performance Testing Platform
 #### Context
 Load testing Apache Flink applications requires a shift from traditional request-response testing to a stream-centric approach. Instead of testing concurrent users, you are testing **sustained throughput, event-time latency, and state stability** under pressure.
 
@@ -428,7 +456,7 @@ You need to have access to:
 * [See performance tuning Flink chapter](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/tuning/)
 * [See the end-to-end demonstration for perf testing in this repo.](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/perf-testing)
 
-### 6.1- Identifying bottlenecks (sources, network, RocksDB).
+### 7.1- Identifying bottlenecks (sources, network, RocksDB).
 #### Context
 
 Use this recipe when throughput or latency SLOs are missed and the root cause is unclear. Symptoms include sustained backpressure, growing checkpoint duration, or single subtasks at 100% utilization while others are idle.
@@ -456,7 +484,7 @@ Revert the last configuration change; redeploy from savepoint if stateful.
 * Scaling parallelism before fixing hot keys wastes resources.
 * See [Architecture cookbook](../architecture/cookbook.md) for metric definitions.
 
-### 6.2- GC/memory tuning, network/shuffle tuning.
+### 7.2- GC/memory tuning, network/shuffle tuning.
 #### Context
 
 Use when TaskManagers show GC pauses, OOMKilled events, or shuffle-related backpressure with low CPU. These issues often trace to misaligned Flink process memory, managed memory, or network buffer settings on Kubernetes.
@@ -483,11 +511,11 @@ Revert memory and network settings; redeploy from savepoint if required.
 * Network memory increases reduce heap or managed memory unless total process size grows.
 * See [Cluster management §1.0](cluster_mgt.md#10-sizing-flink-resources) for the TaskManager memory diagram.
 
-## 7- Common Incident Recipes
+## 8- Common Incident Recipes
 
 See Confluent Product documentation for [troubleshoot Flink SQL statements](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/query-profiler.html#troubleshoot-flink-sql-statements).
 
-### 7.1 Job stuck in “restarting” or “failing” loop.
+### 8.1 Job stuck in “restarting” or “failing” loop.
 #### Context
 
 A job repeatedly fails and auto-restarts due to its restart strategy, causing instability and potentially thrashing external systems.
@@ -531,7 +559,7 @@ A job repeatedly fails and auto-restarts due to its restart strategy, causing in
 
 If hotfix fails, roll back to last known good version with a mitigation that avoids the triggering condition (e.g., filtering the offending key).
 
-### 7.2- Recipe: Handling Persistent Checkpoint Failures
+### 8.2- Recipe: Handling Persistent Checkpoint Failures
 #### Context
 
 You’re seeing alerts that a job’s checkpoints are failing for several consecutive attempts, or the Flink UI shows repeated checkpoint failures. Prolonged failure threatens your ability to recover reliably and meet recovery SLOs.
@@ -592,7 +620,7 @@ If your configuration changes worsen things:
 * If using a shared object store, another workload may have changed performance characteristics.
 
 
-### 7.3 State corruption or version mismatch.
+### 8.3 State corruption or version mismatch.
 #### Context
 #### Preconditions / Checklist
 #### Inputs / Parameters
@@ -600,7 +628,7 @@ If your configuration changes worsen things:
 #### Rollback
 #### Gotchas
 
-### 7.4 Flink SQL debugging
+### 8.4 Flink SQL debugging
 
 #### Context
 

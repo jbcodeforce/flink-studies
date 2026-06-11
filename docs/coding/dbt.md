@@ -330,7 +330,7 @@ models:
       +materialized: ephemeral
 ```
 
-As an example we can add dimensions as views:
+Also it is possible to define at the model level the materialization: 
 
 * Create dimensions folder, add sql with config:
   ```sql 
@@ -356,11 +356,12 @@ As an example we can add dimensions as views:
   FROM    {{ ref('src_listings') }}
   ```
 
-! STOPPED HERE
+
 
 ### Incremental
 
-* Specifying a fact table is incremental and add conditions for which the records are added to the table. The review_date of the record needs to be after the last record in the fct_reviews table:
+Each time dbt run, the tables will be recreated in the data warehouse. But Fact tables may be kept and the dml can run to continue processing only new records. To do so 
+we need to specify the materialization to be `incremental`. We also want to stop the dml if schema is changed, for that we add conditions: `on_schema_change='fail'`.
   ```sql
   {{
     config(
@@ -379,7 +380,16 @@ As an example we can add dimensions as views:
   {% endif %}
   ```
 
-* Making a full-refresh:
+  Finally we need to specify how dbt should increment records in this fact table: this is done by adding jinja template to test if dbt run in incrementatl mode, therefore condition could be added on one of the column like the `review_date` of the record. It needs to be after the last record in the `fct_reviews` table () '{{ this }}'.
+
+* `dbt run` with run the fct_reviews in incremental view. If we add records to the raw_reviews with something like:
+    ```sql
+    INSERT INTO raw_reviews VALUES(3176, CURRENT_TIMESTANP(), 'j9r', 'Excellent sejour', 'positive');
+    ```
+
+    then rerun dbt, the new records will be added as last record in the fct_reviews.
+
+* To rebuild everything, make a full-refresh:
   ```
   dbt run --full-refresh
   ```
@@ -407,6 +417,18 @@ As an example we can add dimensions as views:
     23:39:50  Concurrency: 1 threads (target='dev')
     ```
 
+#### Incremental strategies
+
+| mode             | pros | cons |
+| ---------------- | ---- | ---- |
+| append           | simplest. fully transparent logic | no duplicate checks |
+| merge            | idempotent. updates existing records | slower, require unique key |
+| delete+insert    | works for data warehouse without merge. | two operations. require unique key |
+| insert+overwrite | fast for partitioned tables | requires partitioned table. Replaces the whole partitions|
+
+
+
+! STOPPED HERE
 
 ### Type-2 slowly changing dimensions
 
