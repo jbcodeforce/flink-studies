@@ -1,0 +1,376 @@
+.section ul li {
+  margin-bottom: 10px;
+}
+
+
+:root > * {
+    --md-primary-fg-color:        #B36DE3;   
+    --md-primary-fg-color--light: #ddb7ec;
+    --md-primary-fg-color--dark:  #90030C;
+    --md-accent-fg-color: #030303;
+  }
+
+.md-header__button.md-logo {
+    margin: 2;
+    padding: 0;
+}
+  
+.md-tabs__content {
+    color: blue; /* Or any valid CSS color value */
+    font-size: 1.25rem;
+}
+
+
+.md-header__button.md-logo img, .md-header__button.md-logo svg {
+    height: 4.0rem;
+    width: 3.0rem;
+}
+  
+.section ul li {
+  margin-bottom: 10px;
+  }
+
+.md-typeset .admonition,
+.md-typeset details.question {
+  border-width: 1;
+  border-left-width: 4px;
+  background-color: #e6f0f4cc;
+  border-color: #b9dde9cc;
+}
+
+.md-typeset details.question > summary {
+    background-color: #b9dde9cc;
+}
+
+.md-typeset pre>code {
+  --md-hue: 232;
+  --md-code-hl-color: #33914f75;
+}
+
+code>* {
+  --md-default-fg-color--light: hsl(66, 41%, 69%);
+  --md-code-hl-number-color:         hsla(6, 74%, 63%, 1);
+  --md-code-hl-special-color:        hsla(340, 83%, 66%, 1);
+  --md-code-hl-function-color:       hsla(291, 57%, 65%, 1);
+  --md-code-hl-constant-color:       rgb(184, 174, 236);
+  --md-code-hl-keyword-color:        rgb(139, 176, 244);
+  --md-code-hl-string-color:         #B36DE3;
+  --md-code-hl-name-color:           var(--md-code-fg-color);
+  --md-code-hl-operator-color:       var(--md-default-fg-color--light);
+  --md-code-hl-punctuation-color:    var(--md-default-fg-color--light);
+  --md-code-hl-comment-color:        var(--md-default-fg-color--light);
+  --md-code-hl-generic-color:        var(--md-default-fg-color--light);
+  --md-code-hl-variable-color:       var(--md-default-fg-color--light);
+}
+.md-clipboard {
+  color: white;
+}
+.md-clipboard:focus, .md-clipboard:hover {
+  color: rgb(207, 203, 203);
+}
+:hover>.md-clipboard {
+  color: rgb(207, 203, 203);
+}
+
+.highlight.no-copy .md-clipboard {
+  display: none;
+}
+
+
+.md-nav {
+    font-size: .75rem;
+    line-height: 1.3;
+}
+.md-grid {
+    max-width: initial;
+}
+li .md-nav__item--active {
+    background-color: #e0e0e0;
+}
+
+.md-nav__item .md-nav__link--active {
+    color: #161616;
+    font-weight: 600;
+}
+.md-clipboard {
+    color: #161616;
+}
+
+.md-tabs__link {
+    font-size: .8rem;
+}
+
+
+div.col-md-9 h1:first-of-type {
+    text-align: center;
+    font-size: 60px;
+    font-weight: 300;
+}
+
+div.col-md-9 h1:first-of-type .headerlink {
+    display: none;
+}
+
+code.no-highlight {
+    color: black;
+}
+
+.nav-links { display: flex; justify-content: space-between; }
+.nav-link { text-decoration: none; }
+.nav-prev { /* optional: left styles */ }
+.nav-next { /* optional: right styles */ }
+
+
+/* Definition List styles */
+
+dd {
+    padding-left: 20px;
+}
+
+
+/* Center images*/
+
+img.center {
+    display: block;
+    margin: 0 auto;
+}
+
+.md-content, .md-sidebar__scrollwrap {
+    padding-bottom: 6rem;
+}
+
+.md-header__inner {
+    padding: .3rem .2rem;
+}
+
+span.md-ellipsis {
+    font-weight: bold;
+}
+
+.homepage {
+    font-size: 1.2rem;
+}
+
+.md-footer-meta__inner {
+    justify-content: space-evenly;
+}
+
+.md-footer-column {
+    /* We first create a flex layout context */
+    display: flex;
+
+    /* Then we define the flow direction
+       and if we allow the items to wrap
+     * Remember this is the same as:
+     * flex-direction: row;
+     * flex-wrap: wrap;
+     */
+    flex-flow: column wrap;
+
+    /* Then we define how is distributed the remaining space */
+    justify-content: space-around;
+
+    padding: 5px 5px;
+}
+
+.md-footer-text {
+    font-size: .7rem;
+    padding: 2px 0;
+}
+
+/* top git source icon */
+.md-header__source {
+    width: 2rem;
+  }
+
+/* search box */
+.md-search__inner {
+width: 8rem;
+}
+
+/* center colum white */
+.md-content {
+    background-color: #fff;
+}
+
+/* adjust center column */
+.md-main__inner {
+    margin-top: 0px;
+}
+
+/* top banner home page */
+[data-md-color-primary=black] .md-header {
+    background-color: #B36DE3;
+}
+
+/*
+ * Content tabs (pymdownx.tabbed with alternate_style: true)
+ * Labels are in .tabbed-alternate .tabbed-labels — not .tabbed-set>label
+ */
+:root {
+  --md-content-tab-border: #B36DE3;
+}
+
+/* Material: hide JS-driven sliding bar under tab labels (default looks like a black underline) */
+@media screen {
+  .js .md-typeset .tabbed-alternate .tabbed-labels::before,
+  .md-typeset .tabbed-alternate .tabbed-labels::before {
+    content: none !important;
+    display: none !important;
+  }
+}
+
+/* Remove default inset rule line under the tab row */
+.md-typeset .tabbed-alternate .tabbed-labels {
+  box-shadow: none;
+  align-items: flex-end;
+  gap: 0.2rem;
+  margin-bottom: 0;
+  padding: 0;
+}
+
+/* Inactive tab labels: grey, no box */
+.md-typeset .tabbed-alternate .tabbed-labels > label {
+  border: 0.1rem solid transparent;
+  background: transparent;
+  font-weight: 500;
+  color: var(--md-default-fg-color--lighter, #9e9e9e);
+  z-index: 0;
+  margin: 0;
+}
+
+/* Bordered content panel (shared with active tab) */
+.md-typeset .tabbed-alternate .tabbed-content {
+  position: relative;
+  z-index: 1;
+  border: 0.1rem solid var(--md-content-tab-border);
+  border-radius: 0 0.1rem 0.1rem 0.1rem;
+  background-color: var(--md-default-bg-color, #fff);
+  margin: 0;
+  padding: 0.5rem 0.75rem 0.9rem;
+}
+
+/* Active tab: blue outline, connects to the panel (folder-tab) */
+@media screen {
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(1):checked
+    ~ .tabbed-labels
+    > :nth-child(1),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(2):checked
+    ~ .tabbed-labels
+    > :nth-child(2),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(3):checked
+    ~ .tabbed-labels
+    > :nth-child(3),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(4):checked
+    ~ .tabbed-labels
+    > :nth-child(4),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(5):checked
+    ~ .tabbed-labels
+    > :nth-child(5),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(6):checked
+    ~ .tabbed-labels
+    > :nth-child(6),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(7):checked
+    ~ .tabbed-labels
+    > :nth-child(7),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(8):checked
+    ~ .tabbed-labels
+    > :nth-child(8),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(9):checked
+    ~ .tabbed-labels
+    > :nth-child(9),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(10):checked
+    ~ .tabbed-labels
+    > :nth-child(10),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(11):checked
+    ~ .tabbed-labels
+    > :nth-child(11),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(12):checked
+    ~ .tabbed-labels
+    > :nth-child(12),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(13):checked
+    ~ .tabbed-labels
+    > :nth-child(13),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(14):checked
+    ~ .tabbed-labels
+    > :nth-child(14),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(15):checked
+    ~ .tabbed-labels
+    > :nth-child(15),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(16):checked
+    ~ .tabbed-labels
+    > :nth-child(16),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(17):checked
+    ~ .tabbed-labels
+    > :nth-child(17),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(18):checked
+    ~ .tabbed-labels
+    > :nth-child(18),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(19):checked
+    ~ .tabbed-labels
+    > :nth-child(19),
+  .md-typeset
+    .tabbed-alternate
+    input:nth-child(20):checked
+    ~ .tabbed-labels
+    > :nth-child(20) {
+    color: var(--md-default-fg-color, #0d0d0d);
+    font-weight: 700;
+    z-index: 2;
+    border-color: var(--md-content-tab-border);
+    background-color: var(--md-default-bg-color, #fff);
+    /* hide panel top border only under the active tab */
+    border-bottom-color: var(--md-default-bg-color, #fff);
+    margin-bottom: -0.1rem;
+    padding: 0.6rem 0.9rem 0.75rem;
+    border-top-left-radius: 0.1rem;
+    border-top-right-radius: 0.1rem;
+  }
+}
+
+/* headings */
+.md-typeset h1, .md-typeset h2 {
+    font-weight: 500;
+}
+
+.md-typeset .admonition {
+    font-size: .75rem;
+}
