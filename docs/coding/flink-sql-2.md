@@ -1159,7 +1159,7 @@ Pay special attention to data skew when designing your queries. If a particular 
 
 This is a Confluent-specific view of Flink performance, related to the Flink Web UI, for monitoring statement execution.
 
-![](../architecture/images/query-profiler.png)
+![](../cookbook/images/query-profiler.png)
 
 * [Query Profiler Product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/query-profiler.html)
 * [See how to use the Query Profiler to debug statements in the techno chapter](../techno/ccloud-flink.md#query-profiler).

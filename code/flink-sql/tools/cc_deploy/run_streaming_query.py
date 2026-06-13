@@ -3,9 +3,9 @@
 Run a streaming query against a Flink table on Confluent Cloud (confluent-sql REST API).
 
 Examples:
-  uv run python run_streaming_query.py --table orders
-  uv run python run_streaming_query.py --sql "SELECT * FROM orders WHERE amount > 100"
-  uv run python run_streaming_query.py --table orders --max-rows 20 --output json
+  uv run python -m cc_deploy.run_streaming_query --table orders
+  uv run python -m cc_deploy.run_streaming_query --sql "SELECT * FROM orders WHERE amount > 100"
+  uv run python -m cc_deploy.run_streaming_query --table orders --max-rows 20 --output json
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from cc_flink_deploy import (
+from cc_deploy import (
     STATEMENT_TIMEOUT_SEC,
     build_select_sql,
     default_streaming_statement_name,

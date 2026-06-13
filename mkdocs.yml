@@ -53,6 +53,7 @@ nav:
     - Confluent TableFlow: techno/cc-tableflow.md
     - dbt: coding/dbt.md
     - Apache Iceberg: https://jbcodeforce.github.io/techno/data/#data-related-technologies
+    - Apache Hive: techno/hive.md
     - Kafka-studies: https://jbcodeforce.github.io/kafka-studies
   - EDA: https://jbcodeforce.github.io/eda-studies
   - Assistants:

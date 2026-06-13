@@ -1,139 +1,131 @@
 #!/usr/bin/env python3
 """
-Deploy DDL and insert statements to Confluent Cloud Flink using the REST API.
+Deploy cc-flink SQL to Confluent Cloud via cc_deploy (confluent-sql REST API).
 
-Run from this directory. No Confluent CLI required.
+Prefer Make targets from 00-basic-sql/:
+  make sync && make deploy-employees
+  make deploy-customers
+  make undeploy
 
-Required env vars:
-  FLINK_API_KEY, FLINK_API_SECRET (or CONFLUENT_CLOUD_API_KEY, CONFLUENT_CLOUD_API_SECRET)
-  ORGANIZATION_ID, ENVIRONMENT_ID, COMPUTE_POOL_ID
-  FLINK_BASE_URL (e.g. https://flink.us-west-2.aws.confluent.cloud)
-    or REGION + CLOUD (e.g. us-west-2, aws)
+This script is a thin wrapper for the employees walkthrough and snapshot query.
 
-Optional: DB_NAME (default j9r-kafka), CATALOG_NAME.
+Environment: ~/.confluent/.env (see tools/cc_deploy/flink_deploy.py).
 """
+
+from __future__ import annotations
 
 import argparse
 import sys
 from pathlib import Path
 
-# Allow running from repo root, flink-sql, or 00-basic-sql (tools is under flink-sql)
-_flink_sql_root = Path(__file__).resolve().parent.parent
-if str(_flink_sql_root) not in sys.path:
-    sys.path.insert(0, str(_flink_sql_root))
+_TOOLS = Path(__file__).resolve().parent.parent / "tools"
+if str(_TOOLS) not in sys.path:
+    sys.path.insert(0, str(_TOOLS))
 
-from tools.cc_flink_rest_client import (
-    create_statement,
-    delete_statement,
-    get_statement_results,
-    run_ddl,
-    run_dml,
+from cc_deploy import (  # noqa: E402
+    DEFAULT_MANIFEST,
+    deploy_statements,
+    full_undeploy,
+    get_config,
+    load_dotenv_file,
+    load_manifest,
+    print_snapshot_result,
     run_snapshot_query,
-    run_query_no_results,
 )
 
+CC_FLINK = Path(__file__).resolve().parent / "cc-flink"
+SNAPSHOT_SQL = "SELECT * FROM employee_count"
 
-SCRIPT_DIR = Path(__file__).resolve().parent
 
-
-
-def main() -> None:
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Deploy DDL and insert statements to Confluent Cloud Flink via REST API.",
+        description="Deploy cc-flink employees demo via cc_deploy (Confluent Cloud Flink REST API).",
     )
     parser.add_argument(
-        "--ddl-only",
+        "--employees-only",
         action="store_true",
-        help="Deploy only DDL (employees table).",
+        help="Deploy the employees vertical slice (ddl + insert + employee_count pipeline).",
     )
     parser.add_argument(
-        "--insert-only",
+        "--customers-only",
         action="store_true",
-        help="Run only insert statements (requires DDL already deployed).",
+        help="Deploy the customers vertical slice (ddl + insert + dedup pipeline).",
     )
     parser.add_argument(
-        "--delete-only",
+        "--all",
         action="store_true",
-        help="Drop tables and delete statements.",
-    )
-    parser.add_argument(
-        "--employee-count-only",
-        action="store_true",
-        help="Run only employee_count statements.",
+        help="Deploy full manifest (ddl, data, pipeline for customers and employees).",
     )
     parser.add_argument(
         "--snapshot-query-only",
         action="store_true",
-        help="Run only snapshot query statements.",
+        help="Run a snapshot query on employee_count.",
     )
-    args = parser.parse_args()
+    parser.add_argument(
+        "--delete-only",
+        action="store_true",
+        help="Stop statements and drop tables from deploy_manifest.json.",
+    )
+    return parser.parse_args()
+
+
+def _load() -> tuple:
+    load_dotenv_file()
+    manifest_path = CC_FLINK / DEFAULT_MANIFEST
+    if not manifest_path.is_file():
+        raise FileNotFoundError(f"Manifest not found: {manifest_path}")
+    manifest = load_manifest(manifest_path)
+    config = get_config()
+    return manifest, config
+
+
+def main() -> None:
+    args = parse_args()
+    manifest, config = _load()
 
     if args.snapshot_query_only:
-        print("=== Running snapshot query ===")
-        rows = run_snapshot_query(
-            "snapshot-query",
-            "SELECT * FROM employee_count;",
-        )
-        print("Done.")
-        return
-
-    if args.employee_count_only:
-        print("=== Running employee_count ===")
-        run_dml("employee-count", SCRIPT_DIR, "dml.employee_count.sql", delete_after=False)
-        print("Done.")
-        return
-
-    if args.ddl_only:
-        print("=== Deploying DDL ===")
-        run_ddl("ddl-employees", SCRIPT_DIR, "ddl.employee.sql")
-        print("Done.")
-        return
-
-    if args.insert_only:
-        print("=== Running inserts ===")
-        run_dml("insert-employees", SCRIPT_DIR, "insert_employees.sql", delete_after=True)
-        print("Done.")
+        result = run_snapshot_query(SNAPSHOT_SQL, config=config, user_agent=manifest.user_agent)
+        print_snapshot_result(result)
         return
 
     if args.delete_only:
-        print("=== Deleting tables and statements ===")
-        for st in ("employee-count", "insert-employees", "snapshot-query"):
-            try:
-                delete_statement(st)
-            except Exception as e:
-                print(f"  (skip {st}: {e})")
-        run_query_no_results("drop-employee-count", "DROP TABLE IF EXISTS employee_count;")
-        run_query_no_results("drop-employees", "DROP TABLE IF EXISTS employees;")
-        print("Done.")
+        full_undeploy(manifest, config=config, drop_tables_after=True)
+        print("Teardown complete.")
         return
 
-    # Full flow: DDL -> insert -> CTAS -> snapshot query (with results)
-    print("=== Deploying DDL ===")
-    run_ddl("ddl-employees", SCRIPT_DIR, "ddl.employee.sql")
-
-    print("=== Running inserts ===")
-    run_dml("insert-employees", SCRIPT_DIR, "insert_employees.sql", delete_after=True)
-
-    print("=== Running CTAS employee_count ===")
-    run_dml("employee-count", SCRIPT_DIR, "dml.employee_count.sql", delete_after=False)
-
-    print("=== Running snapshot query ===")
-    rows = run_snapshot_query(
-        "snapshot-query",
-        "SELECT * FROM employee_count;",
-    )
-    if rows:
-        print("Snapshot query results (employee_count):")
-        for i, row in enumerate(rows, 1):
-            print(f"  {i}: {row}")
+    if args.customers_only:
+        group = "customers"
+    elif args.all:
+        statements = manifest.statements_for("all")
+        deploy_statements(
+            statements,
+            sql_dir=CC_FLINK,
+            config=config,
+            user_agent=manifest.user_agent,
+        )
+        print("Deploy complete (all groups).")
+        return
     else:
-        print("  (no rows)")
-    print("Done.")
+        # Default: employees walkthrough (same as make deploy-employees)
+        group = "employees"
+
+    statements = manifest.statements_for(group)
+    deploy_statements(
+        statements,
+        sql_dir=CC_FLINK,
+        config=config,
+        user_agent=manifest.user_agent,
+    )
+    print(f"Deploy complete ({group}).")
+
+    if group == "employees" and not (args.customers_only or args.all):
+        result = run_snapshot_query(SNAPSHOT_SQL, config=config, user_agent=manifest.user_agent)
+        print_snapshot_result(result)
 
 
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+    except Exception as exc:
+        print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)

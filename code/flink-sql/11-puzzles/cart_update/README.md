@@ -86,11 +86,11 @@ make drop-tables
 Direct CLI (from `code/flink-sql/tools`):
 
 ```sh
-uv run python deploy_flink_statements.py --sql-dir ../11-puzzles/cart_update deploy --group ddl
-uv run python deploy_flink_statements.py --sql-dir ../11-puzzles/cart_update deploy --group pipeline
-uv run python deploy_flink_statements.py --sql-dir ../11-puzzles/cart_update deploy --group data
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update deploy --group ddl
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update deploy --group pipeline
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update deploy --group data
 # or doing the 3 steps above in one shot
-uv run python deploy_flink_statements.py --sql-dir ../11-puzzles/cart_update undeploy --group all
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update undeploy --group all
 ```
 
 ## Verify

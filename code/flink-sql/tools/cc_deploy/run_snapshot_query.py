@@ -3,9 +3,9 @@
 Run a snapshot query against a Flink table on Confluent Cloud (confluent-sql REST API).
 
 Examples:
-  uv run python run_snapshot_query.py --table orders --limit 10
-  uv run python run_snapshot_query.py --table orders --columns "order_id, amount" --where "amount > 100"
-  uv run python run_snapshot_query.py --sql "SELECT COUNT(*) AS cnt FROM orders" --output json
+  uv run python -m cc_deploy.run_snapshot_query --table orders --limit 10
+  uv run python -m cc_deploy.run_snapshot_query --table orders --columns "order_id, amount" --where "amount > 100"
+  uv run python -m cc_deploy.run_snapshot_query --sql "SELECT COUNT(*) AS cnt FROM orders" --output json
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from cc_flink_deploy import (
+from cc_deploy import (
     STATEMENT_TIMEOUT_SEC,
     build_select_sql,
     default_snapshot_statement_name,

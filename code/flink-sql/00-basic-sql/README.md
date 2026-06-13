@@ -153,34 +153,47 @@ $FLINK_HOME/bin/stop-cluster.sh
 
 ## Confluent Cloud Flink
 
-To deploy the same SQL scripts to Confluent Cloud for Flink we need to have some environment defined. The terraform in [deployment/cc-terraform](../../../deployment/cc-terraform/) can be used to prepare such environment, get a kafka cluster, schema registry and two Flink compute pools.
+Environment setup: [deployment/cc-terraform](../../../deployment/cc-terraform/) (Kafka cluster, Schema Registry, Flink compute pool). Credentials in `~/.confluent/.env` (see [tools/README.md](../tools/README.md)).
 
-Deploying SQL queries can be done using `confluent cli`. 
+Deploy from [`cc-flink/deploy_manifest.json`](cc-flink/deploy_manifest.json) using shared [cc_deploy](../tools/cc_deploy/) tools:
 
-* The demonstration is controlled by one python code:
-  ```sh
-  cd ..
-  uv run  python 00-basic-sql/cc_flink_employees_demo.py
-  ```
+```sh
+cd code/flink-sql/00-basic-sql
 
-* On Confluent Cloud, it is possible to run a query with bounded stream, bounded by the current time. The CC Flink demonstration illustrates this query.
-  ```sql
-  set "sql.snapshot.mode": "now";
-  SELECT * FROM employee_count;
-  ```
+make sync                  # once — install tools deps
+make deploy-employees      # employees ddl + insert + employee_count
+make deploy-customers      # customers ddl + insert + dedup_customers
+make deploy                # full manifest (ddl → pipeline → data)
+make undeploy              # stop statements + drop tables
+```
 
-* In case you need to rerun the snapshot query do:
-  ```sh
-  uv run python 00-basic-sql/cc_flink_employees_demo.py --snapshot-query-only
-  ```
-  
-  See [the snapshot query example from Confluent tutorials](https://docs.confluent.io/cloud/current/flink/how-to-guides/run-snapshot-query.html). 
+Snapshot query on `employee_count` (bounded stream):
 
+```sql
+set 'sql.snapshot.mode' = 'now';
+SELECT * FROM employee_count;
+```
 
-* To clean up
-  ```sh
-  uv run  python 00-basic-sql/cc_flink_employees_demo.py --delete-only
-  ```
+Or via tools:
+
+```sh
+cd code/flink-sql/tools
+uv run python -m cc_deploy.run_snapshot_query --table employee_count
+```
+
+Optional Python wrapper (employees walkthrough + snapshot):
+
+```sh
+cd code/flink-sql
+uv run python 00-basic-sql/cc_flink_employees_demo.py              # deploy employees + snapshot
+uv run python 00-basic-sql/cc_flink_employees_demo.py --all        # full manifest
+uv run python 00-basic-sql/cc_flink_employees_demo.py --snapshot-query-only
+uv run python 00-basic-sql/cc_flink_employees_demo.py --delete-only
+```
+
+See [Confluent snapshot query docs](https://docs.confluent.io/cloud/current/flink/how-to-guides/run-snapshot-query.html).
+
+Terraform alternative for customers only: [cc-flink/terraform/README.md](cc-flink/terraform/README.md).
 
 ## Confluent Platform for Flink on Kubernetes
 

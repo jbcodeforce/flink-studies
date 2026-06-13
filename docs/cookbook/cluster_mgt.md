@@ -272,7 +272,7 @@ Use this when you need to back up Flink job state for recovery, upgrades, or mig
 
 **By deployment:**
 
-* **Confluent Cloud**: Regional, multi-AZ service. Checkpoints run every minute for in-region fault tolerance. No user-configurable state backend; state is managed by the service. In a region loss, there is no built-in cross-region state restore—you must implement a cross-region DR strategy (see [3.2](#32-active-active--active-passive-patterns)).
+* **Confluent Cloud**: Regional, multi-AZ service. Checkpoints run every minute for in-region fault tolerance. No user-configurable state backend; state is managed by the service. In a region loss, there is no built-in cross-region state restore—you must implement a cross-region DR strategy (see [3.2 below](./cluster_mgt.md/#32-active-active-active-passive-patterns)).
 * **Confluent Platform (CMF) / Kubernetes**: Checkpoints and savepoints go to object or distributed storage (e.g. S3, HDFS). [CMF supports Savepoint resources](https://docs.confluent.io/platform/current/flink/jobs/savepoints.html) (trigger, list, detach, start from savepoint) via REST API. For failover between data centers, durable storage must be accessible from both (or replicated); Kafka topics (and offsets) must be replicated; then Flink applications can be restarted from checkpoints/savepoints in the DR site.
 * **Open-source Flink (e.g. K8s operator)**: Same concepts; configure `state.checkpoints.dir` and optional `state.savepoints.dir` to durable storage. Use [Kubernetes HA](https://nightlies.apache.org/flink/flink-docs-stable/docs/deployment/ha/kubernetes_ha/) with `high-availability.storageDir` for JobManager metadata.
 

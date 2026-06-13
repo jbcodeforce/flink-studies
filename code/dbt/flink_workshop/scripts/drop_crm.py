@@ -2,7 +2,7 @@
 """
 Teardown CRM Flink workshop resources deployed via dbt-confluent.
 
-Stops/deletes Flink statements and drops tables using cc_flink_deploy helpers.
+Stops/deletes Flink statements and drops tables using cc_deploy helpers.
 
 Usage:
   uv run python drop_crm.py teardown
@@ -12,7 +12,7 @@ Usage:
 Run from code/flink-sql/tools (see flink_workshop/Makefile) or:
   cd code/flink-sql/tools && uv run python ../../dbt/flink_workshop/scripts/drop_crm.py teardown
 
-Environment: ~/.confluent/.env (override with CONFLUENT_ENV_FILE). See cc_flink_deploy.py.
+Environment: ~/.confluent/.env (override with CONFLUENT_ENV_FILE). See cc_deploy.flink_deploy.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ DEFAULT_MANIFEST_NAME = "teardown_manifest.json"
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
-from cc_flink_deploy import (  # noqa: E402
+from cc_deploy import (  # noqa: E402
     drop_tables,
     full_undeploy,
     get_config,

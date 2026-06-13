@@ -22,7 +22,7 @@ run-crm-full: run-full
 compile:
 	$(DBT) compile --project-dir flink_workshop --target $(TARGET) --profiles-dir $(HOME)/.dbt
 
-# Teardown CRM resources on Confluent Cloud (uses flink-sql/tools + cc_flink_deploy).
+# Teardown CRM resources on Confluent Cloud (uses flink-sql/tools + cc_deploy).
 teardown:
 	$(DROP) teardown
 

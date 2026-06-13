@@ -1,43 +1,8 @@
----
-title: "Flink Cookbook"
-source: flink-studies/docs/architecture/cookbook.md
-ingested:
-tags: [flink, architecture]
-type: article
-compiled: false
----
-# Flink Cookbook
 
-???- info "Chapter updates"
-    * Created 12/2024 
-    * Updated 1/28/2025: env, testing and statement life cycle.
 
 There is a [Confluent cookbook for best practices](https://github.com/confluentinc/flink-cookbook) to run Flink into production. The content of this page is to get a summary of those practices, enhanced from other customers' engagements. It also references hands-on exercises within this repository. 
 
 Examples may be run inside from Terminal or using Kubernetes cluster locally, they are on Flink 1.20.1 or Flink 2.1. Use Java 11 or 17, see [sdkman](https://sdkman.io/) to manage different java version. 
-
-## Understand the Flink UI
-
-The Flink Web UI helps to debug misbehaving jobs. 
-
-The Flink Web UI is  well described [in Confluent David Anderson's article](https://developer.confluent.io/courses/apache-flink/web-ui-exercise/), The [Apache Flink doc for Web UI](), and link to the important [execution plan understanding with EXPLAIN](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/sql/explain/).
-
-With OSS the Web UI is accessible when the `start_cluster.sh` is started. Local URL is [http://localhost:8081](http://localhost:8081). The Web UI offers the following important features:
-
-* Navigating to get the running Jobs, the view is updated periodically. The job graph, which matches the EXPLAIN output, presents the tasks running one or more operators of the DAG.
-* Task metrics are **backpressure, busyness, and data skew**.
-    * **backpressure:** percentage of time that the subtask was unable to send output downstream because the downstream subtask had fallen behind, and (temporarily) couldn't receive any more records. `Backpressured max` is the maximum backpressure across all of the parallel subtasks for a given period.
-    * **busy** reports percentage of time spent doing useful work, aggregated at the task level for a time period.
-    * **data skew** measures the degree of variation in the number of records processed per second by each of the parallel subtasks. 100% is max skew.
-* Examining the history of checkpoints
-* Monitoring for any potential backpressure
-* Analyzing watermarks
-* Retrieving the job logs
-
-Network metrics (Bytes Received / Records Received ) are inside the Flink cluster, not for source and sink to external systems.
-
-In Concluent Cloud the Query Profiler has the same capability then the Flink UI and accessible at the Statement View level:
-![](./images/query-profiler.png)
 
 ## Classical deployment pattern
 
@@ -140,15 +105,6 @@ SELECT ROW_NUMBER() OVER (ORDER BY $rowtime ASC) AS number, *   FROM <table_name
 
 * When Data are in topic but not seen by flink `select * from <table_name>` statement, it may be due to idle partitions and the way watermarks advance and are propagated. Flink automatically marks a Kafka partition as idle if no events come within `sql.tables.scan.idle-timeout` duration. When a partition is marked as idle, it does not contribute to the watermark calculation until a new event arrives. Try to set the idle timeout for table scans to ensure that Flink considers partitions idle after a certain period of inactivity. Try to create a table with a watermark definition to handle idle partitions and ensure that watermarks advance correctly.
 
-## High Availability and Disaster Recovery
-
-In Flink high availability goal is to keep the application running and being able to process data. The focus is more on streaming applications then batch. JobManager is a single point of failure but can be configured with standby JobManagers. The coordination can be done with Zookeeper for self managed deployment or via Kubernetes operator.
-
-* For [Confluent Cloud for Flink see the DR section](http://localhost:8000/flink-studies/techno/ccloud-flink/#disaster-recovery).
-
-## Security
-
-TO BE DONE
 
 ## Deduplication
 

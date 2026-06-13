@@ -3,13 +3,14 @@
 Generic CLI to deploy Flink SQL statement groups via confluent-sql (REST API).
 
 Usage:
-  python deploy_flink_statements.py --sql-dir ../11-puzzles/cart_update deploy --group all
-  python deploy_flink_statements.py --sql-dir ../11-puzzles/cart_update undeploy --group all
-  python deploy_flink_statements.py --sql-dir ../11-puzzles/cart_update drop-tables
+  uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update deploy --group all
+  uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update undeploy --group all
+  uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update drop-tables
+  uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../04-joins/cc groups
 
 Each demo folder supplies deploy_manifest.json listing statement groups, SQL files,
 undeploy_all order, and drop_tables for full teardown.
-Environment: see cc_flink_deploy.py (loads ~/.confluent/.env by default).
+Environment: see cc_deploy.flink_deploy (loads ~/.confluent/.env by default).
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from cc_flink_deploy import (
+from cc_deploy import (
     DEFAULT_MANIFEST,
     deploy_statements,
     drop_tables,
@@ -28,8 +29,6 @@ from cc_flink_deploy import (
     load_manifest,
     undeploy_statements,
 )
-
-TOOLS_DIR = Path(__file__).resolve().parent
 
 
 def parse_args() -> argparse.Namespace:
@@ -77,7 +76,27 @@ def parse_args() -> argparse.Namespace:
         help="Drop tables listed in manifest drop_tables (no statement deletes)",
     )
 
+    sub.add_parser(
+        "groups",
+        help="List manifest groups and statement counts",
+    )
+
     return parser.parse_args()
+
+
+def print_groups(manifest) -> None:
+    """Print group names, sizes, and deploy_all / undeploy_all membership."""
+    deploy_set = set(manifest.deploy_all)
+    undeploy_set = set(manifest.undeploy_all)
+    for name in sorted(manifest.groups):
+        count = len(manifest.groups[name])
+        flags: list[str] = []
+        if name in deploy_set:
+            flags.append("deploy_all")
+        if name in undeploy_set:
+            flags.append("undeploy_all")
+        flag_text = f" ({', '.join(flags)})" if flags else ""
+        print(f"{name}: {count} statement(s){flag_text}")
 
 
 def main() -> None:
@@ -95,6 +114,11 @@ def main() -> None:
         sys.exit(1)
 
     manifest = load_manifest(manifest_path)
+
+    if args.action == "groups":
+        print_groups(manifest)
+        return
+
     config = get_config()
 
     try:

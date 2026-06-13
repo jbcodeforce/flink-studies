@@ -1,4 +1,4 @@
-INSERT INTO shipments
+INSERT INTO d04_shipments
 VALUES ('shipment_1',   1, 'Bar Harbor',     1692815775),
        ('shipment_2',   2, 'Boston',         1692851775),
        ('shipment_3',   3, 'Providence',     1692851775),

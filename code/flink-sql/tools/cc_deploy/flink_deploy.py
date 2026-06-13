@@ -1,5 +1,5 @@
 """
-Deploy, undeploy, or snapshot-query Flink SQL on Confluent Cloud via confluent-sql (REST API).
+Deploy, undeploy, snapshot, and streaming Flink SQL on Confluent Cloud via confluent-sql.
 
 Reusable from demo folders: point at a SQL directory and a deploy manifest (JSON).
 Snapshot queries use SNAPSHOT cursor mode (`sql.snapshot.mode = now` is set by the driver).
@@ -21,50 +21,16 @@ import confluent_sql
 from confluent_sql.exceptions import OperationalError, StatementNotFoundError
 from dotenv import load_dotenv
 
-DEFAULT_MANIFEST = "deploy_manifest.json"
-DEFAULT_USER_AGENT = "flink-studies-sql-tools/0.1"
+from cc_deploy.manifest import (
+    DEFAULT_MANIFEST,
+    DEFAULT_USER_AGENT,
+    DeployManifest,
+    StatementRef,
+    load_manifest,
+)
+
 POLL_INTERVAL_SEC = float(os.environ.get("FLINK_POLL_INTERVAL", "5"))
 STATEMENT_TIMEOUT_SEC = int(os.environ.get("FLINK_STATEMENT_TIMEOUT", "600"))
-
-StatementRef = tuple[str, str]
-
-
-@dataclass(frozen=True)
-class DeployManifest:
-    user_agent: str
-    groups: dict[str, list[StatementRef]]
-    deploy_all: list[str]
-    undeploy_all: list[str]
-    drop_tables: list[str]
-    drop_statement_prefix: str | None = None
-
-    def statements_for(self, group: str) -> list[StatementRef]:
-        if group == "all":
-            out: list[StatementRef] = []
-            for g in self.deploy_all:
-                out.extend(self.groups.get(g, []))
-            return out
-        if group not in self.groups:
-            raise KeyError(f"Unknown group {group!r}; available: {sorted(self.groups)}")
-        return list(self.groups[group])
-
-    def undeploy_order(self, group: str) -> list[StatementRef]:
-        return list(reversed(self.statements_for(group)))
-
-    def statements_for_full_undeploy(self) -> list[StatementRef]:
-        """Statement delete order: stop streaming DML before one-shot inserts."""
-        groups = self.undeploy_all or [
-            g for g in self.groups if g != "ddl"
-        ]
-        ordered: list[StatementRef] = []
-        for group in reversed(groups):
-            ordered.extend(reversed(self.groups.get(group, [])))
-        return ordered
-
-    def drop_statement_name(self, table: str) -> str:
-        prefix = self.drop_statement_prefix or "drop"
-        safe_table = table.replace(".", "-")
-        return f"{prefix}-{safe_table}"
 
 
 def load_dotenv_file() -> None:
@@ -120,38 +86,6 @@ def get_config() -> dict[str, str]:
     if endpoint:
         cfg["ENDPOINT"] = endpoint.rstrip("/")
     return cfg
-
-
-def load_manifest(manifest_path: Path) -> DeployManifest:
-    data: dict[str, Any] = json.loads(manifest_path.read_text())
-
-    groups: dict[str, list[StatementRef]] = {}
-    for group_name, entries in data.get("groups", {}).items():
-        groups[group_name] = [(e["name"], e["file"]) for e in entries]
-
-    deploy_all = data.get("deploy_all")
-    if not deploy_all:
-        deploy_all = list(groups.keys())
-
-    undeploy_all = data.get("undeploy_all")
-    drop_tables = data.get("drop_tables", [])
-    if isinstance(drop_tables, list) and drop_tables and isinstance(drop_tables[0], dict):
-        drop_tables = [entry["table"] for entry in drop_tables]
-
-    drop_prefix = data.get("drop_statement_prefix")
-    if not drop_prefix and groups.get("ddl"):
-        first_name = groups["ddl"][0][0]
-        if "-ddl-" in first_name:
-            drop_prefix = first_name.split("-ddl-")[0]
-
-    return DeployManifest(
-        user_agent=data.get("user_agent", DEFAULT_USER_AGENT),
-        groups=groups,
-        deploy_all=deploy_all,
-        undeploy_all=undeploy_all or [],
-        drop_tables=drop_tables,
-        drop_statement_prefix=drop_prefix,
-    )
 
 
 def read_sql(sql_dir: Path, rel: str) -> str:

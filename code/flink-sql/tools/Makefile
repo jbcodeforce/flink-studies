@@ -11,16 +11,16 @@ sync:
 	uv sync
 
 deploy:
-	$(PYTHON) deploy_flink_statements.py --sql-dir $(SQL_DIR) deploy --group all
+	$(PYTHON) -m cc_deploy.deploy_flink_statements --sql-dir $(SQL_DIR) deploy --group all
 
 undeploy:
-	$(PYTHON) deploy_flink_statements.py --sql-dir $(SQL_DIR) undeploy --group all
+	$(PYTHON) -m cc_deploy.deploy_flink_statements --sql-dir $(SQL_DIR) undeploy --group all
 
 drop-tables:
-	$(PYTHON) deploy_flink_statements.py --sql-dir $(SQL_DIR) drop-tables
+	$(PYTHON) -m cc_deploy.deploy_flink_statements --sql-dir $(SQL_DIR) drop-tables
 
 deploy-%:
-	$(PYTHON) deploy_flink_statements.py --sql-dir $(SQL_DIR) deploy --group $*
+	$(PYTHON) -m cc_deploy.deploy_flink_statements --sql-dir $(SQL_DIR) deploy --group $*
 
 undeploy-%:
-	$(PYTHON) deploy_flink_statements.py --sql-dir $(SQL_DIR) undeploy --group $*
+	$(PYTHON) -m cc_deploy.deploy_flink_statements --sql-dir $(SQL_DIR) undeploy --group $*

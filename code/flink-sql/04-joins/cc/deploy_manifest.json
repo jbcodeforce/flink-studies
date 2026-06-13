@@ -1,0 +1,60 @@
+{
+  "user_agent": "flink-studies-cc/0.1",
+  "deploy_all": [
+    "ddl",
+    "pipeline",
+    "data"
+  ],
+  "undeploy_all": [
+    "pipeline"
+  ],
+  "drop_tables": [
+    "d04_shipments",
+    "d04_products",
+    "d04_orders",
+    "d04_order_product_join"
+  ],
+  "groups": {
+    "op_join_1": [
+      {
+        "name": "d04-order-product-join",
+        "file": "dml.order_product_join.sql"
+      }
+    ],
+    "op_ddl": [
+      {
+        "name": "cc-ddl-orders",
+        "file": "ddl.orders_nowm.sql"
+      },
+      {
+        "name": "cc-ddl-products",
+        "file": "ddl.products_nowm.sql"
+      }
+    ],
+    "ddl": [
+      {
+        "name": "cc-ddl-orders",
+        "file": "ddl.orders.sql"
+      },
+      {
+        "name": "cc-ddl-products",
+        "file": "ddl.products.sql"
+      },
+      {
+        "name": "cc-ddl-shipments",
+        "file": "ddl.shipments.sql"
+      }
+    ],
+    "op_data": [
+      {
+        "name": "cc-data-insert-orders",
+        "file": "dml.insert_orders.sql"
+      },
+      {
+        "name": "cc-data-insert-products",
+        "file": "dml.insert_products.sql"
+      }
+    ]
+  },
+  "drop_statement_prefix": "cc-drop"
+}

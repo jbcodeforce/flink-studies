@@ -236,6 +236,7 @@ If errors appear or performance worsens:
 #### Procedure
 #### Rollback
 #### Gotchas
+
 ## 5- Backfills and Reprocessing
 ### 5.1- Recipe: Replaying Kafka topics from older offsets.
 #### Context
@@ -291,30 +292,43 @@ You need to recompute results for a historical period (e.g., due to a code bug o
 
 ## 6- Monitoring & Alerting
 
-### 6.1- Key metrics to watch (checkpointing, backpressure, task failures, JVM).
+### Context
 
-
-#### What to monitor in a custom Flink dashboard
-
-* Throughput / backlog: io.confluent.flink/num_records_in, io.confluent.flink/num_records_out, io.confluent.flink/num_records_in_from_topics, io.confluent.flink/pending_records.  
-* Latency / timeliness: current_input_watermark_milliseconds, current_output_watermark_milliseconds, max_input_lateness_milliseconds.  
-* Failures / health: io.confluent.flink/statement_status.  
-* Compute pool saturation: compare current CFUs vs CFU limit for the pool; docs call this out as a best-practice alert. 
-
-
-### 6.2 Baseline dashboards and alerts.
-
-#### Context
+To monitor Apache Flink production jobs effectively, you must establish an external observability pipeline utilizing external tools like Prometheus, Grafana, Datadog or Splunk. While the built-in Flink Web UI is excellent for real-time triage, it does not provide the historical data tracking or advanced alerting infrastructure needed to catch performance regressions or state degradation.
 
 [Confluent Cloud Flink metrics](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html) can be exported to any [third-party tools](https://docs.confluent.io/cloud/current/monitoring/third-party-integration.html) like Prometheus and Grafana. [See also the Metrics REST API](https://api.telemetry.confluent.cloud/docs/descriptors/datasets/cloud)
 
 [confluent-cloud-flink-workshop/flink-monitoring](https://github.com/confluentinc/confluent-cloud-flink-workshop/tree/master/flink-monitoring) includes a Grafana dashboard for Confluent Cloud for Apache Flink and local Grafana + Prometheus setup you can run with Docker. [See this repository deployment](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/cc-flink-monitoring)
 
+
 #### Preconditions / Checklist
 
-* Deploy statements into one to many compute pool
-* Get a service account, and API key to access metrics
-* Configure Prometheus with your Confluent Cloud API key/secret and Flink resource IDs, or copy the config from the Confluent Cloud Metrics integration UI.
+=== "Confluent"
+    * Confluent: Deploy statements into one to many compute pool
+    * Get a service account, and API key to access metrics
+    * Configure Prometheus with your Confluent Cloud API key/secret and Flink resource IDs, or copy the config from the Confluent Cloud Metrics integration UI.
+
+=== "Apache Flink"
+    * Deploy a Flink Application
+    * Use Web UI
+
+### 6.1- Key metrics to watch (checkpointing, backpressure, task failures, JVM).
+
+#### What to monitor in a custom Flink dashboard
+
+* **Checkpoint** health serves as the absolute best proxy for the overall stability and throughput capacity of a stateful Flink application. 
+    * **lastCheckpointDuration:** Track spikes in checkpoint time. If duration grows close to the checkpoint interval, checkpoints will queue up and stall your pipeline.
+    * **lastCheckpointSize:** Alert on linear, uncontrolled growth over time. This usually flags a state leak, an unbounded window, or a missing TTL configuration on a state backend.
+    * **numberOfFailedCheckpoints:** This value should ideally stay at zero. Investigate failures quickly because a lack of completed checkpoints risks catastrophic data loss if a hardware failure occurs.
+    * **lastCheckpointAlignmentTime:** Monitor this value to identify uneven performance. High alignment times show that upstream operators are sending data at unbalanced speeds
+* **Throughput / backlog**: num_records_in, num_records_out, num_records_in_from_topics, pending_records
+    * For Confluent: io.confluent.flink/num_records_in, io.confluent.flink/num_records_out, io.confluent.flink/num_records_in_from_topics, io.confluent.flink/pending_records.  
+* **Latency / timeliness:** current_input_watermark_milliseconds, current_output_watermark_milliseconds, max_input_lateness_milliseconds.  
+* **Failures / health:** io.confluent.flink/statement_status.  
+* **Compute pool saturation:** compare current CFUs vs CFU limit for the pool; docs call this out as a best-practice alert. 
+
+
+### 6.2 Baseline dashboards and alerts.
 
 #### Inputs / Parameters
 
@@ -322,7 +336,7 @@ You need to recompute results for a historical period (e.g., due to a code bug o
 
 1. [Define new integration](https://confluent.cloud/settings/metrics/integrations?integration=prometheus) to monitoring platform. 
 1. For Metrics REST API access, build a bearer token from the Key ID as the username and the Key Secret as the password.
-1. [Locally] Start docker compose.
+1. [Locally] Start docker compose. [See the example in the deployment folder]()
 
 #### Gotchas
 
@@ -461,7 +475,7 @@ You need to have access to:
 
 Use this recipe when throughput or latency SLOs are missed and the root cause is unclear. Symptoms include sustained backpressure, growing checkpoint duration, or single subtasks at 100% utilization while others are idle.
 
-The full symptom-to-diagnosis playbook with observability stack guidance is in [Flink Tuning on Kubernetes §9](k8s_tuning.md#9--identifying-bottlenecks--backpressure-gc-pressure-checkpoint-lag).
+The full symptom-to-diagnosis playbook with observability stack guidance is in [Flink Tuning on Kubernetes §9](k8s_tuning.md#9-identifying-bottlenecks-backpressure-gc-pressure-checkpoint-lag).
 
 #### Preconditions / Checklist
 
@@ -472,7 +486,7 @@ The full symptom-to-diagnosis playbook with observability stack guidance is in [
 
 1. Open Flink UI → Backpressure tab; note red operators and subtask skew.
 2. Check Checkpoints → History for duration vs interval.
-3. Use the bottleneck table in [k8s_tuning.md §9](k8s_tuning.md#9--identifying-bottlenecks--backpressure-gc-pressure-checkpoint-lag) to map symptoms to first tuning knob.
+3. Use the bottleneck table in [k8s_tuning.md §9](k8s_tuning.md#9-identifying-bottlenecks-backpressure-gc-pressure-checkpoint-lag) to map symptoms to first tuning knob.
 4. Apply one change; re-measure before proceeding.
 
 #### Rollback
@@ -489,7 +503,7 @@ Revert the last configuration change; redeploy from savepoint if stateful.
 
 Use when TaskManagers show GC pauses, OOMKilled events, or shuffle-related backpressure with low CPU. These issues often trace to misaligned Flink process memory, managed memory, or network buffer settings on Kubernetes.
 
-Detailed recipes and configuration keys are in [Flink Tuning on Kubernetes §3, §7, and §8](k8s_tuning.md#3--memory-model--heap-managed-network-and-metaspace).
+Detailed recipes and configuration keys are in [Flink Tuning on Kubernetes §3, §7, and §8](k8s_tuning.md#3-memory-model-heap-managed-network-and-metaspace).
 
 #### Preconditions / Checklist
 

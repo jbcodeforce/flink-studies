@@ -17,9 +17,7 @@ Basic Flink SQL (employees per department). Runs on local Flink OSS, Confluent P
 
 | Asset | Code completion | Deployment status | Automation |
 |-------|------------------|-------------------|------------|
-| `cc-flink/ddl.customers.sql` | Complete | Confluent Cloud | Manual / Terraform |
-| `cc-flink/dml.dedup_customers.sql` | Complete | Confluent Cloud | Manual / Terraform |
-| `cc-flink/insert_customers.sql` | Complete | Confluent Cloud | Manual |
+| `cc-flink/` (`deploy_manifest.json`, Makefile) | Complete | Confluent Cloud | `make deploy` via [cc_deploy](../tools/cc_deploy/) |
 | `cc-flink/terraform/` | Complete | Confluent Cloud | Terraform |
 | `oss-flink/create_customers.sql` | Complete | Local | Manual |
 | `oss-flink/create_orders.sql` | Complete | Local | Manual |
@@ -170,7 +168,7 @@ Utilities for wide-table generation and Flink SQL.
 
 | Asset | Code completion | Deployment status | Automation |
 |-------|------------------|-------------------|------------|
-| `cc_flink_deploy.py`, `deploy_flink_statements.py` | Complete | Confluent Cloud | Makefile + `deploy_manifest.json` per demo |
+| `cc_deploy/` (`flink_deploy.py`, `deploy_flink_statements.py`, `manifest.py`) | Complete | Confluent Cloud | Makefile + `deploy_manifest.json` per demo |
 | `cc_flink_rest_client.py` | Complete | Confluent Cloud | Manual (requests REST) |
 | `flink_wide_table.sql` | Complete | Local / Confluent Cloud | Manual |
 | `gen_flink_wide_table.py` | Complete | Local | Manual |
@@ -217,4 +215,52 @@ Quarkus app integrating Flink SQL (Table API / Java).
 | `data/*.csv`, `data/cab_rides.txt` | Complete | — | — |
 
 
-## Migrating all those cc-flinkg examples with dbt
+## Tracking refactoring of all demos
+
+Updated 06/12/2026
+
+Apache Flink, Confluent Plaform for Flink or Confluent Cloud SQL demos and whether they use [`tools/cc_deploy/deploy_flink_statements`](tools/cc_deploy/deploy_flink_statements.py) with [`deploy_manifest.json`](tools/README.md#demo-manifest) or other tool.
+
+| Demo | Folder | Uses `cc_deploy.deploy_flink_statements` |
+| ---- | ------ | -------------------------------------- |
+| **00-basic-sql** | | |
+| Employees / customers dedup | [`00-basic-sql/cc-flink`](00-basic-sql/cc-flink/) | Yes |
+| Confluent Platform (schemas/topics) | [`00-basic-sql/cp-flink`](00-basic-sql/cp-flink/) | N/A |
+| OSS Flink SQL | [`00-basic-sql/oss-flink`](00-basic-sql/oss-flink/) | N/A |
+| **01-kafka-flink** | | |
+| Kafka + Flink Docker word count | [`01-kafka-flink/kafka-flink-docker`](01-kafka-flink/kafka-flink-docker/) | N/A |
+| Header propagation | [`01-kafka-flink/header_propagation`](01-kafka-flink/header_propagation/) | N/A |
+| **03-nested-row** | | |
+| ARRAY_AGG on rows | [`03-nested-row/cc-array-agg`](03-nested-row/cc-array-agg/) | No |
+| Member / provider CDC dimensions | [`03-nested-row/cc-flink-health`](03-nested-row/cc-flink-health/) | No |
+| Truck loads lookup join | [`03-nested-row/truck_loads`](03-nested-row/truck_loads/) | No |
+| **04-joins** | | |
+| Stream-to-stream joins (orders, products, shipments) | [`04-joins/cc`](04-joins/cc/) | Yes |
+| Inner join with dedup | [`04-joins/cc_inner_join_with_dedup`](04-joins/cc_inner_join_with_dedup/) | No |
+| Data skew / salted joins | [`04-joins/data_skew`](04-joins/data_skew/) | No |
+| Event status processing | [`04-joins/event_status_processing`](04-joins/event_status_processing/) | No |
+| Group hierarchy | [`04-joins/group_users`](04-joins/group_users/) | No |
+| Rule match on sensors | [`04-joins/rule_match_on_sensors`](04-joins/rule_match_on_sensors/) | N/A — docs stub |
+| **05-changelog** | | |
+| Append / upsert / retract modes | [`05-changelog`](05-changelog/) | No — Confluent CLI Makefile |
+| **07-schema-refactoring** | | |
+| PostgreSQL CDC products / discounts | [`07-schema-refactoring`](07-schema-refactoring/) | No |
+| **08-snapshot-external-query** | | |
+| Snapshot via external RDS | [`08-snapshot-external-query`](08-snapshot-external-query/) | N/A — Python connector, not statement deploy |
+| **09-temporal-joins** | | |
+| Orders with currency rates | [`09-temporal-joins/cc`](09-temporal-joins/cc/) | No |
+| Local temporal joins | [`09-temporal-joins/local-flink`](09-temporal-joins/local-flink/) | N/A |
+| **10-windowing** | | |
+| Orders per minute | [`10-windowing/cc-flink`](10-windowing/cc-flink/) | No |
+| Grouping messages (leads) | [`10-windowing/grouping_messages/cc-flink`](10-windowing/grouping_messages/cc-flink/) | No — Terraform |
+| Tumble-then-hop rolling features | [`10-windowing/tumble_then_hop_rolling`](10-windowing/tumble_then_hop_rolling/) | Yes |
+| **11-puzzles** | | |
+| Cart update (integrated cart) | [`11-puzzles/cart_update`](11-puzzles/cart_update/) | Yes |
+| Compute ETA (shipments + UDF) | `11-puzzles/compute_eta/` | No — legacy per-demo script (folder not in repo) |
+| Local SQL puzzles | [`11-puzzles`](11-puzzles/) (root `.sql` files) | N/A |
+| **12-ai-agents** | | |
+| ML anomaly detection (docs) | [`12-ai-agents`](12-ai-agents/) | N/A |
+| **13-materialized-table** | | |
+| Materialized table (local OSS) | [`13-materialized-table`](13-materialized-table/) | N/A |
+
+**Summary:** 4 demos migrated (`Yes`), 14 Confluent Cloud candidates still on manual / Confluent CLI / Terraform (`No`).

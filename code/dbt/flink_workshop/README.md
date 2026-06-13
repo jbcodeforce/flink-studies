@@ -140,7 +140,7 @@ Tumble metrics emit after the first window closes (about one minute).
 
 ## Drop and redeploy
 
-Full teardown (stop Flink statements, then drop tables). Uses [cc_flink_deploy.py](../../flink-sql/tools/cc_flink_deploy.py) via `scripts/drop_crm.py` and `teardown_manifest.json`. Credentials: `~/.confluent/.env` (or `CONFLUENT_ENV_FILE`).
+Full teardown (stop Flink statements, then drop tables). Uses [cc_deploy/flink_deploy.py](../../flink-sql/tools/cc_deploy/flink_deploy.py) via `scripts/drop_crm.py` and `teardown_manifest.json`. Credentials: `~/.confluent/.env` (or `CONFLUENT_ENV_FILE`).
 
 ```bash
 make teardown      # stop statements + drop tables

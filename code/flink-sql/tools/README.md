@@ -1,6 +1,6 @@
-# Confluent Cloud Flink SQL deploy tools
+# Confluent Cloud Flink SQL deployment tools
 
-Deploy SQL statement groups from demo folders using [confluent-sql](https://pypi.org/project/confluent-sql/) (REST API, no Confluent CLI).
+Deploy Flink SQL statement groups from demo folders using [confluent-sql](https://pypi.org/project/confluent-sql/) (REST API, no Confluent CLI).
 
 ## Setup
 
@@ -9,7 +9,7 @@ cd code/flink-sql/tools
 uv sync
 ```
 
-Credentials and target env: `~/.confluent/.env` (override with `CONFLUENT_ENV_FILE`).
+* Set Confluent Cloud credentials and target env: `~/.confluent/.env` (override the file path with `CONFLUENT_ENV_FILE`).
 
 | Variable | Purpose |
 |----------|---------|
@@ -22,7 +22,7 @@ Credentials and target env: `~/.confluent/.env` (override with `CONFLUENT_ENV_FI
 
 ## Demo manifest
 
-Each demo folder includes `deploy_manifest.json`:
+Each demo folder should include a `deploy_manifest.json` file to declare what to deploy:
 
 ```json
 {
@@ -47,26 +47,66 @@ Each demo folder includes `deploy_manifest.json`:
 - `drop_statement_prefix` — optional prefix for ephemeral drop statements (default: derived from ddl names)
 - `groups` — named lists of `{name, file}` (paths relative to demo folder)
 
-## CLI
+* It is possible to generate a manifest.json template from SQL files in a folder:
+
+```sh
+cd code/flink-sql/tools
+
+# Preview without writing
+uv run python -m cc_deploy.create_deploy_manifest --sql-dir ../11-puzzles/my_demo --dry-run
+
+# Write deploy_manifest.json
+uv run python -m cc_deploy.create_deploy_manifest --sql-dir ../11-puzzles/my_demo --prefix my-demo
+```
+
+Files are grouped by naming convention: `ddl.*` → ddl, `insert_*` / `dml.insert_*` → data, `dml.update_*` → scenario, other `dml.*` → pipeline.
+
+### Custom groups
+
+Any key under `groups` is deployable on its own. It does not need to appear in `deploy_all` unless you want it included in `make deploy` / `deploy --group all`.
+
+Example from [04-joins/cc/deploy_manifest.json](../04-joins/cc/deploy_manifest.json): `op_ddl` deploys watermark-free DDL for the first tutorial step.
+
+```sh
+cd code/flink-sql/tools
+
+# List groups defined in a manifest
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../04-joins/cc groups
+
+# Deploy a custom group only
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../04-joins/cc deploy --group op_ddl
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../04-joins/cc undeploy --group op_ddl
+```
+
+From a demo Makefile with `deploy-%` delegation (see [04-joins/Makefile](../04-joins/Makefile)):
+
+```sh
+cd code/flink-sql/04-joins
+make deploy-op_ddl
+```
+
+Add a custom group to `undeploy_all` if its statements should be stopped during full teardown.
+
+## Deployment
 
 ```sh
 cd code/flink-sql/tools
 
 # Deploy everything in deploy_all
-uv run python deploy_flink_statements.py --sql-dir ../11-puzzles/cart_update deploy --group all
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update deploy --group all
 
 # Single group
-uv run python deploy_flink_statements.py --sql-dir ../11-puzzles/cart_update deploy --group ddl
-uv run python deploy_flink_statements.py --sql-dir ../11-puzzles/cart_update undeploy --group pipeline
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update deploy --group ddl
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update undeploy --group pipeline
 
 # Full teardown: stop/delete DML statements, then drop tables from manifest
-uv run python deploy_flink_statements.py --sql-dir ../11-puzzles/cart_update undeploy --group all
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update undeploy --group all
 
 # Statements only (skip drop_tables)
-uv run python deploy_flink_statements.py --sql-dir ../11-puzzles/cart_update undeploy --group all --no-drop-tables
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update undeploy --group all --no-drop-tables
 
 # Drop tables only
-uv run python deploy_flink_statements.py --sql-dir ../11-puzzles/cart_update drop-tables
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update drop-tables
 ```
 
 ## Makefile shortcut
@@ -86,11 +126,11 @@ Demo Makefiles delegate to `tools/Makefile` with `SQL_DIR` set to the demo path.
 
 ## Library API
 
-Import from `cc_flink_deploy` for custom scripts:
+Import from `cc_deploy` for custom scripts:
 
 ```python
 from pathlib import Path
-from cc_flink_deploy import get_config, load_manifest, deploy_statements, full_undeploy
+from cc_deploy import get_config, load_manifest, deploy_statements, full_undeploy
 
 manifest = load_manifest(Path("deploy_manifest.json"))
 deploy_statements(
@@ -111,19 +151,19 @@ sets `sql.snapshot.mode = now` automatically in SNAPSHOT cursor mode.
 cd code/flink-sql/tools
 
 # Top 10 rows from a table
-uv run python run_snapshot_query.py --table orders --limit 10
+uv run python -m cc_deploy.run_snapshot_query --table orders --limit 10
 
 # Filter and choose columns
-uv run python run_snapshot_query.py --table orders --columns "order_id, amount" --where "amount > 100"
+uv run python -m cc_deploy.run_snapshot_query --table orders --columns "order_id, amount" --where "amount > 100"
 
 # Custom SQL (count, joins, etc.)
-uv run python run_snapshot_query.py --sql "SELECT COUNT(*) AS cnt FROM orders" --output json
+uv run python -m cc_deploy.run_snapshot_query --sql "SELECT COUNT(*) AS cnt FROM orders" --output json
 ```
 
 Library API:
 
 ```python
-from cc_flink_deploy import build_select_sql, run_snapshot_query
+from cc_deploy import build_select_sql, run_snapshot_query
 
 sql = build_select_sql("orders", limit=5)
 result = run_snapshot_query(sql)
@@ -138,16 +178,16 @@ Run a continuous query and print rows as they arrive. Press Ctrl+C to stop.
 cd code/flink-sql/tools
 
 # Stream all rows from a table
-uv run python run_streaming_query.py --table orders
+uv run python -m cc_deploy.run_streaming_query --table orders
 
 # Filter with custom SQL, stop after 20 rows
-uv run python run_streaming_query.py --sql "SELECT * FROM orders WHERE amount > 100" --max-rows 20
+uv run python -m cc_deploy.run_streaming_query --sql "SELECT * FROM orders WHERE amount > 100" --max-rows 20
 ```
 
 Library API:
 
 ```python
-from cc_flink_deploy import build_select_sql, run_streaming_query
+from cc_deploy import build_select_sql, run_streaming_query
 
 sql = build_select_sql("orders", where="amount > 100")
 stats = run_streaming_query(sql)  # prints rows until Ctrl+C
@@ -200,6 +240,9 @@ Entry point: `flink-sql-migrate-dbt` (when the tools package is installed with e
 ## Related
 
 - [`cc_flink_rest_client.py`](cc_flink_rest_client.py) — lower-level `requests`-based REST client (legacy)
-- [`cc_flink_deploy.py`](cc_flink_deploy.py) — deploy, undeploy, snapshot, and streaming query library
-- [`run_snapshot_query.py`](run_snapshot_query.py) — snapshot query CLI
-- [`run_streaming_query.py`](run_streaming_query.py) — streaming query CLI
+- [`cc_deploy/deploy_flink_statements.py`](cc_deploy/deploy_flink_statements.py) — deploy/undeploy CLI
+- [`cc_deploy/manifest.py`](cc_deploy/manifest.py) — manifest model, load/save, template generation
+- [`cc_deploy/flink_deploy.py`](cc_deploy/flink_deploy.py) — deploy, undeploy, snapshot, and streaming query library
+- [`cc_deploy/create_deploy_manifest.py`](cc_deploy/create_deploy_manifest.py) — generate `deploy_manifest.json` from a SQL folder
+- [`cc_deploy/run_snapshot_query.py`](cc_deploy/run_snapshot_query.py) — snapshot query CLI
+- [`cc_deploy/run_streaming_query.py`](cc_deploy/run_streaming_query.py) — streaming query CLI

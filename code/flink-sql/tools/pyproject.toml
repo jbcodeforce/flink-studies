@@ -16,10 +16,11 @@ dev = [
 ]
 
 [project.scripts]
-flink-sql-deploy = "deploy_flink_statements:main"
-flink-sql-snapshot = "run_snapshot_query:main"
-flink-sql-stream = "run_streaming_query:main"
+flink-sql-deploy = "cc_deploy.deploy_flink_statements:main"
+flink-sql-snapshot = "cc_deploy.run_snapshot_query:main"
+flink-sql-stream = "cc_deploy.run_streaming_query:main"
 flink-sql-migrate-dbt = "migrate_dml_to_dbt:main"
+flink-sql-create-manifest = "cc_deploy.create_deploy_manifest:main"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

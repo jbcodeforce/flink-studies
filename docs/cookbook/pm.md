@@ -47,7 +47,7 @@ Use per-stage review questions for workshop-style coverage by diagram component.
 
 ## Per-stage review questions
 
-Questions below map to the diagram: Sources, Ingestion, Processing, Serve, Consumers. Each stage impliescontracts**: schema/registry, SLAs, and ownership of changes.
+Questions below map to the diagram: Sources, Ingestion, Processing, Serve, Consume. Each stage implies contracts: schema/registry, SLAs, and ownership of changes.
 
 ### Source of data
 
@@ -70,7 +70,7 @@ Apps, databases, transactional systems, devices.
 
 ### Processing
 
-Transformations, business rules, analytical data product.
+Transformations, business rules, analytical data products.
 
 * Clear definition of the data product: granularity, keys, refresh semantics, intended consumers. [See the Open Data Product Specification](https://opendataproducts.org/) to define metadata per data product.
 * Stateful vs stateless operations; state TTL and cleanup; changelog vs upsert outputs.
@@ -222,6 +222,14 @@ The following commands are used (see [shift_left utils](https://github.com/jbcod
 * **Deploying a unique table:** `shift_left pipeline deploy --table-name fct_user --compute-pool-id $CP_ID --may-start-descendants`
 
 This structure is compatible with `dbt` Confluent plugin (see [dbt chapter](../coding/dbt.md)). 
+
+### FAQ on Flink Project Management
+
+???+ question "Flink and Schema management"
+    *  *Does CC Flink validate its output against a pre-registered schema?*  Yes and the `show create table ...` help to understand existing schema. When submitted a Flink statement  the last schema version is used.
+    * *What is the schema subject naming convention for kafka topic created by Flink?*: the name of the table will be used. We recommend using naming convention to reflect the staging environment, may be the region, the data product and then the dim, fct, src... 
+    * *Does CC Flink automatically register output schema of SQL transforms in Confluent SR?* yes when using `CREATE TABLE`.  
+    * *How schema id is supported in Flink?* Confluent Cloud for Apache Flink now supports writing the Schema Registry schema ID to the Kafka record header. Set the new [key.format.id-encoding](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#flink-sql-create-table-with-key-format-id-encoding) and [value.format.id-encoding](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#flink-sql-create-table-with-value-format-id-encoding) table options to `header` to produce records without the Confluent wire-format payload prefix. This is useful when downstream consumers expect raw payloads or read schema IDs from the record header. Also, CC Flink can read records that weren't produced with a schema ID via [this process.](https://docs.confluent.io/cloud/current/flink/how-to-guides/read-records-without-schema-id-prefix.html)
 
 
 ## Design

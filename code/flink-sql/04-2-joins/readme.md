@@ -4,33 +4,20 @@
 
 [Based on the Confluent's blog: 'How to join a stream and a stream'](https://developer.confluent.io/tutorials/join-a-stream-to-a-stream/flinksql.html) but adapted for Confluent Cloud.
 
-The `orders` is the high velocity table. `Products` is the reference data, with new added product every week. As a first step we will use joins and no watermark, this will look like a cartesian join.
+1. Create products, orders and shipments tables in [cc](./cc) folder, see the `cc_s2s_ddl_orders.sql`, `cc_s2s_ddl_products.sql` and c`c_s2s_ddl_shipments.sql`
 
-*This project uses the python tools ([deploy_flink_statements](../tools/cc_deploy/deploy_flink_statements.py)) to deploy statements*
+    ```sh
+    make create_orders
+    make create_products
+    make create_shipments
+    ```
 
-* First we will create the order and product tables without watermarks (`op_ddl` group in [cc/deploy_manifest.json](./cc/deploy_manifest.json)):
-  ```sh
-  make sync
-  make deploy-op_ddl
-  make deplou-op_data
-  ```
+1. Insert records
+1. To do a first simple left join between orders and products: `make cc_s2s_order_product_join.sql` so all orders will have a product name added from the join. Let it runs.
 
-* We propose to copy/paste the join statements: run a single join pipeline, deploy one statement manually in the Confluent Console, using `streaming` mode.
-  ```sql
-   select
-      o.id as order_id,
-      o.total_amount,
-      o.customer_name,
-      o.order_ts_raw,
-      o.product_id,
-      p.product_name
-  from d04_orders o
-  join d04_products p on o.product_id = p.id;
-  ```
+The results looks like the following table, where the product_id 4 not being on the right side the generation is NULL
 
-The results shows that orders 9 is not present but with a null value for product name, as it references a product not yet in the products table. 
-
-| order_id | product_id | product_name |
+| id | product_id | product_name |
 | --- | --- | --- |
 | 1   | 1  |  Product-1 |
 | 5   | 1  |  Product-1 |
@@ -40,187 +27,19 @@ The results shows that orders 9 is not present but with a null value for product
 | 3   | 3  |  Product-3 |
 | 4   | 3  |  Product-3 |
 | 8   | 2  |  Product-2 |
+| 9   | 4  | NULL |
 | 10 | 3  |  Product-3 |
 
-* Add the 4th product with:
-  ```sql
-  INSERT INTO d04_products VALUES    ( 4, 'Product-4', TIMESTAMP '2023-08-22 10:00:15.000' );
-  ```
-  
- Now the row 9 is added with the `product-4`. 
-| order_id | product_id | product_name |
-| --- | --- | --- |
-| ... | | |
-| 8   | 2  |  Product-2 |
-| 10 | 3  |  Product-3 |
-| 9 | 4 | Product-4 |
- 
-This is expected as the join is cartesian.
-
-* Now if we change the previous join with a left join where the left table is the orders:
-  ```sql
-  from d04_orders o
-  left join d04_products p on o.product_id = p.id;
-  ```
-
-  And we insert an 11 order with a non-yet referenced product:
-  ```sql
-  INSERT INTO d04_orders
-  VALUES ( 11, 101.01, 'Jane Smith',    TIMESTAMP '2023-08-25 10:30:15.000', 5);
-  ```
-
-  Because it is a left join, a record is now generated is a NULL product:
-
-| order_id | product_id | product_name |
-| --- | --- | --- |
-| ... | | |
-| 8   | 2  |  Product-2 |
-| 10  | 3  |  Product-3 |
-| 9   | 4 | Product-4 |
-| 11  | 5 | NULL |
-
-  Inserting later the 5th product will change the allocation and the view move to
-
-| order_id | product_id | product_name |
-| --- | --- | --- |
-| ... | | |
-| 8   | 2 |  Product-2 |
-| 10  | 3 |  Product-3 |
-| 9   | 4 | Product-4 |
-| 11  | 5 | Product-5 |
-
-  Looking at the `changelog view` we can see a Delete and insert of the records:
-
-  ![](./docs/order_product_joins.png)
-  
-
-* This table was not materialized to a kafka topic. We can retry by doing a CTAS of the join. 
-  ```sh
-  make deploy-op_join_1
-  ```
-
-  It is important to declare the primary key to be sure all records with same keys are going to the same partition. Here we also specify one partition. 
-
-  Doing the same exercise by adding a new order and then a new product, we can see the same behavior:
-  ```sql
-  INSERT INTO d04_orders
-      VALUES ( 12, 202.01, 'Jane Smith',    TIMESTAMP '2023-08-26 10:30:15.000', 6);
-  ```
-  
-  The created topic has 1 partition and get the good results. It is an upsert table, which is mandatory as soon as there is left outer join in the statement. Flink must handle the scenario where left-side events do not have corresponding right-side events at the time of processing. The Upsert table allows Flink to store unmatched left records and update them when matching right records arrive later, ensuring all left records are included in the result, thus supporting the LEFT JOIN semantics effectively in a streaming context.
-
-   The created event in the order_enriched topic is:
-   
-  ```json
-    {
-      "order_id": 12,
-      "total_amount": {
-        "double": 202.01
-      },
-      "customer_name": {
-        "string": "Jane Smith"
-      },
-      "order_ts_raw": {
-        "long": 1693045815000
-      },
-      "product_id": {
-        "int": 6
-      },
-      "product_name": null
-    }
-  ```
-
-   Adding the missing product: 
-    ```sql
-   INSERT INTO d04_products VALUES    ( 6, 'Product-6', TIMESTAMP '2023-08-24 10:00:15.000' )
-  ```
-  
-  it will generate TWO records in the kafka topic: one delete and one new:
+1. Add the 4th product with  `INSERT INTO products VALUES    ( 4,   'Product-4',    1692812175 );` Now the row 9 is modified with the `product-4`. As this table was not materialized. we can retry by doing a CTAS of the join (see `cc_s2s_ctas_join_1.sql`), the created topic has 1 partition and get the good results. It is an upsert table, which is mandatory as soon as there is left outer join in the statement. Flink must handle the scenario where left-side events do not have corresponding right-side events at the time of processing. The Upsert table allows Flink to store unmatched left records and update them when matching right records arrive later, ensuring all left records are included in the result, thus supporting the LEFT JOIN semantics effectively in a streaming context.
+1. Next is to add an order without matching product: `INSERT INTO orders VALUES ( 11, 200.89, 'Art Vandelay', 1692812175, 5);`. The created event in the order_enriched topic is `1738379770426, {"id":11} {"id":11,"product_id":{"long":"5"},"product_name":null}`. Adding the missing product: `insert into products values ( 5,  'Product-5',    1692812190)` it will generate TWO records in the kafka topic: one delete and one new:
 
   ```sh
   Key       Value
-  {"id":12} ""
-  {"id":12} {"id":12,"product_id":{"long":"6"},"product_name": { "string": "Product-6"}}
+  {"id":11} ""
+  {"id":11} {"id":11,"product_id":{"long":"5"},"product_name": { "string": "Product-5"}}
   ```
 
   The left join emits the record without product name, while the join once the product arrived, generates 2 messages to support an upsert. 
-
-* This demonstrates also that Flink task managers are keeping state of both side of the joins. Which means that when one of the right side record change, like changing the name with:
-  ```sql
-  INSERT INTO d04_products VALUES    ( 6, 'Product-6.1', TIMESTAMP '2023-08-24 10:00:15.000' )
-  ```
-
-  A new pair of -U +U to update order_id 12 are present. Each side of the joins has all the records per primary key. The join changes as events arrive and process both tables without strictly enforcing time-bound limits. These states are growing forever.
-
-  The simple solution is to set state TTL at the statment level
-
-  ```sql
-  set 'sql.state-ttl' = '2d';
-  ```
-
-  or at the join side so each side may have different TTL
-  ```sql
-  select /*+ STATE_TTL('d04_orders'='2h', 'd04_products'='30d') */ 
-    o.id as order_id,
-    o.total_amount,
-    o.customer_name,
-    o.order_ts_raw,
-    o.product_id,
-    p.product_name
-  from d04_orders o
-  left join d04_products p on o.product_id = p.id;
-  ```
-
-* To drop tables do:
-  ```sh
-  make drop-tables
-  ```
-
-## Adding constraints on the time: watermark strategy
-
-Watermarks set on both tables do impact join results. When joining two streams, Flink takes the minimum watermark across both inputs to advance the operator's internal event time. Any event with a timestamp older than the current operator watermark will generally be dropped, causing no emitted records for that late date.
-
-* Create tables with watermarks and insert basic records
-  ```sh
-  make deploy-ddl
-  #
-  make deploy-op_data
-  ```
-
-  The orders dates are between: '2023-08-23 17:36:15.000' and '2023-08-23 21:40:15.000' while the products are from one day before:
-  '2023-08-22 17:36:15.000' and '2023-08-22 17:36:17.000'
-
-* Redeploying the join will give results for the first records and no record for order_id: 9. Adding the product-4 with a time stamp after the order 9:
-  ```sql
-   INSERT INTO d04_products VALUES    ( 4, 'Product-4', TIMESTAMP '2023-08-24 10:00:15.000' )
-  ```
-
-  The order 9 is now emitted.
-
-* Now if we add a order record with a time stamp that is ealier than the product 5:
-  ```sql
-  INSERT INTO d04_orders
-  VALUES ( 11, 202.01, 'Jane Smith',    TIMESTAMP '2023-08-24 21:40:15.000', 5);
-  ```
-
-  then adding the product 5:
-  ```sql
-   INSERT INTO d04_products VALUES    ( 5, 'Product-5', TIMESTAMP '2023-08-24 10:00:15.000' )
-  ```
-
-
-* You can see where the watermarks on both streams are now: products at 8/24/2023-03:00am and orders at 08/24/2023 02:40pm. (The time difference is because of the time zone) 
-
-![](./docs/watermark-level.png)
-
-*  adding a product update with a timstamp before the current watermark will be dropped, no change to the order 11:
-  ```sql
-  INSERT INTO d04_products VALUES    ( 5, 'Product-5.1', TIMESTAMP '2023-08-23 09:00:00.000' )
-  ```
-
----
-
-## Inner joins
 
 1. Use insert shipments scripts in CC.
 1. Implements an inner join between the orders and shipments. This kind of join only emits events when there’s a match on the criteria of both sides of the join. It also uses the INTERVAL function to perform an interval join, which also needs a sql timestamp to specify an addition join requirement that order and shipment occured within seven days of each other: See `cc_s2s_join-2.sql`. To make it persistent, meaning results will be in an output topic, use: `cc_s2s_ctas_join-2.sql` which creates 1 partition topic. 
@@ -236,7 +55,7 @@ Watermarks set on both tables do impact join results. When joining two streams, 
 The results will include only 8 records as record 9 and 10 has more than 7 hours difference. 
 
 
-## Confluent Flink more advanced problems
+## Confluent Flink more advance problems
 
 ### 1- Compute the number of orders per customer per minute (non-overlapping window)
 

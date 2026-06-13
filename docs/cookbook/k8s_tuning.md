@@ -27,7 +27,7 @@ Before changing configuration, collect baseline data from:
 * **Prometheus / Grafana:** JVM CPU, GC, checkpoint duration, consumer lag (when Kafka is the source).
 * **Kubernetes:** Pod CPU/memory usage, OOMKilled events, scheduling delays.
 
-See [Flink metrics interpretation](../architecture/cookbook.md) for metric definitions and [Job Lifecycle §5](job_lifecycle.md#51--key-metrics-to-watch-checkpointing-backpressure-task-failures-jvm) for operational thresholds.
+See Flink metrics interpretation for metric definitions and [Job Lifecycle §5](job_lifecycle.md) for operational thresholds.
 
 ### Tune in order
 
@@ -340,7 +340,7 @@ Sustained backpressure in the Flink UI, growing Kafka consumer lag, increasing e
 4. Redeploy; for stateful jobs use savepoint upgrade mode.
 5. Monitor lag and backpressure for 10–15 minutes.
 
-For the full operational procedure, see [Job Lifecycle §3.2](job_lifecycle.md#32--handling-backpressure-and-hot-keys).
+For the full operational procedure, see [Job Lifecycle §3.2](job_lifecycle.md/#32-with-incompatible-state-changes-state-migration-strategies).
 
 #### Validation
 
@@ -647,7 +647,7 @@ Install Prometheus and Grafana on the cluster following [CMF deployment README �
 
 ### Context
 
-This section is the observability playbook for tuning decisions. It consolidates guidance for [Job Lifecycle §6.1 and §6.2](job_lifecycle.md#61--identifying-bottlenecks-sources-network-rocksdb).
+This section is the observability playbook for tuning decisions. It consolidates guidance for [Job Lifecycle §6.1 and §6.2](job_lifecycle.md/#61-key-metrics-to-watch-checkpointing-backpressure-task-failures-jvm).
 
 ### Symptom → diagnosis → first knob
 
@@ -672,7 +672,7 @@ This section is the observability playbook for tuning decisions. It consolidates
 Cross-references:
 
 * [Architecture cookbook — metric definitions](../architecture/cookbook.md)
-* [Job Lifecycle §5 — key metrics](job_lifecycle.md#51--key-metrics-to-watch-checkpointing-backpressure-task-failures-jvm)
+* [Job Lifecycle §5 — key metrics](job_lifecycle.md/#51-recipe-replaying-kafka-topics-from-older-offsets)
 * [perf-testing demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/perf-testing)
 
 ---

@@ -11,6 +11,7 @@ compiled: false
 ???- info "Updates"
     - Created 03/11/2026
     - Updated 05/17/2026
+    - 06/11/2026: PTF, schema ID, Materialized table
 
 ## Updates to this web site
 
@@ -32,6 +33,7 @@ compiled: false
   - **Methodology & architecture**
     - Data-as-a-product chapter; agentic EDA; AI agent SQL for anomaly detection.
     - TableFlow with Flink deployment; disaster recovery diagram.
+    - [06/26] Add project management chapter
 
 ### E2E Demos — Restructure and Confluent Cloud
 
@@ -138,16 +140,26 @@ compiled: false
 
 Confluent has integrated AI as a "first-class citizen" within Flink SQL, allowing developers to build AI-driven applications without leaving the data stream.
 
-* **Flink Native Inference:** You can now run open-source AI models (like Meta Llama) directly within Confluent Cloud. This reduces latency and keeps data secure by avoiding calls to external third-party APIs.
-* **Streaming Agents:** A framework to build and orchestrate event-driven AI agents. These agents "live" in the event stream, allowing them to observe, decide, and act in real-time with the freshest business context.
-* **Flink Search (Vector Database Integration):** A unified interface to perform vector searches across databases like MongoDB, Elasticsearch, and Pinecone directly from Flink SQL.
-* **Remote Model Support:** Support for external providers like Anthropic and Fireworks AI was added in early 2026, expanding the options for model inference.
-* **Built-in ML Functions:** New functions for forecasting and anomaly detection are available natively in Flink SQL, making advanced data science accessible to non-specialists.
+### SQL / Table API Programming
+
 * **Snapshot Queries:** Introduced in Q2 2025, this feature allows you to run fast, batch-style queries across Kafka topics and Tableflow data (Iceberg/Delta Lake). It is optimized for interactive speed (up to 50-100x faster than traditional streaming jobs for historical data), which is ideal for debugging and data exploration.
 * **Tableflow Integration:** Flink now works seamlessly with Tableflow to treat streaming Kafka topics as analytical tables (Iceberg/Delta Lake) with support for upserts and Dead Letter Queues (DLQ).
 * **Python UDFs (User-Defined Functions):** Developers can now write scalar UDFs in Python and run them directly within Flink SQL. This opens up Flink to Python's massive ecosystem of ML and data libraries.
 * **Flink SQL Query Profiler:** A dynamic visual dashboard that helps identify performance bottlenecks by providing real-time metrics across statements, tasks, and operators.
 * **Custom Error Handling:** You can now define how Flink handles deserialization errors (e.g., ignoring bad records or routing them to a Dead Letter Queue table) to keep pipelines running smoothly.
 * **Improved Watermark Strategy:** The default watermark strategy (SOURCE_WATERMARK()) was updated to a fixed tolerance of 180ms. It now produces watermarks immediately without requiring a minimum record count, preventing "stuck" queries in low-traffic partitions.
+* (04/2026) [dbt adapter for Confluent Cloud for Flink](https://github.com/confluentinc/dbt-confluent) to build, test, and manage streaming data transformations on Confluent Cloud using dbt's familiar development workflow. [See my extensive studies](../coding/dbt.md) with [code samples](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt) with Duckdb as data warehouse and flink for streaming deployment.
+* (05/2026 [External table access](https://docs.confluent.io/cloud/current/flink/concepts/external-tables.html) to enrich fast-moving streaming data with slowly changing reference data held in an external system.
+* (06/2026) [Read Kafka records without a schema ID prefix in Flink SQL](https://docs.confluent.io/cloud/current/flink/how-to-guides/read-records-without-schema-id-prefix.html), records that weren’t serialized with Schema Registry serializers. 
+* (06/2026) [Support Materialized table](https://docs.confluent.io/cloud/current/flink/concepts/materialized-tables.html) to automate offset bookkeeping and job orchestration through a single SQL statement. CC will manage the offset bookkeeping and job migration.
+* (06/2026) [Process Table Function](https://docs.confluent.io/cloud/current/flink/how-to-guides/create-ptf.html) allow developers to write custom, stateful stream processing logic in Java and deploy it to Confluent Cloud as a SQL-callable function. [See dedicated chapter](../coding/ptf.md)
+
+### AI / Agentic
+
+* **Flink Native Inference:** You can now run open-source AI models (like Meta Llama) directly within Confluent Cloud. This reduces latency and keeps data secure by avoiding calls to external third-party APIs.
+* **Streaming Agents:** A framework to build and orchestrate event-driven AI agents. These agents "live" in the event stream, allowing them to observe, decide, and act in real-time with the freshest business context.
+* **Flink Search (Vector Database Integration):** A unified interface to perform vector searches across databases like MongoDB, Elasticsearch, and Pinecone directly from Flink SQL.
+* **Remote Model Support:** Support for external providers like Anthropic and Fireworks AI was added in early 2026, expanding the options for model inference.
+* **Built-in ML Functions:** New functions for forecasting and anomaly detection are available natively in Flink SQL, making advanced data science accessible to non-specialists.
 * **Progressive Idleness Detection:** Idle timeouts were reduced (from 15s to 10s), and idle partitions now forward their latest event time, ensuring that one quiet partition doesn't block the results of a multi-partition query.
 * **Vector Search on External DBs:** Specifically, similarity search support for Azure Cosmos DB was added in early 2026 for RAG

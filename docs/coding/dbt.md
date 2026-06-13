@@ -427,6 +427,18 @@ we need to specify the materialization to be `incremental`. We also want to stop
 | insert+overwrite | fast for partitioned tables | requires partitioned table. Replaces the whole partitions|
 
 
+This is set in the config() element.
+
+```
+  {{
+    config(
+      materialized = 'incremental',
+      on_schema_change='fail',
+      incremental_strategy='merge',
+      
+      )
+  }}
+```
 
 ! STOPPED HERE
 
