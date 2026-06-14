@@ -1,0 +1,64 @@
+# Image-only km-agent stack for flink-studies (no km-agent repo clone).
+# OMLX runs outside Compose — on this Mac or a remote host (see .env.example).
+services:
+  agent-db:
+    image: agnohq/pgvector:18
+    container_name: agent-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${KMA_DB_USER:-ai}
+      POSTGRES_PASSWORD: ${KMA_DB_PASS:-ai}
+      POSTGRES_DB: ${KMA_DB_DATABASE:-ai}
+    volumes:
+      - km-agent-postgres:/var/lib/postgresql
+    ports:
+      - "${KMA_DB_PORT:-5432}:5432"
+    networks:
+      - km-agent
+
+  km-agent:
+    image: ${IMAGE_NAME:-jbcodeforce/km-agent}:${IMAGE_TAG:-latest}
+    container_name: km-agent
+    restart: unless-stopped
+    ports:
+      - "${KMA_AGENT_OS_PORT:-8000}:8000"
+    volumes:
+      - ${KMA_CONTEXT_DIR:-./context}:/app/context
+    environment:
+      - RUNTIME_ENV=dev
+      - AGNO_DEBUG=${AGNO_DEBUG:-True}
+      - AGNO_DEBUG_LEVEL=${AGNO_DEBUG_LEVEL:-1}
+      - PYTHONPATH=/app/src
+      - KMA_AGENT_REASONING=${KMA_AGENT_REASONING:-}
+      - KMA_STREAM_EVENTS=${KMA_STREAM_EVENTS:-}
+      - KMA_SHOW_TEAM_MEMBERS=${KMA_SHOW_TEAM_MEMBERS:-}
+      - KMA_LLM_PROVIDER=${KMA_LLM_PROVIDER:-mlx}
+      - KMA_LLM_MODEL_ID=${KMA_LLM_MODEL_ID:-}
+      - KMA_LLM_API_KEY=${KMA_LLM_API_KEY:-not-needed}
+      - KMA_LLM_BASE_URL=${KMA_LLM_BASE_URL:-http://host.docker.internal:7999/v1}
+      - KMA_EMBED_PROVIDER=${KMA_EMBED_PROVIDER:-fastembed}
+      - KMA_EMBED_MODEL=${KMA_EMBED_MODEL:-BAAI/bge-small-en-v1.5}
+      - KMA_EMBED_DIMENSIONS=${KMA_EMBED_DIMENSIONS:-384}
+      - KMA_EMBED_BASE_URL=${KMA_EMBED_BASE_URL:-}
+      - KMA_DB_HOST=agent-db
+      - KMA_DB_PORT=5432
+      - KMA_DB_USER=${KMA_DB_USER:-ai}
+      - KMA_DB_PASS=${KMA_DB_PASS:-ai}
+      - KMA_DB_DATABASE=${KMA_DB_DATABASE:-ai}
+      - WAIT_FOR_DB=True
+      - PRINT_ENV_ON_LOAD=False
+      - EXA_API_KEY=${EXA_API_KEY:-}
+      - KMA_PARALLEL_API_KEY=${KMA_PARALLEL_API_KEY:-}
+      - KMA_CONTEXT_DIR=/app/context
+    depends_on:
+      - agent-db
+    networks:
+      - km-agent
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  km-agent:
+
+volumes:
+  km-agent-postgres:

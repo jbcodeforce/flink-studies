@@ -1,7 +1,7 @@
 **/target/
 site/
 flink-training/
-**.env
+**/.env
 **/cloud.properties
 **/agent_domain_store/
 **/.terraform/

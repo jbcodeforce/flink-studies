@@ -1,4 +1,11 @@
-
+---
+title: "$1 is the statement name"
+source: studies-docs
+ingested: 2026-06-13
+tags: []
+type: article
+compiled: false
+---
 
 There is a [Confluent cookbook for best practices](https://github.com/confluentinc/flink-cookbook) to run Flink into production. The content of this page is to get a summary of those practices, enhanced from other customers' engagements. It also references hands-on exercises within this repository. 
 

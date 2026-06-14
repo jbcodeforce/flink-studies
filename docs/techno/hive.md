@@ -1,3 +1,12 @@
+---
+title: "Apache Hive"
+source: studies-docs
+ingested: 2026-06-13
+tags: []
+type: article
+compiled: false
+---
+
 # Apache Hive
 
 [Apache Hive](https://hive.apache.org/) is an open-source, distributed, fault-tolerant data warehouse system built on top of Apache Hadoop. It is designed to facilitate reading, writing, and managing petabytes of data residing in distributed storage using a SQL-compliant interfac
