@@ -1,17 +1,19 @@
 {
   "user_agent": "flink-studies-cc/0.1",
   "deploy_all": [
-    "ddl",
-    "pipeline",
+    "ddls",
     "data"
   ],
   "undeploy_all": [
-    "pipeline"
+    "op_left_join"
   ],
   "drop_tables": [
     "d04_shipments",
     "d04_products",
     "d04_orders",
+    "d04_order_product_join"
+  ],
+  "drop_joins": [
     "d04_order_product_join"
   ],
   "groups": {
@@ -21,17 +23,27 @@
         "file": "dml.order_product_join.sql"
       }
     ],
-    "op_ddl": [
+    "op_left_join": [
       {
-        "name": "cc-ddl-orders",
-        "file": "ddl.orders_nowm.sql"
-      },
-      {
-        "name": "cc-ddl-products",
-        "file": "ddl.products_nowm.sql"
+        "name": "d04-left-join",
+        "file": "dml.ord_prod_left_join_ttl.sql"
       }
     ],
-    "ddl": [
+    "ddls_wm": [
+      {
+        "name": "cc-ddl-orders-wm",
+        "file": "ddl.orders_wm.sql"
+      },
+      {
+        "name": "cc-ddl-products-wm",
+        "file": "ddl.products_wm.sql"
+      },
+      {
+        "name": "cc-ddl-shipments",
+        "file": "ddl.shipments.sql"
+      }
+    ],
+    "ddls": [
       {
         "name": "cc-ddl-orders",
         "file": "ddl.orders.sql"
@@ -39,13 +51,9 @@
       {
         "name": "cc-ddl-products",
         "file": "ddl.products.sql"
-      },
-      {
-        "name": "cc-ddl-shipments",
-        "file": "ddl.shipments.sql"
       }
     ],
-    "op_data": [
+    "data": [
       {
         "name": "cc-data-insert-orders",
         "file": "dml.insert_orders.sql"
@@ -53,6 +61,12 @@
       {
         "name": "cc-data-insert-products",
         "file": "dml.insert_products.sql"
+      }
+    ],
+    "data_ship": [
+      {
+        "name": "cc-data-insert-shipments",
+        "file": "dml.insert_shipments.sql"
       }
     ]
   },

@@ -21,4 +21,4 @@ as select
    o.product_id,
    p.product_name
 from d04_orders o
-join d04_products p on o.product_id = p.id;
+left join d04_products p on o.product_id = p.id;

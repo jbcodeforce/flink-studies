@@ -11,11 +11,11 @@ The `orders` is the high velocity table. `Products` is the reference data, with 
 * First we will create the order and product tables without watermarks (`op_ddl` group in [cc/deploy_manifest.json](./cc/deploy_manifest.json)):
   ```sh
   make sync
-  make deploy-op_ddl
-  make deplou-op_data
+  make deploy-ddls
+  make deploy-data
   ```
 
-* We propose to copy/paste the join statements: run a single join pipeline, deploy one statement manually in the Confluent Console, using `streaming` mode.
+* We propose to copy/paste the join statement in a Confluent Cloud workspace cell: it runs a single join pipeline, deploy one statement manually in the Confluent Console, using `streaming` mode.
   ```sql
    select
       o.id as order_id,
@@ -28,40 +28,53 @@ The `orders` is the high velocity table. `Products` is the reference data, with 
   join d04_products p on o.product_id = p.id;
   ```
 
-The results shows that orders 9 is not present but with a null value for product name, as it references a product not yet in the products table. 
+  As an alternate the command: `make deploy-op_join_1`
 
-| order_id | product_id | product_name |
-| --- | --- | --- |
-| 1   | 1  |  Product-1 |
-| 5   | 1  |  Product-1 |
-| 6   | 1  |  Product-1 |
-| 7   | 1  |  Product-1 |
-| 2   | 2  |  Product-2 |
-| 3   | 3  |  Product-3 |
-| 4   | 3  |  Product-3 |
-| 8   | 2  |  Product-2 |
-| 10 | 3  |  Product-3 |
+  The results shows that orders 9 is present but with a null value for product name, as it references a product not yet in the products table. 
 
-* Add the 4th product with:
+  | order_id | product_id | product_name |
+  | --- | --- | --- |
+  | 1   | 1  |  Product-1 |
+  | 5   | 1  |  Product-1 |
+  | 6   | 1  |  Product-1 |
+  | 7   | 1  |  Product-1 |
+  | 2   | 2  |  Product-2 |
+  | 3   | 3  |  Product-3 |
+  | 4   | 3  |  Product-3 |
+  | 8   | 2  |  Product-2 |
+  | 9   | 4  | Null |
+  | 10 | 3  |  Product-3 |
+
+* Using the Workspace cell: add the 4th product with:
   ```sql
   INSERT INTO d04_products VALUES    ( 4, 'Product-4', TIMESTAMP '2023-08-22 10:00:15.000' );
   ```
   
- Now the row 9 is added with the `product-4`. 
-| order_id | product_id | product_name |
-| --- | --- | --- |
-| ... | | |
-| 8   | 2  |  Product-2 |
-| 10 | 3  |  Product-3 |
-| 9 | 4 | Product-4 |
- 
-This is expected as the join is cartesian.
+  Now the row 9 is updated with the `product-4`. 
+  | order_id | product_id | product_name |
+  | --- | --- | --- |
+  | ... | | |
+  | 8   | 2  |  Product-2 |
+  | 10 | 3  |  Product-3 |
+  | 9 | 4 | Product-4 |
+  
+  This is expected as the join is cartesian.
 
-* Now if we change the previous join with a left join where the left table is the orders:
+* Undeploy if you want to do next step:
+  ```sh
+  make undeploy
+  make drop-tables
+  ```
+
+## Left Joins
+
+* If we change the previous join with a left join where the left table is the orders:
   ```sql
   from d04_orders o
   left join d04_products p on o.product_id = p.id;
   ```
+
+  deploy with `make `
 
   And we insert an 11 order with a non-yet referenced product:
   ```sql
@@ -69,37 +82,35 @@ This is expected as the join is cartesian.
   VALUES ( 11, 101.01, 'Jane Smith',    TIMESTAMP '2023-08-25 10:30:15.000', 5);
   ```
 
-  Because it is a left join, a record is now generated is a NULL product:
-
-| order_id | product_id | product_name |
-| --- | --- | --- |
-| ... | | |
-| 8   | 2  |  Product-2 |
-| 10  | 3  |  Product-3 |
-| 9   | 4 | Product-4 |
-| 11  | 5 | NULL |
+  | order_id | product_id | product_name |
+  | --- | --- | --- |
+  | ... | | |
+  | 8   | 2  |  Product-2 |
+  | 10  | 3  |  Product-3 |
+  | 9   | 4 | Product-4 |
+  | 11  | 5 | NULL |
 
   Inserting later the 5th product will change the allocation and the view move to
 
-| order_id | product_id | product_name |
-| --- | --- | --- |
-| ... | | |
-| 8   | 2 |  Product-2 |
-| 10  | 3 |  Product-3 |
-| 9   | 4 | Product-4 |
-| 11  | 5 | Product-5 |
+  | order_id | product_id | product_name |
+  | --- | --- | --- |
+  | ... | | |
+  | 8   | 2 |  Product-2 |
+  | 10  | 3 |  Product-3 |
+  | 9   | 4 | Product-4 |
+  | 11  | 5 | Product-5 |
 
   Looking at the `changelog view` we can see a Delete and insert of the records:
 
   ![](./docs/order_product_joins.png)
   
 
-* This table was not materialized to a kafka topic. We can retry by doing a CTAS of the join. 
+* This table was not materialized to a kafka topic. We can retry by doing a CTAS of the join:
   ```sh
-  make deploy-op_join_1
+  make deploy-op_left_join
   ```
 
-  It is important to declare the primary key to be sure all records with same keys are going to the same partition. Here we also specify one partition. 
+  It is important to declare the primary key to be sure all records with same keys are going to the same partition. Here we also specify one partition but for production, it may be better to use the default of 6 or even more. 
 
   Doing the same exercise by adding a new order and then a new product, we can see the same behavior:
   ```sql
@@ -107,9 +118,9 @@ This is expected as the join is cartesian.
       VALUES ( 12, 202.01, 'Jane Smith',    TIMESTAMP '2023-08-26 10:30:15.000', 6);
   ```
   
-  The created topic has 1 partition and get the good results. It is an upsert table, which is mandatory as soon as there is left outer join in the statement. Flink must handle the scenario where left-side events do not have corresponding right-side events at the time of processing. The Upsert table allows Flink to store unmatched left records and update them when matching right records arrive later, ensuring all left records are included in the result, thus supporting the LEFT JOIN semantics effectively in a streaming context.
+  The created table is an upsert changelog, which is mandatory as soon as there is left outer join in the statement. Flink must handle the scenario where left-side events do not have corresponding right-side events at the time of processing. The Upsert table allows Flink to store unmatched left records and update them when matching right records arrive later, ensuring all left records are included in the result, thus supporting the LEFT JOIN semantics effectively in a streaming context.
 
-   The created event in the order_enriched topic is:
+   The created event in the d04_order_product_join topic is:
    
   ```json
     {
@@ -143,14 +154,12 @@ This is expected as the join is cartesian.
   {"id":12} {"id":12,"product_id":{"long":"6"},"product_name": { "string": "Product-6"}}
   ```
 
-  The left join emits the record without product name, while the join once the product arrived, generates 2 messages to support an upsert. 
-
-* This demonstrates also that Flink task managers are keeping state of both side of the joins. Which means that when one of the right side record change, like changing the name with:
+* This demonstrates also that Flink task managers are keeping state of both side of the joins, which means that when one of the right side record change, like changing the name with:
   ```sql
   INSERT INTO d04_products VALUES    ( 6, 'Product-6.1', TIMESTAMP '2023-08-24 10:00:15.000' )
   ```
 
-  A new pair of -U +U to update order_id 12 are present. Each side of the joins has all the records per primary key. The join changes as events arrive and process both tables without strictly enforcing time-bound limits. These states are growing forever.
+  A new pair of -U +U records to update order_id 12 are present. Each side of the joins has all the records per primary key. The join changes as events arrive and process both tables without strictly enforcing time-bound limits. These states are growing forever.
 
   The simple solution is to set state TTL at the statment level
 
@@ -160,7 +169,7 @@ This is expected as the join is cartesian.
 
   or at the join side so each side may have different TTL
   ```sql
-  select /*+ STATE_TTL('d04_orders'='2h', 'd04_products'='30d') */ 
+  select /*+ STATE_TTL(o='2h', p='30d') */ 
     o.id as order_id,
     o.total_amount,
     o.customer_name,
@@ -173,18 +182,28 @@ This is expected as the join is cartesian.
 
 * To drop tables do:
   ```sh
+  make undeploy
   make drop-tables
   ```
 
 ## Adding constraints on the time: watermark strategy
 
-Watermarks set on both tables do impact join results. When joining two streams, Flink takes the minimum watermark across both inputs to advance the operator's internal event time. Any event with a timestamp older than the current operator watermark will generally be dropped, causing no emitted records for that late date.
+Watermarks set on both tables do not impact join results. Watermarks matter only for time-based joins, not regular equi-joins. Simple JOIN / LEFT JOIN without event-time conditions do not use watermarks to decide when to emit results.
+
+For interval joins and temporal (time-versioned) joins, watermarks directly affect output timing and completeness. Flink uses watermarks to know when enough event-time has passed to safely produce results; without watermarks, these operators do not produce output.
+
+For temporal joins, the join may wait until the watermark on the versioned/enrichment side reaches the probe record’s timestamp before emitting, which introduces latency. 
+If one side is idle or lagging, the join can appear stalled because two-input operators generally wait on the relevant watermarks from both sides
+
+For interval joins, watermarks are also propagated with an additional delay equal to the maximum join interval bound, so larger time ranges increase buffering and downstream latency.
+
+To acknowledge watermarks have no impact on regular joins
 
 * Create tables with watermarks and insert basic records
   ```sh
-  make deploy-ddl
+  make deploy-ddl_wm
   #
-  make deploy-op_data
+  make deploy-data
   ```
 
   The orders dates are between: '2023-08-23 17:36:15.000' and '2023-08-23 21:40:15.000' while the products are from one day before:
@@ -205,118 +224,140 @@ Watermarks set on both tables do impact join results. When joining two streams, 
 
   then adding the product 5:
   ```sql
-   INSERT INTO d04_products VALUES    ( 5, 'Product-5', TIMESTAMP '2023-08-24 10:00:15.000' )
+  INSERT INTO d04_products VALUES    ( 5, 'Product-5', TIMESTAMP '2023-08-24 10:00:15.000' )
   ```
 
+  The new product name is added to the order
 
-* You can see where the watermarks on both streams are now: products at 8/24/2023-03:00am and orders at 08/24/2023 02:40pm. (The time difference is because of the time zone) 
-
-![](./docs/watermark-level.png)
-
-*  adding a product update with a timstamp before the current watermark will be dropped, no change to the order 11:
-  ```sql
-  INSERT INTO d04_products VALUES    ( 5, 'Product-5.1', TIMESTAMP '2023-08-23 09:00:00.000' )
-  ```
+  ![](./docs/watermark-level.png)
 
 ---
 
-## Inner joins
+## Temporal and Inner joins
 
-1. Use insert shipments scripts in CC.
-1. Implements an inner join between the orders and shipments. This kind of join only emits events when there’s a match on the criteria of both sides of the join. It also uses the INTERVAL function to perform an interval join, which also needs a sql timestamp to specify an addition join requirement that order and shipment occured within seven days of each other: See `cc_s2s_join-2.sql`. To make it persistent, meaning results will be in an output topic, use: `cc_s2s_ctas_join-2.sql` which creates 1 partition topic. 
+In this example we want to emit records when there’s a match on the criteria of both sides of the join: orders and shipments within a time interval of 2 days:
+```sql
+SELECT
+  o.order_id as order_id,
+  o.total_amount as total,
+  o.customer_name as customer,
+  s.id as shipment_id,
+  s.ship_ts_raw as shipment_ts,
+  s.warehouse,
+  TIMESTAMPDIFF(HOUR,
+             o.order_ts_raw,                     -- convert numeric type (an epoch based timestamp in this case) to a formatted string in the default format of yyyy-MM-dd HH:mm:ss
+             s.ship_ts_raw) as HR_TO_SHIP
+  FROM d04_order_product_join o
+  INNER JOIN d04_shipments s
+  ON o.order_id = s.order_id
+      AND s.ship_ts_raw
+      BETWEEN o.order_ts_raw
+      AND o.order_ts_raw  + INTERVAL '2' DAY;
+```
 
-  ```sql
-  select ...
-  ROM orders o inner join shipments s ON o.id = s.order_id
-    AND TO_TIMESTAMP(FROM_UNIXTIME(s.ship_ts_raw))
-     BETWEEN TO_TIMESTAMP(FROM_UNIXTIME(o.order_ts_raw))
-     AND TO_TIMESTAMP(FROM_UNIXTIME(o.order_ts_raw))  + INTERVAL '7' HOURS;
+* Run:
+  ```sh
+  make ddls_wm
+  make deploy-data
+  make deploy-op_left_join
+  # then for shipment
+  make deploy-data_ship
   ```
+  
+  The results will include only 8 records as record 9 and 10 has more than 7 hours difference. 
 
-The results will include only 8 records as record 9 and 10 has more than 7 hours difference. 
+  ![](./docs/shipment_joins.png)
 
+---
 
 ## Confluent Flink more advanced problems
 
 ### 1- Compute the number of orders per customer per minute (non-overlapping window)
 
-The `marketplace.orders` source table is:
+* Confluent Cloud has a set of data in the `marketplace.orders` source table as:
+  ```sql
+  TABLE `examples`.`marketplace`.`orders` (
+    `order_id` VARCHAR(2147483647) NOT NULL,
+    `customer_id` INT,
+    `product_ids` ARRAY<BIGINT>,
+    `price` DECIMAL(10, 2),
+    `order_details` VARCHAR(2147483647),
+    CONSTRAINT `PK_order_id` PRIMARY KEY (`order_id`) NOT ENFORCED
+  )
+  ```
 
-```sql
-TABLE `prod`.`marketplace`.`orders` (
-  `order_id` VARCHAR(2147483647) NOT NULL,
-  `customer_id` INT,
-  `product_ids` ARRAY<BIGINT>,
-  `price` DECIMAL(10, 2),
-  `order_details` VARCHAR(2147483647),
-  CONSTRAINT `PK_order_id` PRIMARY KEY (`order_id`) NOT ENFORCED
-)
-```
+  As we generate an aggregate per minute, there is no need to update record by customer_id. But to get a window aggregation we need window_start and window_end columns.
 
-As we generate an aggregate per minute, there is no need to update record by customer_id. But to get a window aggregation we need window_start and window_end columns.
+* Create a table in append log so there is not need to have primary keys:
+  ```sql
+  create table order_count 
+  as select 
+    window_start,
+    window_end,
+    count(order_id) as cnt 
+  from table(tumble( table `examples`.`marketplace`.`orders`, descriptor(`$rowtime`), interval '1' minutes)) 
+  group by window_start, window_end, `customer_id`;
+  ```
 
-Create a table in append log so there is not need to have primary keys:
+* Use EXPLAIN to understand the physical plan:
+  ```sql
+  explain select window_start,
+    window_end,
+    count(order_id) as cnt 
+  from table(tumble( table `examples`.`marketplace`.`orders`, descriptor(`$rowtime`), interval '1' minutes)) 
+  group by window_start, window_end, `customer_id`;
+  ```
 
-```sql
-create table order_count 
-as select 
-  window_start,
-  window_end,
-  count(order_id) as cnt 
-from table(tumble( table `prod`.`marketplace`.`orders`, descriptor(`$rowtime`), interval '1' minutes)) 
-group by window_start, window_end, `customer_id`;
-```
+  With a result as:
 
-use EXPLAIN to understand the physical plan:
+  ```sh
+  StreamPhysicalSink [7]
+    +- StreamPhysicalCalc [6]
+      +- StreamPhysicalGlobalWindowAggregate [5]
+        +- StreamPhysicalExchange [4]
+          +- StreamPhysicalLocalWindowAggregate [3]
+            +- StreamPhysicalCalc [2]
+              +- StreamPhysicalTableSourceScan [1]
+  ```
 
-```sql
-explain select ...
-```
-
-With a result as:
-
-```sh
-StreamPhysicalSink [7]
-  +- StreamPhysicalCalc [6]
-    +- StreamPhysicalGlobalWindowAggregate [5]
-      +- StreamPhysicalExchange [4]
-        +- StreamPhysicalLocalWindowAggregate [3]
-          +- StreamPhysicalCalc [2]
-            +- StreamPhysicalTableSourceScan [1]
-```
-
-If we need to have an upsert or retract table, we need a primary key, but the source column may be nullable, so we need to colasce the column to get default value:
-
-```sql
-create table order_count (
-  primary key(customer_id) not enforced
-) 
-as select 
-  window_start, 
-  window_end,
-  coalesce(customer_id, 1) as customer_id, 
-  count(order_id) as cnt 
-from table(tumble( table `prod`.`marketplace`.`orders`, descriptor(`$rowtime`), interval '1' minutes)) 
-group by window_start, window_end, customer_id;
-```
+* If we need to have an upsert or retract table, we need a primary key, but as the source column may be nullable, we need to colasce the column to get default value:
+  ```sql
+  create table order_count (
+    primary key(customer_id) not enforced
+  ) 
+  as select 
+    window_start, 
+    window_end,
+    coalesce(customer_id, 1) as customer_id, 
+    count(order_id) as cnt 
+  from table(tumble( table `examples`.`marketplace`.`orders`, descriptor(`$rowtime`), interval '1' minutes)) 
+  group by window_start, window_end, customer_id;
+  ```
 
 ### 2- Create table to hold the number of orders per product per minute (non-overlapping window).
 
-Need to join with the orders with the product table on the product_ids. The product table is defined as:
+This example is using an order that has produt_ids column as an array of product_id, part of the order. To test this use case we can create the table with the Faker connector:
 
 ```sql
-TABLE `prod`.`marketplace`.`products` (
-  `product_id` BIGINT NOT NULL,
-  `name` VARCHAR(2147483647),
-  `brand_id` BIGINT,
-  `vendor` VARCHAR(2147483647),
 ```
 
-In the orders the column product_ids is an array of ids, so we need to use [unnest](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html#array-expansion) in the joon. The `cross join unnest()` returns a new row for each element in the given array.
+Need to join with the orders with the product (upsert) table on the product_ids. The product table is defined as:
+
+```sql
+CREATE TABLE `examples`.`marketplace`.`products` (
+  `product_id` VARCHAR(2147483647) NOT NULL,
+  `name` VARCHAR(2147483647) NOT NULL,
+  `brand` VARCHAR(2147483647) NOT NULL,
+  `vendor` VARCHAR(2147483647) NOT NULL,
+  `department` VARCHAR(2147483647) NOT NULL,
+  CONSTRAINT `PK_product_id` PRIMARY KEY (`product_id`) NOT ENFORCED
+```
+
+In the orders the column product_ids is an array of ids, so we need to use [unnest](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html#array-expansion) in the join. The `cross join unnest()` returns a new row for each element in the given array.
 
 The grouping needs to use the product_id.
 
-Also it is a recommended practice to add the window_time as the rowtime of the new kafka record in the output topic.
+Also it is a recommended practice to add the window_time as the rowtime of the new kafka record in the output topic. So the solution looks like:
 
 ```sql
 create table order_counts as 
@@ -325,7 +366,7 @@ select
   window_end,
   count(order_id) as cnt,
   window_time TIMESTAMP as $rowtime
-from table(tumble( table `prod`.`marketplace`.`orders`, descriptor(`$rowtime`), interval '1' minutes)) 
+from table(tumble( table `examples`.`marketplace`.`orders`, descriptor(`$rowtime`), interval '1' minutes)) 
 cross join unnest(`product_ids`) as product (product_id)
 group by window_start, window_end, window_time, product_id;
 ```

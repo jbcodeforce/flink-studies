@@ -14,7 +14,7 @@ deploy:
 	$(PYTHON) -m cc_deploy.deploy_flink_statements --sql-dir $(SQL_DIR) deploy --group all
 
 undeploy:
-	$(PYTHON) -m cc_deploy.deploy_flink_statements --sql-dir $(SQL_DIR) undeploy --group all
+	$(PYTHON) -m cc_deploy.deploy_flink_statements --sql-dir $(SQL_DIR) undeploy --group all --no-drop-tables
 
 drop-tables:
 	$(PYTHON) -m cc_deploy.deploy_flink_statements --sql-dir $(SQL_DIR) drop-tables

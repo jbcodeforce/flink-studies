@@ -16,7 +16,9 @@ This site is built with MkDocs and deployed to GitHub Pages. The **indexed Flink
 
 ## What it does
 
-The [km-agent](https://github.com/jbcodeforce/km-agent) assistant compiles documentation into a wiki, embeds wiki content into pgvector for semantic search, and exposes an **AgentOS** HTTP API plus a **Vue** chat UI for Q&A over your content.
+The [km-agent](https://github.com/jbcodeforce/km-agent) assistant compiles documentation into a wiki, embeds wiki content into pgvector for semantic search, and exposes an **AgentOS** HTTP API plus a **Vue** chat UI. Chat runs through the **kma team** leader (`POST /teams/kma/runs`), which coordinates Navigator, Researcher, Compiler, and Linter.
+
+For research or news requests, the team ingests sources to `raw/`, answers immediately, then compiles and lints the wiki in the background. Set `KMA_PARALLEL_API_KEY` (Researcher) and `KMA_AUTO_COMPILE_AFTER_RESEARCH=1` in `assistants/km-agent/.env` to enable the full enrichment pipeline.
 
 ## Prerequisites
 
@@ -64,6 +66,12 @@ Two phases:
    ```
 
    Context persists under `assistants/km-agent/context/` (bind-mounted into the container).
+
+3. **Re-embed after wiki changes** — after background compile or manual compile, refresh semantic search:
+
+   ```bash
+   ./assistants/index_wiki.sh
+   ```
 
 ### Index-first vs embeddings
 

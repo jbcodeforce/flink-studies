@@ -1,6 +1,6 @@
-# Confluent Cloud Flink SQL deployment tools
+# Flink SQL development tools
 
-Deploy Flink SQL statement groups from demo folders using [confluent-sql](https://pypi.org/project/confluent-sql/) (REST API, no Confluent CLI).
+A set of tools to help developing and deploying Flink SQL on Confluent Cloud, or CP Flink.
 
 ## Setup
 
@@ -8,6 +8,10 @@ Deploy Flink SQL statement groups from demo folders using [confluent-sql](https:
 cd code/flink-sql/tools
 uv sync
 ```
+
+## Deploy on Confluent Cloud
+
+Deploy Flink SQL statement groups from demo folders using [confluent-sql](https://pypi.org/project/confluent-sql/) (REST API, no Confluent CLI).
 
 * Set Confluent Cloud credentials and target env: `~/.confluent/.env` (override the file path with `CONFLUENT_ENV_FILE`).
 
@@ -20,9 +24,9 @@ uv sync
 | `DB_NAME` | Kafka cluster / `sql.current-database` |
 | `CLOUD`, `REGION` | Or `FLINK_BASE_URL` |
 
-## Demo manifest
+### The deploy_manifest.json
 
-Each demo folder should include a `deploy_manifest.json` file to declare what to deploy:
+Each demo folder for cc deployment should include a `deploy_manifest.json` file to declare what to deploy. This file lists a set of group and then in each groups the name of the statement and file to match.
 
 ```json
 {
@@ -47,19 +51,61 @@ Each demo folder should include a `deploy_manifest.json` file to declare what to
 - `drop_statement_prefix` — optional prefix for ephemeral drop statements (default: derived from ddl names)
 - `groups` — named lists of `{name, file}` (paths relative to demo folder)
 
-* It is possible to generate a manifest.json template from SQL files in a folder:
+
+### Deployment
 
 ```sh
 cd code/flink-sql/tools
 
-# Preview without writing
-uv run python -m cc_deploy.create_deploy_manifest --sql-dir ../11-puzzles/my_demo --dry-run
+# Deploy everything in deploy_all
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update deploy --group all
 
-# Write deploy_manifest.json
-uv run python -m cc_deploy.create_deploy_manifest --sql-dir ../11-puzzles/my_demo --prefix my-demo
+# Single group
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update deploy --group ddl
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update undeploy --group pipeline
+
+# Full teardown: stop/delete DML statements, then drop tables from manifest
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update undeploy --group all
+
+# Statements only (skip drop_tables)
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update undeploy --group all --no-drop-tables
+
+# Drop tables only
+uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update drop-tables
 ```
 
-Files are grouped by naming convention: `ddl.*` → ddl, `insert_*` / `dml.insert_*` → data, `dml.update_*` → scenario, other `dml.*` → pipeline.
+### Makefile shortcut
+
+From a demo folder (example: cart_update):
+
+```sh
+make sync          # once, installs tools deps
+make deploy-ddl
+make deploy-pipeline
+make deploy-data
+make undeploy      # stop DML + drop all tables
+make drop-tables   # drop tables only
+```
+
+Demo Makefiles delegate to `tools/Makefile` with `SQL_DIR` set to the demo path.
+
+### Library API
+
+The deployment tool is also a set of components within a python library that can be reused. Import from `cc_deploy` for custom scripts:
+
+```python
+from pathlib import Path
+from cc_deploy import get_config, load_manifest, deploy_statements, full_undeploy
+
+manifest = load_manifest(Path("deploy_manifest.json"))
+deploy_statements(
+    manifest.statements_for("ddl"),
+    sql_dir=Path("."),
+    config=get_config(),
+    user_agent=manifest.user_agent,
+)
+full_undeploy(manifest, config=get_config())
+```
 
 ### Custom groups
 
@@ -87,60 +133,25 @@ make deploy-op_ddl
 
 Add a custom group to `undeploy_all` if its statements should be stopped during full teardown.
 
-## Deployment
+--- 
+
+## create_deploy_manifest
+
+* It is possible to generate a manifest.json template from SQL files in a folder:
 
 ```sh
 cd code/flink-sql/tools
 
-# Deploy everything in deploy_all
-uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update deploy --group all
+# Preview without writing
+uv run python -m cc_deploy.create_deploy_manifest --sql-dir ../11-puzzles/my_demo --dry-run
 
-# Single group
-uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update deploy --group ddl
-uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update undeploy --group pipeline
-
-# Full teardown: stop/delete DML statements, then drop tables from manifest
-uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update undeploy --group all
-
-# Statements only (skip drop_tables)
-uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update undeploy --group all --no-drop-tables
-
-# Drop tables only
-uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update drop-tables
+# Write deploy_manifest.json
+uv run python -m cc_deploy.create_deploy_manifest --sql-dir ../11-puzzles/my_demo --prefix my-demo
 ```
 
-## Makefile shortcut
+Files are grouped by naming convention: `ddl.*` → ddl, `insert_*` / `dml.insert_*` → data, `dml.update_*` → scenario, other `dml.*` → pipeline.
 
-From a demo folder (example: cart_update):
-
-```sh
-make sync          # once, installs tools deps
-make deploy-ddl
-make deploy-pipeline
-make deploy-data
-make undeploy      # stop DML + drop all tables
-make drop-tables   # drop tables only
-```
-
-Demo Makefiles delegate to `tools/Makefile` with `SQL_DIR` set to the demo path.
-
-## Library API
-
-Import from `cc_deploy` for custom scripts:
-
-```python
-from pathlib import Path
-from cc_deploy import get_config, load_manifest, deploy_statements, full_undeploy
-
-manifest = load_manifest(Path("deploy_manifest.json"))
-deploy_statements(
-    manifest.statements_for("ddl"),
-    sql_dir=Path("."),
-    config=get_config(),
-    user_agent=manifest.user_agent,
-)
-full_undeploy(manifest, config=get_config())
-```
+--- 
 
 ## Snapshot query
 
@@ -170,6 +181,8 @@ result = run_snapshot_query(sql)
 print(result.rowcount, result.rows)
 ```
 
+--- 
+
 ## Streaming query
 
 Run a continuous query and print rows as they arrive. Press Ctrl+C to stop.
@@ -193,6 +206,8 @@ sql = build_select_sql("orders", where="amount > 100")
 stats = run_streaming_query(sql)  # prints rows until Ctrl+C
 print(stats.rowcount)
 ```
+
+---
 
 ## Migrate Flink DML to dbt
 
@@ -237,12 +252,4 @@ Limitations (v1): `INSERT INTO ... VALUES` and CTAS are not supported; batch mig
 
 Entry point: `flink-sql-migrate-dbt` (when the tools package is installed with entry points).
 
-## Related
 
-- [`cc_flink_rest_client.py`](cc_flink_rest_client.py) — lower-level `requests`-based REST client (legacy)
-- [`cc_deploy/deploy_flink_statements.py`](cc_deploy/deploy_flink_statements.py) — deploy/undeploy CLI
-- [`cc_deploy/manifest.py`](cc_deploy/manifest.py) — manifest model, load/save, template generation
-- [`cc_deploy/flink_deploy.py`](cc_deploy/flink_deploy.py) — deploy, undeploy, snapshot, and streaming query library
-- [`cc_deploy/create_deploy_manifest.py`](cc_deploy/create_deploy_manifest.py) — generate `deploy_manifest.json` from a SQL folder
-- [`cc_deploy/run_snapshot_query.py`](cc_deploy/run_snapshot_query.py) — snapshot query CLI
-- [`cc_deploy/run_streaming_query.py`](cc_deploy/run_streaming_query.py) — streaming query CLI

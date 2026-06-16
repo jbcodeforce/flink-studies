@@ -13,7 +13,7 @@ WITH (
       'value.format' = 'avro-registry',
       'value.fields-include' = 'all'
 )
-as select
+as select  /*+ STATE_TTL(o='2h', p='30d') */ 
    o.id as order_id,
    o.total_amount,
    o.customer_name,
@@ -21,4 +21,4 @@ as select
    o.product_id,
    p.product_name
 from d04_orders o
-join d04_products p on o.product_id = p.id;
+left join d04_products p on o.product_id = p.id;

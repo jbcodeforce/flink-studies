@@ -1,4 +1,5 @@
-CREATE TABLE order_volumes AS WITH orders_with_details AS (
+CREATE TABLE order_volumes AS 
+WITH orders_with_details AS (
   SELECT
     o.order_id,
     s.dimensions.length,
@@ -6,7 +7,7 @@ CREATE TABLE order_volumes AS WITH orders_with_details AS (
     s.dimensions.width,
     o.`$rowtime`
   FROM
-    orders o
+    d04_orders o
     CROSS JOIN UNNEST(o.product_ids) AS p(id)
     LEFT JOIN `product_details` FOR SYSTEM_TIME AS OF o.`$rowtime` s ON s.`product_id` = p.`id`
 )

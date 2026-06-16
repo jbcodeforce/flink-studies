@@ -9,6 +9,20 @@ Flink SQL examples and tutorials: basic patterns, Kafka integration, changelog m
 - **Deployment status** — Where it runs: `Local`, `Docker`, `Confluent Cloud`, `Terraform`, `Manual`, or combination.
 - **Automation** — How it is run or deployed: `Makefile`, Python/script, Confluent CLI, or `Manual`.
 
+Before going to all demos there are a set of tools that are used to help deploying and managing those demonstrations
+
+## Tools
+
+The [flink-sql/tools](./tools/README.md) folder includes tools to deploy and manage Confluent Cloud Flink SQL demos:
+
+| Tool | Description |
+| ---------------------- | --- |
+| `create_deploy_manifest` | Generate `deploy_manifest.json` from SQL files in a demo folder |
+| `deploy_flink_statements` | Deploy, undeploy, and drop tables for statement groups defined in a manifest |
+| `run_snapshot_query` | Run a bounded point-in-time query against an existing table |
+| `run_streaming_query` | Run a continuous query and print rows as they arrive |
+| `migrate_dml_to_dbt` | Convert Flink `INSERT INTO` DML statements into dbt `streaming_table` models |
+
 ---
 
 ## 00-basic-sql

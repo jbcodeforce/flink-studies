@@ -11,6 +11,7 @@ compiled: false
 ???- Info "Updates"
     Created 10/24
     Revised 4/07/26
+    Add new examples 06/15/2026
 
 This chapter continues the discussion of best practices for implementing Flink SQL Data Manipulation Language (DML) queries. DML defines statements that modify data without changing metadata.
 
@@ -668,7 +669,7 @@ WHERE
 
 When you run a join in a database, the result reflects the join state at execution time. In streaming, as both sides of a join receive new rows, both sides keep evolving. This is a **continuous query on dynamic tables**, and the engine must retain substantial state—effectively rows from each input. 
 
-This is the common join we do between two tables: 
+Below is a common join we do between two tables: 
 
 ```sql
 SELECT t.amount, t.order_type, s.name, s.opening_value FROM transactions t
@@ -682,21 +683,41 @@ When doing a join, Flink needs to fully materialize both the right and left of t
 
 The key points to keep in mind are:
 
-* Regular joins typically produce a full cross-product of all matching records. However, in streaming scenarios, this behavior is often undesirable, for example if you want to enrich an event with additional information.
+* Regular joins typically produce a full cross-product of all matching records. However, in streaming scenarios, this behavior is often undesirable, for example if you want to enrich an event with additional information, because the state to keep in distributed memory may become too big. 
+* When the RHS is an upsert table, the join output is often upsert-shaped as well: results may be re-emitted when the RHS changes. To pin dimension values to event time, use a temporal join so the RHS is **as of** the LHS event time (**time-versioned** enrichment).
+* See [basic joins examples](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/04-joins)
+* Flink must handle the scenario where left-side events do not have corresponding right-side events at the time of processing. The Upsert table allows Flink to store unmatched left records and update them when matching right records arrive later, ensuring all left records are included in the result, thus supporting the LEFT JOIN semantics effectively in a streaming context
+* To avoid state growth, it is interesting to set time to live constraint (` /*+ STATE_TTL(o='2h', p='30d') */`) on both tables like:
+    ```sql
+    as select  /*+ STATE_TTL(o='2h', p='30d') */ 
+        o.id as order_id,
+        o.total_amount,
+        o.customer_name,
+        o.order_ts_raw,
+        o.product_id,
+        p.product_name
+    from d04_orders o
+    left join d04_products p on o.product_id = p.id;
+    ```
+
 * Join order matters: prefer joining the slowest-changing dimension first when you can.
 * A cross join without selective predicates can explode cardinality or hit resource limits.
-* When the RHS is an upsert table, the join output is often upsert-shaped as well: results may be re-emitted when the RHS changes. To pin dimension values to event time, use a temporal join so the RHS is **as of** the LHS event time (**time-versioned** enrichment).
+Watermarks set on both tables do not impact join results. Watermarks matter only for time-based joins, not regular equi-joins. Simple JOIN / LEFT JOIN without event-time conditions do not use watermarks to decide when to emit results.
+* For interval joins and temporal (time-versioned) joins, watermarks directly affect output timing and completeness. Flink uses watermarks to know when enough event-time has passed to safely produce results; without watermarks, these operators do not produce output.
+* For temporal joins, the join may wait until the watermark on the versioned/enrichment side reaches the probe record’s timestamp before emitting, which introduces latency. 
+If one side is idle or lagging, the join can appear stalled because two-input operators generally wait on the relevant watermarks from both sides
+* For interval joins, watermarks are also propagated with an additional delay equal to the maximum join interval bound, so larger time ranges increase buffering and downstream latency.
 
 ### Temporal Join
 
 A [temporal join](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html#temporal-joins) joins one table with another table that is updated over time. This join is made possible by linking both tables using a time attribute, which allows the join to consider the historical changes in the table. 
 
-    ```sql
-    insert into enriched_transactions
-    SELECT t.amount, t.order_type, s.name, s.opening_value FROM transactions t
-    LEFT JOIN stocks s FOR SYSTEM_TIME AS OF t.purchase_ts
-    ON t.stockid = s.id
-    ```
+```sql
+insert into enriched_transactions
+SELECT t.amount, t.order_type, s.name, s.opening_value FROM transactions t
+LEFT JOIN stocks s FOR SYSTEM_TIME AS OF t.purchase_ts
+ON t.stockid = s.id
+```
 
 * Temporal joins reduce state because only time-relevant versions of the RHS are needed. Progress is tied to watermarks. If `opening_value` changes over time, earlier enriched rows are not retroactively updated.  
 * When the event time used comes from the LHS, this event time needs to have a watermark strategy sets, if not it is not considered as a time attribute. By default on Confluent Cloud `$rowtime` can be used.
@@ -730,7 +751,7 @@ A [temporal join](https://docs.confluent.io/cloud/current/flink/reference/querie
     ) select ... 
     ```
 
-    [See also this sample for rule-based control](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/04-joins/rule_match_on_sensors/README.md) with temporal joins and constant columns.
+    [See also this sample for rule-based control](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/04-2-joins/rule_match_on_sensors/README.md) with temporal joins and constant columns.
 
 * When the LHS of a temporal join is upsert, the sink often needs retract changelog mode; while with an append LHS, an append sink is typical.
 * An inner join with only equality predicates is not a full Cartesian product; unconstrained joins can behave like one.

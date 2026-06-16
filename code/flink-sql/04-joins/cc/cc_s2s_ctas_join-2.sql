@@ -6,17 +6,19 @@ WITH (
     'key.format' = 'avro-registry',
     'value.format' = 'avro-registry',
     'value.fields-include' = 'all'
-) as SELECT o.id as order_id,
-           FROM_UNIXTIME(o.order_ts_raw) as ORDER_TS,
-           o.total_amount as TOTAL,
-           o.customer_name as CUSTOMER,
-           s.id as SHIP_ID,
-           FROM_UNIXTIME(s.ship_ts_raw) as SHIP_TS,
-           s.warehouse,
-           TIMESTAMPDIFF(HOUR,
-             TO_TIMESTAMP(FROM_UNIXTIME(o.order_ts_raw)),                     -- convert numeric type (an epoch based timestamp in this case) to a formatted string in the default format of yyyy-MM-dd HH:mm:ss
-             TO_TIMESTAMP(FROM_UNIXTIME(s.ship_ts_raw))) as HR_TO_SHIP
-    FROM orders o inner join shipments s ON o.id = s.order_id
-    AND TO_TIMESTAMP(FROM_UNIXTIME(s.ship_ts_raw))
-     BETWEEN TO_TIMESTAMP(FROM_UNIXTIME(o.order_ts_raw))
-     AND TO_TIMESTAMP(FROM_UNIXTIME(o.order_ts_raw))  + INTERVAL '7' DAY;
+) as SELECT
+  o.order_id as order_id,
+  o.total_amount as total,
+  o.customer_name as customer,
+  s.id as shipment_id,
+  s.ship_ts_raw as shipment_ts,
+  s.warehouse,
+  TIMESTAMPDIFF(HOUR,
+             o.order_ts_raw,                     -- convert numeric type (an epoch based timestamp in this case) to a formatted string in the default format of yyyy-MM-dd HH:mm:ss
+             s.ship_ts_raw) as HR_TO_SHIP
+  FROM d04_order_product_join o
+  INNER JOIN d04_shipments s
+  ON o.order_id = s.order_id
+      AND s.ship_ts_raw
+      BETWEEN o.order_ts_raw
+      AND o.order_ts_raw  + INTERVAL '2' DAY;
