@@ -88,70 +88,70 @@
     "title": "Materialized Tables",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "coding/flink-sql-clients.md",
     "title": "Flink SQL Client",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "coding/getting-started.md",
     "title": "Flink Getting Started Guide",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "coding/k8s-deploy.md",
     "title": "Flink Kubernetes Deployment",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "coding/ptf.md",
     "title": "Process Table Function",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "coding/pyflink.md",
     "title": "PyFlink",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "coding/stateful-func.md",
     "title": "Stateful function",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "coding/table-api.md",
     "title": "Table API",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "coding/udf_sql.md",
     "title": "User Defined Functions",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "concepts/flink-sql.md",
     "title": "Flink SQL Concepts",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "concepts/index.md",
@@ -172,7 +172,7 @@
     "title": "Cluster & Environment Management",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "cookbook/considerations.md",

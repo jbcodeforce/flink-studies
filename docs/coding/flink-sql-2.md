@@ -336,9 +336,37 @@ Some **important resources:**
 
 ### JSON Transformation
 
-Flink provides JSON [built-in functions](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/functions/systemfunctions/#json-functions). `'$'` denotes the root node in a JSON path.
+Flink provides JSON [built-in functions](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/functions/systemfunctions/#json-functions) to extract information from json string. `'$'` denotes the root node in a JSON path.
 
 Paths can access properties ($.a), array elements ($.a[0].b), or branch over all elements in an array ($.a[*].b).
+
+There are really two groups of function: extracting value from a JSON string:
+
+* Return scalar value with JSON_VALUE
+    ```sql
+    JSON_VALUE('{"a.b": [0.1,0.2]}','$.["a.b"][0]' RETURNING DOUBLE)
+    -- 0.1 is returned as a double type
+    -- default returned value is a string
+    ```
+* Return a string or array of strings- lax is to suppress errors and returns NULL or empty results if the path does not match the JSON schema.
+    ```sql
+    JSON_QUERY('{"a":[{"c":"c1"},{"c":"c2"}]}', 'lax $.a[*].c' RETURNING ARRAY<STRING>)
+    -- ['c1','c2']
+    -- or
+    select JSON_QUERY('[1, 2]', '$' WITH UNCONDITIONAL ARRAY WRAPPER) as U, JSON_QUERY('[1, 2]', '$' WITH CONDITIONAL ARRAY WRAPPER) as C;
+    -- [[1,2]]  and [1,2]
+    ```
+
+* Build JSON_OBJECT as string from a list of key-value pairs, 
+    ```sql
+    -- '{"K1":"V1","K2":"V2"}'
+    JSON_OBJECT('K1' VALUE 'V1', 'K2' VALUE 'V2')
+    ```
+
+    Suppose that data is a <ROW<`version` DOUBLE, `transactionId` VARCHAR(2147483647)>>. To create a json object as a string like '{"version": 1.1}'
+    ```sql
+    select JSON_OBJECT('version' VALUE data[1]) as v from t
+    ```
 
 ???+ question "How to access JSON data from a string column that contains a JSON object?"
     

@@ -35,6 +35,9 @@ def test_statement_name() -> None:
     assert statement_name("cart-update", "pipeline", "dml.build_cart_line_items.sql") == (
         "cart-update-pipeline-build-cart-line-items"
     )
+    assert statement_name("kaes", "ddl", "kes-chat/ddl.kes_ice_chat_deal.sql") == (
+        "kaes-kes-chat-ddl-kes-ice-chat-deal"
+    )
 
 
 def test_extract_table_name_from_ddl() -> None:
@@ -73,6 +76,39 @@ def test_create_manifest_from_folder_matches_existing_groups(tmp_path: Path) -> 
     assert generated.deploy_all == existing.deploy_all
     assert set(generated.groups) == set(existing.groups)
     assert generated.drop_tables == existing.drop_tables
+
+
+def test_create_manifest_from_folder_nested_hierarchy(tmp_path: Path) -> None:
+    (tmp_path / "kes-chat").mkdir()
+    (tmp_path / "s3-inventory").mkdir()
+    (tmp_path / "kes-chat" / "ddl.kes_ice_chat_deal.sql").write_text(
+        "CREATE TABLE IF NOT EXISTS kes_ice_chat_deal (id STRING) DISTRIBUTED BY HASH(id) INTO 1 BUCKETS;",
+        encoding="utf-8",
+    )
+    (tmp_path / "kes-chat" / "dml.kes_ice_chat_deal.sql").write_text(
+        "INSERT INTO kes_ice_chat_deal SELECT id FROM source;",
+        encoding="utf-8",
+    )
+    (tmp_path / "s3-inventory" / "ddl.ksql.maximo.inventory.flat.st.sql").write_text(
+        "CREATE TABLE IF NOT EXISTS maximo_inventory (id STRING) DISTRIBUTED BY HASH(id) INTO 1 BUCKETS;",
+        encoding="utf-8",
+    )
+    (tmp_path / "s3-inventory" / "dml.ksql.maximo.inventory.flat.st.sql").write_text(
+        "INSERT INTO maximo_inventory SELECT id FROM source;",
+        encoding="utf-8",
+    )
+
+    manifest = create_manifest_from_folder(tmp_path, prefix="kaes", write=False, overwrite=True)
+
+    assert manifest.deploy_all == ["ddl", "pipeline"]
+    assert manifest.groups["ddl"] == [
+        ("kaes-kes-chat-ddl-kes-ice-chat-deal", "kes-chat/ddl.kes_ice_chat_deal.sql"),
+        ("kaes-s3-inventory-ddl-ksql-maximo-inventory-flat-st", "s3-inventory/ddl.ksql.maximo.inventory.flat.st.sql"),
+    ]
+    assert manifest.groups["pipeline"] == [
+        ("kaes-kes-chat-pipeline-kes-ice-chat-deal", "kes-chat/dml.kes_ice_chat_deal.sql"),
+        ("kaes-s3-inventory-pipeline-ksql-maximo-inventory-flat-st", "s3-inventory/dml.ksql.maximo.inventory.flat.st.sql"),
+    ]
 
 
 def test_create_manifest_from_folder_refuses_overwrite(tmp_path: Path) -> None:

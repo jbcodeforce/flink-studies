@@ -385,9 +385,12 @@ The watermark serves as a heuristic for this purpose.
 
 [Watermarks](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/event_timestamps_watermarks.html) are special markers periodically injected by Flink source operator, to indicate event-time progress in each stream. They track how time advances and help handle out-of-order records. Each Watermark is associated to a timestamp, expressed in milliseconds after epoch. This is the core mechanism for triggering computation at `event-time` and not at processing time.  
 
-Watermarks are used by time-based operators, such as time windows, temporal joins or pattern matching, for example they determine when windows can safely close by estimating when all events for a time period have arrived.
+Watermarks are only used by time-based operators, such as time windows, temporal joins or pattern matching, for example they determine when windows can safely close by estimating when all events for a time period have arrived.
 
 Operations which are NOT based on time (e.g. simple JOIN, UNION ALL, filtering by WHERE conditions) do not use Watermarks. Watermarks are also not used in batch mode/snapshot queries.
+
+???- info "Confluent Cloud for Flink"
+    Confluent Cloud for Apache Flink provides a default watermark strategy based on the `$rowtime` column for all tables, whether created automatically from a Kafka topic or using a CREATE TABLE statement. Watermark is computed per Kafka partition, with at least a minimum of 250 records per partition. Developers may change the watermark of existing table using `ALTER TABLE`, or specifying using create table and select one timestamp(3) column.
 
 ### Key Concepts
 
@@ -431,7 +434,7 @@ Operations which are NOT based on time (e.g. simple JOIN, UNION ALL, filtering b
 - Watermark timestamp = the largest seen timestamp - estimated out-of-orderness. This timestamp is always non-decreasing (monotonic) under normal operation. 
 - Events arriving after watermarks are considered late and are typically discarded.
 - The default strategy is designed for large-scale production workloads, requiring a significant volume of data (around 250 events per partition) before advancing the watermark and emitting results.
-- The following diagram set the max-timestamp (INTERVAL '5' SECONDS) is the time window to access record within the 'watermark delay' time. Everything before the watermark is considered completed, while everything between the watermark and the max timestamp represent partial information that could modify existing aggregates within the window.
+- In the following diagram, the max-timestamp (INTERVAL '5' SECONDS) is the time window to access record within the 'watermark delay' time. Everything before the watermark is considered completed, while everything between the watermark and the max timestamp, represent partial information that could modify existing aggregates within the window.
 <figure markdown="span">
 ![11](./diagrams/watermark.drawio.png)
 <figcaption>Watermark concept</figcaption>

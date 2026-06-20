@@ -142,14 +142,18 @@ def classify_sql_file(filename: str) -> str:
     return "pipeline"
 
 
-def statement_name(prefix: str, group: str, filename: str) -> str:
-    """Build a Flink statement name from prefix, group, and SQL filename."""
-    stem = Path(filename).stem
+def statement_name(prefix: str, group: str, rel_path: str) -> str:
+    """Build a Flink statement name from prefix, group, and SQL path relative to sql-dir."""
+    path = Path(rel_path)
+    stem = path.stem
     for lead in (f"{group}.", "ddl.", "dml.", "scenario."):
         if stem.startswith(lead):
             stem = stem[len(lead) :]
             break
     slug = slugify(stem.replace(".", "-"))
+    if path.parent != Path("."):
+        folder_slug = "-".join(slugify(part) for part in path.parent.parts)
+        return f"{prefix}-{folder_slug}-{group}-{slug}"
     return f"{prefix}-{group}-{slug}"
 
 
@@ -162,16 +166,23 @@ def extract_table_name_from_ddl(path: Path) -> str | None:
     return name.split(".")[-1]
 
 
+_SKIP_DIR_NAMES = frozenset({".git", "__pycache__", "node_modules", ".venv"})
+
+
+def _is_deployable_sql_path(sql_dir: Path, path: Path) -> bool:
+    if not path.is_file() or path.suffix.lower() != ".sql":
+        return False
+    rel_parts = path.relative_to(sql_dir).parts
+    if any(part.startswith(".") or part in _SKIP_DIR_NAMES for part in rel_parts[:-1]):
+        return False
+    return True
+
+
 def discover_sql_files(sql_dir: Path) -> list[Path]:
-    """List deployable SQL files in a demo folder (non-recursive)."""
-    files = sorted(
-        path
-        for path in sql_dir.iterdir()
-        if path.is_file()
-        and path.suffix.lower() == ".sql"
-        and path.name != DEFAULT_MANIFEST
+    """List deployable SQL files under a demo folder (recursive)."""
+    return sorted(
+        path for path in sql_dir.rglob("*.sql") if _is_deployable_sql_path(sql_dir, path)
     )
-    return files
 
 
 def default_deploy_all(groups: dict[str, list[StatementRef]]) -> list[str]:
@@ -204,7 +215,10 @@ def create_manifest_from_folder(
     overwrite: bool = False,
 ) -> DeployManifest:
     """
-    Build a deploy manifest template by scanning SQL files in a demo folder.
+    Build a deploy manifest template by scanning SQL files under a demo folder tree.
+
+    Subdirectories are included recursively. Manifest ``file`` entries are paths
+    relative to ``sql_dir`` (for example ``kes-chat/ddl.events.sql``).
 
     Files are grouped by naming convention:
     - ddl.*.sql -> ddl
@@ -212,7 +226,8 @@ def create_manifest_from_folder(
     - dml.update_*.sql / scenario.*.sql -> scenario
     - other dml.*.sql -> pipeline
 
-    Statement names follow ``{prefix}-{group}-{file-slug}``.
+    Statement names follow ``{prefix}-{group}-{file-slug}`` for top-level files,
+    or ``{prefix}-{folder-slug}-{group}-{file-slug}`` when nested.
     """
     sql_dir = sql_dir.resolve()
     if not sql_dir.is_dir():
@@ -232,10 +247,11 @@ def create_manifest_from_folder(
     ddl_files: list[Path] = []
 
     for path in discover_sql_files(sql_dir):
+        rel = path.relative_to(sql_dir).as_posix()
         group = classify_sql_file(path.name)
         if group == "ddl":
             ddl_files.append(path)
-        entry = (statement_name(prefix, group, path.name), path.name)
+        entry = (statement_name(prefix, group, rel), rel)
         groups.setdefault(group, []).append(entry)
 
     deploy_all = default_deploy_all(groups)
