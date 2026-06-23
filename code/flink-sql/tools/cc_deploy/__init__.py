@@ -1,5 +1,14 @@
 """Confluent Cloud deploy utilities."""
 
+from cc_deploy.drop_tables_manifest import (
+    DEFAULT_MANIFEST_NAME as DROP_TABLES_MANIFEST_NAME,
+    DEFAULT_STATEMENT_PREFIX,
+    DropTableEntry,
+    build_manifest_from_topics,
+    load_manifest as load_drop_tables_manifest,
+    tables_to_drop,
+    write_manifest as write_drop_tables_manifest,
+)
 from cc_deploy.flink_deploy import (
     DEFAULT_MANIFEST,
     DEFAULT_USER_AGENT,
@@ -15,7 +24,9 @@ from cc_deploy.flink_deploy import (
     default_snapshot_statement_name,
     default_streaming_statement_name,
     deploy_statements,
+    drop_statement_name_for_table,
     drop_tables,
+    drop_tables_by_name,
     flink_connection,
     format_snapshot_rows,
     format_streaming_row,
@@ -34,6 +45,7 @@ from cc_deploy.flink_deploy import (
     undeploy_statements,
     wait_for_phases,
 )
+from cc_deploy.kafka_client import is_internal_topic, kafka_client_config, list_topics as list_kafka_topics
 from cc_deploy.manifest import (
     create_manifest_from_folder,
     manifest_from_dict,
@@ -43,7 +55,10 @@ from cc_deploy.manifest import (
 
 __all__ = [
     "DEFAULT_MANIFEST",
+    "DEFAULT_STATEMENT_PREFIX",
     "DEFAULT_USER_AGENT",
+    "DROP_TABLES_MANIFEST_NAME",
+    "DropTableEntry",
     "POLL_INTERVAL_SEC",
     "STATEMENT_TIMEOUT_SEC",
     "DeployManifest",
@@ -51,19 +66,26 @@ __all__ = [
     "SnapshotQueryResult",
     "StatementRef",
     "StreamingQueryStats",
+    "build_manifest_from_topics",
     "build_select_sql",
     "classify_sql",
     "create_manifest_from_folder",
     "default_snapshot_statement_name",
     "default_streaming_statement_name",
     "deploy_statements",
+    "drop_statement_name_for_table",
     "drop_tables",
+    "drop_tables_by_name",
     "flink_connection",
     "format_snapshot_rows",
     "format_streaming_row",
     "full_undeploy",
     "get_config",
+    "is_internal_topic",
+    "kafka_client_config",
+    "list_kafka_topics",
     "load_dotenv_file",
+    "load_drop_tables_manifest",
     "load_manifest",
     "manifest_from_dict",
     "manifest_to_dict",
@@ -75,7 +97,9 @@ __all__ = [
     "run_snapshot_query",
     "run_streaming_query",
     "submit_statement",
+    "tables_to_drop",
     "undeploy_statements",
     "wait_for_phases",
+    "write_drop_tables_manifest",
     "write_manifest",
 ]

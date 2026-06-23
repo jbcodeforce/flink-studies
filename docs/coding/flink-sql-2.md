@@ -618,52 +618,60 @@ WINDOW w AS (
 )
 ```
 
+The window definition is externalized and can be used for multiple aggregates, like the SUM() and the COUNT() example, above.
+
 The source topic should be in append mode because over-window aggregation does not support retraction/update semantics. `OVER` is useful when each input row must be evaluated against a time or row interval. 
 
+???- info "LAG and OVER"
+    To detect when orders exceed limits for the first time and when aggregates later fall below other limits, use [LAG](https://docs.confluent.io/cloud/current/flink/reference/functions/aggregate-functions.html#lag).
 
-To detect when orders exceed limits for the first time and when aggregates later fall below other limits, use [LAG](https://docs.confluent.io/cloud/current/flink/reference/functions/aggregate-functions.html#lag).
+    * Compute the total price and # of orders for a period of 10s for each customer
+    ```sql
+    WITH orders_ten_secs AS ( 
+    SELECT 
+        order_id,
+        customer_id,
+        `$rowtime`,
+        SUM(price) OVER w AS total_price_ten_secs, 
+        COUNT(*) OVER w AS total_orders_ten_secs
+    FROM `examples`.`marketplace`.`orders`
+    WINDOW w AS (
+        PARTITION BY customer_id
+        ORDER BY `$rowtime`
+        RANGE BETWEEN INTERVAL '10' SECONDS PRECEDING AND CURRENT ROW
+        )
+    ),
+    ```
 
-```sql
--- compute the total price and # of orders for a period of 10s for each customer
-WITH orders_ten_secs AS ( 
-SELECT 
-    order_id,
-    customer_id,
-    `$rowtime`,
-    SUM(price) OVER w AS total_price_ten_secs, 
-    COUNT(*) OVER w AS total_orders_ten_secs
-FROM `examples`.`marketplace`.`orders`
-WINDOW w AS (
-    PARTITION BY customer_id
-    ORDER BY `$rowtime`
-    RANGE BETWEEN INTERVAL '10' SECONDS PRECEDING AND CURRENT ROW
+    * Get previous orders and current order per customer
+    ```sql
+    orders_ten_secs_with_lag AS (
+    SELECT 
+        *,
+        LAG(total_price_ten_secs, 1) OVER w AS total_price_ten_secs_lag, 
+        LAG(total_orders_ten_secs, 1) OVER w AS total_orders_ten_secs_lag
+    FROM orders_ten_secs
+    WINDOW w AS (
+        PARTITION BY customer_id
+        ORDER BY `$rowtime`
+        )
     )
-),
--- get previous orders and current order per customer
-orders_ten_secs_with_lag AS (
-SELECT 
-    *,
-    LAG(total_price_ten_secs, 1) OVER w AS total_price_ten_secs_lag, 
-    LAG(total_orders_ten_secs, 1) OVER w AS total_orders_ten_secs_lag
-FROM orders_ten_secs
-WINDOW w AS (
-    PARTITION BY customer_id
-    ORDER BY `$rowtime`
-    )
--- Filter orders when the order price and number of orders were above some limits for previous or current order aggregates
-)
-SELECT customer_id, 'BLOCK' AS action, `$rowtime` AS updated_at 
-FROM orders_ten_secs_with_lag 
-WHERE 
-    (total_price_ten_secs > 300 AND total_price_ten_secs_lag <= 300) OR
-    (total_orders_ten_secs > 5 AND total_orders_ten_secs_lag <= 5)
-UNION ALL 
-SELECT customer_id, 'UNBLOCK' AS action, `$rowtime` AS updated_at 
-FROM orders_ten_secs_with_lag 
-WHERE 
-    (total_price_ten_secs <= 300 AND total_price_ten_secs_lag > 300) OR
-    (total_orders_ten_secs <= 5 AND total_orders_ten_secs_lag > 5);
-```
+    ```
+
+    * Filter orders when the order price and number of orders were above some limits for previous or current order aggregates
+    ```sql
+    SELECT customer_id, 'BLOCK' AS action, `$rowtime` AS updated_at 
+    FROM orders_ten_secs_with_lag 
+    WHERE 
+        (total_price_ten_secs > 300 AND total_price_ten_secs_lag <= 300) OR
+        (total_orders_ten_secs > 5 AND total_orders_ten_secs_lag <= 5)
+    UNION ALL 
+    SELECT customer_id, 'UNBLOCK' AS action, `$rowtime` AS updated_at 
+    FROM orders_ten_secs_with_lag 
+    WHERE 
+        (total_price_ten_secs <= 300 AND total_price_ten_secs_lag > 300) OR
+        (total_orders_ten_secs <= 5 AND total_orders_ten_secs_lag > 5);
+    ```
 
 
 ???+ question "Aggregation over the last n preceding elements"

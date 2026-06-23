@@ -1,0 +1,58 @@
+{
+  "user_agent": "flink-studies-cc/0.1",
+  "deploy_all": [
+    "ddl",
+    "data",
+    "pipeline"
+  ],
+  "undeploy_all": [
+    "pipeline"
+  ],
+  "drop_tables": [
+    "d06_order_count_over_60s",
+    "d06_orders",
+    "d06_sensor_data",
+    "d06_locf_last_val"
+  ],
+  "groups": {
+    "ddl": [
+      {
+        "name": "d06-ddl-orders",
+        "file": "ddl.orders.sql"
+      },
+      {
+        "name": "d06-ddl-sensor-data",
+        "file": "ddl.sensor_data.sql"
+      },
+      {
+        "name": "d06-ddl-locf-last-val",
+        "file": "ddl.locf_last_val.sql"
+      }
+    ],
+    "data": [
+      {
+        "name": "d06-insert-orders",
+        "file": "dml.insert_orders.sql"
+      },
+      {
+        "name": "d06-insert-sensor-data",
+        "file": "dml.insert_sensor_data.sql"
+      }
+    ],
+      "pipeline": [
+        {
+          "name": "d06-order-count-over-60s",
+          "file": "dml.order_count_over_60s.sql"
+      },
+      {
+        "name": "d06-previous-order-price",
+        "file": "dml.previous_order_price.sql"
+      },
+      {
+        "name": "d06-locf-last-val",
+        "file": "dml.locf_last_val.sql"
+      }
+    ]
+  },
+  "drop_statement_prefix": "d06-drop"
+}

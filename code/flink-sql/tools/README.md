@@ -210,6 +210,65 @@ print(stats.rowcount)
 
 ---
 
+## Table cleanup (Kafka topics → editable drop manifest)
+
+List Kafka topics into a JSON file, edit which tables to drop, then run `DROP TABLE IF EXISTS` via confluent-sql.
+
+**Step 1 — list topics** (Kafka env vars):
+
+| Variable | Purpose |
+|----------|---------|
+| `KAFKA_BOOTSTRAP_SERVERS` | Broker list |
+| `KAFKA_API_KEY`, `KAFKA_API_SECRET` | Confluent Cloud SASL (optional locally) |
+| `KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_MECHANISM` | Optional overrides |
+
+```sh
+cd code/flink-sql/tools
+
+# Write drop_tables_manifest.json (user topics only; internals excluded)
+uv run python -m cc_deploy.table_cleanup list --output drop_tables_manifest.json
+
+# Preview without writing
+uv run python -m cc_deploy.table_cleanup list --dry-run
+
+# Include internal topics in manifest (still default drop: false)
+uv run python -m cc_deploy.table_cleanup list --include-internal
+```
+
+**Step 2 — edit the manifest** — set `"drop": false` or remove rows for topics/tables to keep. Edit `"table"` if the Flink table name differs from the Kafka topic.
+
+**Step 3 — drop tables** (Flink env vars, same as deploy):
+
+```sh
+# Dry-run: print DROP statements only
+uv run python -m cc_deploy.table_cleanup drop --manifest drop_tables_manifest.json --dry-run
+
+# Execute drops for entries with drop: true
+uv run python -m cc_deploy.table_cleanup drop --manifest drop_tables_manifest.json
+```
+
+Stop running Flink statements first (`deploy_flink_statements undeploy`) if pipelines reference these tables.
+
+Library API:
+
+```python
+from cc_deploy import (
+    build_manifest_from_topics,
+    drop_tables_by_name,
+    get_config,
+    list_kafka_topics,
+    load_drop_tables_manifest,
+    tables_to_drop,
+)
+
+topics = list_kafka_topics()
+manifest = build_manifest_from_topics(topics, bootstrap_servers="...", database="my_db")
+entries, raw = load_drop_tables_manifest(path)
+drop_tables_by_name(tables_to_drop(entries), config=get_config())
+```
+
+---
+
 ## Migrate Flink DML to dbt
 
 Convert Flink `INSERT INTO ... SELECT` pipeline statements into dbt `streaming_table` models for [dbt-confluent](https://pypi.org/project/dbt-confluent/). Column types and table options are taken from the paired DDL file.

@@ -301,18 +301,36 @@ def drop_tables(
     manifest: DeployManifest,
     config: dict[str, str],
 ) -> None:
+    drop_tables_by_name(
+        tables,
+        config=config,
+        statement_prefix=manifest.drop_statement_prefix or "drop",
+        user_agent=manifest.user_agent,
+    )
+
+
+def drop_statement_name_for_table(statement_prefix: str, table: str) -> str:
+    """Build an ephemeral Flink statement name for a DROP TABLE."""
+    safe_table = _sanitize_statement_name(table.replace(".", "-"))
+    prefix = _sanitize_statement_name(statement_prefix)
+    return f"{prefix}-{safe_table}"
+
+
+def drop_tables_by_name(
+    tables: list[str],
+    *,
+    config: dict[str, str],
+    statement_prefix: str = "cleanup-drop",
+    user_agent: str = DEFAULT_USER_AGENT,
+) -> None:
+    """Drop Flink SQL tables by name without a deploy manifest."""
     if not tables:
         return
     print("Dropping tables...")
-    with flink_connection(config, user_agent=manifest.user_agent) as conn:
+    with flink_connection(config, user_agent=user_agent) as conn:
         for table in tables:
-            statement_name = manifest.drop_statement_name(table).replace('_', '-')
-            run_drop_table(
-                conn,
-                config,
-                table,
-                statement_name,
-            )
+            statement_name = drop_statement_name_for_table(statement_prefix, table)
+            run_drop_table(conn, config, table, statement_name)
 
 
 def full_undeploy(
