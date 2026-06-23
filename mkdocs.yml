@@ -10,6 +10,7 @@ nav:
     - Getting started: coding/getting-started.md
     - Flink SQL concepts: concepts/flink-sql.md
     - Code&Demos: labs/index.md
+    - Confluent Cloud for Flink: techno/ccloud-flink.md
     - Agentic applications: architecture/agentic_flink.md
   - Cookbook:
     - Introduction: cookbook/index.md

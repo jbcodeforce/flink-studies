@@ -1,0 +1,24 @@
+{
+  "user_agent": "flink-studies-cc/0.1",
+  "deploy_all": [
+    "seed",
+    "pipeline"
+  ],
+  "undeploy_all": [
+    "pipeline"
+  ],
+  "drop_tables": [
+    "mt-dim-rides"
+  ],
+  "groups": {
+    "seed": [
+    ],
+    "pipeline": [
+      {
+        "name": "mt-pipeline-dim-rides",
+        "file": "dml.dim-rides.sql"
+      }
+    ]
+  },
+  "drop_statement_prefix": "mt-drop"
+}

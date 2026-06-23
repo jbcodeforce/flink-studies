@@ -1095,11 +1095,40 @@ Each topic maps to a table with metadata columns such as `$rowtime`, aligned to 
     ```
 
 ???+ question "Running Confluent Cloud Kafka with local Flink"
-    The goal is to show how to use a Confluent Cloud cluster and send messages via FlinkFaker from a local table into a Kafka topic:
+    The goal is to show how to use a Confluent Cloud cluster and send messages via Flink Faker from a local table into a Kafka topic:
     
     ![](./diagrams/flaker-to-kafka.drawio.png)
 
     See the [scripts and README](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/01-confluent-kafka-local-flink).
+
+    Here is an example of Faker definition for Confluent Cloud:
+    ```sql
+    CREATE TABLE `rides` (
+        `ride_id` STRING,
+        `driver_id` STRING,
+        `pickup_location` STRING,
+        `dropoff_location` STRING,
+        `pickup_time` TIMESTAMP(3),
+        `dropoff_time` TIMESTAMP(3),
+        `distance` DOUBLE,
+        `fare` DOUBLE,
+        `payment_type` STRING,
+        `rating` DOUBLE
+    ) WITH (
+        'connector' = 'faker',
+        'rows-per-second' = '4',
+        'fields.ride_id.expression' = '#{Internet.UUID}',
+        'fields.driver_id.expression' = '#{numerify ''driver_##''}',
+        'fields.pickup_location.expression' = '#{Address.city}',
+        'fields.dropoff_location.expression' = '#{Address.city}',
+        'fields.pickup_time.expression' = '#{date.past ''5'',''1'',''SECONDS''}',
+        'fields.dropoff_time.expression' = '#{date.past ''5'',''1'',''SECONDS''}',
+        'fields.distance.expression' = '#{number.numberBetween ''10'',''100''}',
+        'fields.fare.expression' = '#{number.numberBetween ''10'',''130''}',
+        'fields.payment_type.expression' = '#{Options.option ''credit_card'', ''debit_card'', ''cash''}',
+        'fields.rating.expression' = '#{number.numberBetween ''1'',''5''}'
+        );
+    ```
 
 ???+ question "Reading from a topic at specific offsets"
     ```sql

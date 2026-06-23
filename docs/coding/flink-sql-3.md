@@ -109,4 +109,4 @@ The SQL Gateway is the important component to manage the life cycle of MT. It in
 
 ### Change source topic schema
  
-We want to demonstrate how a change to the sourc 
+We want to demonstrate how a change the source schema, with controlled records. See the folder [flink-sql/13-materialized-table/cc](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/13-materialized-table/cc) with Kafka producer and materialized table.

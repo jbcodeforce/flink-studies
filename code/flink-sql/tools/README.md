@@ -9,22 +9,7 @@ cd code/flink-sql/tools
 uv sync
 ```
 
-## Deploy on Confluent Cloud
-
-Deploy Flink SQL statement groups from demo folders using [confluent-sql](https://pypi.org/project/confluent-sql/) (REST API, no Confluent CLI).
-
-* Set Confluent Cloud credentials and target env: `~/.confluent/.env` (override the file path with `CONFLUENT_ENV_FILE`).
-
-| Variable | Purpose |
-|----------|---------|
-| `FLINK_API_KEY`, `FLINK_API_SECRET` | Or `CONFLUENT_CLOUD_API_KEY` / `SECRET` |
-| `ORGANIZATION_ID` | Confluent org |
-| `ENVIRONMENT_ID` | Environment / catalog (alias: `ENV_ID`) |
-| `COMPUTE_POOL_ID` | Flink compute pool (alias: `CPOOLID`) |
-| `DB_NAME` | Kafka cluster / `sql.current-database` |
-| `CLOUD`, `REGION` | Or `FLINK_BASE_URL` |
-
-### The deploy_manifest.json
+## create_deploy_manifest
 
 Each demo folder for cc deployment should include a `deploy_manifest.json` file to declare what to deploy. This file lists a set of group and then in each groups the name of the statement and file to match.
 
@@ -44,6 +29,38 @@ Each demo folder for cc deployment should include a `deploy_manifest.json` file 
   }
 }
 ```
+
+* It is possible to generate a manifest.json template from SQL files in a folder:
+
+```sh
+cd code/flink-sql/tools
+
+# Preview without writing
+uv run python -m cc_deploy.create_deploy_manifest --sql-dir ../11-puzzles/my_demo --dry-run
+
+# Write deploy_manifest.json
+uv run python -m cc_deploy.create_deploy_manifest --sql-dir ../11-puzzles/my_demo --prefix my-demo
+```
+
+Files are grouped by naming convention: `ddl.*` → ddl, `insert_*` / `dml.insert_*` → data, `dml.update_*` → scenario, other `dml.*` → pipeline.
+
+--- 
+
+## Deploy on Confluent Cloud
+
+Deploy Flink SQL statement groups from demo folders using [confluent-sql](https://pypi.org/project/confluent-sql/) (REST API, no Confluent CLI).
+
+* Set Confluent Cloud credentials and target env: `~/.confluent/.env` (override the file path with `CONFLUENT_ENV_FILE`).
+
+| Variable | Purpose |
+|----------|---------|
+| `FLINK_API_KEY`, `FLINK_API_SECRET` | Or `CONFLUENT_CLOUD_API_KEY` / `SECRET` |
+| `ORGANIZATION_ID` | Confluent org |
+| `ENVIRONMENT_ID` | Environment / catalog (alias: `ENV_ID`) |
+| `COMPUTE_POOL_ID` | Flink compute pool (alias: `CPOOLID`) |
+| `DB_NAME` | Kafka cluster / `sql.current-database` |
+| `CLOUD`, `REGION` | Or `FLINK_BASE_URL` |
+
 
 - `deploy_all` — groups run in order for `deploy --group all`
 - `undeploy_all` — groups whose statements are deleted first on full undeploy (streaming pipeline last)
@@ -135,23 +152,7 @@ Add a custom group to `undeploy_all` if its statements should be stopped during 
 
 --- 
 
-## create_deploy_manifest
 
-* It is possible to generate a manifest.json template from SQL files in a folder:
-
-```sh
-cd code/flink-sql/tools
-
-# Preview without writing
-uv run python -m cc_deploy.create_deploy_manifest --sql-dir ../11-puzzles/my_demo --dry-run
-
-# Write deploy_manifest.json
-uv run python -m cc_deploy.create_deploy_manifest --sql-dir ../11-puzzles/my_demo --prefix my-demo
-```
-
-Files are grouped by naming convention: `ddl.*` → ddl, `insert_*` / `dml.insert_*` → data, `dml.update_*` → scenario, other `dml.*` → pipeline.
-
---- 
 
 ## Snapshot query
 

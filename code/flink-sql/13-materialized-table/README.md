@@ -1,8 +1,16 @@
 # Materialized Table Demonstration
 
+Two presentations:
+
+
+1. [Apache flink](#apache-flink)
+1. [Confluent Cloud](#confluent-cloud-for-flink)
+
+## Apache Flink
+
 This is the implementation [of the Flink quickstart](https://nightlies.apache.org/flink/flink-docs-release-2.2/docs/dev/table/materialized-table/quickstart/) with local OSS Flink and some explanations not in the source documentations.
 
-## Prepare the cluster:
+### Prepare the cluster:
 
 * If not done before, run: `setup.sh`
 * Start cluster and gateway
@@ -14,7 +22,7 @@ This is the implementation [of the Flink quickstart](https://nightlies.apache.or
     ```
 * See the config.yaml file for catalog store file reference, and workflow scheduler.
 
-## Work with the SQL Client
+### Work with the SQL Client
 
 * Start SQL client- Materialized Tables must be created through SQL Gateway
     ```sh
@@ -92,9 +100,9 @@ This is the implementation [of the Flink quickstart](https://nightlies.apache.or
 
 * Demonstrate how to suspend a materialized table
     ```sql
-     SET 'execution.checkpointing.savepoint-dir' = 'file:///Users/jerome/Documents/Code/flink-studies/code/flink-sql/13-materialized-table/savepoints';
+    SET 'execution.checkpointing.savepoint-dir' = 'file:///Users/jerome/Documents/Code/flink-studies/code/flink-sql/13-materialized-table/savepoints';
 
-     ALTER MATERIALIZED TABLE continuous_users_shops SUSPEND;
+    ALTER MATERIALIZED TABLE continuous_users_shops SUSPEND;
     ```
 
     The running job is no more visible in the user interface.
@@ -105,7 +113,7 @@ This is the implementation [of the Flink quickstart](https://nightlies.apache.or
 
     You will find that a new Flink streaming job for continuous refresh the materialized table is started and restored state from the specified savepoint path
 
-## Change the table schema
+### Change the table schema
 * Alter the table:
     ```
     ALTER MATERIALIZED TABLE continuous_users_shops AS
@@ -123,10 +131,10 @@ This is the implementation [of the Flink quickstart](https://nightlies.apache.or
 
     ```
 
-    The existing refresh statment is finished, and a new one is running. In coninuous mode, this may create duplicates.
+    The existing refresh statment is finished, and a new one is running. In continuous mode, this may create duplicates.
 
 
-## Reconnecting
+### Reconnecting
 
 * Reset the catalog: `USE CATALOG mt_cat;`
 * Can verify database and tables:
@@ -134,7 +142,7 @@ This is the implementation [of the Flink quickstart](https://nightlies.apache.or
     show tables;
     ```
 
-## FULL mode
+### FULL mode
 
 * Create table with full mode
     ```sql
@@ -145,9 +153,92 @@ This is the implementation [of the Flink quickstart](https://nightlies.apache.or
     ALTER MATERIALIZED TABLE full_users_shops REFRESH PARTITION(ds='2024-06-20');
     ```
 
-## Stoping all
+### Stoping all
 
 ```sh
 $FLINK_HOME/bin/stop-cluster.sh 
 $FLINK_HOME/bin/sql-gateway.sh stop
 ```
+
+
+# Confluent Cloud for Flink
+
+Be sure to have the following env variables set:
+```sh
+export KAFKA_BOOTSTRAP_SERVERS="pkc-......confluent.cloud:9092"
+export KAFKA_SECURITY_PROTOCOL=SASL_SSL
+export KAFKA_API_KEY=....
+export KAFKA_API_SECRET=
+export KAFKA_SASL_MECHANISM=PLAIN
+export SCHEMA_REGISTRY_ENDPOINT=https://psrc-...confluent.cloud
+export SCHEMA_REGISTRY_API_KEY=....
+export SCHEMA_REGISTRY_API_SECRET=
+```
+
+* Create a `raw_rides` table to stream 200 records, to simulate CDC topics for getting records about a car shared services. 
+    ```sh
+    source set_env.sh  # set environment variables
+    uv run python 13-materialized-table/rides_producer.py --count 50 --schema ride --interval 0.5
+    ```
+
+* Create materialized tables as `dim-rides` using the [cc/dml.dim-rides.sql](./cc/dml.dim-rides.sql)
+
+* Query the resulting table:
+    ```sql
+    select * from `dim_rides`
+    ```
+
+![](./docs/ride.png)
+    
+* Add attribute to `rides` for car type, with default value to 'S': 
+    ```sql
+    uv run python 13-materialized-table/rides_producer.py --count 500 --schema ride2 --interval 0.5
+    ```
+
+    Records has new attribute, and the dim_rides is not more degraded, it is producing its aggregates again. The schema has a new version in the schema registry with the new car_type
+    ```json
+      "properties": {
+            "car_type": {
+            "default": "S",
+            "enum": [
+                "S",
+                "L",
+                "XL"
+            ],
+            "title": "Car Type",
+            "type": "string"
+            },
+    ```
+
+    The schema is backward compatible, and was created with additionalProperties set to false to register the schema as closed.
+
+* Mofify the MT to add this attribute
+    ```sql
+    CREATE OR ALTER MATERIALIZED TABLE dim_rides (
+        driver_id STRING NOT NULL,
+        total_rides BIGINT,
+        total_distance DOUBLE,
+        total_fare DOUBLE,
+        car_type STRING,
+        PRIMARY KEY(driver_id) NOT ENFORCED
+    )
+        START_MODE = RESUME_OR_FROM_BEGINNING
+        AS   SELECT
+            coalesce(driver_id, 'Dummy') as driver_id,
+            count(*) as total_rides,
+            sum(distance) as total_distance,
+            sum(fare) as total_fare,
+            coalesce(car_type, 'S') as car_type
+        FROM `raw_rides` group by driver_id, car_type;
+    ```
+
+    See the [cc/dml.alter_dim-rides.sql](./cc/dml.alter_dim-rides.sql) final sql.
+
+    The following should display the new schema
+    ```sh
+    show create materialized table `dim_rides`
+    ```
+
+* Observe the aggregation results, they are computed from the last snapshot, so continued from when the MT was stopped. 
+
+![](./docs/ride2.png)

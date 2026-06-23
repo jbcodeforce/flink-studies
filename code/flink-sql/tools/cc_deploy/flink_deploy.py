@@ -19,6 +19,7 @@ from typing import Any, Iterable, Literal
 
 import confluent_sql
 from confluent_sql.exceptions import OperationalError, StatementNotFoundError
+from confluent_sql.execution_mode import ExecutionMode
 from dotenv import load_dotenv
 
 from cc_deploy.manifest import (

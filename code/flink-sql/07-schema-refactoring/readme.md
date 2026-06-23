@@ -2,8 +2,6 @@
 
 The goal of this chapter is to demonstrate schema evolution for a transactional database. The high-level architecture looks like:
 
-
-
 There is a source Table in Postgresql that includes a simple schema like
 
 ```sql

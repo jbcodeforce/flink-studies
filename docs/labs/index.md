@@ -15,6 +15,25 @@ This section lists the current demonstrations and labs in this git repository or
 
 Under code/flink-sql folder
 
+### 1.0 Tools to support testing
+
+* [kafka_json_producer.py / KafkaJSONProducer](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/cm_py_lib/kafka_json_producer.py) Json Kafka producer in Python, with the following features:
+    - Create the target topic if it does not exist (``AdminClient``)
+    - Register or fetch a JSON Schema Registry subject ``{topic}-value`` from a Pydantic model
+    - Validate records client-side with ``jsonschema``
+    - Produce Schema Registry wire-format payloads via ``JSONSerializer`` 
+
+* [create_deploy_manifest](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/tools/cc_deploy): Create deployment manifest for a set of Flink SQL statement, so we can control the deployment by groups of statements.
+    ```sh
+    # Write deploy_manifest.json
+    uv run python -m cc_deploy.create_deploy_manifest --sql-dir ../11-puzzles/my_demo --prefix jb
+    ```
+
+* [deploy_flink_statements](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/tools/cc_deploy): deploy group of Flink SQL statements using [confluent-sql library]() and the deployment manifest.
+    ```sh
+    uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update deploy --group ddl
+    ```
+
 ### 1.1 Basic SQL & Getting Started
 
 | Sample | Path | Description |
@@ -106,6 +125,13 @@ Under code/flink-sql folder
 | **Flink Python SQL runner** | [flink-sql/flink-python-sql-runner](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/flink-python-sql-runner/) | Python-based SQL runner entry. |
 | **Triage (DDL only)** | [flink-sql/triage](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/triage/) | DDLs: `ddl.employees.sql`, `dd.departments.sql`, `ddl.jobs.sql`. |
 
+
+### 1.13 Materialized Table
+
+| Sample | Path | Description |
+|--------|------|-------------|
+| **continuous_users_shops** |  [flink-sql/13-materialized-table](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/13-materialized-table) | Apache flink demonstration implementation. Catalog, materialized table, schema change on MT |  
+| **Confluent Cloud: car rides** | [flink-sql/13-materialized-table/cc](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/13-materialized-table/cc)| Car rides with MT, Kafka Producer and schema changes on source tables and MT | 
 
 ## 2. Flink Java (DataStream API)
 

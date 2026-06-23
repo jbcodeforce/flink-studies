@@ -158,14 +158,14 @@
     "title": "Apache Flink - Core Concepts",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "contributing.md",
     "title": "Contributing to this repository",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "cookbook/cluster_mgt.md",
@@ -186,28 +186,28 @@
     "title": "Governance, Change Management & Best Practices",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "cookbook/index.md",
     "title": "A Production Cookbook for Managing Apache Flink",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "cookbook/job_lifecycle.md",
     "title": "Job Lifecycle & State Management (App Owners + Platform)",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "cookbook/pm.md",
     "title": "Flink Project Management",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "cookbook/streaming-discovery/SPECS.md",
@@ -221,97 +221,97 @@
     "title": "Terraform for Confluent Cloud Flink",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "index.md",
     "title": "\ud83d\udea7 The Complete Guide to Apache Flink and Confluent Flink",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "labs/index.md",
     "title": "Local code and demonstrations, plus other public references",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "methodology/coe.md",
     "title": "Center of Excellence for Stream Processing Establishment",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "methodology/data_as_a_product.md",
     "title": "Moving to a Data as a Product Architecture",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "news/changelog-summary.md",
     "title": "Flink Studies Repository \u2014 Changelog Summary",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "news/flink-blog-posts-2025-2026.md",
     "title": "Apache Flink Blog Posts Summary (2025\u20132026)",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "news/index.md",
     "title": "Last Flink News",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "techno/cc-tableflow.md",
     "title": "Confluent Tableflow",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "techno/ccloud-flink.md",
     "title": "Confluent Cloud for Apache Flink",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "techno/cp-flink.md",
     "title": "Confluent Platform for Flink",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "techno/fk-k8s-monitor.md",
     "title": "Monitoring Flink on Kubernetes",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "cookbook/k8s_tuning.md",
     "title": "Flink Tuning on Kubernetes",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   },
   {
     "file": "techno/hive.md",
     "title": "Apache Hive",
     "source": "studies-docs",
     "ingested": "2026-06-13T20:03:21Z",
-    "compiled": false
+    "compiled": true
   }
 ]

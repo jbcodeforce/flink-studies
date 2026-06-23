@@ -32,7 +32,7 @@ Confluent Cloud Flink is built on the same open-source version as Apache Flink®
 Some **limitations**:
 
 * No support for DataStream apps.
-* No support or Flink connectors, only Kafka
+* No support for Apache Flink connectors, except Kafka source and sink connectors.
 
 ## Comparaison with Apache Flink
 
@@ -63,7 +63,7 @@ Pay attention that most Flink managed services are cloud-hosted and not cloud-na
 * Manage Flink Compute Pools in Confluent Cloud for Apache Flink | [Confluent Documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/create-compute-pool.html)
 * Monitor and Manage Flink SQL Statements in Confluent Cloud for Apache Flink | [Confluent Documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html)
 
-## Key Concepts/Specifics
+## Key Specific Concepts
 
 * This is a **regional service**, in one of the three major cloud providers. It is defined in a context of a Confluent's environment.
 * **Compute pools** groups resources for running Flink clusters, which may scale down to zero. They run SQL **statements**. Maximum pool size is defined at creation. Statements, in different compute pools, are **isolated** from each other. 
