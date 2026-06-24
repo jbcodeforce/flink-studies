@@ -1,0 +1,21 @@
+# Cloud API credentials: export CONFLUENT_CLOUD_API_KEY and CONFLUENT_CLOUD_API_SECRET.
+
+prefix         = "j9r-rbac"
+cloud_provider = "GCP"
+cloud_region   = "us-central1"
+
+create_environment        = true
+create_kafka_cluster      = true
+create_flink_compute_pool = true
+kafka_cluster_tier        = "standard"
+flink_max_cfu             = 10
+
+# Optional: narrow topic RBAC (default * = all topics on the cluster)
+# kafka_topic_pattern = "my-prefix*"
+
+# Or attach Kafka + pool to an existing environment:
+# create_environment        = false
+# environment_id            = "env-xxxxx"
+# environment_display_name  = "j9r-env"   # Flink catalog; must match Confluent UI, not {prefix}-env
+# create_kafka_cluster      = true
+# create_flink_compute_pool = true

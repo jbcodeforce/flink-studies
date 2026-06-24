@@ -1,0 +1,154 @@
+{
+  "source": "kafka",
+  "bootstrap_servers": "pkc-rgm37.us-west-2.aws.confluent.cloud:9092",
+  "database": "j9r-kafka",
+  "generated_at": "2026-06-23T15:53:43.464707+00:00",
+  "statement_prefix": "cleanup-drop",
+  "tables": [
+    {
+      "topic": "PSOFT_BUSINESS_UNIT_AVRO_SS",
+      "table": "PSOFT_BUSINESS_UNIT_AVRO_SS",
+      "drop": true
+    },
+    {
+      "topic": "PSOFT_GG_PS_FZGL_GRPDIV_TBL_AVRO",
+      "table": "PSOFT_GG_PS_FZGL_GRPDIV_TBL_AVRO",
+      "drop": true
+    },
+    {
+      "topic": "com.att.como.flux.stage.parent-messaging.1.0",
+      "table": "com.att.como.flux.stage.parent-messaging.1.0",
+      "drop": true
+    },
+    {
+      "topic": "com.att.como.flux.stage.parent-messaging.1.0.uppercase",
+      "table": "com.att.como.flux.stage.parent-messaging.1.0.uppercase",
+      "drop": true
+    },
+    {
+      "topic": "customers_raw",
+      "table": "customers_raw",
+      "drop": true
+    },
+    {
+      "topic": "dev-dps-gen-cdce-CHECK_RECONCILE",
+      "table": "dev-dps-gen-cdce-CHECK_RECONCILE",
+      "drop": true
+    },
+    {
+      "topic": "dev-dps-gen-cdce-CKFR_SBSR_XREF",
+      "table": "dev-dps-gen-cdce-CKFR_SBSR_XREF",
+      "drop": true
+    },
+    {
+      "topic": "dev-dps-gen-cdce-HISTORY_XREF",
+      "table": "dev-dps-gen-cdce-HISTORY_XREF",
+      "drop": true
+    },
+    {
+      "topic": "dev-dps-gen-cdce-SPONSOR_PRODUCT",
+      "table": "dev-dps-gen-cdce-SPONSOR_PRODUCT",
+      "drop": true
+    },
+    {
+      "topic": "dev-dps-gen-enriched-checkimblookup",
+      "table": "dev-dps-gen-enriched-checkimblookup",
+      "drop": true
+    },
+    {
+      "topic": "loyalty_program_raw",
+      "table": "loyalty_program_raw",
+      "drop": true
+    },
+    {
+      "topic": "my_table",
+      "table": "my_table",
+      "drop": true
+    },
+    {
+      "topic": "oms_gg_intf_lift_fulfillment_avro_ss",
+      "table": "oms_gg_intf_lift_fulfillment_avro_ss",
+      "drop": true
+    },
+    {
+      "topic": "oms_gg_order_delivery_group_avro_is1",
+      "table": "oms_gg_order_delivery_group_avro_is1",
+      "drop": true
+    },
+    {
+      "topic": "orders_with_customer_details",
+      "table": "orders_with_customer_details",
+      "drop": true
+    },
+    {
+      "topic": "orphan",
+      "table": "orphan",
+      "drop": true
+    },
+    {
+      "topic": "pksqlc-1v38o3o-processing-log",
+      "table": "pksqlc-1v38o3o-processing-log",
+      "drop": true
+    },
+    {
+      "topic": "products_raw",
+      "table": "products_raw",
+      "drop": true
+    },
+    {
+      "topic": "raw_full_moon_dates",
+      "table": "raw_full_moon_dates",
+      "drop": true
+    },
+    {
+      "topic": "raw_rides",
+      "table": "raw_rides",
+      "drop": true
+    },
+    {
+      "topic": "shipments_raw",
+      "table": "shipments_raw",
+      "drop": true
+    },
+    {
+      "topic": "sl_cmn_src_tenants",
+      "table": "sl_cmn_src_tenants",
+      "drop": true
+    },
+    {
+      "topic": "sl_raw_groups",
+      "table": "sl_raw_groups",
+      "drop": true
+    },
+    {
+      "topic": "sl_raw_tenants",
+      "table": "sl_raw_tenants",
+      "drop": true
+    },
+    {
+      "topic": "sl_raw_users",
+      "table": "sl_raw_users",
+      "drop": true
+    },
+    {
+      "topic": "src_lgv_segment_point",
+      "table": "src_lgv_segment_point",
+      "drop": true
+    },
+    {
+      "topic": "support_ticket_raw",
+      "table": "support_ticket_raw",
+      "drop": true
+    },
+    {
+      "topic": "tracking_events_raw",
+      "table": "tracking_events_raw",
+      "drop": true
+    },
+    {
+      "topic": "transaction_items_raw",
+      "table": "transaction_items_raw",
+      "drop": true
+    }
+  ]
+}

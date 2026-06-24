@@ -494,10 +494,17 @@ See [Grafana integration](https://docs.confluent.io/cloud/current/monitoring/thi
 
 ## Role Base Access Control
 
-[The product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/flink-rbac.html) goes into sufficient details on how RBAC works for Flink. 
+[The product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/flink-rbac.html) goes into sufficient details on how RBAC roles work for Flink. 
 
 * Remember some inport facts:
-    * When registering to CC, one org is created with the user who registered. Other users are invited.
+    * When registering to CC, one org is created with the user who creatd it. Other users are invited to the organization.
+    * Service account can be used for deployment of resources or flink statement. It will be used as principal id for Flink statement deployment. Roles need to be granted to this service account, as well as api keys. 
+    * CC Flink permissions follow a layered approach
+    * Flink Developer can create workspaces, but can be limited per compute pool
+    * Basic Kafka clusters don't support topic-level DeveloperRead/DeveloperWrite bindings. (changing the terraform from basic{} to standard{} can be dony without recreating the cluster)
+    * Transactional-ID bindings are required for Flink exactly-once semantics
+    * Creating compute pool needs FlinkAdmin role
+    * Adding UDFs, integration connectivities or other artifacts needs FlinkFunctionDeveloper
 
 
 The following table list some classical use cases and the expected roles:
@@ -506,11 +513,16 @@ The following table list some classical use cases and the expected roles:
 | -------- | ----------- |
 | Create environment  |  EnvironmentAdmin | 
 | Create compute pool | FlinkAdmin scoped at environment level |
-| Deploy flink statement | FlinkDeveloper (FlinkAdmin too) | 
+| Deploy flink statement,| FlinkDeveloper,  DeveloperManage (to create topics), DeveloperRead, DeveloperWrite on kafka topic and DeveloperWrite on Schema Registry subjects | 
+| Manage artifacts & connectivity | FlinkFunctionDeveloper | 
+| Support exactly-once delivery | DeveloperRead, DeveloperWrite on `Transactional-Id:_confluent-flink_`| 
 | Create R/W Schemas in SR | DataSteward |
 | Admin the org | OrganizationAdmin |  
+| Access to encryoption keys | DeveloperRead on the key. DeveloperWrite for the key generation |
 
-Examples of Terraform definitions for service accounts, roles, and role binding [cc-terraform for my env](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/cc-terraform).
+Examples of Terraform definitions for service account, (FlinkDeveloper, DevelopManage) roles, and role binding on GCP [cc-flink-rbac](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/cc-flink-rbac).
+
+### Terraform examples
 
 ## Understanding pricing
 

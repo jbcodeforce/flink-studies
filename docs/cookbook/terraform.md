@@ -591,6 +591,12 @@ Build Terraform manifests incrementally:
 
 This approach provides clear understanding of dependencies and makes troubleshooting easier.
 
+### Check what Terraform thinks it manages
+```sh
+terraform state list | grep kafka
+terraform state show 'confluent_kafka_cluster.kafka[0]'
+```
+
 ## Adding Flink to an Existing Environment
 
 This section covers adding Flink resources to an existing Confluent Cloud environment that already has Kafka and Schema Registry.
@@ -772,3 +778,20 @@ Compute pools with running Flink statements cannot be deleted - stop all stateme
   terraform state rm confluent_flink_compute_pool.data-generation
   ```
 
+* To remove kafka cluster
+  ```sh
+  # Preview
+  terraform plan -destroy -target=confluent_kafka_cluster.kafka[0]
+  # Destroy (may need dependent bindings first — Terraform usually orders this)
+  terraform destroy -target=confluent_kafka_cluster.kafka[0]
+  ```
+
+  If you already deleted the cluster manually. Remove it from state so Terraform stops tracking it:
+  ```sh
+  terraform state rm 'confluent_kafka_cluster.kafka[0]'
+  ```
+
+*  Destroy the whole stack:
+  ```sh
+  terraform destroy
+  ```
