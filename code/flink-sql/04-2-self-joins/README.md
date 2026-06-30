@@ -33,19 +33,10 @@ Seed data via SQL (`make deploy-data`) or Python producers — see [cc/README.md
 
 ## Pipeline overview
 
-```mermaid
-flowchart LR
-    ES[event_stream] --> Parse[Parse envelope]
-    PI[party_info] --> Join1[account to party]
-    Parse --> Join1
-    Join1 --> Expand[All party accounts]
-    PI --> Expand
-    ES --> SelfJoin[Self-join subscriptions]
-    Expand --> SelfJoin
-    SelfJoin --> Out[enriched_party_events]
-```
+![](./docs/pipe.drawio.png)
 
 - **event_stream** — append log with 6-day Kafka retention; `STATE_TTL` on stream aliases in the join
 - **party_info** — compact upsert reference with infinite retention
 - **enriched_party_events** — sink showing party expansion and sibling subscription lookup
 
+## Generate more events with Kafka Producer
