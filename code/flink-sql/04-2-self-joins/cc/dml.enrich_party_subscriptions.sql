@@ -2,7 +2,7 @@
 -- self-join event_stream for sibling subscription rows.
 INSERT INTO enriched_party_events
 SELECT /*+ STATE_TTL('es'='6d', 'sub'='6d', 'pi'='0', 'pi2'='0') */
-     pi.party_id,
+    pi.party_id,
     COALESCE(pi2.account_number, es.account_number) AS related_account_id,
     es.event_time,
     es.event_type,
@@ -11,7 +11,7 @@ SELECT /*+ STATE_TTL('es'='6d', 'sub'='6d', 'pi'='0', 'pi2'='0') */
     pi.addr_street,
     pi.addr_city,
     pi.addr_state,
-    pi.addr_zip,
+    pi.addr_zip
 FROM (
     SELECT
         e.event_id,
@@ -21,6 +21,7 @@ FROM (
     FROM event_stream e
     CROSS JOIN UNNEST(e.event_details) AS t(detail)
     WHERE JSON_VALUE(t.detail, 'lax $.account_number') IS NOT NULL
+       AND JSON_VALUE(e.context_data, 'lax $.eventType') = 'deviceSwap'
 ) es
 LEFT JOIN party_info pi
     ON es.account_number = pi.account_number
@@ -35,3 +36,12 @@ LEFT JOIN (
     WHERE JSON_VALUE(e.context_data, 'lax $.eventType') = 'subscription'
 ) sub
     ON pi2.account_number = sub.account_number
+LEFT JOIN (
+    SELECT
+        JSON_VALUE(d.detail, 'lax $.account_number') AS account_number,
+        JSON_VALUE(d.detail, 'lax $.plan_name') AS plan_name
+    FROM event_stream e
+    CROSS JOIN UNNEST(e.event_details) AS d(detail)
+    WHERE JSON_VALUE(e.context_data, 'lax $.eventType') = 'deviceSwap'
+) sub2
+    ON pi2.account_number = sub2.account_number

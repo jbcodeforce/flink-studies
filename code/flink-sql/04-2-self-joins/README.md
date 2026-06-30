@@ -40,3 +40,9 @@ Seed data via SQL (`make deploy-data`) or Python producers — see [cc/README.md
 - **enriched_party_events** — sink showing party expansion and sibling subscription lookup
 
 ## Generate more events with Kafka Producer
+
+```sh
+cd python
+uv sync
+uv run python
+```
