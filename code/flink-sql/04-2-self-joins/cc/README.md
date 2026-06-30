@@ -40,20 +40,11 @@ SELECT * FROM party_info ORDER BY party_id, account_number;
 
 -- Enriched output: deviceSwap on acc-002 with sibling subscription on acc-001
 SELECT
-    event_id,
-    event_type,
-    account_number,
-    party_id,
-    related_account_id,
-    plan_name
+   *
 FROM enriched_party_events
 WHERE event_type = 'deviceSwap'
 ORDER BY event_time;
 
--- All party accounts expanded for a subscription event
-SELECT * FROM enriched_party_events
-WHERE event_id = 'evt-sub-001'
-ORDER BY related_account_id;
 ```
 
 ## Undeploy
