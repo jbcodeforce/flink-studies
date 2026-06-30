@@ -1,0 +1,15 @@
+-- Pipeline stub: transform reefer_sensor events (customize for healthcare use case)
+-- INSERT INTO sink_table
+-- SELECT ...
+-- FROM reefer_sensor;
+
+-- Placeholder continuous query — replace with your business logic:
+-- INSERT INTO reefer_sensor_aggregates
+-- SELECT
+--   reefer_sensor_id,
+--   TUMBLE_END(event_time, INTERVAL '1' MINUTE) AS window_end,
+--   COUNT(*) AS event_count
+-- FROM TABLE(
+--   TUMBLE(TABLE reefer_sensor, DESCRIPTOR(event_time), INTERVAL '1' MINUTE)
+-- )
+-- GROUP BY reefer_sensor_id, window_start, window_end;

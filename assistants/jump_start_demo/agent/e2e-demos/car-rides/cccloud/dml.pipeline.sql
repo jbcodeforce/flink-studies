@@ -1,0 +1,15 @@
+-- Pipeline stub: transform driver customer ride trip_metrics daily_revenue events (customize for ride-sharing use case)
+-- INSERT INTO sink_table
+-- SELECT ...
+-- FROM driver customer ride trip_metrics daily_revenue;
+
+-- Placeholder continuous query — replace with your business logic:
+-- INSERT INTO driver customer ride trip_metrics daily_revenue_aggregates
+-- SELECT
+--   driver customer ride trip_metrics daily_revenue_id,
+--   TUMBLE_END(event_time, INTERVAL '1' MINUTE) AS window_end,
+--   COUNT(*) AS event_count
+-- FROM TABLE(
+--   TUMBLE(TABLE driver customer ride trip_metrics daily_revenue, DESCRIPTOR(event_time), INTERVAL '1' MINUTE)
+-- )
+-- GROUP BY driver customer ride trip_metrics daily_revenue_id, window_start, window_end;

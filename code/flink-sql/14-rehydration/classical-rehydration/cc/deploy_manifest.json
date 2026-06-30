@@ -1,0 +1,33 @@
+{
+  "user_agent": "flink-studies-cccloud/0.1",
+  "deploy_all": [
+    "ddl",
+    "pipeline"
+  ],
+  "undeploy_all": [
+    "pipeline"
+  ],
+  "drop_tables": [
+    "user_usage_summary",
+    "usage_events"
+  ],
+  "groups": {
+    "ddl": [
+      {
+        "name": "cccloud-ddl-usage-events",
+        "file": "ddl.usage_events.sql"
+      },
+      {
+        "name": "cccloud-ddl-user-usage-summary",
+        "file": "ddl.user_usage_summary.sql"
+      }
+    ],
+    "pipeline": [
+      {
+        "name": "cccloud-pipeline-rehydrate-usage",
+        "file": "dml.rehydrate_usage.sql"
+      }
+    ]
+  },
+  "drop_statement_prefix": "cccloud-drop"
+}

@@ -1,0 +1,5 @@
+# Same deps as pyproject.toml (for pip install -r)
+confluent-kafka[schema-registry]>=2.3.0
+pydantic>=2.0.0
+jsonschema>=4.0.0
+python-dotenv>=1.0.0

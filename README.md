@@ -40,6 +40,10 @@ The docs folder includes:
 * The e2e-demos includes a set of end to end demonstration with more component. [The e-com-sale-simulator tutorial](https://flink.apache.org/2020/07/28/flink-sql-demo-building-e2e-streaming-application.html) integrates Kafka, MySQL, Elasticsearch, and Kibana with Flink SQL to analyze e-commerce user's behavior in real-time.
 * [Flink SQL local java app](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/flink-sql-quarkus)
 
+### Assistants
+
+* [jump_start_demo](./assistants/jump_start_demo/) CLI with AI based agent to create demo project template.
+
 ### Deployment
 
 * **k8s**: all the local deployment is for colima with kubernetes engine.

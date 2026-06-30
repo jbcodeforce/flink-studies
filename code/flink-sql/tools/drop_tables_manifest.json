@@ -2,17 +2,12 @@
   "source": "kafka",
   "bootstrap_servers": "pkc-rgm37.us-west-2.aws.confluent.cloud:9092",
   "database": "j9r-kafka",
-  "generated_at": "2026-06-23T15:53:43.464707+00:00",
+  "generated_at": "2026-06-26T05:25:23.536223+00:00",
   "statement_prefix": "cleanup-drop",
   "tables": [
     {
-      "topic": "PSOFT_BUSINESS_UNIT_AVRO_SS",
-      "table": "PSOFT_BUSINESS_UNIT_AVRO_SS",
-      "drop": true
-    },
-    {
-      "topic": "PSOFT_GG_PS_FZGL_GRPDIV_TBL_AVRO",
-      "table": "PSOFT_GG_PS_FZGL_GRPDIV_TBL_AVRO",
+      "topic": "app_usage_raw",
+      "table": "app_usage_raw",
       "drop": true
     },
     {
@@ -26,8 +21,18 @@
       "drop": true
     },
     {
-      "topic": "customers_raw",
-      "table": "customers_raw",
+      "topic": "d06_locf_last_val",
+      "table": "d06_locf_last_val",
+      "drop": true
+    },
+    {
+      "topic": "d06_orders",
+      "table": "d06_orders",
+      "drop": true
+    },
+    {
+      "topic": "d06_sensor_data",
+      "table": "d06_sensor_data",
       "drop": true
     },
     {
@@ -56,23 +61,13 @@
       "drop": true
     },
     {
-      "topic": "loyalty_program_raw",
-      "table": "loyalty_program_raw",
+      "topic": "dim_rides_2",
+      "table": "dim_rides_2",
       "drop": true
     },
     {
-      "topic": "my_table",
-      "table": "my_table",
-      "drop": true
-    },
-    {
-      "topic": "oms_gg_intf_lift_fulfillment_avro_ss",
-      "table": "oms_gg_intf_lift_fulfillment_avro_ss",
-      "drop": true
-    },
-    {
-      "topic": "oms_gg_order_delivery_group_avro_is1",
-      "table": "oms_gg_order_delivery_group_avro_is1",
+      "topic": "lgv_segment_point_filled",
+      "table": "lgv_segment_point_filled",
       "drop": true
     },
     {
@@ -81,73 +76,18 @@
       "drop": true
     },
     {
-      "topic": "orphan",
-      "table": "orphan",
-      "drop": true
-    },
-    {
       "topic": "pksqlc-1v38o3o-processing-log",
       "table": "pksqlc-1v38o3o-processing-log",
       "drop": true
     },
     {
-      "topic": "products_raw",
-      "table": "products_raw",
+      "topic": "raw_classical_songs",
+      "table": "raw_classical_songs",
       "drop": true
     },
     {
-      "topic": "raw_full_moon_dates",
-      "table": "raw_full_moon_dates",
-      "drop": true
-    },
-    {
-      "topic": "raw_rides",
-      "table": "raw_rides",
-      "drop": true
-    },
-    {
-      "topic": "shipments_raw",
-      "table": "shipments_raw",
-      "drop": true
-    },
-    {
-      "topic": "sl_cmn_src_tenants",
-      "table": "sl_cmn_src_tenants",
-      "drop": true
-    },
-    {
-      "topic": "sl_raw_groups",
-      "table": "sl_raw_groups",
-      "drop": true
-    },
-    {
-      "topic": "sl_raw_tenants",
-      "table": "sl_raw_tenants",
-      "drop": true
-    },
-    {
-      "topic": "sl_raw_users",
-      "table": "sl_raw_users",
-      "drop": true
-    },
-    {
-      "topic": "src_lgv_segment_point",
-      "table": "src_lgv_segment_point",
-      "drop": true
-    },
-    {
-      "topic": "support_ticket_raw",
-      "table": "support_ticket_raw",
-      "drop": true
-    },
-    {
-      "topic": "tracking_events_raw",
-      "table": "tracking_events_raw",
-      "drop": true
-    },
-    {
-      "topic": "transaction_items_raw",
-      "table": "transaction_items_raw",
+      "topic": "source_raw_classical_songs",
+      "table": "source_raw_classical_songs",
       "drop": true
     }
   ]

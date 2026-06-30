@@ -1,0 +1,38 @@
+{
+  "user_agent": "flink-studies-cc/0.1",
+  "deploy_all": [
+    "ddl",
+    "pipeline"
+  ],
+  "undeploy_all": [
+    "pipeline"
+  ],
+  "drop_tables": [
+    "usage_snapshots",
+    "usage_events",
+    "unified_user_usage"
+  ],
+  "groups": {
+    "ddl": [
+      {
+        "name": "cc-ddl-unified-user-usage",
+        "file": "ddl.unified_user_usage.sql"
+      },
+      {
+        "name": "cc-ddl-usage-events",
+        "file": "ddl.usage_events.sql"
+      },
+      {
+        "name": "cc-ddl-usage-snapshots",
+        "file": "ddl.usage_snapshots.sql"
+      }
+    ],
+    "pipeline": [
+      {
+        "name": "cc-pipeline-mix-usage",
+        "file": "dml.mix_usage.sql"
+      }
+    ]
+  },
+  "drop_statement_prefix": "cc-hf-drop"
+}

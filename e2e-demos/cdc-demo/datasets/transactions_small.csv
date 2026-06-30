@@ -1,0 +1,16 @@
+transaction_id,customer_id,transaction_date,transaction_type,transaction_amount,merchant_category,merchant_name,transaction_location,account_balance_after_transaction,is_international_transaction,device_used,ip_address,transaction_status,transaction_source_destination,transaction_notes,fraud_flag
+TX-001,CUST001,2024-01-15 10:30:00,Debit Card,2500.0,Groceries,BigMart Superstore,Mumbai Maharashtra,45000.0,0,Mobile,192.168.1.10,Success,ACC123456789,Weekly grocery shopping,0
+TX-002,CUST002,2024-01-15 14:45:00,Credit Card,15000.0,Electronics,TechWorld Store,Delhi,85000.0,0,Web,10.0.0.25,Success,ACC234567890,Laptop accessories purchase,0
+TX-003,CUST003,2024-01-16 09:15:00,UPI,500.0,Dining,Coffee Corner Cafe,Bangalore Karnataka,32500.0,0,Mobile,172.16.0.50,Success,ACC345678901,Morning coffee,0
+TX-004,CUST004,2024-01-16 11:00:00,Bank Transfer,50000.0,Business,Supplier Payments Ltd,Chennai Tamil Nadu,250000.0,0,Web,192.168.10.100,Success,ACC456789012,Vendor payment,0
+TX-005,CUST005,2024-01-16 16:30:00,Debit Card,1200.0,Books,Campus Bookstore,Kolkata West Bengal,18000.0,0,POS,10.10.10.10,Success,ACC567890123,Semester textbooks,0
+TX-006,CUST001,2024-01-17 08:00:00,UPI,350.0,Transport,Metro Recharge,Mumbai Maharashtra,44650.0,0,Mobile,192.168.1.10,Success,ACC123456789,Monthly metro pass,0
+TX-007,CUST006,2024-01-17 13:20:00,Credit Card,8500.0,Shopping,Fashion Hub Mall,Hyderabad Telangana,42000.0,0,POS,172.20.0.15,Success,ACC678901234,Clothing purchase,0
+TX-008,CUST007,2024-01-17 19:45:00,Debit Card,3200.0,Utilities,PowerGrid Electricity,Pune Maharashtra,125000.0,0,Web,10.20.30.40,Success,ACC789012345,Electricity bill payment,0
+TX-009,CUST008,2024-01-18 10:10:00,UPI,750.0,Healthcare,MedPlus Pharmacy,Ahmedabad Gujarat,28000.0,0,Mobile,192.168.5.25,Success,ACC890123456,Medicine purchase,0
+TX-010,CUST009,2024-01-18 15:30:00,Bank Transfer,100000.0,Business,Raw Materials Co,Jaipur Rajasthan,450000.0,0,Web,10.50.100.200,Success,ACC901234567,Inventory purchase,0
+TX-011,CUST010,2024-01-19 11:45:00,Credit Card,25000.0,Travel,SkyHigh Airlines,Lucknow Uttar Pradesh,35000.0,1,Mobile,203.0.113.50,Success,ACC012345678,Flight booking international,0
+TX-012,CUST002,2024-01-19 20:00:00,Debit Card,4500.0,Entertainment,MovieMax Cinema,Delhi,80500.0,0,POS,10.0.0.25,Success,ACC234567890,Family movie night,0
+TX-013,CUST011,2024-01-20 09:30:00,UPI,200.0,Dining,Street Food Corner,Chandigarh,22000.0,0,Mobile,192.168.100.50,Success,ACC112345678,Breakfast,0
+TX-014,CUST003,2024-01-20 14:15:00,Credit Card,75000.0,Shopping,Premium Electronics,Bangalore Karnataka,150000.0,0,Web,172.16.0.50,Success,ACC345678901,New smartphone,0
+TX-015,CUST012,2024-01-20 18:00:00,Bank Transfer,200000.0,Investment,MutualFund Direct,Mumbai Maharashtra,1200000.0,0,Web,10.100.200.50,Success,ACC223456789,SIP investment,0

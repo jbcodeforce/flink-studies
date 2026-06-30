@@ -1,0 +1,16 @@
+application_id,customer_id,application_date,loan_type,loan_amount_requested,loan_tenure_months,interest_rate_offered,purpose_of_loan,employment_status,monthly_income,cibil_score,existing_emis_monthly,debt_to_income_ratio,property_ownership_status,residential_address,applicant_age,gender,number_of_dependents,loan_status,fraud_flag,fraud_type
+LA-001,CUST001,2024-01-15,Personal Loan,50000.0,24,12.5,Medical Emergency,Salaried,45000.0,720,5000.0,11.11,Owned,123 Main Street Mumbai Maharashtra 400001,32,Male,2,Approved,0,
+LA-002,CUST002,2024-01-16,Home Loan,2500000.0,240,8.75,Home Purchase,Salaried,95000.0,780,15000.0,15.79,Rented,456 Park Avenue Delhi 110001,45,Female,3,Approved,0,
+LA-003,CUST003,2024-01-17,Car Loan,800000.0,60,10.25,Vehicle Purchase,Self-Employed,75000.0,695,8000.0,10.67,Owned,789 Lake Road Bangalore Karnataka 560001,38,Male,1,Approved,0,
+LA-004,CUST004,2024-01-18,Business Loan,1500000.0,48,14.0,Business Expansion,Self-Employed,120000.0,650,20000.0,16.67,Owned,321 Industrial Area Chennai Tamil Nadu 600001,52,Male,4,Pending,0,
+LA-005,CUST005,2024-01-19,Education Loan,400000.0,84,9.5,Higher Education,Unemployed,0.0,710,0.0,0.0,Rented,654 College Street Kolkata West Bengal 700001,22,Female,0,Approved,0,
+LA-006,CUST006,2024-01-20,Personal Loan,100000.0,12,15.0,Debt Consolidation,Salaried,55000.0,620,12000.0,21.82,Rented,987 Office Complex Hyderabad Telangana 500001,28,Male,1,Declined,0,
+LA-007,CUST007,2024-01-21,Home Loan,3500000.0,300,8.5,Home Construction,Salaried,150000.0,810,25000.0,16.67,Owned,147 Villa Lane Pune Maharashtra 411001,40,Female,2,Approved,0,
+LA-008,CUST008,2024-01-22,Car Loan,600000.0,48,11.0,Vehicle Purchase,Salaried,65000.0,700,7000.0,10.77,Rented,258 Highway Road Ahmedabad Gujarat 380001,35,Male,2,Approved,0,
+LA-009,CUST009,2024-01-23,Business Loan,2000000.0,60,13.5,Equipment Purchase,Self-Employed,200000.0,750,30000.0,15.0,Owned,369 Market Street Jaipur Rajasthan 302001,48,Male,3,Approved,0,
+LA-010,CUST010,2024-01-24,Personal Loan,75000.0,18,14.5,Wedding Expenses,Salaried,40000.0,680,4000.0,10.0,Rented,741 Apartment Block Lucknow Uttar Pradesh 226001,30,Female,0,Approved,0,
+LA-011,CUST011,2024-01-25,Education Loan,600000.0,120,9.0,Study Abroad,Unemployed,0.0,740,0.0,0.0,Owned,852 University Road Chandigarh 160001,24,Male,0,Approved,0,
+LA-012,CUST012,2024-01-26,Home Loan,4000000.0,240,8.25,Property Investment,Salaried,180000.0,820,35000.0,19.44,Owned,963 Premium Towers Mumbai Maharashtra 400002,55,Male,2,Approved,0,
+LA-013,CUST013,2024-01-27,Personal Loan,25000.0,6,16.0,Emergency Funds,Salaried,30000.0,590,3000.0,10.0,Rented,159 Budget Housing Nagpur Maharashtra 440001,26,Female,1,Declined,1,Income Misrepresentation
+LA-014,CUST014,2024-01-28,Car Loan,1200000.0,72,9.75,Luxury Vehicle,Self-Employed,100000.0,770,10000.0,10.0,Owned,357 Elite Colony Delhi 110002,42,Male,2,Approved,0,
+LA-015,CUST015,2024-01-29,Business Loan,500000.0,36,12.0,Working Capital,Self-Employed,80000.0,660,8000.0,10.0,Rented,468 Commercial Hub Bangalore Karnataka 560002,36,Female,1,Pending,0,

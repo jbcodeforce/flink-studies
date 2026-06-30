@@ -1,0 +1,28 @@
+{
+  "user_agent": "flink-studies-cccloud/0.1",
+  "deploy_all": [
+    "ddl",
+    "pipeline"
+  ],
+  "undeploy_all": [
+    "pipeline"
+  ],
+  "drop_tables": [
+    "driver"
+  ],
+  "groups": {
+    "ddl": [
+      {
+        "name": "car-rides-ddl-driver-customer-ride-trip-metrics-daily-revenue",
+        "file": "ddl.driver customer ride trip_metrics daily_revenue.sql"
+      }
+    ],
+    "pipeline": [
+      {
+        "name": "car-rides-pipeline-pipeline",
+        "file": "dml.pipeline.sql"
+      }
+    ]
+  },
+  "drop_statement_prefix": "car-rides-drop"
+}

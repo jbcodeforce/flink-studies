@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
+echo "Starting {{demo_title}} local demo..."
+docker compose up -d --build
+
+echo "Waiting for Flink JobManager..."
+for i in $(seq 1 30); do
+  if curl -sf http://localhost:8081/overview >/dev/null 2>&1; then
+    echo "Flink UI: http://localhost:8081"
+    break
+  fi
+  sleep 2
+done
+
+echo "Kafka bootstrap: localhost:9092"
+echo "Topic: {{kafka_topic}}"
+echo ""
+echo "Next: add SQL under sql/ and run Flink SQL client, or use python/producers/ at demo root."

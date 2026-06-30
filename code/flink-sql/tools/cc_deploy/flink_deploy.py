@@ -275,7 +275,7 @@ def run_drop_table(
     table: str,
     statement_name: str,
 ) -> None:
-    sql = f"DROP TABLE IF EXISTS {table}"
+    sql = f"DROP TABLE IF EXISTS `{table}`"
     print(f"Dropping table: {table} (statement: {statement_name})")
     try:
         submit_statement(conn, config, statement_name, sql)

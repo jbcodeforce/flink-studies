@@ -1,0 +1,15 @@
+-- Pipeline stub: transform {{table_name}} events (customize for {{domain}} use case)
+-- INSERT INTO sink_table
+-- SELECT ...
+-- FROM {{table_name}};
+
+-- Placeholder continuous query — replace with your business logic:
+-- INSERT INTO {{table_name}}_aggregates
+-- SELECT
+--   {{table_name}}_id,
+--   TUMBLE_END(event_time, INTERVAL '1' MINUTE) AS window_end,
+--   COUNT(*) AS event_count
+-- FROM TABLE(
+--   TUMBLE(TABLE {{table_name}}, DESCRIPTOR(event_time), INTERVAL '1' MINUTE)
+-- )
+-- GROUP BY {{table_name}}_id, window_start, window_end;

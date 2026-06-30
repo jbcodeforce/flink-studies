@@ -94,6 +94,7 @@ This is a comprehensive Apache Flink learning and demonstration repository conta
 - **Documentation Sync**: Ensure documentation reflects current code implementations
 - **Deployment Validation**: Test and validate deployment configurations
 - **Demo Management**: Maintain working end-to-end demonstrations
+- **Demo Scaffolding**: Use [jump_start_demo/](assistants/jump_start_demo/) to generate foundational e2e demo code (CLI, Agno agent, or Cursor skill)
 - **Knowledge Base**: Assist with Flink-related questions and best practices
 - **Version Management**: Keep pace with Flink and ecosystem updates
 

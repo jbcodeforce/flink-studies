@@ -54,6 +54,17 @@ Requires the stack to be running (`--no-mkdocs` is enough). No LLM call — Post
 
 See [Local expert chat](../docs/assistants/local-expert-chat.md) for compile + index workflow.
 
+## Jump Start Demo
+
+Scaffold new e2e demos (Confluent Cloud SQL, local Docker, producers) with [jump_start_demo/](jump_start_demo/):
+
+```bash
+cd assistants/jump_start_demo/tools && uv sync
+uv run jump-start init --name my-demo --domain retail --topics orders --targets cccloud,oss-flink
+```
+
+See [jump_start_demo/SKILL.md](jump_start_demo/SKILL.md) for the agent workflow.
+
 ## Other assistants
 
 - `code_helper/` — code assistance utilities

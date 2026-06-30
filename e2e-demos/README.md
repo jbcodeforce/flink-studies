@@ -6,6 +6,7 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 
 **Standard layout:** Demos may expose deployment-specific folders: **`cccloud/`** (Confluent Cloud + Terraform), **`cp-flink/`** (Confluent Platform Flink on K8s), **`oss-flink/`** (OSS Apache Flink). Each has a README with goal, status, implementation approach, and how to run. See [.cursor/skills/e2e-demo-structure/SKILL.md](../.cursor/skills/e2e-demo-structure/SKILL.md).
 
+**New demos:** Scaffold foundational code with [assistants/jump_start_demo/](../assistants/jump_start_demo/) (`jump-start init`, Agno agent, or `assistants/jump_start_demo/SKILL.md`).
 
 ## 1. CDC & Change Data Capture
 
@@ -109,7 +110,7 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 
 | Demo | Path | Description |
 |------|------|-------------|
-| **agentic-demo** | `agentic-demo/` | Flink Agents (Python). **Deployment:** `oss-flink/` (local Flink). Python 3.11 + uv, flink-agents. |
+| **agentic-demo** | `agentic-demo/` | Flink Agents (Python) + CC SQL lab. **Deployment:** `oss-flink/` (local); CC SQL in [`code/flink-sql/12-ai-agents`](../../code/flink-sql/12-ai-agents/). |
 
 ---
 

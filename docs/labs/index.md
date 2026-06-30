@@ -337,11 +337,11 @@ Flink SQL Gateway: start cluster and gateway, create CSV source table, deploy DM
 
 ### 4.14 agentic-demo
 
-Flink Agents (Python): flink-agents package with local Flink. Python 3.11 + uv, PYTHONPATH for JVM.
+Flink Agents (Python) on local OSS Flink plus Confluent Cloud SQL lab (reefer ML + gating). OSS: `oss-flink/scripts/`; CC: [code/flink-sql/12-ai-agents](../../code/flink-sql/12-ai-agents/).
 
 | Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
 |--------|---------|----------|-----------|---------|-----------------|
-| Ready | — | — | ✓ | — | Manual (README only) |
+| Ready | SQL lab (external) | — | ✓ | — | Partial (`oss-flink/scripts/`; CC manual in 12-ai-agents) |
 
 **Path:** [e2e-demos/agentic-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/agentic-demo)
 

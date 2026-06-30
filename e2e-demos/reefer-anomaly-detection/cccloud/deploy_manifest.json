@@ -1,0 +1,28 @@
+{
+  "user_agent": "flink-studies-cccloud/0.1",
+  "deploy_all": [
+    "ddl",
+    "pipeline"
+  ],
+  "undeploy_all": [
+    "pipeline"
+  ],
+  "drop_tables": [
+    "reefer_sensor"
+  ],
+  "groups": {
+    "ddl": [
+      {
+        "name": "cccloud-ddl-reefer-sensor",
+        "file": "ddl.reefer_sensor.sql"
+      }
+    ],
+    "pipeline": [
+      {
+        "name": "cccloud-pipeline-pipeline",
+        "file": "dml.pipeline.sql"
+      }
+    ]
+  },
+  "drop_statement_prefix": "cccloud-drop"
+}
