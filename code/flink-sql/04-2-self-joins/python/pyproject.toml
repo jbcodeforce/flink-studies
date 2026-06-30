@@ -5,6 +5,10 @@ description = "Avro Kafka producers for self-joins music streaming demo (uses cm
 requires-python = ">=3.11"
 dependencies = [
     "confluent-kafka[schema-registry]>=2.3.0",
+    "fastavro>=1.12.2",
+    "jsonschema>=4.26.0",
+    "orjson>=3.11.9",
+    "pydantic>=2.13.4",
     "python-dotenv>=1.0.0",
 ]
 
