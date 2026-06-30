@@ -1,0 +1,50 @@
+{
+  "user_agent": "flink-studies-cc/0.1",
+  "deploy_all": [
+    "ddl",
+    "pipeline",
+    "data"
+  ],
+  "undeploy_all": [
+    "data",
+    "pipeline"
+  ],
+  "drop_tables": [
+    "party_info",
+    "event_stream",
+    "enriched_party_events"
+  ],
+  "groups": {
+    "ddl": [
+      {
+        "name": "e042-ddl-enriched-party-events",
+        "file": "ddl.enriched_party_events.sql"
+      },
+      {
+        "name": "e042-ddl-event-stream",
+        "file": "ddl.event_stream.sql"
+      },
+      {
+        "name": "e042-ddl-party-info",
+        "file": "ddl.party_info.sql"
+      }
+    ],
+    "pipeline": [
+      {
+        "name": "e042-pipeline-enrich-party-subscriptions",
+        "file": "dml.enrich_party_subscriptions.sql"
+      }
+    ],
+    "data": [
+      {
+        "name": "e042-data-insert-event-stream",
+        "file": "dml.insert_event_stream.sql"
+      },
+      {
+        "name": "e042-data-insert-party-info",
+        "file": "dml.insert_party_info.sql"
+      }
+    ]
+  },
+  "drop_statement_prefix": "e042-drop"
+}

@@ -1,0 +1,22 @@
+{
+  "type": "record",
+  "name": "PartyInfoValue",
+  "namespace": "io.confluent.flink.selfjoins",
+  "fields": [
+    { "name": "party_id", "type": "string" },
+    { "name": "account_number", "type": "string" },
+    { "name": "plan_name", "type": "string" },
+    {
+      "name": "subscription_start",
+      "type": { "type": "long", "logicalType": "timestamp-millis" }
+    },
+    { "name": "addr_street", "type": "string" },
+    { "name": "addr_city", "type": "string" },
+    { "name": "addr_state", "type": "string" },
+    { "name": "addr_zip", "type": "string" },
+    {
+      "name": "updated_at",
+      "type": { "type": "long", "logicalType": "timestamp-millis" }
+    }
+  ]
+}

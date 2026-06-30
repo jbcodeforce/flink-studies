@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "name": "EventStreamKey",
+  "namespace": "io.confluent.flink.selfjoins",
+  "fields": [
+    { "name": "event_id", "type": "string" }
+  ]
+}

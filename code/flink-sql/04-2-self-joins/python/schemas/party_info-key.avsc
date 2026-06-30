@@ -1,0 +1,9 @@
+{
+  "type": "record",
+  "name": "PartyInfoKey",
+  "namespace": "io.confluent.flink.selfjoins",
+  "fields": [
+    { "name": "party_id", "type": "string" },
+    { "name": "account_number", "type": "string" }
+  ]
+}

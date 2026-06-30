@@ -1,0 +1,17 @@
+{
+  "type": "record",
+  "name": "EventStreamValue",
+  "namespace": "io.confluent.flink.selfjoins",
+  "fields": [
+    { "name": "event_id", "type": "string" },
+    {
+      "name": "event_time",
+      "type": { "type": "long", "logicalType": "timestamp-millis" }
+    },
+    { "name": "context_data", "type": "string" },
+    {
+      "name": "event_details",
+      "type": { "type": "array", "items": "string" }
+    }
+  ]
+}
