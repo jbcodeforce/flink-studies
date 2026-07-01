@@ -5,32 +5,31 @@
     Updated 1/2025 from Confluent Flink studies
     Updated 12/2025 Getting started by using Flink SQL client - Add deduplicate for Apache Flink OSS
     Update 2/2026: Clean readme and automate demonstration. Add REST client in python to management statement and rund demonstration.
+    Update 06/2026: Align with tools and new way to organize demo
 
 This folder includes some basic SQL examples to be used with one of the following environments:
 
 * [Local Apache Flink cluster with SQL Client](#apache-flink-oss)
-* [Confluent Cloud Deployment and validation](#confluent-cloud-flink)
+* [Confluent Cloud Deployment](#confluent-cloud-flink)
 * [Local Confluent Platform for Flink on Kubernetes](#confluent-platform-for-flink-on-kubernetes)
 
 What is demonstrated:
-* Process employees data to aggregate by department id.
-* Table creation, loading from CSV file and writing results to CSV file
-* Deduplication within CTE, grouping and aggregates
 
+* Process employees data to aggregate by department id.
+* Table creation, loading from CSV file and writing results to CSV file (OSS)
+* Deduplication within CTE, grouping and aggregates
 
 # Employees Aggregation
 
-The goal is to process employee data and  to count the  number of employees per department. This is basic but let see how one problem can be executed in different Flink flavors.
+The goal is to process employee data and to count the  number of employees per department. This is basic but let see how one problem can be executed in different Flink flavors.
 
-This demonstration is based on the SQL getting started from the [Apache Flink 2.1 documentation](https://nightlies.apache.org/flink/flink-docs-release-2.1/docs/dev/table/sql/gettingstarted/). The [data/employee.csv](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-sql/00-basic-sql/data/employes.csv) has 15 records.
+This demonstration is based on the SQL getting started from the [Apache Flink 2.1 documentation](https://nightlies.apache.org/flink/flink-docs-release-2.1/docs/dev/table/sql/gettingstarted/). The [data/employee.csv](./data/employes.csv) has 15 records.
 
 
 ## Apache Flink OSS
 
-* The following job is a batch processing and uses a DDL to create a table matching the columns of a employee csv file. It uses Apache Flink file system source connector:
-
-
-* [See the deployment readme](../../../deployment/product-tar/README.md) in this repository to get last Apache Flink OSS image and then start it.
+* The following job is a batch processing and uses a DDL to create a table matching the columns of a employee csv file. It uses Apache Flink file system source connector
+* [See the deployment readme](../../../deployment/product-tar/README.md) in this repository to get last Apache Flink OSS image and then start it. The script under [oss-flink](./oss-flink/start_flink_oss.sh) starts the cluster too.
 * Once Flink cluster is started, run the Apache Flink SQL Client:
     ```sh
     # under deployment/product-tar

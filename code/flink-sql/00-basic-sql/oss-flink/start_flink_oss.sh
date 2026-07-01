@@ -1,4 +1,4 @@
-export FLINK_HOME=$PWD/../../../deployment/product-tar/flink-2.1.1
+export FLINK_HOME=$PWD/../../../../deployment/product-tar/flink-2.2.1
 export PATH=$PATH:$FLINK_HOME/bin
 
 # Start the cluster

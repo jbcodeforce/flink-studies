@@ -19,7 +19,6 @@ e2e-demos/_test-scaffold/
 **/tmp/
 **/__pycache__/
 **/dist/
-**/.cursor/
 **/.specify/
 **/client.properties
 **/variables.tfvars
