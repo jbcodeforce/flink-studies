@@ -18,7 +18,7 @@ With Flink SQL statements, developers who need to update the pipeline's logic (e
 [Materialized Tables](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/materialized-table/overview/) helps to manage Tables in long term with easier development life cycle than traditional Flink Tables. They are the recommended solution for creating permanent, evolving streaming pipelines.
 
 Materialized Tables support in-place evolution via the CREATE OR ALTER command. This feature automates complex administrative tasks such as offset management and schema synchronization. Whenever a new MT definition is submitted, the control plane stops the system statement, performs the necessary evolutions and starts a new system statement.
-
+*Unlike a regular CREATE TABLE combined with an INSERT INTO statement, a materialized table is a single declarative object that owns both the table definition and the continuous query.*
 
 They use the concept of data freshness as the maximum amount of time that the materialized table’s content should lag behind updates to the base tables. The default refreshness is 3 minutes for CONTINUOUS mode and 1 hours for FULL mode. The query results are updated to the materialized table continuously, while in FULL mode, the query results overwrite the materialized table each time.
 
@@ -59,17 +59,17 @@ For Confluent Cloud, MTs use exactly the same RBAC model as current Statements d
 ## Limitations
 
 * No Statement Sets: Materialized tables cannot be grouped or used within Flink statement sets
-* **Not Idempotent**: Running a CREATE OR ALTER command on a materialized table will always trigger a new evolution and **discard state**, even if the query logic hasn't changed. State is rebuilt from the source.
-* Net-New Only: You cannot convert an existing standard table into a materialized table; you must create a new one
-* User can’t define a Materialized Table on an existing Table supported by and existing Kafka topic.
-* **No Automatic Change Detection**: Neither materialized tables nor statements will automatically detect changes to upstream dependencies (like a source topic's schema changing); an evolution must be explicitly triggered by using CREATE OR ALTER TABLE
+* **Not Idempotent**: Running a CREATE OR ALTER command on a materialized table will always trigger a new evolution and **discard state**, even if the query logic hasn't changed. State is rebuilt from the source. 
+* Net-New Only: You cannot convert an existing standard table into a materialized table; you must create a new MT
+* User can’t define a Materialized Table on an existing Kafka topic, a new MT needs to be defined from data of this topic.
+* **No Automatic Change Detection**: Neither materialized tables nor statements will automatically detect changes to upstream dependencies (like a source topic's schema changing); an evolution must be explicitly triggered by using CREATE OR ALTER TABLE.
 * During reprocessing, append-sinks will **receive duplicates**.
 * Confluent Cloud: All existing capabilities from Statements are also available for MTs (like Query Profiler, Billing, Metrics API). System Statements are only visible via the REST API and Metrics API, but users can not control them.
 
 ## CI/CD considerations
 
 * CREATE OR ALTER MATERIALIZED TABLE in CI/CD without a change-detection gate will trigger a MT migration. It is strongly recommended to add control using a SHA or git-diff check, before running the CREATE OR ALTER dml. When idempotency will be support this restriction may change.
-* When deploying MTs in the same compute pool, as all are mutable, any Flink developers can change those tables. It may be better to use one compute pool per MT as isolation boundary. 
+* When deploying MTs in the same compute pool, as all are mutable, any Flink developers can change those tables. It may be better to use one compute pool per MT as security isolation boundary. 
 
 
 ## Demonstrations
@@ -92,12 +92,12 @@ For Confluent Cloud, MTs use exactly the same RBAC model as current Statements d
     )
     DISTRIBUTED INTO 6 BUCKETS
     WITH (
-    'changelog.mode' = 'append',
-    'connector' = 'confluent',
-    'kafka.retention.time' = '0 ms',
-    'scan.bounded.mode' = 'unbounded',
-    'scan.startup.mode' = 'earliest-offset',
-    'value.format' = 'avro-registry'
+        'changelog.mode' = 'append',
+        'connector' = 'confluent',
+        'kafka.retention.time' = '0 ms',
+        'scan.bounded.mode' = 'unbounded',
+        'scan.startup.mode' = 'earliest-offset',
+        'value.format' = 'avro-registry'
     )
     START_MODE = RESUME_OR_FROM_BEGINNING
     FRESHNESS = INTERVAL '1' MINUTE

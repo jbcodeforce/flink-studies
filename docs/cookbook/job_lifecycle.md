@@ -340,6 +340,8 @@ To monitor Apache Flink production jobs effectively, you must establish an exter
 
 #### Gotchas
 
+* Some metrics over different time periods may not be accurate: for example looking at the `Last 24 hours` of message in and message out per minute, will have different value that the `last 6 hours`. This is due to bining the message aggregation. The lower is the time period the more it is accurate. 
+
 ## 7- Performance Testing
 
 ### 7.1 Establish a Performance Testing Platform

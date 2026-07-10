@@ -335,17 +335,7 @@ Flink SQL Gateway: start cluster and gateway, create CSV source table, deploy DM
 
 **Path:** [e2e-demos/sql-gateway-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/sql-gateway-demo)
 
-### 4.14 agentic-demo
-
-Flink Agents (Python) on local OSS Flink plus Confluent Cloud SQL lab (reefer ML + gating). OSS: `oss-flink/scripts/`; CC: [code/flink-sql/12-ai-agents](../../code/flink-sql/12-ai-agents/).
-
-| Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
-|--------|---------|----------|-----------|---------|-----------------|
-| Ready | SQL lab (external) | — | ✓ | — | Partial (`oss-flink/scripts/`; CC manual in 12-ai-agents) |
-
-**Path:** [e2e-demos/agentic-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/agentic-demo)
-
-### 4.15 package-event-cutoff
+### 4.14 package-event-cutoff
 
 Package morning cutoff (11:30): emit only when expected_delivery changes; at cutoff, proactively emit for packages with no recent event; ETA computation with UDF. Shared sql-scripts, tests, eta_udf.
 
@@ -355,7 +345,7 @@ Package morning cutoff (11:30): emit only when expected_delivery changes; at cut
 
 **Path:** [e2e-demos/package-event-cutoff](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/package-event-cutoff)
 
-### 4.16 perf-testing
+### 4.15 perf-testing
 
 End-to-end performance assessment: configurable producer → Kafka → Flink job(s) (sql-executor, datastream, flink-sql). Flink **2.2.0**. Three phases: local scripts, K8s OSS/CMF, Confluent Cloud SQL.
 

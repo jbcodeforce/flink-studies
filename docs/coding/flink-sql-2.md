@@ -595,7 +595,8 @@ from suites_versioned group by suite_id;
 
 As in the example above, the array element type can be a row containing nested rows. [See SQL examples](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/03-nested-row/cc-array-agg/cc_array_agg_on_row.sql).
 
-
+???- info "Flink Views"
+    Views in Flink are not materialized. They are logical constructs that represent saved queries and do not store or maintain state themselves. It is like an alias to a query. In ksqlDB, a materialized view is a precomputed, incrementally updated result of a query that is stored for fast access and can be queried directly. Flink SQL Views are executed when referenced.
 
 ### OVER 
 
@@ -720,7 +721,7 @@ When doing a join, Flink needs to fully materialize both the right and left of t
 The key points to keep in mind are:
 
 * Regular joins typically produce a full cross-product of all matching records. However, in streaming scenarios, this behavior is often undesirable, for example if you want to enrich an event with additional information, because the state to keep in distributed memory may become too big. 
-* When the RHS is an upsert table, the join output is often upsert-shaped as well: results may be re-emitted when the RHS changes. To pin dimension values to event time, use a temporal join so the RHS is **as of** the LHS event time (**time-versioned** enrichment).
+* When the RHS is an upsert table, the join output is often upsert-shaped as well: results may be re-emitted when the RHS changes. To pin dimension values to event time, use a temporal join so the RHS is as of the LHS event time (time-versioned enrichment).
 * See [basic joins examples](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/04-joins)
 * Flink must handle the scenario where left-side events do not have corresponding right-side events at the time of processing. The Upsert table allows Flink to store unmatched left records and update them when matching right records arrive later, ensuring all left records are included in the result, thus supporting the LEFT JOIN semantics effectively in a streaming context
 * To avoid state growth, it is interesting to set time to live constraint (` /*+ STATE_TTL(o='2h', p='30d') */`) on both tables like:
@@ -756,7 +757,7 @@ ON t.stockid = s.id
 ```
 
 * Temporal joins reduce state because only time-relevant versions of the RHS are needed. Progress is tied to watermarks. If `opening_value` changes over time, earlier enriched rows are not retroactively updated.  
-* When the event time used comes from the LHS, this event time needs to have a watermark strategy sets, if not it is not considered as a time attribute. By default on Confluent Cloud `$rowtime` can be used.
+* When the event time used comes from the LHS, this event time needs to have a watermark strategy sets, if not it is not considered as a time attribute. By default on Confluent Cloud `$rowtime` can be used. To ensure completeness, the join operator only joins and emits data when the watermark advances. The join won't emit data if if one input is not sending any new watermarks because no new data is being received that pushes the watermark forward. This can cause very high latencies. Latency is also directly affected by the WM strategy: for example if the WM strategy of ts - INTERVAL '1' MINUTE, there will be at least a 1 minute latency. Recall that setting `scan.idle-timeout` to x seconds, adds latency as it will take at least x seconds before something is considered idle.
 * Temporal JOINs must include all of the PRIMARY KEY columns of the versioned (right-side) table: the ON conditions need to include exactly the same primary key columns:
     ```sql
     create table dim_rule_config(

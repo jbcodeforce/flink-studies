@@ -420,7 +420,7 @@ Operations which are NOT based on time (e.g. simple JOIN, UNION ALL, filtering b
             );
     ```
 
-- Another example of setting watermark strategy in SQL
+- Another example of setting watermark strategy using SQL
     ```sql
     CREATE TABLE events (
         event_id STRING,
@@ -444,8 +444,7 @@ Operations which are NOT based on time (e.g. simple JOIN, UNION ALL, filtering b
 
 * The out-of-orderness estimation serves as an educated guess and is defined for each individual stream. Watermarks are also crucial when dealing with multiple sources. In scenarios involving IoT devices and network latency, it's possible to receive an event with an earlier timestamp even after the operator has already processed events with that timestamp from other sources. Importantly, watermarks are applicable to any timestamps and are not limited to window semantics.
 
-* When working with Kafka topic partitions, the absence of watermarks may represent some challenges. Watermarks are generated independently for each stream and partition. When two 
-partitions are combined, the resulting watermark will be the oldest of the two (min value), reflecting the point at which the system has complete information. If one partition stops receiving new events, the watermark for that partition will not progress. To ensure that processing continues over time, an idle timeout configuration can be implemented. [See the 'flink-watermak' demonstration in this repository](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/flink-watermark)
+* When working with Kafka topic partitions, the absence of watermarks may represent some challenges. Watermarks are generated independently for each stream and partition. When two partitions are combined, the resulting watermark will be the oldest of the two (min value), reflecting the point at which the system has complete information. If one partition stops receiving new events, the watermark for that partition will not progress. To ensure that processing continues over time, an idle timeout configuration can be implemented. [See the 'flink-watermak' demonstration in this repository](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/flink-watermark)
 
 === "Apache Flink"
     The following parameter prevents idle input partitions/shards from holding back the overall watermark progress of a Flink job. If a partition receives no new data within the specified timeout duration, Flink marks it as idle and ignores it for the purpose of calculating the minimum watermark. It can be set in the WITH clause of a table creation (DDL)

@@ -42,6 +42,15 @@ Developers can leverage ny existing libraries like Geospatial calculation, Math 
     }
     ```
 
+## FAQ
+
+???+ question "Are Python UDFs in CC Flink in-process or out-of-process?"
+    UDFs run out of process similarly to how they run in OSS. In OSS Python UDFs use the beam portability framework to communicate between Flink and Python runtime. In Confluent Cloud or any cloud provider, as UDF is untrusted code, it can't run in the same processes as the built-in functions and operators from Flink. With UDF there is always a small performance impact due to serialization and JNI integration, and to a bigger measure, what's the input throughput, what's the average message size, what is the UDF actually doing in terms of compute or state intensive operations...
+
+???+ question "When to use Python UDFs"
+    Python UDFs should be used if developer needs a certain Python library to solve a business problem and it doesn't exist otherwise. 
+
+
 ## Implementation approach
 
 See [Apache flink UDF implementation guide](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/udfs/#implementation-guide).

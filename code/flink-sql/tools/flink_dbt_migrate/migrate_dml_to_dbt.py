@@ -10,6 +10,7 @@ from pathlib import Path
 from flink_dbt_migrate.migrate import migrate_dml_to_dbt
 
 
+
 def parse_ref_table(value: str) -> tuple[str, str]:
     if "=" not in value:
         raise argparse.ArgumentTypeError(

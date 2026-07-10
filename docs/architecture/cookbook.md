@@ -11,41 +11,7 @@ There is a [Confluent cookbook for best practices](https://github.com/confluenti
 
 Examples may be run inside from Terminal or using Kubernetes cluster locally, they are on Flink 1.20.1 or Flink 2.1. Use Java 11 or 17, see [sdkman](https://sdkman.io/) to manage different java version. 
 
-## Classical deployment pattern
 
-For Confluent Cloud for Flink we want to map environments to physical environments, like dev, Staging and Production. Any stream processing has a set of source producer that will be part of an ingestion layer. In the Kafka architecture, it will be a set of Kafka Connector cluster, with for example Change Data Capture connector like [Debezium](https://debezium.io/). Most of the time the dev environment may not have the streams coming from this ingestion layer. 
-
-For the discussion each business application can have one to many pipelines. A Pipeline is a set of Flink jobs running SQL statements or Table API programs. A generic pattern of a pipeline involves at least, the following steps:
-
-<figure markdown="span">
-![1](./diagrams/generic_src_to_sink_flow.drawio.png)
-<figcaption>Figure 1: Generic pipeline structure</figcaption>
-</figure>
-
-1. A CDC source connector injects data in Kafka topic. Avro schemas are defined for the Key and the Value.
-1. A first set of statements are doing deduplication logic, or filtering to ensure only relevant messages are processed by the pipeline
-1. There will be zero to many intermediate tables, depending of the business logic needed for the application. Those intermediate tables/topics may get enrichement, aggregation or joins.
-1. The final step is to prepare the data for sink processing. The statements may includes joins and filtering out, even may be some deduplication logic too.
-1. The data need to land to sink external system, so Kafka Sink connectors are deployed to write to those systems. Here the example illustrate a datawarehouse system based on Postgreql, on which a business intelligent component will implement adhoc queries and dashboards. 
-
-The artifacts for development are the DDL and DML statements and test data.
-
-Finally to support the deployment and quality control of those pipelines deployment, the following figures illustrates a classical deployment pattern:
-
-<figure markdown="span">
-![2](./diagrams/env-architecture.drawio.png){ width=600 }
-<figcaption>Figure 2: Environment mapping</figcaption>
-</figure>
-
-1. Each environment has its own schema registry
-1. Once Kafka Cluster per env, with different ACL rules to control who can create topic, read and write.
-1. For each application it may be relevant to isolate them in their own Flink Compute pool
-1. CI/CD can define infrastructure as code for the Flink Compute pool, the Kafka Cluster, the Kafka Connector cluster and connectors configuration, the input topics, the ACLs, the schema registry.
-
-This architecture helps to clearly separate schema management per environment, and help to promote real-time processing pipelines from dev to staging to production in a control manner using a GitOps approach.
-
-???+ info "Gitops"
-    The core concept of [GitOps](https://opengitops.dev/) is to maintain a single Git repository that consistently holds declarative descriptions of the desired infrastructure in the production environment. An automated process ensures that the production environment aligns with the state described in the repository. The methodology and tools support changing infrastructure using feature branches, PR, PR review, 
 
 ## Exactly-once-delivery
 
@@ -429,11 +395,11 @@ For example, consider a typical real-time data processing architecture. We'll us
 
 The following timestamps may be considered:
 
-1. UpdatedDate column in the transactional database may be used to know when a record was created / updated, this will serve to measure end-to-end latency. 
-1. Source CDC connector like Debezium, may add a timestamp in their message envelop that could be used, if injected in the messages to measure messaging latency.
-1. Within the Flink processing, event time, may be mapped to the Kafka Topic record time. Ths could be used to measure Flink pipeline latency.
+1. UpdatedDate column in the transactional database may be used to know when a record was created / updated, this will serve to measure end-to-end latency. Care is needed the time the producer code to write to Kafka topic will be part of this latency, and therefore is not accurate to compute, pure flink jobs end-to-end latency.  
+1. Source CDC connector like Debezium, may add a timestamp in their message envelop that could be used, if injected in the messages to measure messaging latency. Those timestamps need to be propagated to the last sink, across multiple Flink jobs.
+1. Within the Flink processing, event time, may be mapped to the Kafka Topic record time. Ths could be used to measure Flink pipeline latency, and same as above, propagated to last sink table.
 
-It is important to note that Flink latency results may seem inconsistent. This is normal, and due to the semantic of the Flink processing. To ensure exactly-once delivery, Flink uses transactions when writing messages into Kafka. It is part of a consume-process-produce pattern, and adds the offset of the messages it has consumed to the transaction. 
+It is important to note that Flink latency results may seem inconsistent. This is normal, and due to the semantic of the Flink processing. To ensure exactly-once delivery, Flink uses transactions when writing messages into Kafka. It is part of a consume-process-produce pattern, and adds the offset of the messages it has consumed to the transaction. The transactions are committed with checkpointing.
 
 Flink persists its state, including the offsets of the Kafka source, via checkpoints, which are done once per minute. The frequency may be configured. Queries submitted through Confluent Cloud Flink SQL Workbench or inspecting the content of a topic in the console generate output based on `read_uncommitted` isolation. The latency may seem reasonalbe during iterative development in the console, it may increase during more rigorous tests that use a read_committed consumer.
 

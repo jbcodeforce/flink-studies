@@ -1,4 +1,4 @@
-site_name: Apache and Confluent Flink Studies
+site_name: Apache and Confluent Flink Studies v1.0.67
 repo_url: https://github.com/jbcodeforce/flink-studies.git
 site_url: https://jeromeboyer.net/flink-studies
 copyright: Copyright &copy; 2018 - 2026 Jerome Boyer
@@ -44,7 +44,7 @@ nav:
     - Data as a product: methodology/data_as_a_product.md
     - Event Storming: https://jbcodeforce.github.io/eda-studies/methodology/event-storming/
     - Flink Project Management: cookbook/pm.md
-    - Migrate to real-time processing tools: https://jbcodeforce.github.io/shift_left_utils/
+    - Migrate to real-time processing tools: https://jbcodeforce.github.io/migration-to-flink-skills/
     - Center of Excellence: methodology/coe.md
     - A C360 data product demo: https://jbcodeforce.github.io/flink_project_demos/c360/spark_project/
   - Related_Technologies:
