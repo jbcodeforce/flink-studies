@@ -3,7 +3,7 @@
 # Run `make sync` once before first deploy.
 
 TOOLS := $(abspath ../tools)
-DEMO  := $(abspath cc)
+DEMO  := $(abspath cc-flink)
 
 .PHONY: sync deploy undeploy drop-tables deploy-% undeploy-%
 

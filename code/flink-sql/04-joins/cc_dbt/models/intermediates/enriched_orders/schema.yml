@@ -1,0 +1,17 @@
+version: 2
+models:
+- name: d04_enriched_orders
+  description: Migrated from dml.enriched_orders.sql
+  columns:
+  - name: order_id
+    data_type: int
+  - name: total_amount
+    data_type: double
+  - name: customer_name
+    data_type: varchar
+  - name: order_ts_raw
+    data_type: timestamp(3)
+  - name: product_id
+    data_type: int
+  - name: product_name
+    data_type: string

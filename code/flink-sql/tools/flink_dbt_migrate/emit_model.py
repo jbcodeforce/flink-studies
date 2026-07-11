@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from flink_dbt_migrate.discover_deps import UpstreamDep
 from flink_dbt_migrate.parse_ddl import DdlTable
 from flink_dbt_migrate.parse_dml import DmlStatement
 from flink_dbt_migrate.rewrite_refs import collect_cte_names, rewrite_refs
@@ -29,16 +30,40 @@ def format_config_block(
     return "{{ config(\n" + inner + "\n) }}"
 
 
+def _resolution_maps(
+    upstream_deps: list[UpstreamDep] | None,
+) -> tuple[set[str], dict[str, str]]:
+    ref_tables: set[str] = set()
+    source_tables: dict[str, str] = {}
+    if not upstream_deps:
+        return ref_tables, source_tables
+
+    for dep in upstream_deps:
+        if dep.resolution == "ref" and dep.ref_model:
+            ref_tables.add(dep.table_name)
+        elif dep.resolution == "source" and dep.source_name:
+            source_tables[dep.table_name] = dep.source_name
+    return ref_tables, source_tables
+
+
 def emit_model_sql(
     dml: DmlStatement,
     ddl: DdlTable,
     *,
     materialized: str = "streaming_table",
     ref_overrides: dict[str, str] | None = None,
+    upstream_deps: list[UpstreamDep] | None = None,
     source_filename: str | None = None,
 ) -> str:
     cte_names = collect_cte_names(dml.body)
-    body = rewrite_refs(dml.body, cte_names, ref_overrides)
+    ref_tables, source_tables = _resolution_maps(upstream_deps)
+    body = rewrite_refs(
+        dml.body,
+        cte_names,
+        ref_overrides,
+        ref_tables=ref_tables,
+        source_tables=source_tables,
+    )
 
     parts: list[str] = [format_config_block(ddl, materialized=materialized), ""]
 

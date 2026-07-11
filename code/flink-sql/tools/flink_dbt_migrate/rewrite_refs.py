@@ -1,4 +1,4 @@
-"""Rewrite bare Flink table names to dbt {{ ref() }} calls."""
+"""Rewrite bare Flink table names to dbt {{ ref() }} or {{ source() }} calls."""
 
 from __future__ import annotations
 
@@ -54,26 +54,36 @@ def rewrite_refs(
     sql: str,
     cte_names: set[str],
     ref_overrides: dict[str, str] | None = None,
+    ref_tables: set[str] | None = None,
+    source_tables: dict[str, str] | None = None,
 ) -> str:
     ref_overrides = ref_overrides or {}
+    ref_tables = ref_tables or set()
+    source_tables = source_tables or {}
 
-    def model_name(table: str) -> str:
-        clean = strip_identifier(table)
-        return ref_overrides.get(clean, clean)
-
-    def should_ref(table: str) -> bool:
+    def should_rewrite(table: str) -> bool:
         clean = strip_identifier(table)
         return clean not in cte_names
 
-    def to_ref(table: str) -> str:
-        return f"{{{{ ref('{model_name(table)}') }}}}"
+    def rewrite_target(table: str) -> str | None:
+        clean = strip_identifier(table)
+        if clean in source_tables:
+            source_name = source_tables[clean]
+            return f"{{{{ source('{source_name}', '{clean}') }}}}"
+        if clean in ref_tables or clean in ref_overrides or not source_tables:
+            model = ref_overrides.get(clean, clean)
+            return f"{{{{ ref('{model}') }}}}"
+        return None
 
     def replace_table_ref(match: re.Match[str]) -> str:
         prefix = match.group(1)
         table = match.group(2)
-        if not should_ref(table):
+        if not should_rewrite(table):
             return match.group(0)
-        return f"{prefix}{to_ref(table)}"
+        rewritten = rewrite_target(table)
+        if rewritten is None:
+            return match.group(0)
+        return f"{prefix}{rewritten}"
 
     _TABLE_TAIL = r"(?=[\s,\)]|$|\s+AS\b)"
     _NOT_SUBQUERY = r"(?!\s*\()"

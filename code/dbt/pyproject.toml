@@ -9,7 +9,7 @@ dependencies = [
      "dagster-webserver>=1.12.14",
      "dbt-autofix>=0.20.0",
      "dbt-confluent>=0.2.1",
-     "dbt-core>=1.11.11",
+     "dbt-core>=1.11.12",
      "dbt-duckdb>=1.10.1",
      "dbt-snowflake>=1.11.2",
 ]

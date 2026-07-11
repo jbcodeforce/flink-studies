@@ -1,0 +1,26 @@
+version: 2
+sources:
+- name: cc_flink
+  tables:
+  - name: d04_orders
+    identifier: d04_orders
+    columns:
+    - name: id
+      data_type: int
+    - name: total_amount
+      data_type: double
+    - name: customer_name
+      data_type: varchar
+    - name: order_ts_raw
+      data_type: timestamp(3)
+    - name: product_id
+      data_type: int
+  - name: d04_products
+    identifier: d04_products
+    columns:
+    - name: id
+      data_type: int
+    - name: product_name
+      data_type: string
+    - name: product_ts_raw
+      data_type: timestamp(3)

@@ -51,6 +51,10 @@ def _extract_balanced(text: str, open_index: int) -> tuple[str, int]:
     raise ValueError("Unbalanced parentheses in CREATE TABLE")
 
 
+def _strip_sql_comments(sql: str) -> str:
+    return "\n".join(re.sub(r"--.*$", "", line) for line in sql.splitlines())
+
+
 def _split_definitions(body: str) -> list[str]:
     parts: list[str] = []
     current: list[str] = []
@@ -81,7 +85,7 @@ def _split_definitions(body: str) -> list[str]:
 
 
 def _parse_column_definition(defn: str) -> DdlColumn | None:
-    stripped = defn.strip()
+    stripped = re.sub(r"--.*$", "", defn).strip()
     if re.match(r"PRIMARY\s+KEY\b", stripped, re.IGNORECASE):
         return None
     if re.match(r"WATERMARK\s+FOR\b", stripped, re.IGNORECASE):
@@ -146,6 +150,7 @@ def parse_ddl(sql: str) -> DdlTable:
     table_name = strip_identifier(create_match.group("table"))
     open_paren = create_match.end() - 1
     columns_body, _ = _extract_balanced(sql, open_paren)
+    columns_body = _strip_sql_comments(columns_body)
 
     columns: list[DdlColumn] = []
     for definition in _split_definitions(columns_body):

@@ -19,7 +19,7 @@ from cc_deploy.manifest import (
 FLINK_SQL = Path(__file__).resolve().parents[2]
 CART_UPDATE = FLINK_SQL / "11-puzzles/cart_update"
 ROLLING = FLINK_SQL / "10-windowing/tumble_then_hop_rolling"
-JOINS_CC = FLINK_SQL / "04-joins/cc"
+JOINS_CC = FLINK_SQL / "04-joins/cc-flink"
 
 
 def test_classify_sql_file() -> None:
@@ -137,11 +137,11 @@ def test_create_manifest_writes_file(tmp_path: Path) -> None:
 
 def test_custom_group_op_ddl() -> None:
     manifest = load_manifest(JOINS_CC / "deploy_manifest.json")
-    statements = manifest.statements_for("op_ddl")
-    assert len(statements) == 2
-    assert statements[0][1] == "ddl.orders_nowm.sql"
-    assert "op_ddl" in manifest.groups
-    assert "op_ddl" not in manifest.deploy_all
+    statements = manifest.statements_for("ddls_wm")
+    assert len(statements) == 3
+    assert statements[0][1] == "ddl.orders_wm.sql"
+    assert "ddls" in manifest.groups
+    assert "data" in manifest.deploy_all
 
 
 def test_groups_cli(capsys, monkeypatch) -> None:
@@ -156,6 +156,7 @@ def test_groups_cli(capsys, monkeypatch) -> None:
     )
     main()
     out = capsys.readouterr().out
-    assert "op_ddl: 2 statement(s)" in out
-    assert "ddl:" in out
+    assert "data: 2 statement(s)" in out
+    print(out)
+    assert "ddls" in out
     assert "deploy_all" in out
