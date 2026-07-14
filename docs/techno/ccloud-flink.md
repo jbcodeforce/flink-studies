@@ -501,10 +501,10 @@ See [Grafana integration](https://docs.confluent.io/cloud/current/monitoring/thi
     * Service account can be used for deployment of resources or flink statement. It will be used as principal id for Flink statement deployment. Roles need to be granted to this service account, as well as api keys. 
     * CC Flink permissions follow a layered approach
     * Flink Developer can create workspaces, but can be limited per compute pool
-    * Basic Kafka clusters don't support topic-level DeveloperRead/DeveloperWrite bindings. (changing the terraform from basic{} to standard{} can be dony without recreating the cluster)
+    * Basic Kafka clusters don't support topic-level DeveloperRead/DeveloperWrite bindings. (changing the terraform from basic{} to standard{} can be done without recreating the cluster)
     * Transactional-ID bindings are required for Flink exactly-once semantics
     * Creating compute pool needs FlinkAdmin role
-    * Adding UDFs, integration connectivities or other artifacts needs FlinkFunctionDeveloper
+    * Adding UDFs, integration connectivities or other artifacts needs FlinkFunctionDeveloper role
 
 
 The following table list some classical use cases and the expected roles:
@@ -518,11 +518,10 @@ The following table list some classical use cases and the expected roles:
 | Support exactly-once delivery | DeveloperRead, DeveloperWrite on `Transactional-Id:_confluent-flink_`| 
 | Create R/W Schemas in SR | DataSteward |
 | Admin the org | OrganizationAdmin |  
-| Access to encryoption keys | DeveloperRead on the key. DeveloperWrite for the key generation |
+| Access to encryption keys | DeveloperRead on the key. DeveloperWrite for the key generation |
 
 Examples of Terraform definitions for service account, (FlinkDeveloper, DevelopManage) roles, and role binding on GCP [cc-flink-rbac](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/cc-flink-rbac).
 
-### Terraform examples
 
 ## Understanding pricing
 
