@@ -4,6 +4,10 @@ Reusable Kafka Avro producer with Schema Registry key and value subjects.
 Registers or loads ``{topic}-key`` and ``{topic}-value`` Avro schemas from ``.avsc``
 files and produces Confluent wire-format messages.
 
+Optional ``value_schema_references`` registers those Avro files as named Schema Registry
+subjects first, then attaches them as ``SchemaReference`` entries on the value schema
+(for Avro unions/types that cite records by fully-qualified name).
+
 Shared broker / Schema Registry configuration matches ``kafka_json_producer``.
 """
 
@@ -12,10 +16,10 @@ from __future__ import annotations
 import json
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 from confluent_kafka import Producer
-from confluent_kafka.schema_registry import Schema, SchemaRegistryClient
+from confluent_kafka.schema_registry import Schema, SchemaReference, SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 from confluent_kafka.schema_registry.error import SchemaRegistryError
 from confluent_kafka.serialization import MessageField, SerializationContext
@@ -35,6 +39,14 @@ def _identity(obj: dict[str, Any], _ctx: SerializationContext) -> dict[str, Any]
     return obj
 
 
+def _avro_fqn(schema_path: Path) -> str:
+    """Return ``namespace.name`` (or ``name``) from an Avro record schema file."""
+    payload = json.loads(schema_path.read_text(encoding="utf-8"))
+    name = payload["name"]
+    namespace = payload.get("namespace")
+    return f"{namespace}.{name}" if namespace else name
+
+
 class KafkaAvroProducer:
     """Produce Avro-encoded key/value records to Kafka via Schema Registry."""
 
@@ -44,11 +56,15 @@ class KafkaAvroProducer:
         key_schema_path: Path | str,
         value_schema_path: Path | str,
         *,
+        value_schema_references: Sequence[Path | str] | None = None,
         use_schema_registry: bool = True,
     ) -> None:
         self.topic_name = topic_name
         self.key_schema_path = Path(key_schema_path)
         self.value_schema_path = Path(value_schema_path)
+        self.value_schema_references = [
+            Path(p) for p in (value_schema_references or ())
+        ]
         self.use_schema_registry = use_schema_registry
         self.schema_registry_client: SchemaRegistryClient | None = None
         self.key_serializer: AvroSerializer | None = None
@@ -81,27 +97,49 @@ class KafkaAvroProducer:
             raise FileNotFoundError(f"Avro schema not found: {path}")
         return path.read_text(encoding="utf-8")
 
-    def _ensure_subject(self, subject_name: str, schema_path: Path) -> str:
+    def _ensure_subject(
+        self,
+        subject_name: str,
+        schema_path: Path,
+        *,
+        references: list[SchemaReference] | None = None,
+    ) -> Schema:
+        """Load or register a subject; return the Schema (including any references)."""
         assert self.schema_registry_client is not None
         try:
             metadata = self.schema_registry_client.get_latest_version(subject_name)
-            return metadata.schema.schema_str
+            return metadata.schema
         except SchemaRegistryError as exc:
             if exc.error_code != _SR_SUBJECT_NOT_FOUND:
                 raise
         schema_str = self._read_schema(schema_path)
-        schema = Schema(schema_str, schema_type="AVRO")
+        schema = Schema(schema_str, schema_type="AVRO", references=references or [])
         schema_id = self.schema_registry_client.register_schema(subject_name, schema)
         print(f"Registered Avro schema id {schema_id} for subject '{subject_name}'")
-        return schema_str
+        return schema
+
+    def _build_value_references(self) -> list[SchemaReference]:
+        assert self.schema_registry_client is not None
+        refs: list[SchemaReference] = []
+        for path in self.value_schema_references:
+            fqn = _avro_fqn(path)
+            # Register each referenced record under its FQN as the subject name.
+            self._ensure_subject(fqn, path)
+            version = self.schema_registry_client.get_latest_version(fqn).version
+            refs.append(SchemaReference(name=fqn, subject=fqn, version=version))
+            print(f"Schema reference ready: name={fqn} subject={fqn} version={version}")
+        return refs
 
     def _install_serializers(self) -> None:
         assert self.schema_registry_client is not None
         key_schema = self._ensure_subject(
             f"{self.topic_name}-key", self.key_schema_path
         )
+        value_refs = self._build_value_references()
         value_schema = self._ensure_subject(
-            f"{self.topic_name}-value", self.value_schema_path
+            f"{self.topic_name}-value",
+            self.value_schema_path,
+            references=value_refs or None,
         )
         self.key_serializer = AvroSerializer(
             self.schema_registry_client, key_schema, _identity

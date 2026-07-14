@@ -18,31 +18,9 @@
     {
       "name": "eventDetail",
       "type": [
-        {
-          "type": "record",
-          "name": "DeviceSwapDetail",
-          "fields": [
-            { "name": "accountId", "type": "string" },
-            { "name": "deviceId", "type": "string" }
-          ]
-        },
-        {
-          "type": "record",
-          "name": "SubscriptionDetail",
-          "fields": [
-            { "name": "accountId", "type": "string" },
-            { "name": "status", "type": "string" },
-            { "name": "planId", "type": "string" }
-          ]
-        },
-        {
-          "type": "record",
-          "name": "DeviceCloseDetail",
-          "fields": [
-            { "name": "accountId", "type": "string" },
-            { "name": "reasonCode", "type": "string" }
-          ]
-        }
+        "io.confluent.flink.multievent.DeviceSwapDetail",
+        "io.confluent.flink.multievent.SubscriptionDetail",
+        "io.confluent.flink.multievent.DeviceCloseDetail"
       ]
     }
   ]

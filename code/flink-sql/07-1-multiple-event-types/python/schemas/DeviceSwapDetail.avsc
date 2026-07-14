@@ -1,0 +1,9 @@
+{
+  "type": "record",
+  "name": "DeviceSwapDetail",
+  "namespace": "io.confluent.flink.multievent",
+  "fields": [
+    { "name": "accountId", "type": "string" },
+    { "name": "deviceId", "type": "string" }
+  ]
+}

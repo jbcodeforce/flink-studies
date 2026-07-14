@@ -150,12 +150,45 @@ The [Confluent documentation](https://docs.confluent.io/cloud/current/flink/how-
 * The topic is using an envelop schema referencing existing schemas. 
 * When these schemas are registered in Schema Registry and used with the default TopicNameStrategy, Flink automatically infers the table structure
 * Flink supports union of types for example the eventDetails may be of two different types while contextInfo will be the same in all messages
-    ```avro
-
-
+    ```json
+     {
+        "type": "record",
+        "name": "AccountLifecycleEvent",
+        "namespace": "io.confluent.flink.multievent",
+        "fields": [
+            {
+            "name": "contextInfo",
+            "type": {
+                "type": "record",
+                "name": "EventContext",
+                "fields": [
+                { "name": "eventName", "type": "string" },
+                { "name": "correlationId", "type": "string" },
+                { "name": "sourceSystem", "type": "string" }
+                ]
+            }
+            },
+            {
+            "name": "eventDetail",
+            "type": [
+                "io.confluent.flink.multievent.DeviceSwapDetail",
+                "io.confluent.flink.multievent.SubscriptionDetail",
+                "io.confluent.flink.multievent.DeviceCloseDetail"
+            ]
+            }
+        ]
+        }
+    ```
+* The SQL to process the record will have condition on the eventDetail type:
+    ```sql
+    SELECT
+        contextInfo.eventName,
+        eventDetail.DeviceSwapDetail.*
+    FROM account_events
+    WHERE eventDetail.DeviceSwapDetail IS NOT NULL;
     ```
 * For topics using RecordNameStrategy or TopicRecordNameStrategy, Flink initially infers a raw binary table.
-* [See demonstration](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/07-1-schema-refactoring)
+* [See multiple-event-type demonstration](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/07-1-multiple-event-types) in this repo.
 
 ### 3.1- Recipe: Safely Upgrade a Flink Job Using Savepoints
 

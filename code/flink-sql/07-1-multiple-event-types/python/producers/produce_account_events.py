@@ -104,6 +104,11 @@ def main() -> None:
         topic_name=args.topic,
         key_schema_path=schema_root / "account_events-key.avsc",
         value_schema_path=schema_root / "account_events-value.avsc",
+        value_schema_references=[
+            schema_root / "DeviceSwapDetail.avsc",
+            schema_root / "SubscriptionDetail.avsc",
+            schema_root / "DeviceCloseDetail.avsc",
+        ],
         use_schema_registry=not args.no_schema_registry,
     )
 
