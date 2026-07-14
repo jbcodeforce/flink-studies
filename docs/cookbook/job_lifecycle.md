@@ -84,13 +84,79 @@ In Concluent Cloud the Query Profiler has the same capability then the Flink UI 
 
 ## 3- Upgrading Jobs Safely
 
-With compatible changes (resume from savepoint).
-#### Context
-#### Preconditions / Checklist
-#### Inputs / Parameters
-#### Procedure
-#### Rollback
-#### Gotchas
+Query evolution is a major project subject for any streaming processing. As an example, we are using the following architecture, integrated with Kafka, most likely CDC tables and sink connectors:
+
+<figure markdown=span style="width=900">
+![](./images/simple_arch.drawio.png)
+</figure>
+
+Once a Flink query is deployed and run 'forever', how to change it? to fix issue or adapt to schema changes. 
+
+### Statement Evolution Context
+
+The general strategy for query evolution is to replace the existing statement and the corresponding tables it maintains with a new statement and new tables. The process is described in [this product chapter](https://docs.confluent.io/cloud/current/flink/concepts/schema-statement-evolution.html#query-evolution) and should be viewed within two folds depending of stateless or statefulness of the statement. The initial state of the process involves a pipeline of Flink SQL statements and consumers processing Kafka records from various topics. 
+
+By principles any Flink DAG code is immutable, so statement needs to be stopped and a new version started! This is not as simple as it may look, as there will be impacts to any non-idempotent consumers. 
+
+The Flink SQL statements has limited parts that are mutables. See the [Confluent Cloud product documentation for details](https://docs.confluent.io/cloud/current/flink/concepts/schema-statement-evolution.html).  In Confluent Cloud the principal name and compute pool metadata are mutable when stopping and resuming the statement. Developers may stop and resume a statement using Console, CLI, API or even Terraform scripts.
+
+Here are example using confluent cli:
+
+```sh
+# $1 is the statement name
+confluent flink statement stop $1 --cloud $(CLOUD) --region $(REGION) 
+
+confluent flink statement resume $1 --cloud $(CLOUD) --region $(REGION) 
+```
+
+When a SQL statement is started, it reads the source tables from the beginning (or any specified offset) and the operators, defined in the statement, build their internal states. 
+
+Source operators use the latest schema version for key and value at the time of deployment. There is a snapshot of the different dependency configuration saved for the statement: the reference to the dependants tables, user-defined functions... 
+
+Any modifications to these objects are not propagated to running statement, which means that:
+
+* A change to the schema of the source topic is not picked up by the running statement that references the topic.
+* Same applies to other objects in the catalog like watermark, UDF etc.
+
+First let review the schema definition evolution best practices for Flink processing.
+
+
+### Schema compatibility
+
+Flink works best when consuming topics with FULL_TRANSITIVE compatibility mode, which allows addition or deletion of fields with default values only. Fields added are ignored by the running Flink Statement
+
+The following table lists the schema compatibility types, with the Flink impacts:
+
+| Compatibility type | Change allowed | Flink impact |
+| --- | --- | --- |
+| **BACKWARD** | Delete fields, add optional field | Does not allow to replay from earliest |
+| **BACKWARD_TRANSITIVE** | Delete fields, add optional fields with default value.| Require all Statements reading from impacted topic to be updated prior to the schema change. |
+| **FORWARD** | Add fields, delete optional fields | Does not allow to replay from earliest |
+| **FORWARD_TRANSITIVE** | Add fields, delete optional fields | Does not allow to replay from earliest |
+| **FULL** | Add optional fields, delete optional fields | Does not allow to replay from earliest |
+| **FULL_TRANSITIVE** | Add optional fields, delete optional fields  | Reprocessing and bootstrapping is always possible: Statements do not need to be updated prior to compatible schema changes. Compatibility rules & migration rules can be used for incompatible changes. |
+| **NONE** | All changes accepted | Very risky. Does not allow to replay from earliest |
+
+With FULL_TRANSITIVE, old data can be read with the new schema, and new data can also be read between the schemas X, X-1, and X-2. Which means in a pipeline, downstream Flink statements can read newly created schema, and will be able to replay messages from a previous schemas. Therefore, you can upgrade the producers and consumers independently.
+
+Confluent Schema Registry supports Avro, Json or Protobuf, but Avro was designed to support schema evolution, so this is the preferred serialization mechanism to use.
+
+* [See demonstration](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/07-schema-refactoring)
+
+### Handle multiple event types
+
+The [Confluent documentation](https://docs.confluent.io/cloud/current/flink/how-to-guides/multiple-event-types.html) presents how to support multiple event types in the same topic. This pattern adds risk to get frequent schema modificatipons and so statement evolution. To summarize this guide:
+
+* The topic is using an envelop schema referencing existing schemas. 
+* When these schemas are registered in Schema Registry and used with the default TopicNameStrategy, Flink automatically infers the table structure
+* Flink supports union of types for example the eventDetails may be of two different types while contextInfo will be the same in all messages
+    ```avro
+
+
+    ```
+* For topics using RecordNameStrategy or TopicRecordNameStrategy, Flink initially infers a raw binary table.
+* [See demonstration](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/07-1-schema-refactoring)
+
 ### 3.1- Recipe: Safely Upgrade a Flink Job Using Savepoints
 
 Upgrade a Production Flink Job with Savepoint (Minimal Downtime)
@@ -99,7 +165,7 @@ Upgrade a Production Flink Job with Savepoint (Minimal Downtime)
 
 Use this when you need to:
 
-* Deploy a new version of an existing job that must preserve state (e.g., aggregations, keyed state).
+* Deploy a new version of an existing job that **MUST PRESERVE** state (e.g., aggregations, keyed state).
 * Make compatible changes to the job graph (e.g., logic changes without breaking state schemas).
 
 #### Preconditions / Checklist
@@ -123,6 +189,24 @@ Use this when you need to:
 
 #### Procedure
 
+We assume that the blue records are processed end-to-end, and the upgrade process begins at a specific point, from where all green records to be processed.
+
+For ^^stateless statement evolution^^ the figure below illustrates the process:
+
+![](./diagrams/stateless_evolution.drawio.png)
+
+**Figure: Stateless schema evolution process**
+
+1. The blue statement, version 1, is stopped, and from the output, developer gets the last offset
+1. The green statement includes a DDL to create the new table with schema v2.
+1. The green DML statement, version 2, is started from the last offset or timestamp and produces records to the new table/topic
+1. Consumers are stopped. They have produced so far records to their own output topic with source from blue records.
+1. Consumers restarted with the new table name. Which means changing their own SQL statements, but now producing output with green records as source.
+
+
+At a high level, stateless statements can be updated by stopping the old statement, creating a new one, and transferring the offsets from the old statement. As mentioned, we need to support FULL TRANSITIVE updates to add or delete optional columns/fields.
+
+
 1. Trigger a Savepoint
     * From UI/CLI, trigger a savepoint for the running job, specifying SAVEPOINT_DIR if required.
     * Wait until the savepoint finishes successfully and record the savepoint path.
@@ -144,12 +228,33 @@ Use this when you need to:
     * Check key metrics: input rate, end-to-end latency, checkpoint status, backpressure.
     * Validate downstream data (sanity checks, dashboards, or data-quality rules).
 
+
+
+#### Restart a statement from a specific time or offset
+
+Using time window, it may be relevant to restart from the beginning of the time window when the job was terminated. Which means using a `WHERE event_time > window_start_time_stamp` to get the records from the source table for an aligned time.
+
+Use the `/*+ options ` at the table level or a `set statement` for all the table to read from.
+
+```sql
+FROM orders /*+ OPTIONS('scan.startup.mode' = 'timestamp', 'scan.startup.timestamp-millis' = '1717763226336') */
+```
+
+For offset, the `status.latest_offsets` includes the lastest offset read for each partition. Note that reading from an offset is applicable only for stateless statements to ensure exactly-once delivery.
+or
+
+```sql
+SET `sql.tables.scan.startup.mode`= "earliest"
+```
+
 #### Rollback
 
 If you detect errors, anomalies, or instability:
+
 * Cancel the new job.
 * Restart the previous version from the same savepoint (or the last known good one).
 * Confirm successful restore and checkpointing before considering a new upgrade attempt.
+
 #### Gotchas
 
 * Incompatible changes to keyed state serialization often only show up at restore time; always test in staging with a copy of prod state before running this recipe in production.
@@ -160,6 +265,31 @@ If you detect errors, anomalies, or instability:
 #### Preconditions / Checklist
 #### Inputs / Parameters
 #### Procedure
+
+For ^^stateful statements^^, it is necessary to bootstrap from history, which the below process accomplishes:
+
+![](./diagrams/stateful_evolution.drawio.png)
+
+**Figure: Stateful schema evolution process**
+
+The migration process consists of the following steps:
+
+1. Create a DDL statement to define the new schema for `table_v2` which means topic v2.
+1. Deploy the new statement with the v2 name, starting from the earliest records to ensure semantic consistency for the blue records, when they are stateful, or from the last offset when stateless.
+1. Once the new statement is running, it will build its own state and continue processing new records. Wait for it to retrieve the latest messages from the source tables before migrating existing consumers to the new table v2. The old blue records will be re-emitted. While the new statement 
+1. Stop processing first statement.
+1. Halt any downstream consumers, retaining their offsets if those are stateless or idempotent, if they are stateful they will process from the earliest.
+1. Reconnect the consumers to the new table. For Flink statements acting as consumers, they will need to manage their own upgrades. To avoid duplicates or not missing records, the offset for the consumers to the new topic needs ot be carrefuly selected.
+1. Once all consumers have migrated to the new output topic, the original statement and output topic can be deprovisioned.
+
+This process requires to centrally control the deployment of those pipelines.
+
+Using Open Source Flink, creating a snapshot is one potential solution for restarting. However, if the DML logic has changed, it may not be possible to rebuild the DAG and the state for a significantly altered flow. Thus, in a managed service, the approach is to avoid using snapshots to restart the statements.
+
+Also when the state size is too large, consider separating the new statement into a different compute pool than the older one.
+
+
+
 #### Rollback
 #### Gotchas
 

@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "name": "AccountLifecycleEventKey",
+  "namespace": "io.confluent.flink.multievent",
+  "fields": [
+    { "name": "correlationId", "type": "string" }
+  ]
+}

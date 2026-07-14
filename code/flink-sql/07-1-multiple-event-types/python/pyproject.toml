@@ -1,0 +1,16 @@
+[project]
+name = "multiple-event-types-producer"
+version = "0.1.0"
+description = "Avro Kafka producer for account_events multiple-event-type demo (uses cm_py_lib)"
+requires-python = ">=3.11"
+dependencies = [
+    "confluent-kafka[schema-registry]>=2.3.0",
+    "fastavro>=1.12.2",
+    "jsonschema>=4.26.0",
+    "orjson>=3.11.9",
+    "pydantic>=2.13.4",
+    "python-dotenv>=1.0.0",
+]
+
+[tool.uv]
+package = false

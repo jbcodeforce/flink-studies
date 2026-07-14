@@ -258,22 +258,21 @@ The [airbnb_streaming](airbnb_streaming/) project targets Confluent Cloud for Fl
 
 ### Seed reference data from CSV
 
-Place CSV files in `airbnb_streaming/seeds/`. Column types are inferred from the CSV; override them in `seeds/seeds.yml` when needed (e.g. `DATE` instead of `STRING`).
+* Place CSV files in `airbnb_streaming/seeds/`. Column types are inferred from the CSV; override them in `seeds/seeds.yml` when needed (e.g. `DATE` instead of `STRING`).
+  ```bash
+  cd code/dbt/airbnb_streaming
+  make debug
+  make seed
+  ```
 
-```bash
-cd code/dbt/airbnb_streaming
-make debug
-make seed
-```
+  Or without Make:
 
-Or without Make:
+  ```bash
+  cd code/dbt
+  uv run dbt seed --project-dir airbnb_streaming --profiles-dir ~/.dbt --target dev
+  ```
 
-```bash
-cd code/dbt
-uv run dbt seed --project-dir airbnb_streaming --profiles-dir ~/.dbt --target dev
-```
-
-Validate in the Flink SQL workspace:
+* Validate in the Flink SQL workspace:
 
 ```sql
 SELECT * FROM raw_full_moon_dates LIMIT 5;

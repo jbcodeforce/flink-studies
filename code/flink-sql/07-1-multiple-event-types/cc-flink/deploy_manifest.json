@@ -1,0 +1,28 @@
+{
+  "user_agent": "flink-studies-cc/0.1",
+  "deploy_all": [
+    "ddl",
+    "data"
+  ],
+  "undeploy_all": [
+    "data"
+  ],
+  "drop_tables": [
+    "account_events"
+  ],
+  "groups": {
+    "ddl": [
+      {
+        "name": "e071-ddl-account-events",
+        "file": "ddl.account_events.sql"
+      }
+    ],
+    "data": [
+      {
+        "name": "e071-data-insert-account-events",
+        "file": "dml.insert_account_events.sql"
+      }
+    ]
+  },
+  "drop_statement_prefix": "e071-drop"
+}

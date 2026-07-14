@@ -1,0 +1,49 @@
+{
+  "type": "record",
+  "name": "AccountLifecycleEvent",
+  "namespace": "io.confluent.flink.multievent",
+  "fields": [
+    {
+      "name": "contextInfo",
+      "type": {
+        "type": "record",
+        "name": "EventContext",
+        "fields": [
+          { "name": "eventName", "type": "string" },
+          { "name": "correlationId", "type": "string" },
+          { "name": "sourceSystem", "type": "string" }
+        ]
+      }
+    },
+    {
+      "name": "eventDetail",
+      "type": [
+        {
+          "type": "record",
+          "name": "DeviceSwapDetail",
+          "fields": [
+            { "name": "accountId", "type": "string" },
+            { "name": "deviceId", "type": "string" }
+          ]
+        },
+        {
+          "type": "record",
+          "name": "SubscriptionDetail",
+          "fields": [
+            { "name": "accountId", "type": "string" },
+            { "name": "status", "type": "string" },
+            { "name": "planId", "type": "string" }
+          ]
+        },
+        {
+          "type": "record",
+          "name": "DeviceCloseDetail",
+          "fields": [
+            { "name": "accountId", "type": "string" },
+            { "name": "reasonCode", "type": "string" }
+          ]
+        }
+      ]
+    }
+  ]
+}

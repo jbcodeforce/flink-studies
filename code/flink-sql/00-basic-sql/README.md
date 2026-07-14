@@ -13,7 +13,7 @@ This folder includes some basic SQL examples to be used with one of the followin
 * [Confluent Cloud Deployment](#confluent-cloud-flink)
 * [Local Confluent Platform for Flink on Kubernetes](#confluent-platform-for-flink-on-kubernetes)
 
-What is demonstrated:
+### What is demonstrated:
 
 * Process employees data to aggregate by department id.
 * Table creation, loading from CSV file and writing results to CSV file (OSS)

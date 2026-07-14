@@ -7,11 +7,7 @@ type: article
 compiled: false
 ---
 
-There is a [Confluent cookbook for best practices](https://github.com/confluentinc/flink-cookbook) to run Flink into production. The content of this page is to get a summary of those practices, enhanced from other customers' engagements. It also references hands-on exercises within this repository. 
-
-Examples may be run inside from Terminal or using Kubernetes cluster locally, they are on Flink 1.20.1 or Flink 2.1. Use Java 11 or 17, see [sdkman](https://sdkman.io/) to manage different java version. 
-
-
+-> Migration to cookbook
 
 ## Exactly-once-delivery
 
@@ -79,128 +75,6 @@ SELECT ROW_NUMBER() OVER (ORDER BY $rowtime ASC) AS number, *   FROM <table_name
 * When Data are in topic but not seen by flink `select * from <table_name>` statement, it may be due to idle partitions and the way watermarks advance and are propagated. Flink automatically marks a Kafka partition as idle if no events come within `sql.tables.scan.idle-timeout` duration. When a partition is marked as idle, it does not contribute to the watermark calculation until a new event arrives. Try to set the idle timeout for table scans to ensure that Flink considers partitions idle after a certain period of inactivity. Try to create a table with a watermark definition to handle idle partitions and ensure that watermarks advance correctly.
 
 
-## Deduplication
-
-Deduplication is documented [here](../coding/flink-sql-1.md/#table-creation-how-tos) and [here](https://docs.confluent.io/cloud/current/flink/reference/queries/deduplication.html#flink-sql-deduplication) and at its core principal, it uses a CTE to add a row number, as a unique sequential number to each row. The columns used to de-duplicate are defined in the partitioning. Ordering is using a timestamp to keep the last record or first record. Flink support only ordering on time.
-
-```sql
-SELECT [column_list]
-FROM (
-   SELECT [column_list],
-     ROW_NUMBER() OVER ([PARTITION BY column1[, column2...]]
-       ORDER BY time_attr [asc|desc]) AS rownum
-   FROM table_name
-) WHERE rownum = 1
-```
-
-When using Kafka Topic to persist Flink table, it is possible to use the `upsert` or `retract` change log mode, and define the primary key(s) to remove duplicate records as only the last records will be used:
-
-```sql
-CREATE TABLE orders_deduped (
-  PRIMARY KEY( order_id, member_id) NOT ENFORCED) DISTRIBUTED BY (order_id, member_id) INTO 1 BUCKETS 
-WITH (
-  'changelog.mode' = 'upsert',
-  'value.fields-include' = 'all'
-) AS
-SELECT
-  *
-FROM (
-  SELECT
-      *,
-      ROW_NUMBER() OVER (
-        PARTITION BY `order_id`, `member_id`
-        ORDER
-          BY $rowtime DESC
-      ) AS row_num
-    FROM orders_raw
-) WHERE row_num = 1;
-```
-
-To validate there is no duplicate records in the output table, use a query with tumble window like:
-
-```sql
-  SELECT
-      `order_id`, 
-      `user_id`,
-    COUNT(*) AS cnt
-    FROM
-    TABLE(
-        tumble(
-        TABLE orders_raw,
-        DESCRIPTOR($rowtime),
-        INTERVAL '1' MINUTE
-        )
-    )
-    GROUP
-    BY  `order_id`, `user_id` HAVING COUNT(*) > 1;
-```
-
-Duplicates may still occur on the Sink side of the pipeline, as it is linked to the type of connector used and its configuration, for example reading un-committed offset. Few connector support the retract semantic.
-
-## Change Data Capture
-
-TO BE DONE
-
-## Late Data
-
-TO BE DONE
-
-## Exactly once
-
-
-
-## Query Evolution
-
-In this section, I address streaming architecture only, integrated with Kafka, most likely CDC tables and sink connectors, a classical architecture, simplified in this figure:
-
-<figure markdown=span style="width=900">
-![](./images/simple_arch.drawio.png)
-</figure>
-
-Once a Flink query is deployed and run 'forever', how to change it? to fix issue or adapt to schema changes. 
-
-By principles any Flink DAG code is immutable, so statement needs to be stopped and a new version started! This is not as simple as this, as there will be impact to any consumers of the created data, specially in Kafka topic or in non-idempotent consumers. 
-
-The Flink SQL statements has limited parts that are mutables. See the [Confluent Cloud product documentation for details](https://docs.confluent.io/cloud/current/flink/concepts/schema-statement-evolution.html).  In Confluent Cloud the principal name and compute pool metadata are mutable when stopping and resuming the statement. Developers may stop and resume a statement using Console, CLI, API or even Terraform scripts.
-
-Here are example using confluent cli:
-
-```sh
-# $1 is the statement name
-confluent flink statement stop $1 --cloud $(CLOUD) --region $(REGION) 
-
-confluent flink statement resume $1 --cloud $(CLOUD) --region $(REGION) 
-```
-
-When a SQL statement is started, it reads the source tables from the beginning (or any specified offset) and the operators, defined in the statement, build their internal state. 
-
-Source operators use the latest schema version for key and value at the time of deployment. There is a snapshot of the different dependency configuration saved for the statement: the reference to the dependants tables, user-defined functions... Any modifications to these objects are not propagated to running statement, which means that:
-
-* A change to the schema of the source topic is not picked up by the running statement that references the topic.
-* Same applies to other objects in the catalog like watermark, UDF etc.
-
-First let review the schema definition evolution best practices for Flink processing.
-
-### Schema compatibility
-
-Flink works best when consuming topics with FULL_TRANSITIVE compatibility mode, which allows addition or deletion of fields with default values only. Fields added are ignored by the running Flink Statement
-
-The following table lists the schema compatibility types, with the Flink impacts:
-
-| Compatibility type | Change allowed | Flink impact |
-| --- | --- | --- |
-| BACKWARD | Delete fields, add optional field | Does not allow to replay from earliest |
-| BACKWARD_TRANSITIVE | Delete fields, add optional fields with default value.| Require all Statements reading from impacted topic to be updated prior to the schema change. |
-| FORWARD | Add fields, delete optional fields | Does not allow to replay from earliest |
-| FORWARD_TRANSITIVE | Add fields, delete optional fields | Does not allow to replay from earliest |
-| FULL | Add optional fields, delete optional fields | Does not allow to replay from earliest |
-| FULL_TRANSITIVE | Add optional fields, delete optional fields  | Reprocessing and bootstrapping is always possible: Statements do not need to be updated prior to compatible schema changes. Compatibility rules & migration rules can be used for incompatible changes. |
-| NONE | All changes accepted | Very risky. Does not allow to replay from earliest |
-
-With FULL_TRANSITIVE, old data can be read with the new schema, and new data can also be read between the schemas X, X-1, and X-2. Which means in a pipeline, downstream Flink statements can read newly created schema, and will be able to replay messages from a previous schemas. Therefore, you can upgrade the producers and consumers independently.
-
-
-Confluent Schema Registry supports Avro, Json or Protobuf, but Avro was designed to support schema evolution, so this is the preferred serialization mechanism to use.
 
 ### Handling Changes with CDC
 The CDC component may create schema automatically reflecting the source table. [See Debezium documentation about schema evolution](https://debezium.io/documentation/reference/stable/connectors/mysql.html).
@@ -240,62 +114,6 @@ The Debezium Envelope pattern offers the most flexibility for upstream Schema Ev
     ```
     Running Flink DML is not aware of the dropped `zipcode` column. User may STOP & RESUME the Flink DML with no impact. But the statement will go to DEGRADED mode if the dropped column is part of the SELECT statement. For new deployment, user may update the statement to remove the dropped column and start from the beginning or specific offsets.
 
-### Statement evolution
-
-The general strategy for query evolution is to replace the existing statement and the corresponding tables it maintains with a new statement and new tables. The process is described in [this product chapter](https://docs.confluent.io/cloud/current/flink/concepts/schema-statement-evolution.html#query-evolution) and should be viewed within two folds depending of stateless or statefulness of the statement. The initial state of the process involves a pipeline of Flink SQL statements and consumers processing Kafka records from various topics. We assume that the blue records are processed end-to-end, and the upgrade process begins at a specific point, from where all green records to be processed. The migration should start with the Flink statement that needs modification and proceed step by step to the statement creating the sink.
-
-For ^^stateless statement evolution^^ the figure below illustrates the process:
-
-![](./diagrams/stateless_evolution.drawio.png)
-
-**Figure: Stateless schema evolution process**
-
-1. The blue statement, version 1, is stopped, and from the output, developer gets the last offset
-1. The green statement includes a DDL to create the new table with schema v2.
-1. The green DML statement, version 2, is started from the last offset or timestamp and produces records to the new table/topic
-1. Consumers are stopped. They have produced so far records to their own output topic with source from blue records.
-1. Consumers restarted with the new table name. Which means changing their own SQL statements, but now producing output with green records as source.
-
-At a high level, stateless statements can be updated by stopping the old statement, creating a new one, and transferring the offsets from the old statement. As mentioned, we need to support FULL TRANSITIVE updates to add or delete optional columns/fields.
-
-For ^^stateful statements^^, it is necessary to bootstrap from history, which the below process accomplishes:
-
-![](./diagrams/stateful_evolution.drawio.png)
-
-**Figure: Stateful schema evolution process**
-
-The migration process consists of the following steps:
-
-1. Create a DDL statement to define the new schema for `table_v2` which means topic v2.
-1. Deploy the new statement with the v2 name, starting from the earliest records to ensure semantic consistency for the blue records, when they are stateful, or from the last offset when stateless.
-1. Once the new statement is running, it will build its own state and continue processing new records. Wait for it to retrieve the latest messages from the source tables before migrating existing consumers to the new table v2. The old blue records will be re-emitted. While the new statement 
-1. Stop processing first statement.
-1. Halt any downstream consumers, retaining their offsets if those are stateless or idempotent, if they are stateful they will process from the earliest.
-1. Reconnect the consumers to the new table. For Flink statements acting as consumers, they will need to manage their own upgrades. To avoid duplicates or not missing records, the offset for the consumers to the new topic needs ot be carrefuly selected.
-1. Once all consumers have migrated to the new output topic, the original statement and output topic can be deprovisioned.
-
-This process requires to centrally control the deployment of those pipeline.
-
-Using Open Source Flink, creating a snapshot is one potential solution for restarting. However, if the DML logic has changed, it may not be possible to rebuild the DAG and the state for a significantly altered flow. Thus, in a managed service, the approach is to avoid using snapshots to restart the statements.
-
-Also when the state size is too large, consider separating the new statement into a different compute pool than the older one.
-
-#### Restart a statement from a specific time or offset
-
-Using time window, it may be relevant to restart from the beginning of the time window when the job was terminated. Which means using a `WHERE event_time > window_start_time_stamp` to get the records from the source table for an aligned time.
-
-Use the `/*+ options ` at the table level or a `set statement` for all the table to read from.
-
-```sql
-FROM orders /*+ OPTIONS('scan.startup.mode' = 'timestamp', 'scan.startup.timestamp-millis' = '1717763226336') */
-```
-
-For offset, the `status.latest_offsets` includes the lastest offset read for each partition. Note that reading from an offset is applicable only for stateless statements to ensure exactly-once delivery.
-or
-
-```sql
-SET `sql.tables.scan.startup.mode`= "earliest"
-```
 
 #### Materialized Table
 
@@ -351,14 +169,6 @@ Savepoints are manually triggered snapshots of the job state, which can be used 
 
 Full checkpoints and savepoints take a long time, but incremental checkpoints are faster.
 
-#### Demonstrate in-place upgrade of stateless statement
-
-#### Demonstrate stateful statement upgrade
-
-### Flink on Kubernetes
-
-* To trigger a savepoints
-* 
 
 ## Testing SQL statement during pipeline development
 
@@ -419,9 +229,3 @@ When consumer applications may tolerate at-least once semantics, they may simply
 
 The [shift_left utility has an integration tests harness feature to do end-to-end testing with timestamp](https://jbcodeforce.github.io/shift_left_utils/coding/test_harness/#integration-tests).
 
-## Other sources
-
-The current content is sourced from the following cookbooks and lesson learnt while engaging with customers.
-
-* [Confluent Flink Cookbook](https://github.com/confluentinc/flink-cookbook)
-* [Ververica Flink cookbook](https://github.com/ververica/flink-sql-cookbook/blob/main/README.md)
