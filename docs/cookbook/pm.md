@@ -6,6 +6,10 @@ tags: [flink, cookbook]
 type: article
 compiled: false
 ---
+???- info "Version status"
+    - created 03/2025
+    - Update 07/2026 
+
 # Flink Project Management
 
 When doing a project to deliver real-time processing there are a set of factors to consider. New project versus migration projects are not scoped the same, even if most of the time it is better for a migration project to start from the existing / updated business requirements, and leverage the lessons learned during the previous project to build a better solution.
@@ -134,16 +138,46 @@ In business analytics, there is a need to differentiate data tables according to
 
 ### The star schema
 
-The star schema was defined in the late 1980s as a multidimensional data model to organize data in a data warehouse, preserve history, and reduce duplication. A star schema is used to denormalize business data into dimensions and facts. The fact table connects to multiple other dimension tables along "dimensions" like time, or product.
+The star schema was defined in the late 1980s as a multidimensional data model to organize data in a data warehouse, preserve history, and reduce duplication. A star schema is used to denormalize business data into dimensions and facts it help to address analytical questions such as: "Which region had the highest revenue growth from millennial shoppers last quarter?". Doing such queries on transactional, OLAP, data schema will be... at minimum challenging.
+
+The star schema gets its name because it looks like a star: a single, central Fact Table surrounded by multiple Dimension Tables (the points of the star)
+
+The fact table connects to multiple other dimension tables along "dimensions" like date, driver, customer...
 
 ![](./diagrams/star_schema.drawio.png)
 
+The **fact table** sits at the center. It records the what happened, as quantitative, measurable events (the "facts") of a business process.
+
+* It contains mostly numbers (metrics) and foreign keys that link out to the dimensions.
+* It is usually massive, growing by millions of rows daily, but very narrow (few columns).
+* Example (Sales Fact Table): Quantity_Sold, Gross_Revenue, Discount_Amount, Tax_Paid.
+
+**Dimension tables** (The "Context") surround the fact table. They provide the "who, what, where, when, and why" behind the numbers.
+
+* It contains descriptive attributes, text, and categories.
+* They are smaller, wider (lots of columns describing an entity), and change less frequently.
+* Example (Product Dimension Table): Product_Name, SKU, Category, Brand, Color, Size.
+
+When a user queries a star schema, they filter or group by the attributes in the Dimension tables (e.g., "Filter by Year 2026" and "Group by Brand") and aggregate the numbers in the Fact table (e.g., "Sum of Gross Revenue")
+
+The star schema in figure above should help to answer questions like:
+    * Which vehicle tier (dim_drivers) brings in the highest average tip amount (fact_trips)?
+    * What is the most popular drop-off neighborhood (dim_locations) for Gold-tier customers (dim_customers) on weekends (dim_date)?
+    
 The following project illustrates how to implement the star schema using Flink:
 
 * [Customer 360](https://jbcodeforce.github.io/flink_project_demos/c360/flink_project/#define-the-shift_left-utils-configuration)
 * [Transaction analytics](https://github.com/jbcodeforce/flink_project_demos/tree/main/tx_processing)
+* [A simple car rides data as a product with materialized table demonstration](https://github.com/jbcodeforce/code/flink-sql)
 
 In Flink, a dimension may be created via a SQL statement and persisted as a table backed by a Kafka topic, JDBC, or files. When it is less reusable, a dimension can be a CTE within a larger Flink SQL statement.
+
+???+ question "How does star schema help developing data as a product?"
+    By its structure, a star schema is at the user interface for data as a product. It is denormalized (flattened), it requires minimal joins. It is highly intuitive: pick your context (dimension), pick your metric (fact) and run the query.
+
+    They are optimized for read-heavy analytical queries, so cloud data warehouses can scan them at lightning speeds.
+    
+    A data product should solve a specific business problem for a specific domain. A star schema is naturally bounded around a single business process. The central fact table defines the exact scope of that product.
 
 ???+ info "How to support Type 2 slowly changing dimension (SCD) table?"
     Type 2 SCDs are designed to maintain a complete history of all changes to dimension data. When a change occurs, a new row is inserted into the table, representing the updated record, while the original record remains untouched. Each record in the table is typically assigned a unique identifier (often a surrogate key) to distinguish between different versions of the same dimension member. 

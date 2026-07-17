@@ -66,10 +66,14 @@ Pay attention that most Flink managed services are cloud-hosted and not cloud-na
 ## Key Specific Concepts
 
 * This is a **regional service**, in one of the three major cloud providers. It is defined in a context of a Confluent's environment.
-* **Compute pools** groups resources for running Flink clusters, which may scale down to zero. They run SQL **statements**. Maximum pool size is defined at creation. Statements, in different compute pools, are **isolated** from each other. 
-* Capacity is measured in Confluent Flink Unit, [CFU](https://docs.confluent.io/cloud/current/flink/concepts/flink-billing.html#cfus). Each statement is at least 1 CFU-minute.
-* A statement may be structural (DDL) and stop once completed, or runs in background to write data to table (DML).
-* Supports multiple Kafka clusters within the same Confluent Cloud organization in a single region.s
+* **Compute pools** groups resources for running Flink clusters, which may scale down to zero. They run SQL **statements**. Maximum pool size is defined at compute pool creation. Statements, in different compute pools, are **isolated** from each other. 
+<figure markdown='span'>
+![](./diagrams/compute_pool.drawio.png){ width=600 }
+</figure>
+
+* Capacity is measured in Confluent Flink Unit, [CFU](https://docs.confluent.io/cloud/current/flink/concepts/flink-billing.html#cfus). Each statement is at least 1 CFU-minute. There is an organization-level setting that controls the maximum CFU for default compute pools (default_pool_max_cfu), which an OrgAdmin can change.
+* A statement may be structural (DDL) and stop once completed, or runs in background to write data to table (DML). [Materialized Table](../coding/flink-sql-3.md#materialized-tables) is a special table that includes schema definition, query, and refreshness mode.
+* Supports multiple Kafka clusters within the same Confluent Cloud organization in a single region.
 * Any table created in CC Flink appears as a topic in CC Kafka. Kafka Topics and schemas are always in synch with Flink.
 * The differences with the OSS version, is that the DDL statements of catalog, database, table are mapped to physical Kafka objects. Table is a schema and a topic, catalog is an environment, and database is a Kafka cluster.
 * Developers work in a [**workspace**](https://www.confluent.io/blog/flink-sql-workspaces/), to manage their Apache Flink® streaming applications, allowing them to easily write, execute, and monitor real-time data processing queries using a user-friendly SQL editor. Workspaces are not mandatory, as Developers may also deploy Flink statements via CLI or REST API.
@@ -98,10 +102,15 @@ Pay attention that most Flink managed services are cloud-hosted and not cloud-na
     confluent flink shell --compute-pool ${COMPUTE_POOL_ID} --environment ${ENV_ID} --service-account ${account_id}
     ```
 
-    It is possible to pause and resume a SQL statement. [See cookbook](../architecture/cookbook.md#query-evolution) for the best practices and process to update existing statements. 
+    It is possible to pause and resume a SQL statement. [See cookbook](../cookbook/job_lifecycle.md#3-upgrading-jobs-safely) for the best practices and process to update existing statements. 
 
 ???- question "How to change the CFU limit?"
-    CFU can be changed via the console or the cli, up to the limit of 50. Going above developers need to open a ticket to the Confluent support.
+    CFU can be changed via the console or the cli, up to the limit of 50. It is defined per compute pool. Going above this maximum may be possible, but developers need to open a ticket to the Confluent support.
+    ```sh
+    confluent flink compute-pool create my-compute-pool --cloud gcp --region us-central1 --max-cfu 10 
+    ```
+
+    See also [Compute pool REST API]()
 
 ???- question "What is behind a compute pool?"
     A compute pool groups 1 job manager and n task manager. Task manager resource configuration is not configurable and is designed to support small usage as well as moderate traffic. The limit to 50 CFUs is to address trade-off between coordination overhead and scaling needs. A Flink dag with source and sink operators impact the throughput of task manager so it is always challenging to assess how many task manager to be support by a job manager. 
@@ -203,7 +212,16 @@ confluent flink shell --compute-pool $COMPUTE_POOL_ID --environment $ENV_ID
 
 ### Using the Flink editor in Confluent Cloud
 
-Nothing special to mention, except that users need to recall that once the job is started, they cannot modify it:they need to stop before any future edition. Restarting may mean reprocess from the earliest records. It is recommended to persist the Flink statement in a git repository and manage the deployment using Confluent CLI or the [shift_left CLI tool](https://jbcodeforce.github.io/shift_left_utils/blue_green_deploy/).
+User may use the workspace to develop and research new query. Data engineers have access to a set of topic with real-time data, and can build analytics data product very easily using SQL. 
+
+Users need to recall that once the Flink job is started, they cannot modify it: they need to stop before any future edition. Restarting may mean reprocess from the earliest records. 
+
+Workspace is used for development, but as best practice, it is recommended to persist the Flink SQL query in a git repository and manage the deployment using Confluent CLI, [dbt](../coding/dbt.md) or the [shift_left CLI tool](https://jbcodeforce.github.io/shift_left_utils/blue_green_deploy/).
+
+<figure markdown='span'>
+![](./diagrams/sql_dev_lf.drawio.png){width=700}
+<caption>Flink Development Practices</caption>
+</figure>
 
 ## Using the Flink Table API
 

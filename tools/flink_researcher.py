@@ -3,7 +3,7 @@ A Flink Researcher Agent that can search the web for information and save it to 
 
 The agent can search the web for information and save it to a knowledge base.
 Run on compatible models with OpenAI API. Like local ollama.
-It support HILP, human-in-the-loop, to validate saving to knowledge base.
+It supports HILP, human-in-the-loop, to validate saving to knowledge base.
 Usage:
 ```sh
 uv run flink_researcher.py

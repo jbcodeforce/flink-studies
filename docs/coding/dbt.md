@@ -113,7 +113,7 @@ This example is in [code/dbt/airbnb](https://github.com/jbcodeforce/flink-studie
             +materialized: view
       ```
 
-Next we will cover the `dbt` [main concepts](#major-concepts) with concrete examples.
+Next we will cover the `dbt` [main concepts](#major-dbt-concepts) with concrete examples.
 
 ### A Confluent Cloud Flink example
 

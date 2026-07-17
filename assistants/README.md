@@ -1,17 +1,16 @@
 # Assistants
 
-Tools to help maintain this repository and run semantic search over its content.
+Set of Tools using LLM (local) to help maintain the content and code of this repository and run semantic search over its content.
 
 ## Local expert chat (km-agent)
 
-The [km-agent](https://github.com/jbcodeforce/km-agent) stack runs from a **published Docker image**. You do not need to clone the km-agent repository.
+The [km-agent](https://github.com/jbcodeforce/km-agent) stack runs from a **published Docker image**. You do not need to clone the km-agent repository. It is still possible to run the km-agent in dev mode with this repository / wiki as knowledge base.
 
 ### Prerequisites
 
-- Docker Desktop (Mac)
-- [OMLX](https://github.com/jundot/omlx) on this Mac **or** on another machine reachable from Docker (for **chat** only)
+- Docker or Mac container
+- [OMLX](https://github.com/jundot/omlx) on this Mac **or** on another machine reachable from your computer. 
 - MkDocs (for the local documentation site, started by default)
-- A published `jbcodeforce/km-agent` image that includes **fastembed** and `scripts/index_wiki.py`
 
 ### Setup
 

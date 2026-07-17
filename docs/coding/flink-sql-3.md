@@ -15,23 +15,34 @@ With Flink SQL statements, developers who need to update the pipeline's logic (e
 
 ## Concepts
 
-[Materialized Tables](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/materialized-table/overview/) helps to manage Tables in long term with easier development life cycle than traditional Flink Tables. They are the recommended solution for creating permanent, evolving streaming pipelines.
+[Materialized Tables](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/materialized-table/overview/)(MT) helps to manage Tables in long term with easier development life cycle than traditional Flink Tables. They are the recommended solution for creating permanent, evolving streaming pipelines.
+
+Materialized Tables includes the following elements:
+
+<figure markdown='span'>
+![](./diagrams/MT-elements.drawio.png){ width=400 }
+</figure>
+
+* **Schema Definition:** derived or user defined, the same way as other Flink Table.
+* **Query definition:** the business logic to process the input data to output table.
+* **Refresh mode:** FULL(scheduled Flink batch job) or CONTINUOUS (run a Flink job to update the content of the table). This setting is inferred from the data freshness configuration
+* **Data freshness:** the maximum amount of time that the MT content should lag behind updates to the base tables. Defaulted to 3 minutes for CONTINUOUS mode (= checkpoint frequency) & 1h for FULL mode (batch schedule).
+
+The query results are updated to the materialized table continuously, while in FULL mode, the query results overwrite the materialized table each time.
 
 Materialized Tables support in-place evolution via the CREATE OR ALTER command. This feature automates complex administrative tasks such as offset management and schema synchronization. Whenever a new MT definition is submitted, the control plane stops the system statement, performs the necessary evolutions and starts a new system statement.
 *Unlike a regular CREATE TABLE combined with an INSERT INTO statement, a materialized table is a single declarative object that owns both the table definition and the continuous query.*
-
-They use the concept of data freshness as the maximum amount of time that the materialized table’s content should lag behind updates to the base tables. The default refreshness is 3 minutes for CONTINUOUS mode and 1 hours for FULL mode. The query results are updated to the materialized table continuously, while in FULL mode, the query results overwrite the materialized table each time.
 
 * With full mode, there is a scheduler that triggers a batch job to refresh the materialized table data. 
 * With CONTINUOUS, data freshness is converted into the checkpoint interval of the Flink streaming job.
 * Materialized Tables are defined as other Flink tables, with the MATERIALIZED keywords. [See the syntax](https://nightlies.apache.org/flink/flink-docs-release-2.2/docs/dev/table/materialized-table/statements/), and uses a CTAS structure
     ```sql
-    CREATE MATERIALIZED TABLE orders_table
+    CREATE MATERIALIZED OR ALTER TABLE orders_table
     FRESHNESS = INTERVAL '10' SECOND
     AS SELECT * FROM kafka_catalog.db1.orders;
     ```
 
-* Use CREATE OR ALTER MATERIALIZED TABLE, to suspend and resume, refresh pipeline of materialized tables, to manually trigger data refreshes, and to modify the query definition of materialized tables. Users can control how much historical data is processed during these updates by configuring the START_MODE parameter. In Confluent Cloud the default is RESUME_OR_FROM_BEGINNING.
+* Use CREATE OR ALTER MATERIALIZED TABLE, to suspend and resume, refresh pipeline of materialized tables, to manually trigger data refreshes, and to modify the query definition of materialized tables. Users can control how much historical data is processed during these updates by configuring the START_MODE parameter. In Confluent Cloud the START_MODE default value is RESUME_OR_FROM_BEGINNING.
 
 * In Apache Flink, SUSPEND needs to set the savepoint directory:
     ```sql
@@ -52,9 +63,9 @@ They use the concept of data freshness as the maximum amount of time that the ma
 
 The SQL Gateway is the important component to manage the life cycle of MT. It includes a workflow scheduler to manage periodic refresh jobs.
 
-![](https://nightlies.apache.org/flink/flink-docs-release-2.2//fig/materialized-table-architecture.svg)
+![](https://nightlies.apache.org/flink/flink-docs-release-2.2/fig/materialized-table-architecture.svg)
 
-For Confluent Cloud, MTs use exactly the same RBAC model as current Statements do, including the Flink roles and the requires Kafka and/or Schema Registry roles. If a user adds a projection to their query, Flink will take care of evolving the schema in Schema Registry (for the schema belonging to the sink table/topic) too. If there is a failure during an evolution, the MT will transition to Failed and not roll back to the previous state
+For Confluent Cloud, MTs use exactly the same RBAC model as other Flink Statements, including the Flink roles and the requires Kafka and/or Schema Registry roles. If a user adds a projection to their query, Flink will take care of evolving the schema in Schema Registry (for the schema belonging to the sink table/topic) too. If there is a failure during an evolution, the MT will transition to Failed and not roll back to the previous state
 
 ## Limitations
 
@@ -68,13 +79,16 @@ For Confluent Cloud, MTs use exactly the same RBAC model as current Statements d
 
 ## CI/CD considerations
 
-* CREATE OR ALTER MATERIALIZED TABLE in CI/CD without a change-detection gate will trigger a MT migration. It is strongly recommended to add control using a SHA or git-diff check, before running the CREATE OR ALTER dml. When idempotency will be support this restriction may change.
-* When deploying MTs in the same compute pool, as all are mutable, any Flink developers can change those tables. It may be better to use one compute pool per MT as security isolation boundary. 
+* CREATE OR ALTER MATERIALIZED TABLE in CI/CD without a change-detection gate will trigger a MT migration. It is strongly recommended to add control using a SHA or git-diff check, before running the CREATE OR ALTER dml. When idempotency will be supported this restriction may change.
+* When deploying MTs in the same compute pool, as all MT are mutables, any Flink developers can change those tables. It may be better to use one compute pool per MT to enforce better isolation boundary. 
 
 
 ## Demonstrations
 
-* For Apache Flink [See 13-materialized table folder](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/13-materialized-table) in this repository. 
+* [See 13-materialized table folder](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/13-materialized-table) in this repository for Apache Flink and Confluent Cloud demonstrations. The demonstration presents a classical joins on raw data tp build a simple dimension table:
+
+![](./diagrams/cdc_2_MT.drawio.png)
+
 * For Confluent Code, use the new Materialized Tables tab, and create the new table.
     ![](./images/create-materialized-table.png)
 
