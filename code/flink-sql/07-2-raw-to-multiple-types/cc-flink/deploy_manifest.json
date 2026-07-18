@@ -1,0 +1,33 @@
+{
+  "user_agent": "flink-studies-cc/0.1",
+  "deploy_all": [
+    "ddl",
+    "pipeline"
+  ],
+  "undeploy_all": [
+    "pipeline"
+  ],
+  "drop_tables": [
+    "raw_account_events",
+    "account_events"
+  ],
+  "groups": {
+    "ddl": [
+      {
+        "name": "e072-ddl-raw-account-events",
+        "file": "ddl.raw_account_events.sql"
+      },
+      {
+        "name": "e072-ddl-account-events",
+        "file": "ddl.account_events.sql"
+      }
+    ],
+    "pipeline": [
+      {
+        "name": "e072-pipeline-raw-to-account-events",
+        "file": "dml.raw_to_account_events.sql"
+      }
+    ]
+  },
+  "drop_statement_prefix": "e072-drop"
+}

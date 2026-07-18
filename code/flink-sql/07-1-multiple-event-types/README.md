@@ -1,6 +1,6 @@
 # Demonstrate Multiple Event Types in Confluent Cloud for Apache Flink
 
-Illustrates the [Handle Multiple Event Types](https://docs.confluent.io/cloud/current/flink/how-to-guides/multiple-event-types.html?category=avro) how-to using an **Avro union** on a single envelope field.
+Illustrates the [Handle Multiple Event Types](https://docs.confluent.io/cloud/current/flink/how-to-guides/multiple-event-types.html?category=avro) how-to using an **Avro union** on a single envelope field. There are 
 
 Domain: a generic **account lifecycle** stream. One topic carries three event subtypes behind a shared context.
 
@@ -16,8 +16,7 @@ Topic: `account_events` (append, Avro / TopicNameStrategy).
 | `SubscriptionDetail` | `accountId`, `status`, `planId` |
 | `DeviceCloseDetail` | `accountId`, `reasonCode` |
 
-`eventDetail` is an Avro **union** of three detail records, each defined in its own
-`.avsc` and registered in Schema Registry as a **schema reference**:
+`eventDetail` is an Avro **union** of three detail records, each defined in its own `.avsc` and registered in Schema Registry as a **schema reference**:
 
 | File | Subject / type name |
 | --- | --- |
@@ -110,6 +109,7 @@ Message delivered to account_events [0] offset 1
 Message delivered to account_events [0] offset 2
 Producer closed successfully
 ```
+
 ## Inspect the inferred table
 
 ```sql

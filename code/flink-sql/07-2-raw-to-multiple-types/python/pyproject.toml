@@ -1,0 +1,15 @@
+[project]
+name = "raw-to-multiple-types-producer"
+version = "0.1.0"
+description = "Plain JSON Kafka producer for raw_account_events (07-2 raw-to-multiple-types)"
+requires-python = ">=3.11"
+dependencies = [
+    "confluent-kafka[schema-registry]>=2.3.0",
+    "pydantic>=2.0.0",
+    "jsonschema>=4.0.0",
+    "python-dotenv>=1.0.0",
+    "orjson>=3.11.9",
+]
+
+[tool.uv]
+package = false
