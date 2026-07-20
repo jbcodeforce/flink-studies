@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Produce plain-JSON account lifecycle events (topic: raw_account_events).
+Produce multi-schema JSON account lifecycle events (topic: raw_account_events).
 
-No Schema Registry wire format — UTF-8 JSON only — so Flink can read the
-payload via raw-value metadata and map it into the Avro-union account_events sink.
+Registers three JSON Schema subjects (RecordNameStrategy) and produces Confluent
+wire-format payloads so Flink can read via raw-value, strip the 5-byte prefix,
+and map into the Avro-union account_events sink.
 
 Usage::
 
@@ -20,16 +21,17 @@ from __future__ import annotations
 import argparse
 import time
 import uuid
-from typing import Any
+from typing import Any, Type
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict
 
 from _common import setup_cm_py_lib
 
 setup_cm_py_lib()
-from cm_py_lib.kafka_json_producer import KafkaJSONProducer  # noqa: E402
+from multi_schema_json_producer import MultiSchemaJsonProducer  # noqa: E402
 
 DEFAULT_TOPIC = "raw_account_events"
+NS = "io.confluent.flink.multievent"
 
 
 class EventContext(BaseModel):
@@ -38,57 +40,105 @@ class EventContext(BaseModel):
     sourceSystem: str
 
 
-class RawAccountEvent(BaseModel):
-    """Envelope matching the legacy JSON shape (contextInfo + varying eventDetail)."""
+class DeviceSwapDetail(BaseModel):
+    accountId: str
+    deviceId: str
+
+
+class SubscriptionDetail(BaseModel):
+    accountId: str
+    status: str
+    planId: str
+
+
+class DeviceCloseDetail(BaseModel):
+    accountId: str
+    reasonCode: str
+
+
+class DeviceSwapEvent(BaseModel):
+    model_config = ConfigDict(title=f"{NS}.DeviceSwapEvent")
 
     contextInfo: EventContext
-    eventDetail: dict[str, Any] = Field(default_factory=dict)
+    eventDetail: DeviceSwapDetail
 
 
-DEMO_EVENTS: tuple[dict[str, Any], ...] = (
-    {
-        "eventName": "DeviceSwap",
-        "sourceSystem": "billing-system",
-        "eventDetail": {"accountId": "acc-001", "deviceId": "dev-99"},
-    },
-    {
-        "eventName": "Subscription",
-        "sourceSystem": "billing-system",
-        "eventDetail": {
-            "accountId": "acc-002",
-            "status": "ACTIVE",
-            "planId": "plan-premium",
-        },
-    },
-    {
-        "eventName": "DeviceClose",
-        "sourceSystem": "device-service",
-        "eventDetail": {"accountId": "acc-003", "reasonCode": "CUSTOMER_REQUEST"},
-    },
-)
+class SubscriptionEvent(BaseModel):
+    model_config = ConfigDict(title=f"{NS}.SubscriptionEvent")
+
+    contextInfo: EventContext
+    eventDetail: SubscriptionDetail
 
 
-def _to_record(template: dict[str, Any], *, correlation_id: str | None = None) -> RawAccountEvent:
-    correlation_id = correlation_id or f"corr-{uuid.uuid4().hex[:12]}"
-    return RawAccountEvent(
-        contextInfo=EventContext(
-            eventName=template["eventName"],
-            correlationId=correlation_id,
-            sourceSystem=template["sourceSystem"],
+class DeviceCloseEvent(BaseModel):
+    model_config = ConfigDict(title=f"{NS}.DeviceCloseEvent")
+
+    contextInfo: EventContext
+    eventDetail: DeviceCloseDetail
+
+
+EVENT_MODELS: list[Type[BaseModel]] = [
+    DeviceSwapEvent,
+    SubscriptionEvent,
+    DeviceCloseEvent,
+]
+
+DEMO_BUILDERS: tuple[tuple[str, Any], ...] = (
+    (
+        "DeviceSwap",
+        lambda corr: DeviceSwapEvent(
+            contextInfo=EventContext(
+                eventName="DeviceSwap",
+                correlationId=corr,
+                sourceSystem="billing-system",
+            ),
+            eventDetail=DeviceSwapDetail(accountId="acc-001", deviceId="dev-99"),
         ),
-        eventDetail=dict(template["eventDetail"]),
-    )
+    ),
+    (
+        "Subscription",
+        lambda corr: SubscriptionEvent(
+            contextInfo=EventContext(
+                eventName="Subscription",
+                correlationId=corr,
+                sourceSystem="billing-system",
+            ),
+            eventDetail=SubscriptionDetail(
+                accountId="acc-002",
+                status="ACTIVE",
+                planId="plan-premium",
+            ),
+        ),
+    ),
+    (
+        "DeviceClose",
+        lambda corr: DeviceCloseEvent(
+            contextInfo=EventContext(
+                eventName="DeviceClose",
+                correlationId=corr,
+                sourceSystem="device-service",
+            ),
+            eventDetail=DeviceCloseDetail(
+                accountId="acc-003",
+                reasonCode="CUSTOMER_REQUEST",
+            ),
+        ),
+    ),
+)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Produce raw_account_events plain JSON (no Schema Registry)"
+        description=(
+            "Produce raw_account_events with three JSON Schema Registry subjects "
+            "(wire format)"
+        )
     )
     parser.add_argument(
         "--count",
         "-c",
         type=int,
-        default=len(DEMO_EVENTS),
+        default=len(DEMO_BUILDERS),
         help="Number of events (cycles through demo templates)",
     )
     parser.add_argument("--topic", default=DEFAULT_TOPIC)
@@ -101,22 +151,22 @@ def main() -> None:
     if args.count <= 0:
         raise ValueError("--count must be greater than 0")
 
-    # use_schema_registry=False: plain UTF-8 JSON bytes (honest raw_value demo).
-    producer = KafkaJSONProducer(
+    producer = MultiSchemaJsonProducer(
         topic_name=args.topic,
-        use_schema_registry=False,
+        model_classes=EVENT_MODELS,
     )
+    print("Schema Registry subjects:")
+    for name, subject in producer.subjects().items():
+        print(f"  {name} -> {subject}")
 
     for i in range(args.count):
-        template = DEMO_EVENTS[i % len(DEMO_EVENTS)]
-        record = _to_record(template)
-        key = record.contextInfo.correlationId
-        if not producer.send_record(key, record):
+        event_name, builder = DEMO_BUILDERS[i % len(DEMO_BUILDERS)]
+        corr = f"corr-{uuid.uuid4().hex[:12]}"
+        record = builder(corr)
+        if not producer.send_record(corr, record):
             print(f"Failed to send event {i + 1}/{args.count}")
             break
-        print(
-            f"Queued {i + 1}/{args.count}: {key} type={template['eventName']}"
-        )
+        print(f"Queued {i + 1}/{args.count}: {corr} type={event_name}")
         if i < args.count - 1 and args.interval > 0:
             time.sleep(args.interval)
 

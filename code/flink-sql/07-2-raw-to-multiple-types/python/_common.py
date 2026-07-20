@@ -1,4 +1,4 @@
-"""Shared helpers for raw-to-multiple-types JSON scripts under producers/."""
+"""Shared helpers for 07-2 raw-to-multiple-types Python scripts."""
 
 from __future__ import annotations
 
@@ -21,3 +21,11 @@ def setup_cm_py_lib() -> Path:
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
     return root
+
+
+def setup_demo_python_path() -> Path:
+    """Add this demo's ``python/`` root so ``producers.*`` imports resolve."""
+    demo_python = Path(__file__).resolve().parent
+    if str(demo_python) not in sys.path:
+        sys.path.insert(0, str(demo_python))
+    return demo_python

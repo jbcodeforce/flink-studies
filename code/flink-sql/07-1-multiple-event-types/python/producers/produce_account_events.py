@@ -30,7 +30,7 @@ from cm_py_lib.kafka_avro_producer import KafkaAvroProducer  # noqa: E402
 DEFAULT_TOPIC = "account_events"
 NS = "io.confluent.flink.multievent"
 
-# fastavro / Confluent AvroSerializer: tag ambiguous unions with (fullName, record).
+# Confluent AvroSerializer: tag ambiguous unions with (fullName, record).
 DEMO_EVENTS = (
     {
         "eventName": "DeviceSwap",
