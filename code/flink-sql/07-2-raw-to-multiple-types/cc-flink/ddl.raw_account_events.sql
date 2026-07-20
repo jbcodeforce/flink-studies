@@ -6,6 +6,5 @@ CREATE TABLE IF NOT EXISTS raw_account_events (
 ) DISTRIBUTED INTO 1 BUCKETS
 WITH (
     'changelog.mode' = 'append',
-    'key.format' = 'raw',
     'value.format' = 'raw'
 );

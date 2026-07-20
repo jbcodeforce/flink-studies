@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS account_events (
         DeviceSwapDetail ROW<accountId STRING, deviceId STRING>,
         SubscriptionDetail ROW<accountId STRING, status STRING, planId STRING>,
         DeviceCloseDetail ROW<accountId STRING, reasonCode STRING>
-    >
+    >,
+    PRIMARY KEY (correlationId) NOT ENFORCED
 ) DISTRIBUTED BY (correlationId) INTO 1 BUCKETS
 WITH (
     'changelog.mode' = 'append',

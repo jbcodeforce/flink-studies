@@ -1,21 +1,12 @@
 # Process raw JSON into a multiple-event-types Avro sink
 
-Based on [07-1-multiple-event-types](../07-1-multiple-event-types/README.md), but for the case where the producer **cannot** adopt the Avro envelope / Schema Registry shape. This demo reads the Kafka payload via Flink [`raw-value` metadata](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#raw-value), parses it as JSON with `JSON_VALUE`, and writes the typed union sink.
+Based on [07-1-multiple-event-types](../07-1-multiple-event-types/README.md), but for the case where the producer **cannot** adopt the Avro envelope / Schema Registry shape,  this demo reads the Kafka payload via Flink [`raw-value` metadata](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#raw-value), parses it as JSON with `JSON_VALUE`, and writes the typed union sink.
 
 Domain: the same **account lifecycle** events as 07-1 (DeviceSwap, Subscription, DeviceClose).
 
 ## Approach
 
-```text
-JSON producer (no Schema Registry)
-        |
-        v
- raw_account_events   (value.format = raw)
-        |
-        |  CAST(raw_value AS STRING) + JSON_VALUE + CASE on eventName
-        v
- account_events       (Avro union eventDetail — same as 07-1)
-```
+![](./docs/approach.drawio.png)
 
 Do not run 07-1 and 07-2 at the same time: both use the sink topic `account_events`.
 

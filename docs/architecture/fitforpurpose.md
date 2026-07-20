@@ -26,8 +26,7 @@ The chapter is about comparing some other technology with Apache Flink and when 
 * Coordination
     * Flink JobManager is part of the streaming application and orchestrate task manager. Job manager orchestration is done via Kubernetes scheduler.
     * KStreams - Leverages the Kafka cluster for coordination, load balancing, and  fault-tolerance.
-* Bounded and unbounded data streams	
-    & Flink: Stream or Batch processing on Bounded
+* Bounded and unbounded data streams & Flink: Stream or Batch processing on Bounded
     * Kstreams: Stream only
 * Language Flexibility
     * Flink has a layered API - with most popular languages being Java, Python and SQL
@@ -37,6 +36,29 @@ The chapter is about comparing some other technology with Apache Flink and when 
 * Kafka streams is easier to define a pipeline for Kafka records and to do the `consume - process - produce` loop. 
 * KStreams uses the Kafka Record time stamp, while with Flink we need to implement how to deserialize the KafkaRecord and get the timestamp from it.
 * Support of late arrival is easier with KStreams, while Flink uses the concept of watermark.
+
+## KSQL and Flink SQL
+
+KSQL is SQL on Kafka records (all inputs and outputs must be Kafka topics), it is a SQL translation layer built on top of the Kafka Streams Java client library.
+
+* Flink SQL queries compile into distributed Directed Acyclic Graphs (DAGs) executed on a dedicated Apache Flink cluster (JobManager + TaskManagers).
+* For scaling, the parallelism is capped by the partition count of your source Kafka topic whre in Flink partitioning is done at the operator level of the DAG and distributed against task slots.
+* Flink connects natively to Kafka, Pulsar, S3/GCS, Apache Iceberg/Delta Lake, relational DBs (via CDC), and Elasticsearch.
+
+### Feature & Capability Comparison
+
+| Dimension | ksqlDB | Flink SQL|
+| --- ----------------|------------------------|---|
+| **Engine Architecture** | Kafka Streams wrapper  | Full distributed dataflow engine|
+| **Source / Sink Support**| Kafka topics only (or via Kafka Connect) | Universal connectors (Kafka, Data Lakes, CDC, DBs)|
+| **Scaling Parallelism** | Bounded by Kafka topic partition countsIndependent per-operator scaling |
+| **Multi-Tenancy**       | Shared cluster execution (queries share memory/compute) | Per-job isolation (queries run independently) |
+| **State & Fault Tolerance** | Local RocksDB + Kafka changelog topics | Distributed Chandy-Lamport snapshots to object storage (S3/GCS)| 
+| **SQL Expressiveness**    | Standard aggregations, Tumbling / Hopping / Session windows| ANSI SQL, Cumulate windows, Temporal joins, Pattern matching (MATCH_RECOGNIZE)| 
+| **Licensing & Ecosystem** | Confluent Community License | Apache 2.0 Open Source |
+
+* Confluent has migrated its data streaming processing toward Flink, Flink SQL has effectively become the open-source standard for large-scale streaming data pipelines
+
 
 ---
 
@@ -79,6 +101,7 @@ Nifi supports a Flow driven implementation:
 * NiFi features native, CPython-based processor extensions. It uses uv tooling to dynamically spin up isolated Python environments. If you want to drop a custom script into your pipeline using pandas, scikit-learn, or an LLM/Vector DB client, you can write it in pure Python without writing a single line of Java.
 
 ---
+
 ## When to use rule engine versus Flink
 
 By rule engine, we are talking about libraries / products that are implementing the [Rete Algorithm](https://en.wikipedia.org/wiki/Rete_algorithm) and extends from there. 
