@@ -2,9 +2,10 @@
 """
 Produce multi-schema JSON account lifecycle events (topic: raw_account_events).
 
-Registers three JSON Schema subjects (RecordNameStrategy) and produces Confluent
-wire-format payloads so Flink can read via raw-value, strip the 5-byte prefix,
-and map into the Avro-union account_events sink.
+Registers three incompatible JSON Schema versions under a single TopicNameStrategy
+subject ``raw_account_events-value`` (compatibility NONE) and produces Confluent
+wire-format payloads pinned with ``use.schema.id`` per event type. Flink reads via
+raw-value, strips the 5-byte prefix, and maps into the Avro-union account_events sink.
 
 Usage::
 
@@ -57,6 +58,8 @@ class DeviceCloseDetail(BaseModel):
 
 
 class DeviceSwapEvent(BaseModel):
+    """Title is for SR UI readability only — subject is TopicNameStrategy."""
+
     model_config = ConfigDict(title=f"{NS}.DeviceSwapEvent")
 
     contextInfo: EventContext
@@ -130,8 +133,8 @@ DEMO_BUILDERS: tuple[tuple[str, Any], ...] = (
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Produce raw_account_events with three JSON Schema Registry subjects "
-            "(wire format)"
+            "Produce raw_account_events with three JSON schemas on one "
+            "TopicNameStrategy subject (compatibility NONE, pinned schema ids)"
         )
     )
     parser.add_argument(
@@ -155,9 +158,10 @@ def main() -> None:
         topic_name=args.topic,
         model_classes=EVENT_MODELS,
     )
-    print("Schema Registry subjects:")
-    for name, subject in producer.subjects().items():
-        print(f"  {name} -> {subject}")
+    print(f"Schema Registry subject: {producer.subject_name}")
+    print("Pinned schema ids (TopicNameStrategy + NONE):")
+    for name, schema_id in producer.schema_ids().items():
+        print(f"  {name} -> schema_id={schema_id}")
 
     for i in range(args.count):
         event_name, builder = DEMO_BUILDERS[i % len(DEMO_BUILDERS)]

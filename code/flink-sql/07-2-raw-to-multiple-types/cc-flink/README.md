@@ -4,6 +4,8 @@
 
 Read multi-schema JSON (Confluent wire format) from `raw_account_events` via Flink `raw-value` metadata, strip the 5-byte prefix, parse with `JSON_VALUE`, and write the Avro-union `account_events` sink (same shape as 07-1).
 
+Source producers register three incompatible JSON schemas as versions of **`raw_account_events-value`** (TopicNameStrategy, compatibility **NONE**) and pin `use.schema.id` per event type.
+
 ## Deploy order
 
 ```sh
@@ -29,11 +31,13 @@ uv run producers/produce_raw_account_events.py
 uv run consumers/consume_raw_account_events.py --from-beginning --max-messages 3
 ```
 
+Expect three distinct `schema_id` values in the consumer output (one per event type).
+
 ## Test queries
 
 ```sql
 -- JSON after wire-format prefix (magic + schema_id)
-SELECT CAST(SUBSTRING(`raw_value` FROM 6) AS STRING) AS payload
+SELECT SUBSTRING(CAST(`val` AS STRING), 6) AS payload
 FROM raw_account_events
 LIMIT 10;
 
@@ -54,4 +58,13 @@ make undeploy-pipeline
 make drop-tables
 ```
 
-See [../README.md](../README.md) for schema details and Schema Registry subjects.
+Clean Kafka topic + Schema Registry (from `../python`):
+
+```sh
+cd ../python
+source ../../set_env.sh
+uv run cleanup_schema_registry.py
+uv run cleanup_schema_registry.py --include-sink   # optional: account_events topic + subjects
+```
+
+See [../README.md](../README.md) for Schema Registry subject / NONE details.
