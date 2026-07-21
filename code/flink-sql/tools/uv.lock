@@ -328,6 +328,13 @@ avro = [
     { name = "httpx" },
     { name = "requests" },
 ]
+schema-registry = [
+    { name = "attrs" },
+    { name = "authlib" },
+    { name = "cachetools" },
+    { name = "certifi" },
+    { name = "httpx" },
+]
 
 [[package]]
 name = "confluent-sql"
@@ -619,7 +626,7 @@ name = "flink-sql-tools"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "confluent-kafka", extra = ["avro"] },
+    { name = "confluent-kafka", extra = ["avro", "schema-registry"] },
     { name = "confluent-sql" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
@@ -637,7 +644,7 @@ validate = [
 
 [package.metadata]
 requires-dist = [
-    { name = "confluent-kafka", extras = ["avro"], specifier = ">=2.4.0" },
+    { name = "confluent-kafka", extras = ["avro", "schema-registry"], specifier = ">=2.4.0" },
     { name = "confluent-sql", specifier = ">=0.3.1" },
     { name = "dbt-confluent", marker = "extra == 'validate'", specifier = ">=0.2.1" },
     { name = "dbt-core", marker = "extra == 'validate'", specifier = ">=1.11.11" },

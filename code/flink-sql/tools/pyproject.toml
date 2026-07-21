@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Shared Confluent Cloud Flink SQL deploy, snapshot, and streaming query utilities (confluent-sql REST API)"
 requires-python = ">=3.11"
 dependencies = [
-    "confluent-kafka[avro]>=2.4.0",
+    "confluent-kafka[avro,schema-registry]>=2.4.0",
     "confluent-sql>=0.3.1",
     "python-dotenv>=1.0.0",
     "pyyaml>=6.0",
@@ -27,6 +27,7 @@ flink-sql-stream = "cc_deploy.run_streaming_query:main"
 flink-sql-migrate-dbt = "flink_dbt_migrate.migrate_dml_to_dbt:main"
 flink-sql-create-manifest = "cc_deploy.create_deploy_manifest:main"
 flink-sql-table-cleanup = "cc_deploy.table_cleanup:main"
+flink-sql-register-schema = "cc_deploy.register_schema:main"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

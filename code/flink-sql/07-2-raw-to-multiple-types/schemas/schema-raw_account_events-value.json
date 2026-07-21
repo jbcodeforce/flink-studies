@@ -1,0 +1,57 @@
+{
+  "$defs": {
+    "EventContext": {
+      "additionalProperties": false,
+      "properties": {
+        "correlationId": {
+          "title": "Correlationid",
+          "type": "string"
+        },
+        "eventName": {
+          "title": "Eventname",
+          "type": "string"
+        },
+        "sourceSystem": {
+          "title": "Sourcesystem",
+          "type": "string"
+        }
+      },
+      "required": [
+        "eventName",
+        "correlationId",
+        "sourceSystem"
+      ],
+      "title": "EventContext",
+      "type": "object"
+    },
+    "EventDetail": {
+      "anyOf": [
+        {
+          "$ref": "DeviceSwapDetail"
+        },
+        {
+          "$ref": "SubscriptionDetail"
+        },
+        {
+          "$ref": "DeviceCloseDetail"
+        }
+      ],
+      "title": "EventDetail"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "contextInfo": {
+      "$ref": "#/$defs/EventContext"
+    },
+    "eventDetail": {
+      "$ref": "#/$defs/EventDetail"
+    }
+  },
+  "required": [
+    "contextInfo",
+    "eventDetail"
+  ],
+  "title": "io.confluent.flink.multievent.DeviceCloseEvent",
+  "type": "object"
+}

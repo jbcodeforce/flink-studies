@@ -269,6 +269,42 @@ drop_tables_by_name(tables_to_drop(entries), config=get_config())
 
 ---
 
+## Register schema (Schema Registry)
+
+Register a standalone Avro (`.avsc`) or JSON Schema (`.json`) under
+RecordNameStrategy. Subject defaults:
+
+| Type | Default subject |
+|------|-----------------|
+| AVRO | `namespace.name` from the file |
+| JSON | `title` from the file |
+
+Override with `--subject`. Type is inferred from the extension, or set with
+`--type AVRO|JSON`.
+
+Requires Schema Registry env vars in `~/.confluent/.env` (same as producers):
+
+| Variable | Purpose |
+|----------|---------|
+| `SCHEMA_REGISTRY_ENDPOINT` | Registry URL |
+| `SCHEMA_REGISTRY_API_KEY` / `SCHEMA_REGISTRY_API_SECRET` | Basic auth (Confluent Cloud) |
+
+```sh
+cd code/flink-sql/tools
+
+uv run python -m cc_deploy.register_schema \
+  ../07-1-multiple-event-types/python/schemas/DeviceCloseDetail.avsc
+
+uv run python -m cc_deploy.register_schema path/to/schema.json
+uv run python -m cc_deploy.register_schema path/to/schema.json --subject my.custom.Subject
+uv run python -m cc_deploy.register_schema path/to/file.txt --type JSON --subject MyType
+```
+
+Example subject for `DeviceCloseDetail.avsc`:
+`io.confluent.flink.multievent.DeviceCloseDetail`.
+
+---
+
 ## Migrate Flink DML to dbt
 
 Convert Flink `INSERT INTO ... SELECT` pipeline statements into dbt `streaming_table` models for [dbt-confluent](https://pypi.org/project/dbt-confluent/), convert DDL to schema. Column types and table options are taken from the paired DDL file.

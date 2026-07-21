@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/io/confluent/flink/multievent/DeviceCloseDetail",
+  "title": "io.confluent.flink.multievent.DeviceCloseDetailJson",
+  "type": "object",
+  "properties": {
+    "accountId": {
+      "type": "string"
+    },
+    "reasonCode": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "accountId",
+    "reasonCode"
+  ]
+}

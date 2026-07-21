@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/io/confluent/flink/multievent/AccountLifecycleEvent",
+  "type": "object",
+  "properties": {
+    "contextInfo": {
+      "type": "object",
+      "properties": {
+        "eventName": {
+          "type": "string"
+        },
+        "correlationId": {
+          "type": "string"
+        },
+        "sourceSystem": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "eventName",
+        "correlationId",
+        "sourceSystem"
+      ]
+    },
+    "eventDetail": {
+      "anyOf": [
+        {
+          "$ref": "https://example.com/io/confluent/flink/multievent/DeviceSwapDetail"
+        },
+        {
+          "$ref": "https://example.com/io/confluent/flink/multievent/SubscriptionDetail"
+        },
+        {
+          "$ref": "https://example.com/io/confluent/flink/multievent/DeviceCloseDetail"
+        }
+      ]
+    }
+  },
+  "required": [
+    "contextInfo",
+    "eventDetail"
+  ]
+}
