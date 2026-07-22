@@ -93,7 +93,7 @@ WITH (
 );
 ```
 
-## Adding the same last version for the raw_account_events-value schema to include references to other schemas.
+## Adding the same last version for the `raw_account_events-value` schema to include references to other schemas.
 
 The principle is to define an envelop schema where the variable fields are any of existing schemas. The following demonstrates this structure:
 
@@ -127,13 +127,18 @@ And the references are built as references definitions:
 The current approach is to get the producers, at runtime, to upload new schema to the schema registry. This practices need to chanage, but as the impact is deep into the current code based, it is possible to adapt the development process with the following steps:
 
 * Extract the producer schema definition as avro schema
-* Publish the avro schema as independant element into the schema registry
+* For each producer app publish the avro schema as independant element into the schema registry. This could be part of a git PR with a first simple tool. In this demonstration it will be a new version for: DeviceSwapDetail, SubscriptionDetail, EventDetail
+* Update the references to reference the new version of the updated schema `raw_account_events-value`
 
 ![](./docs/multi-producers-schema-mgt.drawio.png)
 
+* When the new producer will start, it may create a new version for the topic subject:  
+* As running Flink statement uses the version of the `raw_account_events-value` schema they had when started, if all new producer's schema are FULL_TRANSITIVE and define default values to newly added fields, then those Flink statements can continue to run.
+* In the case the changes are disruptive, then be sure to republish the envelop as last schema of `raw_account_events-value` by using a second simple tool to do so. New Flink deployment will use the last referenced schemas.
+
 ## Logic to transform
 
-See [dml.raw_to_account_events.sql](./cc-flink/dml.raw_to_account_events.sql):
+Now one of the flink transformation may be the [dml.raw_to_account_events.sql](./cc-flink/dml.raw_to_account_events.sql), which takes into account those union fields and do some transformation.
 
 ```sql
 with parsed as(
