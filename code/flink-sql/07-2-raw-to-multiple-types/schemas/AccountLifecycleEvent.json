@@ -1,18 +1,18 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://example.com/io/confluent/flink/multievent/AccountLifecycleEvent",
-  "type": "object",
-  "properties": {
-    "contextInfo": {
-      "type": "object",
+  "$defs": {
+    "EventContext": {
+      "additionalProperties": false,
       "properties": {
-        "eventName": {
+        "correlationId": {
+          "title": "Correlationid",
           "type": "string"
         },
-        "correlationId": {
+        "eventName": {
+          "title": "Eventname",
           "type": "string"
         },
         "sourceSystem": {
+          "title": "Sourcesystem",
           "type": "string"
         }
       },
@@ -20,24 +20,38 @@
         "eventName",
         "correlationId",
         "sourceSystem"
-      ]
+      ],
+      "title": "EventContext",
+      "type": "object"
     },
-    "eventDetail": {
+    "EventDetail": {
       "anyOf": [
         {
-          "$ref": "https://example.com/io/confluent/flink/multievent/DeviceSwapDetail"
+          "$ref": "DeviceSwapDetail"
         },
         {
-          "$ref": "https://example.com/io/confluent/flink/multievent/SubscriptionDetail"
+          "$ref": "SubscriptionDetail"
         },
         {
-          "$ref": "https://example.com/io/confluent/flink/multievent/DeviceCloseDetail"
+          "$ref": "DeviceCloseDetail"
         }
-      ]
+      ],
+      "title": "EventDetail"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "contextInfo": {
+      "$ref": "#/$defs/EventContext"
+    },
+    "eventDetail": {
+      "$ref": "#/$defs/EventDetail"
     }
   },
   "required": [
     "contextInfo",
     "eventDetail"
-  ]
+  ],
+  "title": "io.confluent.flink.multievent.DeviceCloseEvent",
+  "type": "object"
 }

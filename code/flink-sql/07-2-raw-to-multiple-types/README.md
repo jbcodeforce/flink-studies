@@ -1,11 +1,18 @@
 # Process multi-schema JSON into a multiple-event-types Avro sink
 
-Based on [07-1-multiple-event-types](../07-1-multiple-event-types/README.md), but for the case where **several producers** register **incompatible JSON schemas** under the same TopicNameStrategy subject (`raw_account_events-value`) with compatibility **`NONE`**, and write Confluent wire-format payloads to one topic. Downstream code that ignores Schema Registry only sees opaque bytes. This demo:
+This demonstration is related to [07-1-multiple-event-types](../07-1-multiple-event-types/README.md) to support multiple schemas in the topic, but for the case where **several producers** register **incompatible JSON schemas** under the same TopicNameStrategy subject (`raw_account_events-value`) with compatibility set to **`NONE`**, and write Confluent wire-format payloads to one topic. Downstream code that ignores Schema Registry only sees opaque bytes.
 
-1. Registers three event-type schemas as versions of one `{topic}-value` subject (compatibility NONE)
+![](./docs/multi-producers.drawio.png)
+
+The challenge is related to Confluent Cloud Flink, which loads the last version of the topic schema to build is table view. With current way of managing the schemas, a `select * from raw_account_events` in Flink SQL will fail when deserializing a record with the wrong schema.
+
+The demonstration tries to rebuild this context and present a way to be able to use Flink SQL to do a schema transformation from this raw topic.
+
+1. Registers three event-type schemas as versions of one `{topic}-value` subject (compatibility NONE), by using producer code.
 2. Produces each type with a **pinned schema id** (`use.schema.id`) so the wire prefix identifies the shape
 3. Optionally consumes those bytes while **ignoring** Schema Registry
-4. Uses Flink [`raw-value` metadata](https://docs.confluent.io/cloud/current/flink/reference/statements/create-table.html#raw-value), strips the 5-byte wire prefix, parses JSON with `JSON_VALUE`, and writes the typed Avro-union sink
+4. Define a last version schema that support the union of each possible payload definitions.
+4. Uses Flink to get the records, transform it and writes the typed Avro-union sink
 
 Domain: the same **account lifecycle** events as 07-1 (DeviceSwap, Subscription, DeviceClose).
 
@@ -89,22 +96,26 @@ WITH (
 Get the value bytes, skip the Confluent wire prefix (magic + schema id), then extract fields into the Avro union. See [dml.raw_to_account_events.sql](./cc-flink/dml.raw_to_account_events.sql):
 
 ```sql
-WITH parsed AS (
-    SELECT SUBSTRING(CAST(`val` AS STRING), 6) AS payload
-    FROM raw_account_events
+with parsed as(
+  SELECT contextInfo,
+        eventDetail.connect_union_field_0 as deviseSwap,
+        eventDetail.connect_union_field_1 as subscription,
+        eventDetail.connect_union_field_2 as deviceClose,
+  FROM `raw_account_events`
 )
 SELECT
-    JSON_VALUE(payload, 'lax $.contextInfo.correlationId') as correlationId,
-    ROW(
-        JSON_VALUE(payload, 'lax $.contextInfo.eventName'),
-        JSON_VALUE(payload, 'lax $.contextInfo.correlationId'),
-        JSON_VALUE(payload, 'lax $.contextInfo.sourceSystem')
+   contextInfo.correlationId as correlationId,
+  eventDetail,
+  ROW(
+        contextInfo.eventName,
+        contextInfo.correlationId,
+        contextInfo.sourceSystem
     ) as contextInfo,
-    CASE JSON_VALUE(payload, 'lax $.contextInfo.eventName')
+    CASE contextInfo.eventName
         WHEN 'DeviceSwap' THEN ROW(
             ROW(
-                JSON_VALUE(payload, 'lax $.eventDetail.accountId'),
-                JSON_VALUE(payload, 'lax $.eventDetail.deviceId')
+                deviseSwap.accountId,
+                deviseSwap.deviceId
             ),
             CAST(NULL AS ROW<accountId STRING, status STRING, planId STRING>),
             CAST(NULL AS ROW<accountId STRING, reasonCode STRING>)
@@ -112,9 +123,9 @@ SELECT
         WHEN 'Subscription' THEN ROW(
             CAST(NULL AS ROW<accountId STRING, deviceId STRING>),
             ROW(
-                JSON_VALUE(payload, 'lax $.eventDetail.accountId'),
-                JSON_VALUE(payload, 'lax $.eventDetail.status'),
-                JSON_VALUE(payload, 'lax $.eventDetail.planId')
+                subscription.accountId,
+                subscription.status,
+                subscription.planId
             ),
             CAST(NULL AS ROW<accountId STRING, reasonCode STRING>)
         )
@@ -122,11 +133,11 @@ SELECT
             CAST(NULL AS ROW<accountId STRING, deviceId STRING>),
             CAST(NULL AS ROW<accountId STRING, status STRING, planId STRING>),
             ROW(
-                JSON_VALUE(payload, 'lax $.eventDetail.accountId'),
-                JSON_VALUE(payload, 'lax $.eventDetail.reasonCode')
+                deviceClose.accountId,
+                deviceClose.reasonCode
             )
         )
-    END as eventDetail
+    END as ed
 FROM parsed;
 ```
 
