@@ -6,12 +6,12 @@ This demonstration is related to [07-1-multiple-event-types](../07-1-multiple-ev
 
 The challenge is related to Confluent Cloud Flink, which loads the last version of the topic schema to build is table view. With current way of managing the schemas, a `select * from raw_account_events` in Flink SQL will fail when deserializing a record with the wrong schema.
 
-The demonstration tries to rebuild this context and present a way to be able to use Flink SQL to do a schema transformation from this raw topic.
+The demonstration tries to rebuild this context and presents a way to be able to use Flink SQL to do a schema transformation from this raw topic.
 
-1. Registers three event-type schemas as versions of one `{topic}-value` subject (compatibility NONE), by using producer code.
-2. Produces each type with a **pinned schema id** (`use.schema.id`) so the wire prefix identifies the shape
-3. Optionally consumes those bytes while **ignoring** Schema Registry
-4. Define a last version schema that support the union of each possible payload definitions.
+1. Registers three event-type schemas as versions of one `{topic}-value` subject (compatibility NONE), by using producer code. This is the illustration of figure above.
+2. Produces each type with a schema id (`use.schema.id`) so the wire prefix identifies the shape.
+3. Optionally consumes those bytes while ignoring Schema Registry. Or load dynamically the schema using the magic bytes.
+4. Define a last version schema that supports the union of each possible payload definitions. This is applying the same concepts as in [07-1-multiple-event-types/](../07-1-multiple-event-types/)
 4. Uses Flink to get the records, transform it and writes the typed Avro-union sink
 
 Domain: the same **account lifecycle** events as 07-1 (DeviceSwap, Subscription, DeviceClose).
@@ -27,11 +27,13 @@ Three incompatible JSON schema **versions** on one TopicNameStrategy subject (wi
 | 07-1 | One Avro envelope + union at produce time | `account_events` Avro union |
 | 07-2 | One subject, three incompatible JSON versions (`NONE`) + pin schema ids → Flink normalizes | Same `account_events` Avro union |
 
-Without pinning schema ids, a TopicNameStrategy serializer would always use the **latest** version — so DeviceSwap/Subscription/DeviceClose would not each embed their own id.
+Without pinning schema ids, a TopicNameStrategy serializer would always use the **latest** version.
 
 Do not run 07-1 and 07-2 at the same time: both use the sink topic `account_events`.
 
 ## Schema Registry (source)
+
+Current constraints:
 
 | Setting | Value |
 | --- | --- |
@@ -42,7 +44,7 @@ Do not run 07-1 and 07-2 at the same time: both use the sink topic `account_even
 
 Schema `title` on each model (e.g. `io.confluent.flink.multievent.DeviceSwapEvent`) is for SR UI readability only — it is **not** the subject name.
 
-Each message is still the same logical envelope JSON (so Flink paths stay stable). After the wire prefix, the body looks like:
+Each message is still the same logical envelope JSON. The body looks like:
 
 ```json
 {
@@ -91,9 +93,47 @@ WITH (
 );
 ```
 
+## Adding the same last version for the raw_account_events-value schema to include references to other schemas.
+
+The principle is to define an envelop schema where the variable fields are any of existing schemas. The following demonstrates this structure:
+
+```json
+    "EventDetail": {
+      "anyOf": [
+        {
+          "$ref": "DeviceSwapDetail"
+        },
+        {
+          "$ref": "SubscriptionDetail"
+        },
+        {
+          "$ref": "DeviceCloseDetail"
+        }
+      ],
+      "title": "EventDetail"
+    }
+```
+
+The 3 referenced schemas are uploaded separatly into the schema registry
+
+![](./docs/event-detail-schemas.png)
+
+And the references are built as references definitions:
+
+![](./docs/schema-refs.png)
+
+### Managing the schemas
+
+The current approach is to get the producers, at runtime, to upload new schema to the schema registry. This practices need to chanage, but as the impact is deep into the current code based, it is possible to adapt the development process with the following steps:
+
+* Extract the producer schema definition as avro schema
+* Publish the avro schema as independant element into the schema registry
+
+![](./docs/multi-producers-schema-mgt.drawio.png)
+
 ## Logic to transform
 
-Get the value bytes, skip the Confluent wire prefix (magic + schema id), then extract fields into the Avro union. See [dml.raw_to_account_events.sql](./cc-flink/dml.raw_to_account_events.sql):
+See [dml.raw_to_account_events.sql](./cc-flink/dml.raw_to_account_events.sql):
 
 ```sql
 with parsed as(
