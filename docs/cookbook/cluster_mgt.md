@@ -8,6 +8,10 @@ compiled: false
 ---
 # Cluster & Environment Management
 
+???- info "Chapter updates"
+    - Created 10/2025
+    - Updated 07/2027: DR works
+
 ## 1- Provisioning and Scaling Clusters
 
 ### 1.0 Sizing Flink Resources
@@ -112,7 +116,7 @@ The Components to install for each deployment approach:
 
     ![](../coding/diagrams/cp_comp_to_deploy.drawio.png)
 
-=== "Open Source Approach"
+=== "Apache Flink"
     For an equivalent open source the components are:
 
     ![](../coding/diagrams/oss_comp_to_deploy.drawio.png)
@@ -121,6 +125,8 @@ The Components to install for each deployment approach:
     Confluent Cloud is a serverless SaaS. The deployment includes the following components, deployable via infrastructure as code:
 
     ![](./diagrams/cc-comp.drawio.png)
+
+    [See this deployment based on git](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/cc-terraform) and terrafor
 
 #### Preconditions / Checklist
 

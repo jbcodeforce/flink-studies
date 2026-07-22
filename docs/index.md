@@ -26,6 +26,7 @@ To make it fun, here is the book cover! Very imaginative for a book that will ne
     * Update 10/2025: k8s chapter, json xform and external lookup demos
     * Update 02/2026: New event-driven agentic chapter, new e2e demos, SQL examples
     * update 05/2026: Snapshot query, Materialized Table, dbt, 
+    * update 07/2026: add new code for flink-sql, work on cookbook content 
 
 ## What You'll Discover
 
