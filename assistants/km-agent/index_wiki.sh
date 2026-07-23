@@ -14,7 +14,7 @@ STUDIES_KMA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STUDIES_ROOT="$(cd "${STUDIES_KMA_DIR}/../.." && pwd)"
 KMA_HOME_FILE="${STUDIES_KMA_DIR}/.kma-home"
 ENV_FILE="${STUDIES_KMA_DIR}/.env"
-CONTEXT_DIR="${STUDIES_ROOT}/docs/context"
+CONTEXT_DIR="${STUDIES_KMA_DIR}/context"
 
 die() {
   echo "index_wiki.sh: $*" >&2
