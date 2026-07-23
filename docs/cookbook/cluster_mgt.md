@@ -388,6 +388,13 @@ For Confluent Platform / Kubernetes with shared durable storage and Kafka replic
 * Consumer offset sync (Confluent Cloud) is asynchronous; after failover, consumers may see a small number of duplicates—design for idempotency.
 * Confluent Cloud is regional: there is no built-in cross-region state replication; you achieve DR by running Flink in the DR region and feeding it from replicated Kafka/Schema Registry.
 
+#### Schema Management
+
+* When disaster failover happens, Flink can keep reading schema-based data only if schemas have already been replicated to the DR region’s Schema Registry via Schema Linking.
+* In the standard DR pattern, primary SR stays READWRITE, secondary SR stays IMPORT, and during failover you must reverse the schema link. [See product documentation](https://docs.confluent.io/cloud/current/sr/schema-linking.html#configure-credentials-on-the-destination).
+* On failover, ensure Schema Link is caught up, then promote/switch Kafka side.
+* If you need Flink to run CREATE TABLE after failover, the DR side must allow schema writes to the active SR and the user/service account must have the required SR/Kafka permissions
+
 ### 3.2 Backup/restore of state backend
 
 #### Context
