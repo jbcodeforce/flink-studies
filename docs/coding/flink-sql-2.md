@@ -215,7 +215,7 @@ AS SELECT ip_address, url, TO_TIMESTAMP(FROM_UNIXTIME(click_ts_raw)) as click_ti
 
 * The query is designed to identify and persist only the earliest record. Once the record is written to the table_deduped any subsequent events pertaining to the same `ip_address` are effectively discarded by the `WHERE rownum = 1` filter.
 * `ROW_NUMBER()` assigns a unique, sequential number to each row. It is part of the Top-N query pattern.
-* Use `OVER` aggregation to compute aggregate values for each input row under a window specification and a filter condition to express a Top-N query. Combined with `PARTITION BY`, Flink supports per-group Top-N.
+* Use `OVER` aggregation to compute aggregate values for each input row under a window specification and a filter condition to express a Top-N query. Combined with `PARTITION BY`, Flink supports per-group Top-N. The ORDER BY does not need to be a timestamp in the context of deduplication.
 * The inner query adds a `row_num` for each row in each partition.
 * The subsequent `WHERE rownum = 1` clause filters the results to retain only the very first event observed for each unique `ip_address` based on its timestamp.
 * The created table is an append table. There is no mechanism within this query to generate update or delete operations for records that have already been processed. Even if the underlying `clicks` table has a primary key defined, the transformation applied here dictates that the `unique_clicks` table will only ever grow by appending new, unique `ip_address` entries.
@@ -239,6 +239,8 @@ select *  FROM (
     FROM employees
 ) WHERE row_num = 1
 ```
+
+* It is important to note that developers should not assume if deduplication is done in CTE, follow up operation may not introduce duplicates. For example, a `CROSS JOIN UNNEST` (or any fan-out) multiplies rows. If the fan-out logic or join keys are not unique, you can create multiple identical final records per primary key. Using `GROUP BY` may help but it has to be done on the same key. It may be relevant to add a second dedup close to the final sink, on the final primary key for that sink. So try to dedup early to make upstream analytics sane. And after any fan-out / UNNEST / joins that can introduce duplicates, dedup again immediately before writing the final table.
 
 ### Transformation
 
@@ -850,6 +852,8 @@ You can combine `LATERAL TABLE` with different join types to control which rows 
     JOIN customers c ON o.customer_id = c.id
     JOIN addresses a ON c.id = a.customer_id;
     ```
+
+As the state can grow and the number of many-to-many row created, it is important to reduce the number of records for each side of the joins, to reach one row per join key. The reduction of those number of rows can be deduplication on the latest, but can also be from a business requiremnents. 
 
 ### Heartbeat pattern
 

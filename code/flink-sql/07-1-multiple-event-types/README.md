@@ -1,10 +1,10 @@
 # Demonstrate Multiple Event Types in Confluent Cloud for Apache Flink
 
-Illustrates the [Handle Multiple Event Types](https://docs.confluent.io/cloud/current/flink/how-to-guides/multiple-event-types.html?category=avro) how-to using an **Avro union** on a single envelope field. There are 
+The code in this folder illustrates how to [handle multiple event types](https://docs.confluent.io/cloud/current/flink/how-to-guides/multiple-event-types.html?category=avro) in a source topic, and how to use an **Avro union** on a single envelop field.
 
 Domain: a generic **account lifecycle** stream. One topic carries three event subtypes behind a shared context.
 
-## Schema shape
+## Schema shapes
 
 Topic: `account_events` (append, Avro / TopicNameStrategy).
 
@@ -60,13 +60,11 @@ Here is the envelop schema definition:
 
 Flink maps that union to a `ROW` with one non-null branch per message.
 
-All Avro schemas: [python/schemas/](python/schemas/).
-
-## Layout
+## Folder layout
 
 | Path | Purpose |
 | --- | --- |
-| [cc-flink/](cc-flink/) | Confluent Cloud Flink SQL (DDL, seed DML, deploy manifest) |
+| [cc-flink/](cc-flink/) | Confluent Cloud Flink SQL (DDL, seed DML, deployment manifest) |
 | [python/](python/) | Kafka Avro producer for `account_events` |
 
 ## Quick start (Confluent Cloud)

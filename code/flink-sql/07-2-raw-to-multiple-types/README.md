@@ -4,12 +4,13 @@ This demonstration is related to [07-1-multiple-event-types](../07-1-multiple-ev
 
 ![](./docs/multi-producers.drawio.png)
 
-The challenge is related to Confluent Cloud Flink, which loads the last version of the topic schema to build is table view. With current way of managing the schemas, a `select * from raw_account_events` in Flink SQL will fail when deserializing a record with the wrong schema.
+The challenge is coming from the fact that Confluent Cloud Flink, loads the last version of the topic schema to build is table view and [data mapping](). With non-governed way of managing the schemas, by pushing different schema definition to the same topic using a RecordNameStrategy, a `select * from raw_account_events` in Flink SQL will fail when deserializing a record with the unknown schema. This schema is unknown as soon as it is not the same as the last version in the schema registry.
 
-The demonstration tries to rebuild this context and presents a way to be able to use Flink SQL to do a schema transformation from this raw topic.
 
-1. Registers three event-type schemas as versions of one `{topic}-value` subject (compatibility NONE), by using producer code. This is the illustration of figure above.
-2. Produces each type with a schema id (`use.schema.id`) so the wire prefix identifies the shape.
+The demonstration tries to rebuild this context and presents a way to be able to use Flink SQL, so developer may do a schema transformation, filtering and aggregation.
+
+1. The producer app (in python) registers three event-type schemas to the same `{topic}-value` subject with compatibility set to NONE. This is the illustration of figure above to simulate the green, red and purple producers and their respective schemas.
+2. Produces each type with a schema id (`use.schema.id`) so the magic byte identifies the shape.
 3. Optionally consumes those bytes while ignoring Schema Registry. Or load dynamically the schema using the magic bytes.
 4. Define a last version schema that supports the union of each possible payload definitions. This is applying the same concepts as in [07-1-multiple-event-types/](../07-1-multiple-event-types/)
 4. Uses Flink to get the records, transform it and writes the typed Avro-union sink
@@ -20,18 +21,34 @@ Domain: the same **account lifecycle** events as 07-1 (DeviceSwap, Subscription,
 
 ![](./docs/3in1.drawio.png)
 
-Three incompatible JSON schema **versions** on one TopicNameStrategy subject (wire format, pinned schema ids) → Flink normalizes to a sink topic with an Avro union of 3 branches.
-
-| Demo | Source | Sink |
-| --- | --- | --- |
-| 07-1 | One Avro envelope + union at produce time | `account_events` Avro union |
-| 07-2 | One subject, three incompatible JSON versions (`NONE`) + pin schema ids → Flink normalizes | Same `account_events` Avro union |
-
-Without pinning schema ids, a TopicNameStrategy serializer would always use the **latest** version.
+Three incompatible JSON schema **versions** in one TopicNameStrategy subject (wire format, pinned schema ids). 
 
 Do not run 07-1 and 07-2 at the same time: both use the sink topic `account_events`.
 
-## Schema Registry (source)
+### Produce multi-schema events
+
+```sh
+cd python
+uv sync
+# set environment variable
+source ../../../set_env.sh
+uv run producers/produce_raw_account_events.py --count 10
+```
+
+Sets compatibility `NONE` on `raw_account_events-value`, registers three schema versions, and produces wire-format values.
+
+Expect a log like:
+
+```text
+Schema Registry subject: raw_account_events-value
+Pinned schema ids (TopicNameStrategy + NONE):
+  DeviceSwapEvent -> schema_id=...
+  SubscriptionEvent -> schema_id=...
+  DeviceCloseEvent -> schema_id=...
+```
+
+
+### Schema Registry (source)
 
 Current constraints:
 
@@ -65,7 +82,7 @@ Each message is still the same logical envelope JSON. The body looks like:
 | `Subscription` | `accountId`, `status`, `planId` |
 | `DeviceClose` | `accountId`, `reasonCode` |
 
-## Sink schema
+### Sink schema
 
 Topic: `account_events` — same Avro union envelope as 07-1 (`contextInfo` + `eventDetail` as a ROW of three named branches).
 
@@ -93,7 +110,7 @@ WITH (
 );
 ```
 
-## Adding the same last version for the `raw_account_events-value` schema to include references to other schemas.
+### Adding the same last version for the `raw_account_events-value` schema to include references to other schemas.
 
 The principle is to define an envelop schema where the variable fields are any of existing schemas. The following demonstrates this structure:
 
@@ -136,7 +153,8 @@ The current approach is to get the producers, at runtime, to upload new schema t
 * As running Flink statement uses the version of the `raw_account_events-value` schema they had when started, if all new producer's schema are FULL_TRANSITIVE and define default values to newly added fields, then those Flink statements can continue to run.
 * In the case the changes are disruptive, then be sure to republish the envelop as last schema of `raw_account_events-value` by using a second simple tool to do so. New Flink deployment will use the last referenced schemas.
 
-## Logic to transform
+
+## Logic to transform input records to sink
 
 Now one of the flink transformation may be the [dml.raw_to_account_events.sql](./cc-flink/dml.raw_to_account_events.sql), which takes into account those union fields and do some transformation.
 
@@ -202,26 +220,6 @@ make undeploy-pipeline
 make deploy-pipeline
 ```
 
-## Produce multi-schema events
-
-```sh
-cd python
-uv sync
-source ../../set_env.sh
-uv run producers/produce_raw_account_events.py
-```
-
-Sets compatibility `NONE` on `raw_account_events-value`, registers three schema versions, and produces wire-format values with a pinned schema id per type (`magic` + `schema_id` + UTF-8 JSON).
-
-Expect a log like:
-
-```text
-Schema Registry subject: raw_account_events-value
-Pinned schema ids (TopicNameStrategy + NONE):
-  DeviceSwapEvent -> schema_id=...
-  SubscriptionEvent -> schema_id=...
-  DeviceCloseEvent -> schema_id=...
-```
 
 ## Consume while ignoring Schema Registry
 

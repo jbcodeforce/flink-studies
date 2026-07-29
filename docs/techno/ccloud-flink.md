@@ -134,6 +134,25 @@ The Confluent Cloud for Kafka and for Flink is based on the SaaS pattern of cont
 * There are the concepts of physical Kafka clusters and logical clusters. Logical clusters are groupings of topics on the physical clusters isolated from each other via a prefix. Professional Confluent Cloud organization can only have logical clusters. Enterprise can have physical clusters.
 * The difference between Standard and Enterprise Kafka clusters, reside in the private networking, and higher throughput volume, and client app quotas control. If the workloads run on the public internet and don't need fine-grained tenant isolation, Standard is the choice, for other use cases, Enterprise should be selected.
 
+### Schema Registry
+
+As Confluent Cloud for Flink creates schemas in the Schema Registry when creating tables, it is important to get the following principles. It is recommended to [follow this tutorial](https://docs.confluent.io/cloud/current/sr/schema_registry_ccloud_tutorial.html).
+
+* A **schema** defines the structure of the data format. 
+* **Subject** defines the scope in which schema may evolve
+* The name of the subject depends on the configured subject name strategy, which by default is set to derive subject name from topic name (**TopicNameStrategy**).
+* Schema Registry does compatibility checking within the subject scope.
+* By default, client applications automatically register new schemas. If they produce new messages to a new topic, then they will automatically try to register new schemas. => Best practice is to register schemas outside of the client application to control when schemas are registered with Schema Registry and how they evolve.
+* DDL or CTAS are transformed to Json, Avro or protobuf schema. Metadata for `value.format` specify the format.
+* The namespace is a fully qualified name that avoids schema naming conflicts
+* Integration with Schema Registry means that Kafka messages do not need to be written with the entire Avro schema.
+* The producers writing the messages and the consumers reading the messages must be using the same Schema Registry to get the same mapping between a schema and schema id. SchemaLink is a tool to replicate those metadata between source and destination registries so client apps can continue processing records in case of failover.
+
+Tools in this repository:
+
+* [Schema Registry REST client]() to list schema, perform soft delete, perform permanent delete, register new schema, ...
+* [Producer code in python that auto register the schemas into the registry]()
+
 ## Getting Started
 
 Install the [Confluent CLI](https://docs.confluent.io/confluent-cli/current/overview.html) and get an Confluent Cloud account. 

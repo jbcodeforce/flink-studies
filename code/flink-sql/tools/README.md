@@ -295,13 +295,42 @@ cd code/flink-sql/tools
 uv run python -m cc_deploy.register_schema \
   ../07-1-multiple-event-types/python/schemas/DeviceCloseDetail.avsc
 
-uv run python -m cc_deploy.register_schema path/to/schema.json
+uv run python -m cc_deploy.register_schema register path/to/schema.json
 uv run python -m cc_deploy.register_schema path/to/schema.json --subject my.custom.Subject
 uv run python -m cc_deploy.register_schema path/to/file.txt --type JSON --subject MyType
 ```
 
 Example subject for `DeviceCloseDetail.avsc`:
 `io.confluent.flink.multievent.DeviceCloseDetail`.
+
+### List subjects → editable schema-manifest, then delete
+
+Same workflow as table cleanup: list into JSON, edit which subjects to remove, then delete.
+
+**Step 1 — list subjects:**
+
+```sh
+# Write schema-manifest.json (all subjects default delete: true)
+uv run python -m cc_deploy.register_schema list --output schema-manifest.json
+
+# Preview without writing
+uv run python -m cc_deploy.register_schema list --dry-run
+```
+
+**Step 2 — edit the manifest** — set `"delete": false` or remove rows for subjects to keep.
+
+**Step 3 — delete subjects** (soft delete by default; use `--permanent` for hard delete):
+
+```sh
+# Dry-run: print subjects only
+uv run python -m cc_deploy.register_schema delete --manifest schema-manifest.json --dry-run
+
+# Soft-delete entries with delete: true
+uv run python -m cc_deploy.register_schema delete --manifest schema-manifest.json
+
+# Permanent delete: Need to do previous step, to do a soft delete before hard delete
+uv run python -m cc_deploy.register_schema delete --manifest schema-manifest.json --permanent
+```
 
 ---
 

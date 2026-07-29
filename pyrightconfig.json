@@ -1,0 +1,22 @@
+{
+  "include": [
+    "code/flink-sql/07-2-raw-to-multiple-types/python"
+  ],
+  "exclude": [
+    "**/.venv",
+    "**/__pycache__",
+    "**/node_modules",
+    "e2e-demos",
+    "assistants",
+    "deployment",
+    "docs"
+  ],
+  "extraPaths": [
+    "code/flink-sql/07-2-raw-to-multiple-types/python",
+    "code/flink-sql/07-2-raw-to-multiple-types/python/producers",
+    "code/flink-sql"
+  ],
+  "venvPath": "code/flink-sql/07-2-raw-to-multiple-types/python",
+  "venv": ".venv",
+  "pythonVersion": "3.12"
+}

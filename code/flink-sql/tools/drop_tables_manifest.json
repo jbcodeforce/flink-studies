@@ -2,93 +2,98 @@
   "source": "kafka",
   "bootstrap_servers": "pkc-rgm37.us-west-2.aws.confluent.cloud:9092",
   "database": "j9r-kafka",
-  "generated_at": "2026-06-26T05:25:23.536223+00:00",
+  "generated_at": "2026-07-23T23:29:59.951587+00:00",
   "statement_prefix": "cleanup-drop",
   "tables": [
     {
-      "topic": "app_usage_raw",
-      "table": "app_usage_raw",
+      "topic": "acting_events",
+      "table": "acting_events",
       "drop": true
     },
     {
-      "topic": "com.att.como.flux.stage.parent-messaging.1.0",
-      "table": "com.att.como.flux.stage.parent-messaging.1.0",
+      "topic": "acting_events_drama",
+      "table": "acting_events_drama",
       "drop": true
     },
     {
-      "topic": "com.att.como.flux.stage.parent-messaging.1.0.uppercase",
-      "table": "com.att.como.flux.stage.parent-messaging.1.0.uppercase",
+      "topic": "acting_events_other",
+      "table": "acting_events_other",
       "drop": true
     },
     {
-      "topic": "d06_locf_last_val",
-      "table": "d06_locf_last_val",
+      "topic": "all_publications",
+      "table": "all_publications",
       "drop": true
     },
     {
-      "topic": "d06_orders",
-      "table": "d06_orders",
+      "topic": "clicks",
+      "table": "clicks",
       "drop": true
     },
     {
-      "topic": "d06_sensor_data",
-      "table": "d06_sensor_data",
+      "topic": "connect-configs",
+      "table": "connect-configs",
       "drop": true
     },
     {
-      "topic": "dev-dps-gen-cdce-CHECK_RECONCILE",
-      "table": "dev-dps-gen-cdce-CHECK_RECONCILE",
+      "topic": "connect-offsets",
+      "table": "connect-offsets",
       "drop": true
     },
     {
-      "topic": "dev-dps-gen-cdce-CKFR_SBSR_XREF",
-      "table": "dev-dps-gen-cdce-CKFR_SBSR_XREF",
+      "topic": "connect-status",
+      "table": "connect-status",
       "drop": true
     },
     {
-      "topic": "dev-dps-gen-cdce-HISTORY_XREF",
-      "table": "dev-dps-gen-cdce-HISTORY_XREF",
+      "topic": "detected_clicks",
+      "table": "detected_clicks",
       "drop": true
     },
     {
-      "topic": "dev-dps-gen-cdce-SPONSOR_PRODUCT",
-      "table": "dev-dps-gen-cdce-SPONSOR_PRODUCT",
+      "topic": "george_martin",
+      "table": "george_martin",
       "drop": true
     },
     {
-      "topic": "dev-dps-gen-enriched-checkimblookup",
-      "table": "dev-dps-gen-enriched-checkimblookup",
+      "topic": "kochnt_precheckin_load_st",
+      "table": "kochnt_precheckin_load_st",
       "drop": true
     },
     {
-      "topic": "dim_rides_2",
-      "table": "dim_rides_2",
+      "topic": "pspull00_ct",
+      "table": "pspull00_ct",
       "drop": true
     },
     {
-      "topic": "lgv_segment_point_filled",
-      "table": "lgv_segment_point_filled",
+      "topic": "pspull00_curr",
+      "table": "pspull00_curr",
       "drop": true
     },
     {
-      "topic": "orders_with_customer_details",
-      "table": "orders_with_customer_details",
+      "topic": "pspull00_pk_timestamps",
+      "table": "pspull00_pk_timestamps",
       "drop": true
     },
     {
-      "topic": "pksqlc-1v38o3o-processing-log",
-      "table": "pksqlc-1v38o3o-processing-log",
+      "topic": "radar_geofence_flat_st",
+      "table": "radar_geofence_flat_st",
       "drop": true
     },
     {
-      "topic": "raw_classical_songs",
-      "table": "raw_classical_songs",
+      "topic": "radar_hist_st",
+      "table": "radar_hist_st",
       "drop": true
     },
     {
-      "topic": "source_raw_classical_songs",
-      "table": "source_raw_classical_songs",
+      "topic": "radar_trip_flat_st",
+      "table": "radar_trip_flat_st",
       "drop": true
+    },
+    {
+      "topic": "raw_account_events",
+      "table": "raw_account_events",
+      "drop": false
     }
   ]
 }

@@ -1,0 +1,43 @@
+{
+  "source": "schema_registry",
+  "schema_registry_endpoint": "https://psrc-13go8y7.us-west-2.aws.confluent.cloud",
+  "generated_at": "2026-07-23T23:37:08.236008+00:00",
+  "schemas": [
+    {
+      "subject": "io.confluent.flink.multievent.DeviceCloseDetail",
+      "delete": false
+    },
+    {
+      "subject": "io.confluent.flink.multievent.SubscriptionDetailJson",
+      "delete": false
+    },
+    {
+      "subject": "io.confluent.flink.multievent.DeviceSwapDetail",
+      "delete": false
+    },
+    {
+      "subject": "raw_account_events-value",
+      "delete": false
+    },
+    {
+      "subject": "error_log-value",
+      "delete": false
+    },
+    {
+      "subject": "io.confluent.flink.multievent.SubscriptionDetail",
+      "delete": false
+    },
+    {
+      "subject": "io.confluent.flink.multievent.DeviceCloseDetailJson",
+      "delete": false
+    },
+    {
+      "subject": "io.confluent.flink.multievent.DeviceSwapDetailJson",
+      "delete": false
+    },
+    {
+      "subject": "RadioSwap",
+      "delete": true
+    }
+  ]
+}
