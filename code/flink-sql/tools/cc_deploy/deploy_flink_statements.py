@@ -8,30 +8,36 @@ Usage:
   uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../11-puzzles/cart_update drop-tables
   uv run python -m cc_deploy.deploy_flink_statements --sql-dir ../04-joins/cc groups
 
-Each demo folder supplies deploy_manifest.json listing statement groups, SQL files,
+Each pipeline folder supplies deploy_manifest.json listing statement groups, SQL files,
 undeploy_all order, and drop_tables for full teardown.
 Environment: see cc_deploy.flink_deploy (loads ~/.confluent/.env by default).
 """
 
 from __future__ import annotations
 
+import os
 import argparse
 import sys
 from pathlib import Path
+from manifest.manifest import load_manifest, DEFAULT_MANIFEST, DeployManifest
+from dotenv import load_dotenv
 
-from cc_deploy import (
-    DEFAULT_MANIFEST,
+from cc_deploy.flink_deploy import (
     deploy_statements,
     drop_tables,
     full_undeploy,
     get_config,
-    load_dotenv_file,
-    load_manifest,
     undeploy_statements,
 )
 
+def load_dotenv_file() -> None:
+    """Load env from .env file."""
+    env_file = os.environ.get("CONFLUENT_ENV_FILE") or str(Path.home() / ".confluent" / ".env")
+    load_dotenv(env_file)
 
-def parse_args() -> argparse.Namespace:
+
+def _parse_args() -> argparse.Namespace:
+    """Parse CLI args."""
     parser = argparse.ArgumentParser(
         description="Deploy Flink SQL statement groups to Confluent Cloud (confluent-sql REST API)."
     )
@@ -41,12 +47,7 @@ def parse_args() -> argparse.Namespace:
         required=True,
         help="Demo folder containing SQL files and deploy_manifest.json",
     )
-    parser.add_argument(
-        "--manifest",
-        type=Path,
-        default=None,
-        help=f"Manifest path (default: <sql-dir>/{DEFAULT_MANIFEST})",
-    )
+
     sub = parser.add_subparsers(dest="action", required=True)
 
     deploy_p = sub.add_parser("deploy", help="Create statements in manifest order")
@@ -98,17 +99,27 @@ def print_groups(manifest) -> None:
         flag_text = f" ({', '.join(flags)})" if flags else ""
         print(f"{name}: {count} statement(s){flag_text}")
 
+def deploy_flink_statements(manifest: DeployManifest, group: str, sql_dir: Path, config: dict[str, str]) -> None:
+    """Deploy Flink SQL statements for a given group."""
+    statements = manifest.statements_for(group)
+    deploy_statements(
+        statements,
+        sql_dir=sql_dir,
+        config=config
+    )
+
 
 def main() -> None:
+    """Load env, parse CLI args, and run deploy / undeploy / drop-tables / groups."""
     load_dotenv_file()
-    args = parse_args()
+    args = _parse_args()
 
     sql_dir = args.sql_dir.resolve()
     if not sql_dir.is_dir():
         print(f"sql-dir not found: {sql_dir}", file=sys.stderr)
         sys.exit(1)
 
-    manifest_path = (args.manifest or sql_dir / DEFAULT_MANIFEST).resolve()
+    manifest_path = (sql_dir / DEFAULT_MANIFEST).resolve()
     if not manifest_path.is_file():
         print(f"Manifest not found: {manifest_path}", file=sys.stderr)
         sys.exit(1)
@@ -124,13 +135,8 @@ def main() -> None:
     try:
         if args.action == "deploy":
             group = args.group
-            statements = manifest.statements_for(group)
-            deploy_statements(
-                statements,
-                sql_dir=sql_dir,
-                config=config,
-                user_agent=manifest.user_agent,
-            )
+            deploy_flink_statements(manifest, group, sql_dir, config)
+            
             print(f"deploy --group {group} complete.")
             return
 
@@ -153,8 +159,7 @@ def main() -> None:
             statements = manifest.undeploy_order(group)
             undeploy_statements(
                 statements,
-                config=config,
-                user_agent=manifest.user_agent,
+                config=config
             )
         print(f"undeploy --group {group} complete.")
     except KeyError as exc:

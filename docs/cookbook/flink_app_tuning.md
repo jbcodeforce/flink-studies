@@ -1,17 +1,17 @@
 ---
-title: "Flink Tuning on Kubernetes"
-source: flink-studies/docs/cookbook/k8s_tuning.md
+title: "Flink App Tuning"
+source: flink-studies/docs/cookbook/flink_app_tuning.md
 ingested:
 tags: [flink, cookbook, kubernetes, tuning, operations]
 type: article
 compiled: false
 ---
-# Flink Tuning on Kubernetes
+# Flink Application Tuning
 
 ???- info "Chapter Version"
     * Creation 05/2026
 
-This chapter covers Day-2 tuning for Flink jobs running on Kubernetes: resource sizing, memory layout, parallelism, checkpointing, RocksDB, network shuffle, and K8s-specific configuration. It complements [Cluster management](cluster_mgt.md) (sizing philosophy) and [Job Lifecycle](job_lifecycle.md) (operational recipes). Deployment mechanics are in [FKO & CMF Deployment](../coding/k8s-deploy.md).
+This chapter covers Day-2 tuning for Flink jobs running on Kubernetes or Confluent Cloud: resource sizing, memory layout, parallelism, checkpointing, RocksDB, network shuffle, and K8s-specific configuration. It complements [Cluster management](cluster_mgt.md) (sizing philosophy) and [Job Lifecycle](job_lifecycle.md) (operational recipes). Deployment mechanics are in [FKO & CMF Deployment](../coding/k8s-deploy.md).
 
 ## 1- Tuning philosophy — what to tune and when
 

@@ -1,0 +1,13 @@
+[project]
+name = "dr-car-rides"
+version = "0.1.0"
+description = "Car-ride producer and loss assessment for Confluent Cloud DR demo"
+requires-python = ">=3.11"
+dependencies = [
+  "confluent-kafka[schema-registry]>=2.3.0",
+  "pydantic>=2.0",
+]
+
+[project.scripts]
+produce-rides = "produce_rides:main"
+assess-loss = "assess_loss:main"

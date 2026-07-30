@@ -94,10 +94,11 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 
 ## 8. Operational & Tooling
 
-### 8.1 Savepoints
+### 8.1 Disaster Recovery
 
 | Demo | Path | Description |
 |------|------|-------------|
+| **dr-car-rides** | [`dr-car-rides/`](./dr-car-rides/) | Active/passive multi-region DR on Confluent Cloud: dual environments (Kafka + Schema Registry each), Cluster Linking, Schema Linking, Flink (stateless + driver agg), Tableflow/Glue, soft + promote failover, seq-based loss assessment. **Deployment:** `cccloud/IaC/`, `cccloud/flink-sql/`, `cccloud/scripts/`, `python/`. Design: [DESIGN.md](./dr-car-rides/DESIGN.md). Cookbook: [cluster_mgt §3](../docs/cookbook/cluster_mgt.md#3-disaster-recovery--multi-region-strategies). |
 | **savepoint-demo** | `savepoint-demo/` | Backup/restore of state via savepoints: trigger, stop, restart from savepoint. Aligns with [DR cookbook](../docs/cookbook/cluster_mgt.md#31-backuprestore-of-state-backend). **Deployment:** `cp-flink/`. k8s, Confluent Platform. |
 
 ### 8.2 SQL Gateway
@@ -144,8 +145,9 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 | **Confluent Cloud** | `cc-cdc-tx-demo` (cccloud/), `json-transformation` (cccloud/), `cdc-dedup-transform` (cccloud/), `package-event-cutoff` (cccloud/) |
 | **Confluent Platform / K8s** | `json-transformation` (cp-flink/), `dedup-demo` (cp-flink/), `external-lookup` (cp-flink/), `cdc-demo` (cp-flink/), `e-com-sale` (cp-flink/), `savepoint-demo` (cp-flink/) |
 | **OSS Flink** | `dedup-demo` (oss-flink/), `e-com-sale` (oss-flink/), `perf-testing` (oss-flink/), `cdc-tableapi-to-silver` (oss-flink/), `flink-to-sink-postgresql` (oss-flink/), `e2e-streaming-demo` (oss-flink/), `sql-gateway-demo` (oss-flink/), `agentic-demo` (oss-flink/) |
-| **Terraform / IaC** | `cc-cdc-tx-demo` (cccloud/IaC), `cdc-dedup-transform` (cccloud/IaC), `package-event-cutoff` (cccloud/IaC) |
-| **TableFlow / Iceberg** | `cc-cdc-tx-demo` |
+| **Terraform / IaC** | `cc-cdc-tx-demo` (cccloud/IaC), `cdc-dedup-transform` (cccloud/IaC), `package-event-cutoff` (cccloud/IaC), `dr-car-rides` (cccloud/IaC) |
+| **TableFlow / Iceberg** | `cc-cdc-tx-demo`, `dr-car-rides` |
+| **Disaster Recovery / Cluster Linking** | `dr-car-rides` (CC active/passive), `savepoint-demo` (CP savepoints) |
 | **Savepoints** | `savepoint-demo` |
 | **SQL Gateway** | `sql-gateway-demo` |
 | **Flink Agents** | `agentic-demo` |

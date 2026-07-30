@@ -1,0 +1,19 @@
+# Copy to terraform.tfvars and fill in values.
+# Prefer env vars for secrets: CONFLUENT_CLOUD_API_KEY / CONFLUENT_CLOUD_API_SECRET
+
+owner_email    = "you@example.com"
+prefix         = "dr-rides"
+primary_region = "us-east-1"
+dr_region      = "us-west-2"
+
+# Optional — leave empty to use environment variables
+# confluent_cloud_api_key    = ""
+# confluent_cloud_api_secret = ""
+
+cc_availability  = "SINGLE_ZONE"
+flink_max_cfu    = 10
+enable_tableflow = true
+
+# After first apply of provider integration, set external ID from Confluent UI
+# and re-apply so the IAM trust policy is locked down:
+# confluent_external_id = ""

@@ -1,19 +1,18 @@
 """
-Deploy manifest model, I/O, and template generation from SQL demo folders.
+Deploy manifest model, I/O, and template generation from Flink SQL folders.
 """
 
 from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-DEFAULT_MANIFEST = "deploy_manifest.json"
-DEFAULT_USER_AGENT = "flink-studies-sql-tools/0.1"
+from pydantic import BaseModel, Field, model_validator
 
-StatementRef = tuple[str, str]
+DEFAULT_MANIFEST = "deploy_manifest.json"
+DEFAULT_USER_AGENT = "cc-sql-tools/0.1"
 
 _CREATE_TABLE_RE = re.compile(
     r"create\s+table\s+(?:if\s+not\s+exists\s+)?([`\"]?[\w.]+[`\"]?)",
@@ -21,14 +20,58 @@ _CREATE_TABLE_RE = re.compile(
 )
 
 
-@dataclass(frozen=True)
-class DeployManifest:
-    user_agent: str
-    groups: dict[str, list[StatementRef]]
-    deploy_all: list[str]
-    undeploy_all: list[str]
-    drop_tables: list[str]
+class StatementRef(BaseModel):
+    name: str
+    file: str
+
+
+class DeployManifest(BaseModel):
+    """Deploy manifest structure for Flink SQL statement groups."""
+
+    user_agent: str = DEFAULT_USER_AGENT
+    groups: dict[str, list[StatementRef]] = Field(default_factory=dict)
+    deploy_all: list[str] = Field(default_factory=list)
+    undeploy_all: list[str] = Field(default_factory=list)
+    drop_tables: list[str] = Field(default_factory=list)
     drop_statement_prefix: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _normalize_legacy_fields(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+
+        groups = data.get("groups") or {}
+        drop_tables = data.get("drop_tables", [])
+        if (
+            isinstance(drop_tables, list)
+            and drop_tables
+            and isinstance(drop_tables[0], dict)
+        ):
+            data = {**data, "drop_tables": [entry["table"] for entry in drop_tables]}
+
+        deploy_all = data.get("deploy_all")
+        if not deploy_all:
+            data = {**data, "deploy_all": list(groups.keys())}
+
+        if not data.get("undeploy_all"):
+            data = {**data, "undeploy_all": []}
+
+        if not data.get("drop_statement_prefix"):
+            ddl = groups.get("ddl") or []
+            if ddl:
+                first = ddl[0]
+                first_name = first["name"] if isinstance(first, dict) else first.name
+                if "-ddl-" in first_name:
+                    data = {
+                        **data,
+                        "drop_statement_prefix": first_name.split("-ddl-")[0],
+                    }
+
+        if "user_agent" not in data or not data.get("user_agent"):
+            data = {**data, "user_agent": DEFAULT_USER_AGENT}
+
+        return data
 
     def statements_for(self, group: str) -> list[StatementRef]:
         if group == "all":
@@ -61,64 +104,16 @@ class DeployManifest:
 
 def load_manifest(manifest_path: Path) -> DeployManifest:
     data: dict[str, Any] = json.loads(manifest_path.read_text(encoding="utf-8"))
-    return manifest_from_dict(data)
-
-
-def manifest_from_dict(data: dict[str, Any]) -> DeployManifest:
-    groups: dict[str, list[StatementRef]] = {}
-    for group_name, entries in data.get("groups", {}).items():
-        groups[group_name] = [(e["name"], e["file"]) for e in entries]
-
-    deploy_all = data.get("deploy_all")
-    if not deploy_all:
-        deploy_all = list(groups.keys())
-
-    undeploy_all = data.get("undeploy_all")
-    drop_tables = data.get("drop_tables", [])
-    if isinstance(drop_tables, list) and drop_tables and isinstance(drop_tables[0], dict):
-        drop_tables = [entry["table"] for entry in drop_tables]
-
-    drop_prefix = data.get("drop_statement_prefix")
-    if not drop_prefix and groups.get("ddl"):
-        first_name = groups["ddl"][0][0]
-        if "-ddl-" in first_name:
-            drop_prefix = first_name.split("-ddl-")[0]
-
-    return DeployManifest(
-        user_agent=data.get("user_agent", DEFAULT_USER_AGENT),
-        groups=groups,
-        deploy_all=deploy_all,
-        undeploy_all=undeploy_all or [],
-        drop_tables=drop_tables,
-        drop_statement_prefix=drop_prefix,
-    )
-
-
-def manifest_to_dict(manifest: DeployManifest) -> dict[str, Any]:
-    groups: dict[str, list[dict[str, str]]] = {}
-    for group_name, entries in manifest.groups.items():
-        groups[group_name] = [{"name": name, "file": rel} for name, rel in entries]
-
-    data: dict[str, Any] = {
-        "user_agent": manifest.user_agent,
-        "deploy_all": manifest.deploy_all,
-        "undeploy_all": manifest.undeploy_all,
-        "drop_tables": manifest.drop_tables,
-        "groups": groups,
-    }
-    if manifest.drop_statement_prefix:
-        data["drop_statement_prefix"] = manifest.drop_statement_prefix
-    return data
+    return DeployManifest.model_validate(data)
 
 
 def write_manifest(manifest: DeployManifest, manifest_path: Path) -> Path:
-    payload = manifest_to_dict(manifest)
-    text = json.dumps(payload, indent=2) + "\n"
+    text = json.dumps(manifest.model_dump(exclude_none=True), indent=2) + "\n"
     manifest_path.write_text(text, encoding="utf-8")
     return manifest_path
 
 
-def slugify(value: str) -> str:
+def _slugify(value: str) -> str:
     """Convert folder or file stem to a manifest-safe slug."""
     slug = value.strip().lower().replace("_", "-")
     slug = re.sub(r"[^a-z0-9-]+", "-", slug)
@@ -126,12 +121,17 @@ def slugify(value: str) -> str:
     return slug or "demo"
 
 
-def classify_sql_file(filename: str) -> str:
+def _classify_sql_file(filename: str) -> str:
     """Map a SQL filename to a manifest group."""
     name = filename.lower()
     if name.startswith("ddl."):
         return "ddl"
-    if name.startswith("insert_") or name.startswith("dml.insert_"):
+    if (
+        name.startswith("insert_")
+        or name.startswith("insert.")
+        or name.startswith("dml.insert_")
+        or name.startswith("dml.insert.")
+    ):
         return "data"
     if name.startswith("dml.update_") or name.startswith("scenario."):
         return "scenario"
@@ -142,7 +142,7 @@ def classify_sql_file(filename: str) -> str:
     return "pipeline"
 
 
-def statement_name(prefix: str, group: str, rel_path: str) -> str:
+def _statement_name(prefix: str, group: str, rel_path: str) -> str:
     """Build a Flink statement name from prefix, group, and SQL path relative to sql-dir."""
     path = Path(rel_path)
     stem = path.stem
@@ -150,14 +150,14 @@ def statement_name(prefix: str, group: str, rel_path: str) -> str:
         if stem.startswith(lead):
             stem = stem[len(lead) :]
             break
-    slug = slugify(stem.replace(".", "-"))
+    slug = _slugify(stem.replace(".", "-"))
     if path.parent != Path("."):
-        folder_slug = "-".join(slugify(part) for part in path.parent.parts)
+        folder_slug = "-".join(_slugify(part) for part in path.parent.parts)
         return f"{prefix}-{folder_slug}-{group}-{slug}"
     return f"{prefix}-{group}-{slug}"
 
 
-def extract_table_name_from_ddl(path: Path) -> str | None:
+def _extract_table_name_from_ddl(path: Path) -> str | None:
     """Return the table name from a CREATE TABLE DDL file."""
     match = _CREATE_TABLE_RE.search(path.read_text(encoding="utf-8"))
     if not match:
@@ -173,33 +173,37 @@ def _is_deployable_sql_path(sql_dir: Path, path: Path) -> bool:
     if not path.is_file() or path.suffix.lower() != ".sql":
         return False
     rel_parts = path.relative_to(sql_dir).parts
-    if any(part.startswith(".") or part in _SKIP_DIR_NAMES for part in rel_parts[:-1]):
+    parent_parts = rel_parts[:-1]
+    if any(part.startswith(".") or part in _SKIP_DIR_NAMES for part in parent_parts):
+        return False
+    # Seed inserts under tests/ are deployable data; skip other test fixtures (e.g. ddl.*).
+    if "tests" in parent_parts and _classify_sql_file(path.name) != "data":
         return False
     return True
 
 
-def discover_sql_files(sql_dir: Path) -> list[Path]:
+def _discover_sql_files(sql_dir: Path) -> list[Path]:
     """List deployable SQL files under a demo folder (recursive)."""
     return sorted(
         path for path in sql_dir.rglob("*.sql") if _is_deployable_sql_path(sql_dir, path)
     )
 
 
-def default_deploy_all(groups: dict[str, list[StatementRef]]) -> list[str]:
+def _default_deploy_all(groups: dict[str, list[StatementRef]]) -> list[str]:
     order = ["ddl", "pipeline", "data"]
     return [group for group in order if group in groups]
 
 
-def default_undeploy_all(groups: dict[str, list[StatementRef]]) -> list[str]:
+def _default_undeploy_all(groups: dict[str, list[StatementRef]]) -> list[str]:
     order = ["scenario", "data", "pipeline"]
     return [group for group in order if group in groups]
 
 
-def infer_drop_tables(ddl_files: list[Path]) -> list[str]:
+def _infer_drop_tables(ddl_files: list[Path]) -> list[str]:
     """Infer drop_tables order: dependents first (reverse ddl filename order)."""
     tables: list[str] = []
     for path in sorted(ddl_files):
-        table = extract_table_name_from_ddl(path)
+        table = _extract_table_name_from_ddl(path)
         if table:
             tables.append(table)
     return list(reversed(tables))
@@ -222,9 +226,13 @@ def create_manifest_from_folder(
 
     Files are grouped by naming convention:
     - ddl.*.sql -> ddl
-    - insert_*.sql / dml.insert_*.sql -> data
+    - insert_*.sql / insert.*.sql / dml.insert_*.sql / dml.insert.*.sql -> data
+      (including under a tests/ subdirectory)
     - dml.update_*.sql / scenario.*.sql -> scenario
     - other dml.*.sql -> pipeline
+
+    Files under ``tests/`` are included only when classified as ``data`` (seed inserts).
+    Other test fixtures (for example ``tests/ddl.*.sql``) are skipped.
 
     Statement names follow ``{prefix}-{group}-{file-slug}`` for top-level files,
     or ``{prefix}-{folder-slug}-{group}-{file-slug}`` when nested.
@@ -234,29 +242,29 @@ def create_manifest_from_folder(
         raise NotADirectoryError(f"sql-dir not found: {sql_dir}")
 
     manifest_path = sql_dir / manifest_name
-    if manifest_path.exists() and not overwrite:
+    if write and manifest_path.exists() and not overwrite:
         raise FileExistsError(
             f"Manifest already exists: {manifest_path} (pass overwrite=True to replace)"
         )
 
-    folder_slug = slugify(sql_dir.name)
-    prefix = slugify(prefix or folder_slug)
-    user_agent = user_agent or f"flink-studies-{folder_slug}/0.1"
+    folder_slug = _slugify(sql_dir.name)
+    prefix = _slugify(prefix or folder_slug)
+    user_agent = user_agent or DEFAULT_USER_AGENT
 
     groups: dict[str, list[StatementRef]] = {}
     ddl_files: list[Path] = []
 
-    for path in discover_sql_files(sql_dir):
+    for path in _discover_sql_files(sql_dir):
         rel = path.relative_to(sql_dir).as_posix()
-        group = classify_sql_file(path.name)
+        group = _classify_sql_file(path.name)
         if group == "ddl":
             ddl_files.append(path)
-        entry = (statement_name(prefix, group, rel), rel)
+        entry = StatementRef(name=_statement_name(prefix, group, rel), file=rel)
         groups.setdefault(group, []).append(entry)
 
-    deploy_all = default_deploy_all(groups)
-    undeploy_all = default_undeploy_all(groups)
-    drop_tables = infer_drop_tables(ddl_files)
+    deploy_all = _default_deploy_all(groups)
+    undeploy_all = _default_undeploy_all(groups)
+    drop_tables = _infer_drop_tables(ddl_files)
 
     manifest = DeployManifest(
         user_agent=user_agent,

@@ -1,7 +1,7 @@
 """
 Deploy, undeploy, snapshot, and streaming Flink SQL on Confluent Cloud via confluent-sql.
 
-Reusable from demo folders: point at a SQL directory and a deploy manifest (JSON).
+Reusable from pipeline folders: point at a SQL directory and a deploy manifest (JSON).
 Snapshot queries use SNAPSHOT cursor mode (`sql.snapshot.mode = now` is set by the driver).
 """
 
@@ -20,40 +20,21 @@ from typing import Any, Iterable, Literal
 import confluent_sql
 from confluent_sql.exceptions import OperationalError, StatementNotFoundError
 from confluent_sql.execution_mode import ExecutionMode
-from dotenv import load_dotenv
 
-from cc_deploy.manifest import (
-    DEFAULT_MANIFEST,
-    DEFAULT_USER_AGENT,
-    DeployManifest,
-    StatementRef,
-    load_manifest,
-)
+from manifest.manifest import DEFAULT_USER_AGENT, DeployManifest, StatementRef
 
 POLL_INTERVAL_SEC = float(os.environ.get("FLINK_POLL_INTERVAL", "5"))
 STATEMENT_TIMEOUT_SEC = int(os.environ.get("FLINK_STATEMENT_TIMEOUT", "600"))
 
 
-def load_dotenv_file() -> None:
-    env_file = os.environ.get("CONFLUENT_ENV_FILE") or str(Path.home() / ".confluent" / ".env")
-    load_dotenv(env_file)
-
-
 def get_config() -> dict[str, str]:
+    """Build Flink connection config from environment variables."""
     api_key = os.environ.get("FLINK_API_KEY") or os.environ.get("CONFLUENT_CLOUD_API_KEY")
     api_secret = os.environ.get("FLINK_API_SECRET") or os.environ.get("CONFLUENT_CLOUD_API_SECRET")
     org_id = os.environ.get("ORGANIZATION_ID") or os.environ.get("ORG_ID")
-    env_id = (
-        os.environ.get("ENVIRONMENT_ID")
-        or os.environ.get("ENV_ID")
-    )
-    pool_id = (
-        os.environ.get("FLINK_COMPUTE_POOL_ID")
-        or os.environ.get("CPOOLID")
-    )
-    database = (
-        os.environ.get("FLINK_DATABASE_NAME")
-    )
+    env_id = os.environ.get("ENVIRONMENT_ID") or os.environ.get("ENV_ID")
+    pool_id = os.environ.get("FLINK_COMPUTE_POOL_ID") or os.environ.get("CPOOLID")
+    database = os.environ.get("FLINK_DATABASE_NAME")
     cloud = os.environ.get("CLOUD_PROVIDER") or "aws"
     region = os.environ.get("CLOUD_REGION") or "us-west-2"
     endpoint = os.environ.get("FLINK_BASE_URL") or os.environ.get("FLINK_REST_ENDPOINT")
@@ -85,7 +66,7 @@ def get_config() -> dict[str, str]:
         "CLOUD_REGION": region,
     }
     if endpoint:
-        cfg["ENDPOINT"] = endpoint.rstrip("/")
+        cfg["FLINK_REST_ENDPOINT"] = endpoint.rstrip("/")
     return cfg
 
 
@@ -250,23 +231,22 @@ def deploy_statements(
     statements: list[StatementRef],
     *,
     sql_dir: Path,
-    config: dict[str, str],
-    user_agent: str,
+    config: dict[str, str]
 ) -> None:
-    with flink_connection(config, user_agent=user_agent) as conn:
-        for name, rel in statements:
-            run_create(conn, config, name, read_sql(sql_dir, rel))
+    with flink_connection(config, user_agent=DEFAULT_USER_AGENT) as conn:
+        for stmt in statements:
+            run_create(conn, config, stmt.name, read_sql(sql_dir, stmt.file))
 
 
 def undeploy_statements(
     statements: list[StatementRef],
     *,
     config: dict[str, str],
-    user_agent: str,
+    user_agent: str = DEFAULT_USER_AGENT
 ) -> None:
     with flink_connection(config, user_agent=user_agent) as conn:
-        for name, _ in statements:
-            run_delete(conn, name)
+        for stmt in statements:
+            run_delete(conn, stmt.name)
 
 
 def run_drop_table(
@@ -337,7 +317,7 @@ def full_undeploy(
     manifest: DeployManifest,
     *,
     config: dict[str, str],
-    drop_tables_after: bool = True,
+    drop_tables_after: bool = True
 ) -> None:
     """Stop/delete running statements, then drop tables listed in the manifest."""
     statements = manifest.statements_for_full_undeploy()
@@ -636,14 +616,15 @@ def run_streaming_query(
     sink = out if out is not None else sys.stdout
 
     started = time.monotonic()
-    rowcount = 0
     columns: list[str] = []
+    rowcount = 0
     returns_changelog = False
-    csv_header_printed = False
 
     with flink_connection(cfg, user_agent=user_agent) as conn:
-        cur = conn.streaming_cursor(as_dict=as_dict)
-        try:
+        with conn.closing_cursor(
+            as_dict=as_dict,
+            mode=ExecutionMode.STREAMING_QUERY,
+        ) as cur:
             try:
                 cur.execute(
                     sql,
@@ -652,70 +633,50 @@ def run_streaming_query(
                     compute_pool_id=pool,
                     timeout=timeout,
                 )
+                columns = [col[0] for col in (cur.description or [])]
+                returns_changelog = bool(getattr(cur, "returns_changelog", False))
+                if show_meta:
+                    print(
+                        f"Statement: {name} | streaming"
+                        f"{' | changelog' if returns_changelog else ''}",
+                        file=sys.stderr,
+                    )
+                    print(f"SQL: {sql}", file=sys.stderr)
+
+                while cur.may_have_results:
+                    if max_rows is not None and rowcount >= max_rows:
+                        break
+                    row = cur.fetchone()
+                    if row is None:
+                        time.sleep(POLL_INTERVAL_SEC)
+                        continue
+                    line = format_streaming_row(
+                        row,
+                        columns=columns or None,
+                        output=output,
+                        returns_changelog=returns_changelog,
+                    )
+                    print(line, file=sink, flush=True)
+                    rowcount += 1
+            except KeyboardInterrupt:
+                print("\nStreaming stopped (KeyboardInterrupt).", file=sys.stderr)
             except OperationalError as exc:
                 detail = str(exc)
                 if exc.http_status_code is not None:
                     detail = f"{detail} (HTTP {exc.http_status_code})"
                 raise RuntimeError(f"Streaming query failed: {detail}") from exc
-
-            columns = [col[0] for col in (cur.description or [])]
-            returns_changelog = cur.returns_changelog
-
-            if show_meta:
-                print(f"Statement: {name}", file=sys.stderr)
-                print(f"SQL: {sql}", file=sys.stderr)
-                print("Streaming results (Ctrl+C to stop)...", file=sys.stderr)
-
-            try:
-                for row in cur:
-                    if output == "csv" and not csv_header_printed:
-                        header_cols = (["op"] if returns_changelog else []) + columns
-                        if header_cols:
-                            print(
-                                ",".join(_csv_escape(col) for col in header_cols),
-                                file=sink,
-                                flush=True,
-                            )
-                            csv_header_printed = True
-
-                    print(
-                        format_streaming_row(
-                            row,
-                            columns=columns,
-                            output=output,
-                            returns_changelog=returns_changelog,
-                        ),
-                        file=sink,
-                        flush=True,
-                    )
-                    rowcount += 1
-                    if max_rows is not None and rowcount >= max_rows:
-                        if show_meta:
-                            print(f"Reached max_rows={max_rows}.", file=sys.stderr)
-                        break
-            except KeyboardInterrupt:
-                if show_meta:
-                    print("\nStreaming query stopped.", file=sys.stderr)
-        finally:
-            if delete_statement and not cur.is_closed:
-                try:
-                    cur.delete_statement()
-                except OperationalError:
-                    pass
-            cur.close()
-
-    elapsed = time.monotonic() - started
-    if show_meta:
-        print(
-            f"Rows printed: {rowcount} | elapsed: {elapsed:.2f}s",
-            file=sys.stderr,
-        )
+            finally:
+                if delete_statement and not cur.is_closed:
+                    try:
+                        cur.delete_statement()
+                    except OperationalError:
+                        pass
 
     return StreamingQueryStats(
         statement_name=name,
         sql=sql,
         columns=columns,
         rowcount=rowcount,
-        elapsed_sec=elapsed,
+        elapsed_sec=time.monotonic() - started,
         returns_changelog=returns_changelog,
     )

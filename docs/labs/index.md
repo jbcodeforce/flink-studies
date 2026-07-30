@@ -265,15 +265,6 @@ Real-time e-commerce: user actions, purchases, inventory. Flink job: revenue per
 
 **Path:** [e2e-demos/e-com-sale](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e-com-sale)
 
-### 4.7 e2e-streaming-demo
-
-Flink SQL (Alibaba Tianchi–style user_behavior): Kafka source, TUMBLE windows (hourly buy count → Elasticsearch), cumulative UV, top categories via temporal join to MySQL. Docker Compose.
-
-| Status | cccloud | cp-flink | oss-flink | Updated | Full automation |
-|--------|---------|----------|-----------|---------|-----------------|
-| Ready | — | — | ✓ | — | Manual (docker compose + manual SQL; no validate script) |
-
-**Path:** [e2e-demos/e2e-streaming-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/e2e-streaming-demo)
 
 ### 4.8 external-lookup
 
@@ -355,7 +346,7 @@ End-to-end performance assessment: configurable producer → Kafka → Flink job
 
 **Path:** [e2e-demos/perf-testing](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/perf-testing)
 
-**Cookbook lab:** [Flink Tuning on Kubernetes §10 — Tune and Observe a FlinkApplication](../cookbook/k8s_tuning.md) uses this demo with the [dedup-demo FlinkApplication](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/dedup-demo/cp-flink/flink-table-api/k8s/flink-application.yaml) for hands-on tuning exercises.
+**Cookbook lab:** [Flink App Tuning §10 — Tune and Observe a FlinkApplication](../cookbook/flink_app_tuning.md) uses this demo with the [dedup-demo FlinkApplication](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/dedup-demo/cp-flink/flink-table-api/k8s/flink-application.yaml) for hands-on tuning exercises.
 
 **Legend:** ✓ = deployment folder present with README. **Updated** = date from demo root README (e.g. "Created DD/MM/YYYY") when present; otherwise —. **Full automation** = one-command (or scripted) deploy + validation that the demo works; Partial = scripted deploy or validate only; Manual = README steps only.
 

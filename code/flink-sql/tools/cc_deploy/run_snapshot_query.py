@@ -13,17 +13,17 @@ from __future__ import annotations
 import argparse
 import sys
 
-from cc_deploy import (
-    STATEMENT_TIMEOUT_SEC,
+from deploy_flink_statements import load_dotenv_file
+from flink_deploy import (
     build_select_sql,
     default_snapshot_statement_name,
-    load_dotenv_file,
     print_snapshot_result,
     run_snapshot_query,
 )
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         description="Run a snapshot query on a Confluent Cloud Flink table."
     )
@@ -89,6 +89,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Load environment variables and run the snapshot query."""
     load_dotenv_file()
     args = parse_args()
 

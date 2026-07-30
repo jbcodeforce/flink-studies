@@ -640,7 +640,7 @@ You need to have access to:
 
 Use this recipe when throughput or latency SLOs are missed and the root cause is unclear. Symptoms include sustained backpressure, growing checkpoint duration, or single subtasks at 100% utilization while others are idle.
 
-The full symptom-to-diagnosis playbook with observability stack guidance is in [Flink Tuning on Kubernetes §9](k8s_tuning.md#9-identifying-bottlenecks-backpressure-gc-pressure-checkpoint-lag).
+The full symptom-to-diagnosis playbook with observability stack guidance is in [Flink Tuning on Kubernetes §9](flink_app_tuning.md#9-identifying-bottlenecks-backpressure-gc-pressure-checkpoint-lag).
 
 #### Preconditions / Checklist
 
@@ -651,7 +651,7 @@ The full symptom-to-diagnosis playbook with observability stack guidance is in [
 
 1. Open Flink UI → Backpressure tab; note red operators and subtask skew.
 2. Check Checkpoints → History for duration vs interval.
-3. Use the bottleneck table in [k8s_tuning.md §9](k8s_tuning.md#9-identifying-bottlenecks-backpressure-gc-pressure-checkpoint-lag) to map symptoms to first tuning knob.
+3. Use the bottleneck table in [flink_app_tuning.md §9](flink_app_tuning.md#9-identifying-bottlenecks-backpressure-gc-pressure-checkpoint-lag) to map symptoms to first tuning knob.
 4. Apply one change; re-measure before proceeding.
 
 #### Rollback
@@ -668,7 +668,7 @@ Revert the last configuration change; redeploy from savepoint if stateful.
 
 Use when TaskManagers show GC pauses, OOMKilled events, or shuffle-related backpressure with low CPU. These issues often trace to misaligned Flink process memory, managed memory, or network buffer settings on Kubernetes.
 
-Detailed recipes and configuration keys are in [Flink Tuning on Kubernetes §3, §7, and §8](k8s_tuning.md#3-memory-model-heap-managed-network-and-metaspace).
+Detailed recipes and configuration keys are in [Flink Tuning on Kubernetes §3, §7, and §8](flink_app_tuning.md#3-memory-model-heap-managed-network-and-metaspace).
 
 #### Preconditions / Checklist
 

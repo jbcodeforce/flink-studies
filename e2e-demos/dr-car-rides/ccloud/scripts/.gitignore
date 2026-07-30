@@ -1,0 +1,7 @@
+# Local / generated — do not commit
+iac-outputs.json
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
