@@ -35,9 +35,17 @@ Create table statements do not changes between managed services and standalone F
 
 * Primary key can have one or more columns, all of them should be not null, and only being `NOT ENFORCED`
 * Inside Flink processing, the primary key declaration, partitions the table implicitly by the key column(s)
-* Flink uses the primary key for state management and deduplication with upsert. While the partition key is what determines which Kafka partition a message will be written to. This is a Kafka-level concept.
+* Flink uses the primary key for state management and deduplication with upsert. While the partition key is what determines which Kafka partition a message will be written to. This is a Kafka-level concept. Flink uses DISTRIBUTION BY for defining the partition key, which should match the primary key definition.
 * For upsert mode, the bucket key must be equal to primary key. While for append/retract mode, the bucket key can be a subset of the primary key. [See more on changelog.mode](../concepts/flink-sql.md/#changelog-mode)
+* For regular CREATE TABLE (or CTAS) on non-CDC data: a simple table with no primary key defaults to `append`, while table with a primary key defaults to `upsert`. When Confluent Cloud Flink detects a Debezium envelope (before/after/op structure), it automatically sets:  
+`value.format = *-debezium-registry`,  `changelog.mode = 'retract'` (unless the topic is compacted, in which case default is `upsert`)
 
+???- question "Why is retract the default for CDC?"
+    Because it’s the only mode that is always semantically correct for full CDC history:
+    
+    * CDC needs to faithfully represent INSERT / UPDATE_BEFORE / UPDATE_AFTER / DELETE events.
+    * In retract mode, every change is encoded as +I, -U, +U, -D row kinds and Flink can rebuild correct state on reprocessing.  
+    
 * Understanding the table structure and mapping from a Kafka topic: the basic query helps a lot to understand table configuration and column types. This is helpful to assess time column, to confirm if the type of a column as event_time is a STRING, TIMESTAMP or TIMESTAMP_LTZ.
 
     ```sql
@@ -108,6 +116,9 @@ Create table statements do not changes between managed services and standalone F
     or access to read-only external tables (public or private networking endpoints) using `KEY_SEARCH_AGG`, `TEXT_SEARCH_AGG` or `VECTOR_SEARCH_AGG`. [KEY_SEARCH_AGG](https://docs.confluent.io/cloud/current/ai/external-tables/key-search.html#syntax) can be integrated with JDBC database, couchbase, mongodb or a REST endpoint.
     ```sql
     ```
+
+???+ info "Inferred Keys"
+    Some select semantic may lead to upsert or retract mode. In this case Flink infers the key to use, when they are not explicitly defined at the table definition level. Intermediate CTE or inner select may be okay but it is important to define primary keys that matches the last joins or group by. 
 
 ???+ question "How to support nested rows, DDL and inserts?"
     Avro, Protobuf or Json schemas are very often hierarchical per design. ROW and ARRAY are the objects with nested elements.
@@ -212,7 +223,9 @@ Create table statements do not changes between managed services and standalone F
         AS  <select_statement> 
     ```
 
-    FULL will trigger a batch snapshot query to fully recompute the table from bounded or snapshot‑only sources (e.g., Iceberg/Delta), and then swap the content atomically. This gives you a managed full backfill / reconciliation path and a cheaper option for low‑velocity data (nightly refresh instead of 24/7 streaming job)
+    FULL will trigger a batch snapshot query to fully recompute the table from bounded or snapshot‑only sources (e.g., Iceberg/Delta), and then swap the content atomically. This gives you a managed full backfill / reconciliation path and a cheaper option for low‑velocity data (nightly refresh instead of 24/7 streaming job) 
+
+    [SEE dedicated chapter on MT](./flink-sql-3.md#materialized-tables)
 
 
 ???+ question "Dealing with late event"
@@ -292,8 +305,57 @@ Create table statements do not changes between managed services and standalone F
 
 ### Confluent Cloud Specifics
 
-* In Confluent Cloud, partition key will generate a key schema, except if using the option (`'key.format' = 'raw'`)
-* If the destination topic doesn't define partitioning key, then CC Flink SQL will write the records in whatever partitioning that was used at the end of the query. if last operation in the query is `GROUP BY foo` or `JOIN ON A.foo = B.foo`, then output records would be partitioned on `foo` values, and they wouldn't be re-partitioned before writing them into Kafka. The `foo` partitioning is preserved. 
+* In Confluent Cloud, distribution key will generate a key schema, except if using the option (`'key.format' = 'raw'`)
+* If the destination topic doesn't define partitioning key, then CC Flink SQL will write the records in whatever partitioning that was used at the end of the query. If last operation in the query is `GROUP BY foo` or `JOIN ON A.foo = B.foo`, then output records would be partitioned on `foo` values, and they wouldn't be re-partitioned before writing them into Kafka. The `foo` partitioning is preserved. 
+* **DLQ** at the source table level can be set up so deserialization errors will route poisoned record to the topic.
+    ```sql
+    CREATE TABLE my_source_table (
+        id INT,
+        name STRING,
+        event_time TIMESTAMP_LTZ(3)
+    ) WITH (
+        'error-handling.mode' = 'log',
+        'error-handling.log.target' = 'my_source_table_error_log'
+        );
+    ```
+
+    For an existing table:
+    ```sql
+    ALTER TABLE my_source_table SET (
+        'error-handling.mode' = 'log',
+        'error-handling.log.target' = 'my_source_table_error_log'
+    );
+    ```
+
+    The default DLQ table/topic name is `error_log` when `error-handling.log.target` is omitted. 
+
+    UDF, serialization, and window-aggregation errors do not go to DLQ.
+
+    The schema of the DQL for the value is:
+    ```sql
+    error_code	INT NOT NULL
+    error_reason	STRING NOT NULL
+    error_message	STRING NOT NULL
+    error_details	MAP<STRING, STRING> NOT NULL
+    processor	STRING NOT NULL
+    statement_name	STRING
+    affected_type	STRING NOT NULL
+    affected_catalog	STRING
+    affected_database	STRING
+    affected_name	STRING
+    source_record	ROW containing topic, partition, offset, timestamp, headers, key, and value
+    ```
+
+    The principal running the DLQ configuration needs:
+
+    * DeveloperManage on the source Kafka topic
+    * DeveloperWrite on the source Schema Registry subject
+    * DeveloperWrite or DeveloperManage on the DLQ topic
+    * DeveloperWrite on the DLQ Schema Registry subject 
+
+    If Kafka ACLs are also enforced, setup additionally requires ALTER_CONFIGS on the source topic; runtime requires READ on the source topic and WRITE on the DLQ topic.
+
+
 
 ???+ tip "Primary key and partition by considerations"
     * If you have parallel queries without any data shuffling, like `INSERT INTO Table_A SELECT * FROM Table_B`, then any skew from Table_B would be repeated in Table_A. Otherwise, if partitioning key is defined (like `DISTRIBUTED BY HASH(metric) `), any writes into that topic would be shuffled by that new key.

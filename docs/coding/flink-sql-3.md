@@ -8,7 +8,6 @@ compiled: false
 ---
 # Materialized Tables
 
-
 ## Current Challenges
 
 With Flink SQL statements, developers who need to update the pipeline's logic (e.g., changing a query), have to perform a manual, error-prone process: they must stop the existing statement, create a new table with the updated query, manually manage stream offsets to prevent data loss, and migrate the downstream consumers to the new topic. This process is largely incompatible with modern CI/CD and GitOps practices.
@@ -41,7 +40,7 @@ Materialized Tables support in-place evolution via the CREATE OR ALTER command. 
     FRESHNESS = INTERVAL '10' SECOND
     AS SELECT * FROM kafka_catalog.db1.orders;
     ```
-
+* Materialized tables use the same table properties and defaults as CREATE TABLE — including changelog.mode — and support the exact same WITH options.
 * Use CREATE OR ALTER MATERIALIZED TABLE, to suspend and resume, refresh pipeline of materialized tables, to manually trigger data refreshes, and to modify the query definition of materialized tables. Users can control how much historical data is processed during these updates by configuring the START_MODE parameter. In Confluent Cloud the START_MODE default value is RESUME_OR_FROM_BEGINNING.
 
 * In Apache Flink, SUSPEND needs to set the savepoint directory:

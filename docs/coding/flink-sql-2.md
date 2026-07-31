@@ -445,7 +445,7 @@ Bundling statements in a single set reduces repeated reads from the source for e
 
 Do not use a statement set when the sources differ for each statement inside the set. If one statement in the set fails, all queries in the set fail. State is shared across statements in the set, so one stateful query can affect the others.
 
-???+ question "How to route late messages to a DLQ using a statement set?"
+???+ question "How to route late messages to a business DLQ using a statement set?"
     First, create a DLQ table like `late_orders` based on the order table:
     
     ```sql
@@ -795,6 +795,11 @@ ON t.stockid = s.id
 * When the LHS of a temporal join is upsert, the sink often needs retract changelog mode; while with an append LHS, an append sink is typical.
 * An inner join with only equality predicates is not a full Cartesian product; unconstrained joins can behave like one.
 * Outer joins (left, right, full) may emit rows with nulls for non-matching sides.
+* In upsert mode, a Kafka **tombstone** (<key,value> pair with NULL value) is interpreted as a DELETE (-D) for that key in the table. The temporal join semantics apply the following logic: 
+    * For each new row on A: look up the matching version in B “as of” that event time and emit a joined row.
+    * Deletes/retractions from A are treated as “remove previously emitted results”, not as new join inputs.
+    * The tombstones from A → become -D (retractions) for the corresponding key in A’s logical table.  
+    * The temporal join does not treat tombstone as a new “row” to be joined, so there is no new output row for the tombstone itself.
 
 ### Interval Join 
 
