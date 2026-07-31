@@ -46,6 +46,7 @@ nav:
     - Flink Project Management: cookbook/pm.md
     - Migrate to real-time processing tools: https://jbcodeforce.github.io/migration-to-flink-skills/
     - Center of Excellence: methodology/coe.md
+    - AI in stream processing: methodology/ai_sl.md
     - A C360 data product demo: https://jbcodeforce.github.io/flink_project_demos/c360/spark_project/
   - Related_Technologies:
     - Confluent Cloud Flink: techno/ccloud-flink.md 
