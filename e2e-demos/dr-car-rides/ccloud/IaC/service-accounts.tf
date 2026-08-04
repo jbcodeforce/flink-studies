@@ -7,11 +7,11 @@ data "confluent_service_account" "app_manager" {
 }
 
 data "confluent_service_account" "flink" {
-  id = data.terraform_remote_state.j9r.outputs.flink_app_sa_id
+  id = data.terraform_remote_state.j9r.outputs.env_manager_sa_id
 }
 
 data "confluent_service_account" "producer" {
-  id = data.terraform_remote_state.j9r.outputs.kafka_mgr_sa_id
+  id = data.terraform_remote_state.j9r.outputs.env_manager_sa_id
 }
 
 # --- Environment admin / Flink developer on both envs ---

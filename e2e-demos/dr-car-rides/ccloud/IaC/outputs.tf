@@ -40,11 +40,11 @@ output "dr_schema_registry_rest_endpoint" {
 }
 
 output "schema_exporter_name" {
-  value = confluent_schema_exporter.primary_to_dr.name
+  value = var.enable_schema_linking ? confluent_schema_exporter.primary_to_dr[0].name : ""
 }
 
 output "dr_schema_registry_mode" {
-  value = confluent_schema_registry_cluster_mode.dr_import.mode
+  value = var.enable_schema_linking ? confluent_schema_registry_cluster_mode.dr_import[0].mode : ""
 }
 
 output "primary_kafka_cluster_id" {
@@ -250,5 +250,5 @@ output "tableflow_role_arn" {
 }
 
 output "schema_linking_note" {
-  value = "DR SR mode=IMPORT; exporter ${confluent_schema_exporter.primary_to_dr.name} replicates subjects :*: from primary → DR (schema IDs preserved)"
+  value = var.enable_schema_linking ? "DR SR mode=IMPORT; exporter ${confluent_schema_exporter.primary_to_dr[0].name} replicates subjects :*: from primary → DR (schema IDs preserved)" : "Schema Linking disabled (enable_schema_linking=false)"
 }

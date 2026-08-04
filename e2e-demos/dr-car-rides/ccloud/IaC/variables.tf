@@ -11,6 +11,7 @@ variable "prefix" {
 variable "owner_email" {
   description = "Owner email for tagging"
   type        = string
+  default     = ""
 }
 
 variable "primary_region" {
@@ -57,10 +58,22 @@ variable "topic_partitions" {
   default     = 6
 }
 
-variable "enable_tableflow" {
-  description = "Provision Tableflow BYOB AWS integration, S3, and Glue"
+variable "enable_cluster_link" {
+  description = "Provision topics, bidirectional Cluster Linking, and DR mirrors (iteration 2)"
   type        = bool
-  default     = true
+  default     = false
+}
+
+variable "enable_schema_linking" {
+  description = "Provision DR SR IMPORT mode and primary→DR schema exporter (iteration 2)"
+  type        = bool
+  default     = false
+}
+
+variable "enable_tableflow" {
+  description = "Provision Tableflow BYOB AWS integration, S3, and Glue (later iteration)"
+  type        = bool
+  default     = false
 }
 
 variable "confluent_external_id" {

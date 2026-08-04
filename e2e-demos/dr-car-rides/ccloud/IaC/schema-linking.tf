@@ -1,10 +1,12 @@
 # -----------------------------------------------------------------------------
 # Schema Linking — DR Schema Registry IMPORT + exporter primary → DR
-# Preserves schema IDs so Flink json-registry consumers work after failover.
+# Gated by enable_schema_linking (iteration 2 with cluster link).
 # -----------------------------------------------------------------------------
 
 # Destination (DR) must be IMPORT so exported schemas keep the same IDs.
 resource "confluent_schema_registry_cluster_mode" "dr_import" {
+  count = var.enable_schema_linking ? 1 : 0
+
   schema_registry_cluster {
     id = data.confluent_schema_registry_cluster.dr.id
   }
@@ -29,6 +31,8 @@ resource "confluent_schema_registry_cluster_mode" "dr_import" {
 
 # Replicate all subjects from primary SR → DR SR (Schema Linking / exporter).
 resource "confluent_schema_exporter" "primary_to_dr" {
+  count = var.enable_schema_linking ? 1 : 0
+
   schema_registry_cluster {
     id = data.confluent_schema_registry_cluster.primary.id
   }

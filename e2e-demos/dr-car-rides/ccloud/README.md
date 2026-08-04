@@ -6,14 +6,14 @@ Provision **DR** Confluent Cloud environment/cluster (primary reuses existing `j
 
 ## Status
 
-Ready for guided demo (requires CC org + AWS credentials). Dual Standard clusters, dual Stream Governance, and Tableflow incur cost.
+Requires CC org + AWS credentials. Dual Standard clusters, dual Stream Governance, and Tableflow incur cost.
 
 ## Implementation approach
 
 | Phase | Location | What |
 |-------|----------|------|
 | 0 — Primary catalog | [`IaC/import-j9r-env/`](./IaC/import-j9r-env/) | Imported `j9r-env` / `j9r-kafka` + outputs for remote state |
-| 1 — IaC | [`IaC/`](./IaC/) | Terraform: reuse primary; create DR env/Kafka, 2 Flink pools, Schema Linking, Cluster Link, mirrors, dual-region S3/Glue, Tableflow PI per env |
+| 1 — IaC | [`IaC/`](./IaC/) | Terraform (incremental): reuse primary; create DR env/Kafka/SR/SAs/Flink pools first; Cluster Link + Schema Linking next; AWS/Tableflow later |
 | 2 — App | [`flink-sql/`](./flink-sql/) | Flink DDL/DML (primary Terraform; DR via scripts on failover) + Tableflow on `driver_stats` |
 | Ops | [`scripts/`](./scripts/) | Soft/promote failover, failback (incl. schema reverse), `export-env.sh` (Kafka + SR per site) |
 | Data | [`../python/`](../python/) | Continuous producer + `assess_loss` |
@@ -29,7 +29,7 @@ Ready for guided demo (requires CC org + AWS credentials). Dual Standard cluster
 
 ## How to run
 
-### 1. Apply infrastructure
+### 1. Get existing infrastructure data
 
 ```bash
 cd IaC/import-j9r-env && terraform init && terraform apply && cd ..

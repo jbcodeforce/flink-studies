@@ -1,4 +1,0 @@
-# Optional overrides; secrets via CONFLUENT_CLOUD_API_* env vars
-# deploy_site            = "primary"
-# statement_name_prefix  = "dr-rides-primary"
-# iac_state_path         = "../../IaC/terraform.tfstate"

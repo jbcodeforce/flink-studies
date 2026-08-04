@@ -2,7 +2,9 @@
 # AWS — dual-region S3 + Glue for Tableflow BYOB
 # -----------------------------------------------------------------------------
 
-data "aws_caller_identity" "current" {}
+data "aws_caller_identity" "current" {
+  count = var.enable_tableflow ? 1 : 0
+}
 
 locals {
   confluent_cloud_account_id = "197857026523"
@@ -165,12 +167,12 @@ resource "aws_iam_role_policy" "tableflow_combined" {
           "glue:BatchUpdatePartition"
         ]
         Resource = [
-          "arn:aws:glue:${var.primary_region}:${data.aws_caller_identity.current.account_id}:catalog",
-          "arn:aws:glue:${var.primary_region}:${data.aws_caller_identity.current.account_id}:database/${local.glue_db_primary}",
-          "arn:aws:glue:${var.primary_region}:${data.aws_caller_identity.current.account_id}:table/${local.glue_db_primary}/*",
-          "arn:aws:glue:${var.dr_region}:${data.aws_caller_identity.current.account_id}:catalog",
-          "arn:aws:glue:${var.dr_region}:${data.aws_caller_identity.current.account_id}:database/${local.glue_db_dr}",
-          "arn:aws:glue:${var.dr_region}:${data.aws_caller_identity.current.account_id}:table/${local.glue_db_dr}/*",
+          "arn:aws:glue:${var.primary_region}:${data.aws_caller_identity.current[0].account_id}:catalog",
+          "arn:aws:glue:${var.primary_region}:${data.aws_caller_identity.current[0].account_id}:database/${local.glue_db_primary}",
+          "arn:aws:glue:${var.primary_region}:${data.aws_caller_identity.current[0].account_id}:table/${local.glue_db_primary}/*",
+          "arn:aws:glue:${var.dr_region}:${data.aws_caller_identity.current[0].account_id}:catalog",
+          "arn:aws:glue:${var.dr_region}:${data.aws_caller_identity.current[0].account_id}:database/${local.glue_db_dr}",
+          "arn:aws:glue:${var.dr_region}:${data.aws_caller_identity.current[0].account_id}:table/${local.glue_db_dr}/*",
         ]
       }
     ]

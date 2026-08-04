@@ -9,6 +9,20 @@ cd code/flink-sql/tools
 uv sync
 ```
 
+## Sync from cc-tools
+
+`cc_deploy` and `manifest` are copies from
+`migration-to-flink-skills/cc-tools/src`. Sync only when upstream file SHAs
+change; the fingerprint is `cc-tools-sync.sha256`.
+
+```sh
+cd code/flink-sql/tools
+./sync-cc-tools.sh
+
+# Override source root if needed
+CC_TOOLS_SRC=/path/to/cc-tools/src ./sync-cc-tools.sh
+```
+
 ## create_deploy_manifest
 
 Each demo folder for cc deployment should include a `deploy_manifest.json` file to declare what to deploy. This file lists a set of group and then in each groups the name of the statement and file to match.

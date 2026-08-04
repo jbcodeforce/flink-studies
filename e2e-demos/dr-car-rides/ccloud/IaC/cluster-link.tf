@@ -1,5 +1,6 @@
 # -----------------------------------------------------------------------------
 # Topics on primary + bidirectional Cluster Link + mirror topics on DR
+# Gated by enable_cluster_link (iteration 2).
 # -----------------------------------------------------------------------------
 
 locals {
@@ -8,10 +9,11 @@ locals {
     "rides_clean",
     "driver_stats",
   ])
+  cluster_link_topics = var.enable_cluster_link ? local.topic_names : toset([])
 }
 
 resource "confluent_kafka_topic" "primary" {
-  for_each = local.topic_names
+  for_each = local.cluster_link_topics
 
   kafka_cluster {
     id = data.confluent_kafka_cluster.primary.id
@@ -36,6 +38,8 @@ resource "confluent_kafka_topic" "primary" {
 
 # Bidirectional cluster link (both directions, same link_name)
 resource "confluent_cluster_link" "primary_to_dr" {
+  count = var.enable_cluster_link ? 1 : 0
+
   link_name = var.cluster_link_name
   link_mode = "BIDIRECTIONAL"
 
@@ -64,6 +68,8 @@ resource "confluent_cluster_link" "primary_to_dr" {
 }
 
 resource "confluent_cluster_link" "dr_to_primary" {
+  count = var.enable_cluster_link ? 1 : 0
+
   link_name = var.cluster_link_name
   link_mode = "BIDIRECTIONAL"
 
@@ -92,14 +98,14 @@ resource "confluent_cluster_link" "dr_to_primary" {
 
 # Mirror topics on DR (destination must not already have these topics)
 resource "confluent_kafka_mirror_topic" "dr" {
-  for_each = local.topic_names
+  for_each = local.cluster_link_topics
 
   source_kafka_topic {
     topic_name = each.value
   }
 
   cluster_link {
-    link_name = confluent_cluster_link.dr_to_primary.link_name
+    link_name = confluent_cluster_link.dr_to_primary[0].link_name
   }
 
   kafka_cluster {

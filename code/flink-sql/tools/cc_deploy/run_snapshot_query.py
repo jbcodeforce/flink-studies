@@ -13,8 +13,9 @@ from __future__ import annotations
 import argparse
 import sys
 
-from deploy_flink_statements import load_dotenv_file
-from flink_deploy import (
+from cc_deploy.deploy_flink_statements import load_dotenv_file
+from cc_deploy.flink_deploy import (
+    STATEMENT_TIMEOUT_SEC,
     build_select_sql,
     default_snapshot_statement_name,
     print_snapshot_result,

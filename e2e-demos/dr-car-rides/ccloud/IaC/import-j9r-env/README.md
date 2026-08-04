@@ -1,23 +1,32 @@
-# Import catalog — j9r primary
+# Import catalog — j9r primary only
 
-Holds Terraform resources imported from the Confluent org, with **outputs** for the DR car-rides stack to consume via `terraform_remote_state`.
+Imports a single environment (`j9r-env`), its Kafka cluster (`j9r-kafka`), and one service account. Outputs feed the parent DR IaC via `terraform_remote_state`.
 
-Primary resources used by the demo:
+| Resource | Terraform address | ID (default) |
+|----------|-------------------|--------------|
+| Environment | `confluent_environment.env` | `env-yk3jm6` |
+| Kafka cluster | `confluent_kafka_cluster.standard` | `lkc-7v233w` |
+| Service account | `confluent_service_account.env-manager` | `sa-111z1z` |
 
-| Resource | Display name | Typical ID |
-|----------|--------------|------------|
-| Environment | `j9r-env` | `env-yk3jm6` |
-| Kafka cluster | `j9r-kafka` | `lkc-7v233w` (us-west-2) |
-| SAs | `j9r-env-manager`, `j9r-kafka-mgr`, `j9r-flink-app`, `j9r-fd-sa` | see `terraform output` |
+IDs are set in `variables.tf` / `import.tf`.
 
-## Refresh outputs
+## Apply (import)
 
 ```bash
 export CONFLUENT_CLOUD_API_KEY=...
 export CONFLUENT_CLOUD_API_SECRET=...
-# Plus Schema Registry vars if required by provider block in main.tf
+# Optional SR vars if your provider config requires them
 terraform init
+terraform plan    # should show import of the 3 resources
+terraform apply
+terraform output
+```
+
+If you previously imported the org-wide catalog, remove the old state first:
+
+```bash
+rm -f terraform.tfstate terraform.tfstate.backup
 terraform apply
 ```
 
-State file `terraform.tfstate` is gitignored. The parent DR IaC reads it at `import-j9r-env/terraform.tfstate`.
+State is gitignored. Parent DR IaC reads `import-j9r-env/terraform.tfstate`.

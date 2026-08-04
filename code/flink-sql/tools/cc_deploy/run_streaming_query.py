@@ -13,11 +13,11 @@ from __future__ import annotations
 import argparse
 import sys
 
-from cc_deploy import (
+from cc_deploy.deploy_flink_statements import load_dotenv_file
+from cc_deploy.flink_deploy import (
     STATEMENT_TIMEOUT_SEC,
     build_select_sql,
     default_streaming_statement_name,
-    load_dotenv_file,
     run_streaming_query,
 )
 

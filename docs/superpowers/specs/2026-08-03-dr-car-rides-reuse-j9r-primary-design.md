@@ -14,7 +14,7 @@ Stop creating a new primary Confluent environment and Kafka cluster for the DR c
 |----------|--------|
 | Primary reuse | Both `j9r-env` and `j9r-kafka` |
 | Regions | Primary `us-west-2` (existing cluster), DR `us-east-1` |
-| Service accounts | Reuse j9r SAs; create new API keys and role bindings |
+| Service accounts | Single imported SA (`env-manager` / `sa-111z1z`); create new API keys and role bindings |
 | Discovery | `terraform_remote_state` from `import-j9r-env` |
 | Primary Flink pool | Always create a new demo pool in `j9r-env`; also create DR pool |
 

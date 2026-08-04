@@ -45,3 +45,4 @@ e2e-demos/cc-cdc-tx-demo/cc-flink-sql/staging/
 **/.env
 **/*.duckdb
 **/dbt.log
+**/iac-outputs.json

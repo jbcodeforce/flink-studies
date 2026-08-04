@@ -10,7 +10,7 @@ Usage:
 
 Each pipeline folder supplies deploy_manifest.json listing statement groups, SQL files,
 undeploy_all order, and drop_tables for full teardown.
-Environment: see cc_deploy.flink_deploy (loads ~/.confluent/.env by default).
+Environment: loads ``DOTENV_FILE`` or ``{repo_root}/.env`` (same convention as the monorepo skills).
 """
 
 from __future__ import annotations
@@ -30,10 +30,45 @@ from cc_deploy.flink_deploy import (
     undeploy_statements,
 )
 
-def load_dotenv_file() -> None:
-    """Load env from .env file."""
-    env_file = os.environ.get("CONFLUENT_ENV_FILE") or str(Path.home() / ".confluent" / ".env")
-    load_dotenv(env_file)
+_DOTENV_ENV_VAR = "DOTENV_FILE"
+
+
+def find_repo_root(start: Path | None = None) -> Path:
+    """Walk parents until ``references/flink/valid`` exists."""
+    here = (start or Path(__file__)).resolve()
+    search = here if here.is_dir() else here.parent
+    for parent in [search, *search.parents]:
+        if (parent / "references" / "flink" / "valid").is_dir():
+            return parent
+    raise FileNotFoundError(
+        "Could not locate repo root containing references/flink/valid "
+        f"(started from {here})"
+    )
+
+
+def resolve_dotenv_path(repo_root: Path | None = None) -> Path | None:
+    """Resolve ``DOTENV_FILE`` or ``{repo_root}/.env``."""
+    root = repo_root or find_repo_root()
+    raw = os.environ.get(_DOTENV_ENV_VAR)
+    if raw:
+        path = Path(raw)
+        if not path.is_absolute():
+            path = (root / path).resolve()
+    else:
+        path = root / ".env"
+    return path if path.is_file() else None
+
+
+def load_dotenv_file(*, start: Path | None = None) -> bool:
+    """Load env from ``DOTENV_FILE`` or repo-root ``.env``."""
+    try:
+        root = find_repo_root(start)
+    except FileNotFoundError:
+        return False
+    path = resolve_dotenv_path(root)
+    if path is None:
+        return False
+    return load_dotenv(path, override=True)
 
 
 def _parse_args() -> argparse.Namespace:
