@@ -28,6 +28,7 @@ try:
     from confluent_kafka.schema_registry.json_schema import JSONSerializer
     from confluent_kafka.serialization import MessageField, SerializationContext, StringSerializer
 except ImportError as exc:  # pragma: no cover
+    print(exc)
     raise SystemExit(
         "Install deps: pip install 'confluent-kafka[schema-registry]>=2.3' pydantic"
     ) from exc

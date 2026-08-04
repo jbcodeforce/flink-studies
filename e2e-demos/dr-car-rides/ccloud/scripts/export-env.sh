@@ -4,7 +4,9 @@
 set -euo pipefail
 
 SITE="${1:-primary}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_SRC="${BASH_SOURCE[0]:-$0}"
+SCRIPT_DIR="$(cd "$(dirname "$_SRC")" && pwd)"
+unset _SRC
 OUTPUTS="${IAC_OUTPUTS:-$SCRIPT_DIR/iac-outputs.json}"
 
 if [[ ! -f "$OUTPUTS" ]]; then
@@ -45,8 +47,18 @@ if [[ "$SITE" == "primary" ]]; then
   KAFKA_REST_ENDPOINT="$(get primary_rest_endpoint)"
   export KAFKA_CLUSTER_ID
   KAFKA_CLUSTER_ID="$(get primary_kafka_cluster_id)"
+  export FLINK_API_KEY
+  FLINK_API_KEY="$(get flink_api_key_primary)"
+  export FLINK_API_SECRET
+  FLINK_API_SECRET="$(get flink_api_secret_primary)"
   export FLINK_COMPUTE_POOL_ID
   FLINK_COMPUTE_POOL_ID="$(get primary_flink_compute_pool_id)"
+  export FLINK_REST_ENDPOINT
+  FLINK_REST_ENDPOINT="$(get primary_flink_rest_endpoint)"
+  export FLINK_DATABASE_NAME
+  FLINK_DATABASE_NAME="$(get primary_kafka_cluster_display_name)"
+  export CLOUD_REGION
+  CLOUD_REGION="$(get primary_region)"
   export ACTIVE_SITE=primary
 elif [[ "$SITE" == "dr" ]]; then
   export CONFLUENT_ENVIRONMENT_ID
@@ -67,12 +79,33 @@ elif [[ "$SITE" == "dr" ]]; then
   KAFKA_REST_ENDPOINT="$(get dr_rest_endpoint)"
   export KAFKA_CLUSTER_ID
   KAFKA_CLUSTER_ID="$(get dr_kafka_cluster_id)"
+  export FLINK_API_KEY
+  FLINK_API_KEY="$(get flink_api_key_dr)"
+  export FLINK_API_SECRET
+  FLINK_API_SECRET="$(get flink_api_secret_dr)"
   export FLINK_COMPUTE_POOL_ID
   FLINK_COMPUTE_POOL_ID="$(get dr_flink_compute_pool_id)"
+  export FLINK_REST_ENDPOINT
+  FLINK_REST_ENDPOINT="$(get dr_flink_rest_endpoint)"
+  export FLINK_DATABASE_NAME
+  FLINK_DATABASE_NAME="$(get dr_kafka_cluster_display_name)"
+  export CLOUD_REGION
+  CLOUD_REGION="$(get dr_region)"
   export ACTIVE_SITE=dr
 else
   echo "Usage: source export-env.sh primary|dr" >&2
   return 1 2>/dev/null || exit 1
 fi
 
-echo "Exported env for site=$ACTIVE_SITE env=$CONFLUENT_ENVIRONMENT_ID sr=$SCHEMA_REGISTRY_ENDPOINT"
+# Aliases expected by cc_deploy.get_config
+export FLINK_ENV_ID="${CONFLUENT_ENVIRONMENT_ID}"
+export ENVIRONMENT_ID="${CONFLUENT_ENVIRONMENT_ID}"
+export ENV_ID="${CONFLUENT_ENVIRONMENT_ID}"
+export CLOUD_PROVIDER="${CLOUD_PROVIDER:-aws}"
+
+if [[ -z "${FLINK_API_KEY}" || -z "${FLINK_API_SECRET}" ]]; then
+  echo "Missing Flink API key/secret in $OUTPUTS for site=$SITE" >&2
+  return 1 2>/dev/null || exit 1
+fi
+
+echo "Exported env for site=$ACTIVE_SITE env=$CONFLUENT_ENVIRONMENT_ID pool=$FLINK_COMPUTE_POOL_ID db=$FLINK_DATABASE_NAME"

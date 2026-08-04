@@ -320,7 +320,9 @@ For Flink we can consider two main patterns:
 
 Recall a traditional data streaming processing includes at least the following components:
 
+<figure markdown="span">
 ![](./diagrams/raw-to-sink.drawio.png)
+</figure>
 
 Another view will be at the deployed components, which we can assess how, each component, needs to support DR:
 

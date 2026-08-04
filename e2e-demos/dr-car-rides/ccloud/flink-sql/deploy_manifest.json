@@ -1,0 +1,42 @@
+{
+  "user_agent": "cc-sql-tools/0.1",
+  "groups": {
+    "ddl": [
+      {
+        "name": "flink-sql-dims-ddl-rides-clean",
+        "file": "dims/ddl.rides_clean.sql"
+      },
+      {
+        "name": "flink-sql-facts-ddl-driver-stats",
+        "file": "facts/ddl.driver_stats.sql"
+      },
+      {
+        "name": "flink-sql-seed-ddl-rides-raw",
+        "file": "seed/ddl.rides_raw.sql"
+      }
+    ],
+    "pipeline": [
+      {
+        "name": "flink-sql-dims-pipeline-rides-clean",
+        "file": "dims/dml.rides_clean.sql"
+      },
+      {
+        "name": "flink-sql-facts-pipeline-driver-stats",
+        "file": "facts/dml.driver_stats.sql"
+      }
+    ]
+  },
+  "deploy_all": [
+    "ddl",
+    "pipeline"
+  ],
+  "undeploy_all": [
+    "pipeline"
+  ],
+  "drop_tables": [
+    "rides_raw",
+    "driver_stats",
+    "rides_clean"
+  ],
+  "drop_statement_prefix": "flink-sql-drop"
+}

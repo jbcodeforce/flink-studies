@@ -2,7 +2,8 @@
 # Install: uv sync
 # Usage: make deploy SQL_DIR=../00-basic-sql/cc-flink
 
-PYTHON ?= python3
+# Prefer tools/.venv via uv (not system python3).
+PYTHON ?= uv run python
 SQL_DIR ?= ../11-puzzles/cart_update
 
 .PHONY: sync deploy undeploy drop-tables deploy-% undeploy-%
