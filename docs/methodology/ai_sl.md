@@ -6,8 +6,6 @@
 * **Core Thesis:** AI accelerates the transition from traditional, downstream batch data warehousing to upstream, real-time "Shift Left Analytics." However, because **data is not software**, pointing naive AI agents at data streams causes severe hallucination, state explosions, and semantic failures. Successfully scaling real-time analytics requires pairing stream engines like Apache Flink on Confluent Cloud with explicit Data Contracts, canonical streaming data models, and curated AI Skills.
 * **Key Real-World Anchor:** Integrating our project experiences and Anthropics's battle-tested framework for AI analytics—where they automated **95% of business analytics queries with ~95% accuracy** by fixing data foundations, context retrieval, and semantic governance.
 * **Target Audience:** Data Architects, Lead Data Engineers, Analytics Engineering Managers, and CTO/VP of Data.
-* **Duration:** ~30–45 minutes.
-
 
 ---
 
@@ -17,7 +15,9 @@
 * **The Core Reality: Data is Not Software**
 Most AI coding assistants (e.g., Claude Code, GitHub Copilot) excel at software engineering because software development has a deterministic feedback loop: code compiles, tests pass or fail, and types are validated. Those provide instant guardrails against hallucinations.
 
-In data analytics—and specifically stream processing—SQL generation faces a fundamentally different challenge.There is no simple compiler check to prove if a SQL query’s business logic is actually correct. A syntactically valid SQL query will execute happily on Apache Flink while producing completely erroneous business results or slowly eating cluster memory.
+In data analytics—and specifically stream processing—SQL generation faces a fundamentally different challenge. There is no simple compiler check to prove if a SQL query’s business logic is actually correct. A syntactically valid SQL query will execute happily on Apache Flink while producing completely erroneous business results or slowly eating cluster memory.
+
+The following figure illustrates those two different paths:
 
 <figure markdown='span'>
 ![](./diagrams/verification_gap.drawio.png)

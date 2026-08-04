@@ -10,7 +10,7 @@ Approved brainstorming design for `e2e-demos/dr-car-rides`, updated for dual Sch
 | Offsets / state | Hybrid — DR Flink starts with `earliest-offset` rebuild; measure loss via producer `seq` (CC checkpoints are not portable across regions) |
 | Failure simulation | Soft failover (default) + promote/mirror failover (optional) |
 | Catalog | AWS Glue + Tableflow BYOB S3 in both regions; catalog cutover is part of the teaching story |
-| Topology | **Two Confluent environments** (primary + DR), each with Kafka cluster, Schema Registry, and Flink compute pool in different cloud regions |
+| Topology | **Two Confluent environments** — primary reuses existing `j9r-env` / `j9r-kafka` (`us-west-2`); DR env/cluster created in `us-east-1`. Each side has its own Schema Registry and Flink compute pool |
 | Schemas | Schema Linking: DR SR in `IMPORT` mode; exporter primary → DR (`subjects = [":*:"]`) preserves schema IDs |
 | Scope (v1) | Confluent Cloud only (`cccloud/`) |
 
@@ -35,7 +35,7 @@ flowchart LR
 
 ### Steady state
 
-- **Two environments** so each region has its own Schema Registry (required for Schema Linking on Confluent Cloud).
+- **Primary** reuses existing `j9r-env` / `j9r-kafka`; **DR** is a new environment/cluster so each region has its own Schema Registry (required for Schema Linking on Confluent Cloud).
 - Producer writes to primary Kafka + primary SR.
 - Flink runs only on primary.
 - Tableflow on `driver_stats` → primary S3 + Glue; DR has its own Tableflow provider integration for failover.
@@ -75,7 +75,8 @@ e2e-demos/dr-car-rides/
   README.md
   python/
   cccloud/
-    IaC/           # dual env, Cluster Link, Schema Linking, AWS
+    IaC/           # reuse j9r primary; create DR + Cluster Link + Schema Linking + AWS
+    IaC/import-j9r-env/  # imported j9r-env catalog + remote_state outputs
     flink-sql/
     scripts/
 ```

@@ -314,11 +314,15 @@ DR for Flink depends on the deployment model (Confluent Cloud, Confluent Platfor
 For Flink we can consider two main patterns:
 
 * **Active/active**: Two (or more) regions run identical Flink jobs continuously, both processing the same input (with replication delay in the secondary). Best for low RTO, large state, or when you need exactly-once semantics and both regions to produce the same results.
-* **Active/passive**: Flink runs only in the primary region; in the DR region, Flink jobs are started on failover. Best when state can be recreated quickly (e.g. stateless or small time windows) or when at-least-once/at-most-once is acceptable. It is relevant for use cases that fail forward, and that require failing back to the original region within weeks of the outage.
+* **Active/passive**: Flink runs only in the primary region; in the DR region, Flink jobs are started on failover. Best when state can be recreated quickly (e.g. stateless or small time windows) or when at-least-once/at-most-once is acceptable. It is relevant for use cases that fail forward, and that require failing back to the original region within weeks of the outage. Stateful/windowed Flink statements may still be deployed in this mode, but those statements need to be running against mirrored input topics, allowing Flink to maintain equivalent state with the primary region. Do not mirror flink sink topics because asynchronous replication can leave state inconsitent.
 
 ### DSP Elements to consider
 
-Let start by defining a data streaming processing for sources to Iceberg Tables, so we can assess for each component what need to be done to support DR:
+Recall a traditional data streaming processing includes at least the following components:
+
+![](./diagrams/raw-to-sink.drawio.png)
+
+Another view will be at the deployed components, which we can assess how, each component, needs to support DR:
 
 <figure markdown="span">
 ![](./diagrams/dsp-elements.drawio.png)

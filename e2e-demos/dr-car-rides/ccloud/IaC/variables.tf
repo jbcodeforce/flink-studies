@@ -14,15 +14,15 @@ variable "owner_email" {
 }
 
 variable "primary_region" {
-  description = "AWS / Confluent Cloud region for the primary Kafka cluster and Flink pool"
+  description = "AWS / Confluent Cloud region for the primary Kafka cluster and Flink pool (must match reused j9r-kafka)"
   type        = string
-  default     = "us-east-1"
+  default     = "us-west-2"
 }
 
 variable "dr_region" {
   description = "AWS / Confluent Cloud region for the DR Kafka cluster and Flink pool"
   type        = string
-  default     = "us-west-2"
+  default     = "us-east-1"
 }
 
 variable "confluent_cloud_api_key" {

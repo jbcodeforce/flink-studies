@@ -3,8 +3,8 @@
 
 owner_email    = "you@example.com"
 prefix         = "dr-rides"
-primary_region = "us-east-1"
-dr_region      = "us-west-2"
+primary_region = "us-west-2"
+dr_region      = "us-east-1"
 
 # Optional — leave empty to use environment variables
 # confluent_cloud_api_key    = ""

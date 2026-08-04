@@ -11,7 +11,7 @@ resource "confluent_schema_registry_cluster_mode" "dr_import" {
   rest_endpoint = data.confluent_schema_registry_cluster.dr.rest_endpoint
   mode          = "IMPORT"
   # force allows switching to IMPORT even if default subjects exist
-  force         = true
+  force = true
 
   credentials {
     key    = confluent_api_key.app_manager_sr_dr.id

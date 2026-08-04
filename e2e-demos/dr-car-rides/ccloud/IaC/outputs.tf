@@ -3,11 +3,11 @@
 # -----------------------------------------------------------------------------
 
 output "primary_environment_id" {
-  value = confluent_environment.primary.id
+  value = data.confluent_environment.primary.id
 }
 
 output "primary_environment_display_name" {
-  value = confluent_environment.primary.display_name
+  value = data.confluent_environment.primary.display_name
 }
 
 output "dr_environment_id" {
@@ -20,7 +20,7 @@ output "dr_environment_display_name" {
 
 # Alias used by older script snippets — primary env
 output "confluent_environment_id" {
-  value = confluent_environment.primary.id
+  value = data.confluent_environment.primary.id
 }
 
 output "primary_schema_registry_id" {
@@ -48,19 +48,19 @@ output "dr_schema_registry_mode" {
 }
 
 output "primary_kafka_cluster_id" {
-  value = confluent_kafka_cluster.primary.id
+  value = data.confluent_kafka_cluster.primary.id
 }
 
 output "primary_kafka_cluster_display_name" {
-  value = confluent_kafka_cluster.primary.display_name
+  value = data.confluent_kafka_cluster.primary.display_name
 }
 
 output "primary_bootstrap_endpoint" {
-  value = confluent_kafka_cluster.primary.bootstrap_endpoint
+  value = data.confluent_kafka_cluster.primary.bootstrap_endpoint
 }
 
 output "primary_rest_endpoint" {
-  value = confluent_kafka_cluster.primary.rest_endpoint
+  value = data.confluent_kafka_cluster.primary.rest_endpoint
 }
 
 output "dr_kafka_cluster_id" {
@@ -100,11 +100,11 @@ output "cluster_link_name" {
 }
 
 output "app_manager_service_account_id" {
-  value = confluent_service_account.app_manager.id
+  value = data.confluent_service_account.app_manager.id
 }
 
 output "flink_service_account_id" {
-  value = confluent_service_account.flink.id
+  value = data.confluent_service_account.flink.id
 }
 
 output "flink_api_key_primary" {

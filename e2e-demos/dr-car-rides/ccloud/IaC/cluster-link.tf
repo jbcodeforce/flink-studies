@@ -14,11 +14,11 @@ resource "confluent_kafka_topic" "primary" {
   for_each = local.topic_names
 
   kafka_cluster {
-    id = confluent_kafka_cluster.primary.id
+    id = data.confluent_kafka_cluster.primary.id
   }
   topic_name       = each.value
   partitions_count = var.topic_partitions
-  rest_endpoint    = confluent_kafka_cluster.primary.rest_endpoint
+  rest_endpoint    = data.confluent_kafka_cluster.primary.rest_endpoint
 
   credentials {
     key    = confluent_api_key.app_manager_primary_kafka.id
@@ -40,8 +40,8 @@ resource "confluent_cluster_link" "primary_to_dr" {
   link_mode = "BIDIRECTIONAL"
 
   local_kafka_cluster {
-    id            = confluent_kafka_cluster.primary.id
-    rest_endpoint = confluent_kafka_cluster.primary.rest_endpoint
+    id            = data.confluent_kafka_cluster.primary.id
+    rest_endpoint = data.confluent_kafka_cluster.primary.rest_endpoint
     credentials {
       key    = confluent_api_key.app_manager_primary_kafka.id
       secret = confluent_api_key.app_manager_primary_kafka.secret
@@ -77,8 +77,8 @@ resource "confluent_cluster_link" "dr_to_primary" {
   }
 
   remote_kafka_cluster {
-    id                 = confluent_kafka_cluster.primary.id
-    bootstrap_endpoint = confluent_kafka_cluster.primary.bootstrap_endpoint
+    id                 = data.confluent_kafka_cluster.primary.id
+    bootstrap_endpoint = data.confluent_kafka_cluster.primary.bootstrap_endpoint
     credentials {
       key    = confluent_api_key.app_manager_primary_kafka.id
       secret = confluent_api_key.app_manager_primary_kafka.secret

@@ -2,7 +2,7 @@
 
 ## Goal
 
-Provision **two** Confluent Cloud environments (primary + DR regions), run an active/passive Flink pipeline on car-ride events, mirror topics with Cluster Linking, **replicate schemas with Schema Linking**, materialize aggregates with Tableflow/Glue, and practice soft + promote failover with sequence-based loss assessment.
+Provision **DR** Confluent Cloud environment/cluster (primary reuses existing `j9r-env` / `j9r-kafka`), run an active/passive Flink pipeline on car-ride events, mirror topics with Cluster Linking, **replicate schemas with Schema Linking**, materialize aggregates with Tableflow/Glue, and practice soft + promote failover with sequence-based loss assessment.
 
 ## Status
 
@@ -12,7 +12,8 @@ Ready for guided demo (requires CC org + AWS credentials). Dual Standard cluster
 
 | Phase | Location | What |
 |-------|----------|------|
-| 1 — IaC | [`IaC/`](./IaC/) | Terraform: 2 envs, 2 Kafka clusters, 2 Flink pools, 2 Schema Registries, Schema Linking (IMPORT + exporter), bidirectional Cluster Link, mirrors, dual-region S3/Glue, Tableflow PI per env |
+| 0 — Primary catalog | [`IaC/import-j9r-env/`](./IaC/import-j9r-env/) | Imported `j9r-env` / `j9r-kafka` + outputs for remote state |
+| 1 — IaC | [`IaC/`](./IaC/) | Terraform: reuse primary; create DR env/Kafka, 2 Flink pools, Schema Linking, Cluster Link, mirrors, dual-region S3/Glue, Tableflow PI per env |
 | 2 — App | [`flink-sql/`](./flink-sql/) | Flink DDL/DML (primary Terraform; DR via scripts on failover) + Tableflow on `driver_stats` |
 | Ops | [`scripts/`](./scripts/) | Soft/promote failover, failback (incl. schema reverse), `export-env.sh` (Kafka + SR per site) |
 | Data | [`../python/`](../python/) | Continuous producer + `assess_loss` |
@@ -20,6 +21,8 @@ Ready for guided demo (requires CC org + AWS credentials). Dual Standard cluster
 ## Prerequisites
 
 - Terraform `>= 1.3`, Confluent Cloud API key with org access
+- Confluent Cloud [terraform provider](https://registry.terraform.io/providers/confluentinc/confluent/latest) - version 2.81.0+
+- Existing `j9r-env` primary (imported under `IaC/import-j9r-env/`; apply that stack first so outputs exist)
 - AWS credentials (S3 + Glue + IAM for Tableflow BYOB)
 - Python 3.11+ with `uv` or `pip` (`confluent-kafka[schema-registry]`, `pydantic`)
 - Optional: Confluent CLI for promote / statement stop / exporter pause
@@ -29,7 +32,7 @@ Ready for guided demo (requires CC org + AWS credentials). Dual Standard cluster
 ### 1. Apply infrastructure
 
 ```bash
-cd IaC
+cd IaC/import-j9r-env && terraform init && terraform apply && cd ..
 cp terraform.tfvars.example terraform.tfvars
 terraform init && terraform apply
 terraform output -json > ../scripts/iac-outputs.json

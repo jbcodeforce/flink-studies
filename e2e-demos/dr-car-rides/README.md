@@ -1,27 +1,45 @@
 # DR Car Rides — Active/Passive Disaster Recovery Demo
 
-Demonstrate Confluent Cloud **active/passive** multi-region DR for a data streaming processing (DSP): car-ride events → Flink (stateless + stateful) → Tableflow / Iceberg / Glue, with **Cluster Linking**, **Schema Linking** (dual Schema Registry), and measurable RPO via a monotonic `seq`.
+The goal it to demonstrate Confluent Cloud **active/passive** multi-region disaster recovery for a data streaming processing (DSP): 
 
-**Design:** [DESIGN.md](./DESIGN.md)  
-**Cookbook:** [Disaster Recovery & Multi-Region](../../docs/cookbook/cluster_mgt.md#3-disaster-recovery--multi-region-strategies)
+Provision a DR Confluent Cloud environment alongside existing **j9r-env** / **j9r-kafka** (primary), run an active/passive Flink pipeline on car-ride events, mirror topics with Cluster Linking, replicate schemas with Schema Linking, materialize aggregates with Tableflow/Glue, and practice soft + promote failover with sequence-based loss assessment.
 
 ## Supported deployments
 
 | Deployment | Path | Status |
 |------------|------|--------|
 | Confluent Cloud | [`cccloud/`](./cccloud/) | Ready (IaC + Flink SQL + scripts) |
-| OSS Flink | — | Out of scope (v1) |
-| CP Flink | — | Out of scope (v1); see [`savepoint-demo`](../savepoint-demo/) for CP savepoint DR |
+| OSS Flink | — | Not yet implemented |
+| CP Flink | — | Not fully yet implemented; see [`savepoint-demo`](../savepoint-demo/) for CP savepoint DR |
 
-## What you will learn
+## What is covered
 
 - Dual-region Kafka across **two environments** with bidirectional Cluster Linking
 - Schema Linking: DR SR in IMPORT + exporter primary → DR (schema ID integrity)
-- Why Flink runs as independent regional jobs (no cross-region cluster)
-- Hybrid offset strategy on CC: rebuild from earliest + measure loss with `seq`
+- Flink runs as independent regional jobs (no cross-region cluster)
+- Source topics replicated: rebuild from earliest + measure loss with `seq`
 - Soft vs promote failover runbooks (Kafka + schemas + Tableflow/Glue)
 
-## DSP component map
+## Confluent Cloud
+
+![](./docs/raw-to-sink.drawio.png)
+
+### Steady state
+
+- **Primary** reuses existing `j9r-env` / `j9r-kafka` (`us-west-2`); **DR** is a new environment/cluster (`us-east-1`). Each side has its own Schema Registry (required for Schema Linking on Confluent Cloud).
+- Producer writes to primary Kafka + primary SR.
+- Flink runs only on primary.
+- Tableflow on `driver_stats` → primary S3 + Glue; DR has its own Tableflow provider integration for failover.
+- Bidirectional Cluster Linking mirrors `rides_raw`, `rides_clean`, `driver_stats`.
+- **Schema Linking:** DR SR mode = `IMPORT`; `confluent_schema_exporter` replicates all subjects from primary → DR so schema IDs match after failover.
+
+### Failover
+
+- Soft / promote as before for Kafka + Flink.
+- Schema: pause exporter; set DR SR to `READWRITE` before producers/Flink need to register new versions; existing IDs already imported remain valid.
+- Failback: reverse exporter (DR → primary with primary in `IMPORT`), then restore steady-state primary→DR exporter.
+
+### DSP component map
 
 | DSP component | Demo artifact |
 |---------------|---------------|
@@ -33,7 +51,7 @@ Demonstrate Confluent Cloud **active/passive** multi-region DR for a data stream
 | Catalog | Glue DBs `dr_car_rides_primary` / `dr_car_rides_dr` |
 | Iceberg | Per-region S3 BYOB buckets |
 
-## High-level flow
+### High-level demonstration flow
 
 1. Apply Phase 1 Terraform (`cccloud/IaC/`) — dual env, clusters, link, mirrors, Schema Linking, AWS.
 2. Deploy primary Flink + Tableflow (`cccloud/flink-sql/`).
@@ -42,3 +60,7 @@ Demonstrate Confluent Cloud **active/passive** multi-region DR for a data stream
 5. Assess loss (`python/assess_loss.py`).
 
 See [`ccloud/README.md`](./ccloud/README.md) for ordered steps.
+
+## Confluent Platform
+
+## Apache Flink and Kafka

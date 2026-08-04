@@ -18,11 +18,11 @@ This site is built with MkDocs and deployed to GitHub Pages. The **indexed Flink
 
 The [km-agent](https://github.com/jbcodeforce/km-agent) assistant compiles documentation into a wiki, embeds wiki content into pgvector for semantic search, and exposes an **AgentOS** HTTP API plus a **Vue** chat UI. Chat runs through the **kma team** leader (`POST /teams/kma/runs`), which coordinates Navigator, Researcher, Compiler, and Linter.
 
-For research or news requests, the team ingests sources to `raw/`, answers immediately, then compiles and lints the wiki in the background. Set `KMA_PARALLEL_API_KEY` (Researcher) and `KMA_AUTO_COMPILE_AFTER_RESEARCH=1` in `assistants/km-agent/.env` to enable the full enrichment pipeline.
+For research or news requests, the agent team ingests sources to `raw/`, answers immediately, then compiles and lints the wiki in the background. Set `KMA_PARALLEL_API_KEY` (Researcher) and `KMA_AUTO_COMPILE_AFTER_RESEARCH=1` in `assistants/km-agent/.env` to enable the full enrichment pipeline.
 
 ## Prerequisites
 
-- Docker Desktop
+- Docker Desktop if you do not run backend directly with python.
 - OMLX on this Mac or on a remote host (**chat only** — `KMA_LLM_BASE_URL` in `assistants/km-agent/.env`)
 - Embeddings run **inside the container** via fastembed (`KMA_EMBED_PROVIDER=fastembed`) — no OMLX embed server
 - No km-agent repository clone — flink-studies pulls the published image `jbcodeforce/km-agent:latest` (must include fastembed + `index_wiki.py`)

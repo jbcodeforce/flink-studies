@@ -12,6 +12,7 @@ compiled: false
     - Created 03/11/2026
     - Updated 05/17/2026
     - 06/11/2026: PTF, schema ID, Materialized table
+    - 07/2026: DR chapter update. DLQ and DDL chapter updated. Added DR demo.  Initiate AI in streaming processing chapter.
 
 ## Updates to this web site
 

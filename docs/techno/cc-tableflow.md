@@ -10,7 +10,22 @@ compiled: false
 
 This chapter is based to public knowledge, product documentation, and customer engagements experiences. 
 
-The first level of information is the [product blog](https://www.confluent.io/blog/introducing-tableflow/), and the [main product page](https://www.confluent.io/product/tableflow/) as well as the [product documentation](https://docs.confluent.io/cloud/current/topics/tableflow/get-started/overview.html) for Confluent Cloud.
+Tableflow is a serverless offering to take Apache Kafka data and feed it directly into your data lake, warehouse, or analytics engine as Apache Iceberg® or Delta Lake tables
+
+
+## References
+
+The first level of information is the [product blog](https://www.confluent.io/blog/introducing-tableflow/), and the following references:
+
+* [Tableflow in Confluent Cloud](https://docs.confluent.io/cloud/current/topics/tableflow/overview.html)
+* [Tableflow Quick Start with Iceberg Tables Using Managed Storage in Confluent Cloud](https://docs.confluent.io/cloud/current/topics/tableflow/get-started/quick-start-managed-storage.html)
+* [Integrate Catalogs with Tableflow in Confluent Cloud](https://docs.confluent.io/cloud/current/topics/tableflow/how-to-guides/catalog-integration/overview.html)
+* [Use Private Networking with Tableflow](https://docs.confluent.io/cloud/current/topics/tableflow/operate/tableflow-private-networking.html)
+* [Grant Role-Based Access for Tableflow](https://docs.confluent.io/cloud/current/topics/tableflow/operate/tableflow-rbac.html)
+* [Integrate Tableflow with the AWS Glue Catalog](https://docs.confluent.io/cloud/current/topics/tableflow/how-to-guides/catalog-integration/integrate-with-aws-glue-catalog.html)
+* [User-defined namespaces for external catalog integrations](https://docs.confluent.io/cloud/current/topics/tableflow/how-to-guides/catalog-integration/user-defined-namespaces.html)
+* [Confluent CLI - tableflow catalog integration](https://docs.confluent.io/confluent-cli/current/command-reference/tableflow/catalog-integration/index.html)
+* [REST API to manage Tableflow](https://docs.confluent.io/cloud/current/ccloud/catalog-integrations-tableflow-v-1/)
 
 [This video deep dive into the technology](https://current.confluent.io/post-conference-videos-2025/tableflow-not-just-another-kafka-to-iceberg-connector-lnd25)
 
@@ -18,12 +33,20 @@ The first level of information is the [product blog](https://www.confluent.io/bl
 
 TableFlow allows to represent a Kafka topic and associated schema as a table in [Apache Iceberg](https://iceberg.apache.org/) or Delta Lake format. It becomes the mediation layer between operational data and analytical data zone. It is using the schema registry to get the schema definition of the table.  It addresses a unified storage view on top of object storage.
 
-Kafka topic is the source of truth of the data. Tableflow supports the [open table]() format: a table and catalog for analytics. It is part of the [data as a product](../methodology/data_as_a_product.md) architecture.
+Kafka topic is the source of truth for the data. Tableflow supports the [open table formats](https://delta.io/blog/open-table-formats/): a table and catalog for analytics. Open table format is part of the [data as a product](../methodology/data_as_a_product.md) architecture.
 
 For Data engineers in data lakehouse environment, kafka topic is seen as table.
 
 ???- info "open table format"
     Open table formats are an open-source technology for storing tabular data that builds on top of existing file formats like Parquet or CSV files. It adresses the needs for query performance and reliability of data lake tables, by adding metadata on top of the tabular data. It was developed to bring ACID guarantees, on write operations.
+
+### Key components
+Key components of Tableflow include:
+
+* A Storage layer to allow Kafka segments to be written as parquet files
+* A metadata materializer integrated with Confluent's Schema Registry to generate Iceberg and Delta Lake metadata, handle schema mapping, evolution, and type conversions.
+* Services which handles compaction, metadata management, and file management.
+* A catalog service to expose the data either via an Iceberg REST API or through one of catalog syncs
 
 ### Pains
 

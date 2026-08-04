@@ -12,8 +12,8 @@ The demonstration includes a shell example that deploys a Flink SQL statement vi
 
 The following frequently asked questions this demonstration addresses are:
 
-* How environments are related to organisation, kafka cluster and flink comptue pool?
-  * Organization is the billing entity and container for users, service accounts, API keys and secrets and cloud environments. When registering to CC, one org is created with the user who creatd it. Other users are invited to the organization.
+* How environments are related to organisation, kafka cluster and flink compute pool?
+  * Organization is the billing entity and container for users, service accounts, API keys and secrets and cloud environments. When registering to CC, one org is created with the owner being the user who created it. Other users are invited to the organization.
   * Environments defines governance architecture, may have multiple kafka clusters, schema registry, flink compute pools, network configurations. 
   * Environments may be isolated for different deployment scope like dev, staging or production.
   * Compute pools groups resources for running Flink statements, which may scale down to zero. Flink is a regional service, compute pools are defined per cloud provider/region
