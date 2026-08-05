@@ -8,7 +8,7 @@ Provision **DR** Confluent Cloud environment/cluster (primary reuses existing `j
 
 ## Status
 
-Requires CC org + AWS credentials. Dual Standard clusters, dual Stream Governance, and Tableflow incur cost.
+Requires CC org + AWS credentials. **Attention**, dual Standard clusters, dual Stream Governance, and Tableflow incur cost.
 
 ## Implementation approach
 
@@ -17,17 +17,61 @@ Requires CC org + AWS credentials. Dual Standard clusters, dual Stream Governanc
 | 0 — Primary catalog | [`IaC/import-j9r-env/`](./IaC/import-j9r-env/) | Imported `j9r-env` / `j9r-kafka` + outputs for remote state |
 | 1 — IaC | [`IaC/`](./IaC/) | Terraform (incremental): reuse primary; create DR env/Kafka/SR/SAs/Flink pools first |
 | 2 — App | [`flink-sql/`](./flink-sql/) | Flink DDL/DML via tools based on confluent-sql python library |
-| 3 - Lakehouse | | TableFlow and AWS resources |
 | 4 - Run continuous producer | [`../python/`](../python/) | Continuous producer + `assess_loss` |
 | Ops | [`scripts/`](./scripts/) | Soft/promote failover, failback (incl. schema reverse), `export-env.sh` (Kafka + SR per site) |
 | Data | |
 
 
-### High-level demonstration flow
 
-1. Apply Phase 1 Terraform (`cccloud/IaC/`) — dual env, clusters, link, mirrors, Schema Linking, AWS.
+### 1. Refresh import outputs (once)
+
+* Be sure the terraform variables are set to false:
+
+```sh
+enable_schema_linking
+enable_tableflow
+enable_cluster_link
+```
+
+Defaults: `primary_region = us-west-2` (j9r-kafka), `dr_region = us-east-1`.
+
+* Run
+```bash
+cd import-j9r-env
+export CONFLUENT_CLOUD_API_KEY=...
+export CONFLUENT_CLOUD_API_SECRET=...
+terraform init && terraform apply
+cd ..
+```
+
+![](../docs/DR-env-clust-cp.png)
+
+### 2. Set dual env clusters
+
+
+```bash
+cp terraform.tfvars.example terraform.tfvars   # or edit existing tfvars
+# ensure: enable_cluster_link=false, enable_schema_linking=false, enable_tableflow=false
+terraform init && terraform apply
+terraform output -json > ../scripts/iac-outputs.json
+```
+
+### 3. Produce records to car-rides topic
+
+* Set environment variables to reach primary cluster
+  ```sh
+  cd ccloud/scripts/
+  source export-env.sh primary 
+  ```
+
+* Run continuous producer
+  ```sh
+  cd python
+  uv run python produce_rides.py
+  ```
+
+
 2. Deploy primary Flink + Tableflow (`cccloud/flink-sql/`).
-3. Run continuous producer (`python/produce_rides.py`) against primary Kafka + primary SR.
 4. Soft or promote failover (`cccloud/scripts/`) — retarget producer to DR Kafka + DR SR.
 5. Assess loss (`python/assess_loss.py`).
 
@@ -38,7 +82,7 @@ Requires CC org + AWS credentials. Dual Standard clusters, dual Stream Governanc
 - Confluent Cloud [terraform provider](https://registry.terraform.io/providers/confluentinc/confluent/latest) - version 2.81.0+
 - Existing `j9r-env` primary (imported under `IaC/import-j9r-env/`; apply that stack first so outputs exist)
 - AWS credentials (S3 + Glue + IAM for Tableflow BYOB)
-- Python 3.11+ with `uv` or `pip` (`confluent-kafka[schema-registry]`, `pydantic`)
+- Python 3.11+ with `uv` or `pip` (`confluent-kafka[schema-registry,json]`, `pydantic`)
 - Optional: Confluent CLI for promote / statement stop / exporter pause
 
 ## How to run
@@ -97,15 +141,23 @@ Single groups: `make deploy-ddl SITE=dr`, `make undeploy SITE=secondary`, `make 
 
 ### 3. Produce rides (primary Kafka + primary SR)
 
+Producer does **not** auto-register schemas. It uses `use.latest.version` against
+`rides_raw-key` / `rides_raw-value` created by Flink DDL (`value.fields-include=all`
+so `driver_id` is in key and value; `pickup_ts` is epoch millis).
+
+If you already deployed without `value.fields-include=all`, realign schemas:
+
+1. Undeploy Flink statements (`make undeploy` / drop tables).
+2. Soft-delete Schema Registry subjects `rides_raw-key` and `rides_raw-value`
+   (and `rides_clean-*` / `driver_stats-*` if those tables are recreated).
+3. Redeploy DDL (`make deploy`), then produce.
+
 ```bash
 source ../scripts/export-env.sh primary
 cd ../../python
 uv sync
 uv run produce_rides.py --interval 0.5
 ```
-
-
-###
 
 Verify Schema Linking: DR SR mode is `IMPORT`, exporter `schema_exporter_name` is running.
 

@@ -12,30 +12,16 @@ Reuses existing **j9r-env** / **j9r-kafka** as primary (via `import-j9r-env` rem
 
 ## Apply order
 
-### 1. Refresh import outputs (once)
-
-```bash
-cd import-j9r-env
-export CONFLUENT_CLOUD_API_KEY=...
-export CONFLUENT_CLOUD_API_SECRET=...
-terraform init && terraform apply
-cd ..
-```
-
 ### 2. Apply iteration 1 (Confluent DR core)
 
-```bash
-cp terraform.tfvars.example terraform.tfvars   # or edit existing tfvars
-# ensure: enable_cluster_link=false, enable_schema_linking=false, enable_tableflow=false
-terraform init && terraform apply
-terraform output -json > ../scripts/iac-outputs.json
-```
 
-Defaults: `primary_region = us-west-2` (j9r-kafka), `dr_region = us-east-1`.
+
 
 No AWS credentials required for iteration 1 (`enable_tableflow=false` skips AWS credential validation).
 
 `terraform destroy` on this stack does **not** destroy j9r-env / j9r-kafka / j9r SAs.
+
+
 
 ## Notes
 

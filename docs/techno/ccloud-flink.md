@@ -71,7 +71,7 @@ Pay attention that most Flink managed services are cloud-hosted and not cloud-na
 ![](./diagrams/compute_pool.drawio.png){ width=600 }
 </figure>
 
-* Capacity is measured in Confluent Flink Unit, [CFU](https://docs.confluent.io/cloud/current/flink/concepts/flink-billing.html#cfus). Each statement is at least 1 CFU-minute. There is an organization-level setting that controls the maximum CFU for default compute pools (default_pool_max_cfu), which an OrgAdmin can change.
+* Capacity is measured in Confluent Flink Unit, [CFU](https://docs.confluent.io/cloud/current/flink/concepts/flink-billing.html#cfus). A CFU is a logical unit of processing power that is used to measure the resources consumed by Confluent Cloud for Apache Flink. Each statement is at least 1 CFU-minute. There is an organization-level setting that controls the maximum CFU for default compute pools (default_pool_max_cfu), which an OrgAdmin can change.
 * A statement may be structural (DDL) and stop once completed, or runs in background to write data to table (DML). [Materialized Table](../coding/flink-sql-3.md#materialized-tables) is a special table that includes schema definition, query, and refreshness mode.
 * Supports multiple Kafka clusters within the same Confluent Cloud organization in a single region.
 * Any table created in CC Flink appears as a topic in CC Kafka. Kafka Topics and schemas are always in synch with Flink.
@@ -366,7 +366,7 @@ Kafka clusters have the following properties:
 
 [Autopilot](https://docs.confluent.io/cloud/current/flink/concepts/autopilot.html) automatically scales up and down compute pool resources needed by SQL statements. It uses the property of parallelism for operator to be able to scale up and down. `SELECT` always runs a parallelism of 1. Only `CREATE TABLE AS`, `INSERT INTO` and `EXECUTE STATEMENT SET` are considered by Autopilot for scaling. Global aggregate are not parallelized. The main goal of the auto scaler is to maintain optimum  throughput and number of resources (or CFUs). 
 
-The SQL workspace reports the [scaling status](https://docs.confluent.io/cloud/current/flink/concepts/autopilot.html#scaling-status).  It is important that each job has a maximum parallelism, limited by the number of resource available. For source operators within a Flink DAG the limit is the number of partitions in the input topics. 
+The SQL workspace reports the [scaling status](https://docs.confluent.io/cloud/current/flink/concepts/autopilot.html#scaling-status).  It is important that each job has a maximum parallelism, limited by the number of resource available. For source operators within a Flink DAG the limit is the number of  partitions in the input Kafka topics. 
 
 If there is some data skew and one operator is set with a parallel of 1 then there is no need to scale.
 
@@ -390,9 +390,7 @@ Within an environment, there is one schema registry. We can have multiple Kafka 
 
 ## Monitoring and troubleshouting
 
-[The metrics API documentation.](https://docs.confluent.io/cloud/current/monitoring/metrics-api.html)
-
-You must create an API key to authenticate your requests to the Metrics API.
+[The Confluent Cloud metrics API documentation.](https://docs.confluent.io/cloud/current/monitoring/metrics-api.html). You must create an API key to authenticate your requests to the Metrics API.
 
 ### Statement monitoring
 
@@ -402,31 +400,15 @@ Once the Flink SQL statement runs, Data Engineers may use the Console, (Environm
 ![](./images/statement_list.png)
 </figure>
 
-See the [monitoring product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html) for explanations of the different fields. The following fields are important to consider:
-
-| Field | Why to consider |
-| --- | --- |
-| **Status** | Verify the state of the Flink query |
-| **Statement CFU** | Server resource used by the statement |
-| **Messages Behind** | Is the query behind, is there some backpressure applied |
-| **Message out** | Rate of messages created by the query |
-| **State Size** in GB | Keep it low, alert at 300+ GB | 
-
-Look at the statement status, consider failed, pending, degraded. Some issues are recoverables, some not:
-
-| | Recoverable | Non-recoverable |
-| --- | --- | --- |
-| **User** | Kafka topic deletion, loss of access to cloud resources | De/Serialization exception, arithmetic exception, any exception thrown in user code |
-| **System** | checkpointing failure, networking disruption |  |
-| **Actions** | If recovery takes a long time or fails repeatedly, and if this is a user execption, the message will be in the status.detail of the statement, else the user may reach to the support. | User needs to fix the query or data. |
-
-Be sure to enable cloud notifications and at least monitor topic consumer lag metric. As a general practices, monitoring for `current_cfus = cfu_limit` to avoid exhaustion of compute pools.  
-
-The `flink/pending.records` is the most important metrics to consider. It corresponds to consumer lag in Kafka and “Messages Behind” in the Confluent Cloud UI. Monitor for high and increasing consumer lag.
+See the [monitoring product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/monitor-statements.html) for explanations of the different fields. 
 
 At the Statement level we can get the following metrics over time:
 
+<figure markdown='span'>
 ![](./images/statement_metrics.png)
+</figure>
+
+[See cookbook on moniutoring and alerting for more details](../cookbook/job_lifecycle.md/#6--monitoring--alerting)
 
 ### Degraded Statement
 
@@ -610,48 +592,8 @@ As a base for discussion, 10k record/s per CPU is reachable for simple Flink sta
 * In case of Job failure, failed jobs auto-restart using the last known states loaded from the last checkpoint.
 * Checkpoint is used for in-region fault tolerance. Checkpoints capture the state of a Flink job at regular intervals, including Kafka consumer offsets, operator states, and internal timers. In CC checkpoints are done every minute.
 * In case of Cloud Provider failure, there is no protection, for a region lost. To address that, architects need to set up a cross region DR strategy.
-* All Flink DR options first require a DR strategy for Kafka & Schema Registry (SR). It needs to have an exact replication of the data (including offsets) and schemas.
-* On CC, [cluster link](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/index.html) and [schema link](https://docs.confluent.io/cloud/current/sr/schema-linking.html) supports data and schema replication.
 
-As any flink solution, the following need to be deeply assessed:
-
-* What Flink application and SQL statements to consider in scope of DR?
-* Can Flink's state be recreated?  This is driven by the underlying Kafka Clusters RPO and their retention.
-* How long is tolerable to recreate that state? This is driven by the overall RTO. 
-* What is the semantic expected by consumer apps? This is driven by consuming apps tolerances. Semantics options are: exactly-once, at-least once (duplicate possible), at-most once (data loss and duplicate possible).
-* Is the Flink job processing deterministic? will a Flink job always output the same results?
-
-A generic view of DR components is presented in following figure:
-
-<figure markdown="span">
-![](./diagrams/dr_act_act.drawio.png)
-</figure>
-
-### Active / Active
-
-The approach is to have two identical Flink jobs or pipelines of jobs run in parallel continuously in both regions. They process the same data, with some replication delay in the secondary region.
-
-This is recommended for low RTO requirements, with Flink jobs with large states, or solutions requiring Exactly-Once semantics, or when it is critical that the 2 regions have exactly the same data results.
-
-To consider:
-
-* Setup replication only to the input topics. 
-* Mirror configuration like service accounts, RBACs, private networking...
-* Ensure Flink jobs have deterministic query results.
-* Jobs should support out-of-order arrival between input tables.
-
-### Active / Passive
-
-Flink jobs are started, in second region, only on failover.
-
-This approach is possible for stateless jobs, or when states can be created quickly: Flink Jobs Window Size and time to recompute job state < RTO. Solutions based on at-least once, or at-most-once. Even for stateless jobs, Exactly-Once semantics is not supported.
-
-To consider:
-
-* More complicated to orchestrate as the process needs to recreate tables and jobs during failover
-* Topic retention > Time window needed to recreate state (dictated by window size or TTL). Without enough retention, results will be wrong, or only subset of queries would work.
-* Any time window and aggregation needs to use event time and not processing time.
-* Setup replication only to the input topics. 
+The [disaster recovery is addressed in the cookbook](../cookbook/cluster_mgt.md/#3-disaster-recovery--multi-region-strategies)
 
 ## Some FAQs
 

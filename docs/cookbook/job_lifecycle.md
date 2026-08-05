@@ -404,18 +404,28 @@ If errors appear or performance worsens:
 ### 5.1- Recipe: Replaying Kafka topics from older offsets.
 #### Context
 
-You need to recompute results for a historical period (e.g., due to a code bug or schema issue), typically from Kafka-based sources.
+You need to recompute results for a historical period (e.g., due to a code bug or schema issue), typically from Kafka-based sources. Remember to always assess if state needs to be done from the earliest records or not, according to the retention period. Kafka retention should be set so Flink reprocessing will give the correct output.
 
 #### Preconditions / Checklist
 * Kafka (or equivalent) retains the data for the desired backfill window.
-* Downstream systems can accept re-ingestion or you have a separate backfill sink.
-* You know whether: Backfill should coexist with prod job, or should stop prod job, run backfill, then resume.
+* Downstream systems can accept re-ingestion or you have a separate backfill sink/topic.
+* You know whether: Backfill should coexist with production job, or should better stop production job, run backfill, then resume.
+* Access to `confluent` cli for Confluent Cloud
 
 #### Inputs / Parameters
 * Source topics and partitions.
 * Time/offset range for backfill.
+
+=== "Confluent Cloud"
+    Use the confluent cli or Flink statement REST API to get latest offsets and timestamp information.
+
+    ```sh
+    confluent flink statement describe <statmenent_name>
+    ```
+
 * Desired output location (same sinks or separate backfill tables/topics).
 * Expected data volume and runtime.
+
 #### Procedure
 
 1. Choose Backfill Strategy
@@ -424,7 +434,18 @@ You need to recompute results for a historical period (e.g., due to a code bug o
 
 1. Configure Source Start Position
     * For Kafka, configure a start offset or timestamp (e.g., “start from timestamp T0”).
+        ```sql
+        ...
+            FROM transactions
+            /*+ OPTIONS(
+                'scan.startup.mode' = 'specific-offsets',
+                'scan.startup.specific-offsets'  = 'partition:0,offset:10;partition:1,offset:123'
+            ) */;
+
+        ```
+
     * Ensure the backfill job won’t auto-reset to latest if it hits errors.
+
 1. Isolate or Protect Downstream
     * Use dedicated output topics/tables for backfill where possible.
     * If writing to prod sinks, ensure: Idempotency or deduplication and clear communication with consumers.
@@ -467,8 +488,8 @@ To monitor Apache Flink production jobs effectively, you must establish an exter
 #### Preconditions / Checklist
 
 === "Confluent"
-    * Confluent: Deploy statements into one to many compute pool
-    * Get a service account, and API key to access metrics
+    * Confluent: Deploy statements into one to many compute pools
+    * Get a service account, and API key/secret to access metrics
     * Configure Prometheus with your Confluent Cloud API key/secret and Flink resource IDs, or copy the config from the Confluent Cloud Metrics integration UI.
 
 === "Apache Flink"
@@ -479,17 +500,60 @@ To monitor Apache Flink production jobs effectively, you must establish an exter
 
 #### What to monitor in a custom Flink dashboard
 
-* **Checkpoint** health serves as the absolute best proxy for the overall stability and throughput capacity of a stateful Flink application. 
-    * **lastCheckpointDuration:** Track spikes in checkpoint time. If duration grows close to the checkpoint interval, checkpoints will queue up and stall your pipeline.
-    * **lastCheckpointSize:** Alert on linear, uncontrolled growth over time. This usually flags a state leak, an unbounded window, or a missing TTL configuration on a state backend.
-    * **numberOfFailedCheckpoints:** This value should ideally stay at zero. Investigate failures quickly because a lack of completed checkpoints risks catastrophic data loss if a hardware failure occurs.
-    * **lastCheckpointAlignmentTime:** Monitor this value to identify uneven performance. High alignment times show that upstream operators are sending data at unbalanced speeds
-* **Throughput / backlog**: num_records_in, num_records_out, num_records_in_from_topics, pending_records
-    * For Confluent: io.confluent.flink/num_records_in, io.confluent.flink/num_records_out, io.confluent.flink/num_records_in_from_topics, io.confluent.flink/pending_records.  
+In  general the following are monitored for any product:
+
+* **Throughput / backlog**: num_records_in, num_records_out, num_records_in_from_topics, pending_records 
 * **Latency / timeliness:** current_input_watermark_milliseconds, current_output_watermark_milliseconds, max_input_lateness_milliseconds.  
 * **Failures / health:** io.confluent.flink/statement_status.  
-* **Compute pool saturation:** compare current CFUs vs CFU limit for the pool; docs call this out as a best-practice alert. 
+ * **Task managers saturation:** assess CPU usage %. Above 80% change scaling parameter.
 
+
+=== "Apache Flink"
+    * **Checkpoint** health serves as the absolute best proxy for the overall stability and throughput capacity of a stateful Flink application. 
+        * **lastCheckpointDuration:** Track spikes in checkpoint time. If duration grows close to the checkpoint interval, checkpoints will queue up and stall your pipeline.
+        * **lastCheckpointSize:** Alert on linear, uncontrolled growth over time. This usually flags a state leak, an unbounded window, or a missing TTL configuration on a state backend.
+        * **numberOfFailedCheckpoints:** This value should ideally stay at zero. Investigate failures quickly because a lack of completed checkpoints risks catastrophic data loss if a hardware failure occurs.
+        * **lastCheckpointAlignmentTime:** Monitor this value to identify uneven performance. High alignment times show that upstream operators are sending data at unbalanced speeds
+
+=== "Confluent Cloud"
+    * Checkpoints are not expose to end-users
+    * **Throughput / backlog**: io.confluent.flink/num_records_in, io.confluent.flink/num_records_out, io.confluent.flink/num_records_in_from_topics, io.confluent.flink/pending_records. 
+    * **Compute pool saturation:** compare current CFUs vs CFU limit for the pool; docs call this out as a best-practice alert. 
+
+    The following fields are important to consider:
+
+    | Field | Why to consider |
+    | --- | --- |
+    | **Status** | Verify the state of the Flink query |
+    | **Statement CFU** | Server resource used by the statement. **one CFU may process a throughput of 1000+ Records per second (RPS)** |
+    | **Messages Behind** | Is the query behind, is there some backpressure applied. Messages Behind and Pending Records are the same metric with different names. This is the total amount of available records after the consumer offset in a Kafka partition across all operators|
+    | **num_records_in** | Total number of records this statement has received. |
+    | **Message out** | Rate of messages created by the query |
+    | **State Size** in GB | Keep it low, alert at 300+ GB | 
+    | **current_input_watermark_ms** | The last watermark this statement has received (in milliseconds) for the given table. |
+    | **current_output_watermark_ms** | The last watermark this statement has produced (in milliseconds) to the given table. |
+    | **cfu_minutes_consumed** | The number of how many CFUs consumed since the last measurement |
+    | **backpressure_time_ms_per_second** | The amount of milliseconds this task has spent being backpressured |
+    | **busy_time_ms_per_second** | The amount of milliseconds this task has spent being busy |
+
+
+    Look at the statement status, consider failed, pending, degraded. Some issues are recoverables, some not:
+
+    | | Recoverable | Non-recoverable |
+    | --- | --- | --- |
+    | **User** | Kafka topic deletion, loss of access to cloud resources | De/Serialization exception, arithmetic exception, any exception thrown in user code |
+    | **System** | checkpointing failure, networking disruption |  |
+    | **Actions** | If recovery takes a long time or fails repeatedly, and if this is a user execption, the message will be in the status.detail of the statement, else the user may reach to the support. | User needs to fix the query or data. |
+
+    Be sure to enable cloud notifications and at least monitor topic consumer lag metric. As a general practices, monitoring for `current_cfus vs cfu_limit` to avoid exhaustion of compute pools.  
+
+    The `flink/pending.records` is the most important metrics to consider. It corresponds to consumer lag in Kafka and “Messages Behind” in the Confluent Cloud UI. Monitor for high and increasing consumer lag.
+
+    At the Statement level we can get the following metrics over time:
+
+    ![](../techno/images/statement_metrics.png)
+
+    Max CFU per compute pools is a soft limit, but a hard limit per statement. This is not possible to set a limit of resource per statement, but it is still capped in the control plane. 
 
 ### 6.2 Baseline dashboards and alerts.
 
@@ -549,7 +613,7 @@ This diagram is important to support discussions about what latency means, and w
 * Number of message per second processed per Flink statement
 * Time stamp from source to destination for a given transaction
 
-The following figures represents the different component for performance testing to deploy according to the target platform:
+The following figures represents the different components for performance testing to deploy according to the target platform:
 
 === "Confluent Cloud"
     For Confluent Cloud the network may be part of the equation, depending on where you run the producer and consumer to measure performance. 
@@ -594,6 +658,8 @@ You need to have access to:
     payload: string – to make a record big or large. 
     ```
 
+    You can use the producer performance test `Kafka-producer-perf-test.sh` to simulate load on a Kafka topic. The tool is located in the bin/ directory of your Kafka installation.  [See the Confluent video for Kafka producer hands-on](https://developer.confluent.io/courses/architecture/producer-hands-on).
+
 * Some Flink job to use as benchmark, for platform sizing purpose, or the real production flink job for job performance asssessment. Use a small set of canonical queries that mirror real jobs and map to known internal benchmarks:
     * Stateless 1:1 transform: baseline max throughput; typically Kafka IO/partitions are the bottleneck, not Flink 
     * CPU‑heavy stateless transform (e.g., string/JSON/UDF heavy): traditionally it is CPU bound 
@@ -632,10 +698,10 @@ You need to have access to:
 
 #### Gotchas
 
-* [See performance tuning Flink chapter](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/tuning/)
+* [See Apache Flink performance tuning chapter](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/tuning/)
 * [See the end-to-end demonstration for perf testing in this repo.](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/perf-testing)
 
-### 7.1- Identifying bottlenecks (sources, network, RocksDB).
+### 7.2- Identifying bottlenecks (sources, network, RocksDB).
 #### Context
 
 Use this recipe when throughput or latency SLOs are missed and the root cause is unclear. Symptoms include sustained backpressure, growing checkpoint duration, or single subtasks at 100% utilization while others are idle.
@@ -663,7 +729,7 @@ Revert the last configuration change; redeploy from savepoint if stateful.
 * Scaling parallelism before fixing hot keys wastes resources.
 * See [Architecture cookbook](../architecture/cookbook.md) for metric definitions.
 
-### 7.2- GC/memory tuning, network/shuffle tuning.
+### 7.3- GC/memory tuning, network/shuffle tuning.
 #### Context
 
 Use when TaskManagers show GC pauses, OOMKilled events, or shuffle-related backpressure with low CPU. These issues often trace to misaligned Flink process memory, managed memory, or network buffer settings on Kubernetes.

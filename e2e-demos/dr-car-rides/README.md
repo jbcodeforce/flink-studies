@@ -31,7 +31,7 @@ From Confluent disaster recovery white paper, **active/passive** multi-region DR
 
 The demonstration starts from an existing environment (grey components on the left in figure below): **j9r-env** / **j9r-kafka** (see [deployment/cc-terraform](../../deployment/cc-terraform/))
 
-![](./docs/raw-to-sink.drawio.png)
+![](./docs/cc-raw-to-sink.drawio.png)
 
 Then it provisions:
 
@@ -40,17 +40,28 @@ Then it provisions:
 - Provision a DR Confluent Cloud environment/cluster (`us-east-1`), mirror source topic with Cluster Linking, replicate schemas with Schema Linking
 - practice soft + promote failover with sequence-based loss assessment.
 
+See [`ccloud/README.md`](./ccloud/README.md) for explanation of the demonstration steps done with Terraform.
+
 ### What is covered
 
 - Dual-region Kafka across **two environments** with bidirectional Cluster Linking
 - Schema Linking: DR SR in IMPORT + exporter primary → DR (schema ID integrity)
 - Flink runs as independent regional jobs (no cross-region cluster)
-- Source topics replicated: rebuild from earliest + measure loss with `seq`
+- Source topics replicated: rebuild from earliest + measure loss with `seq`.
+
+| Topic | Role | Cluster Link |
+|-------|------|--------------|
+| `rides_raw` | Source (producer) | Yes (required) |
+| `rides_clean` | Stateless Flink sink | Yes (inspect / failback) |
+| `driver_stats` | Stateful Flink sink + Tableflow | Yes (inspect / failback) |
+
+Event fields (JSON + Schema Registry `json-registry`): `ride_id`, `seq`, `driver_id` (key + value via `value.fields-include=all`), `rider_id`, `pickup_ts` (epoch millis), `fare_usd`, `status`, `city`. Producer uses `use.latest.version` (no auto-register).
+
 - Soft vs promote failover runbooks (Kafka + schemas + Tableflow/Glue)
 
 ### Steady state
 
-
+- **Primary** reuses existing `j9r-env` / `j9r-kafka`; **DR** is a new environment/cluster so each region has its own Schema Registry (required for Schema Linking on Confluent Cloud).
 - Producer writes to primary Kafka + primary SR.
 - Flink runs only on primary.
 - Tableflow on `driver_stats` → primary S3 + Glue; DR has its own Tableflow provider integration for failover.
@@ -63,7 +74,10 @@ Then it provisions:
 - Schema: pause exporter; set DR SR to `READWRITE` before producers/Flink need to register new versions; existing IDs already imported remain valid.
 - Failback: reverse exporter (DR → primary with primary in `IMPORT`), then restore steady-state primary→DR exporter.
 
-See [`ccloud/README.md`](./ccloud/README.md) for explanation of the demonstration steps.
+
+### Loss assessment
+
+Same `seq`-based RPO / processing gap measurement as before.
 
 ## Confluent Platform
 
