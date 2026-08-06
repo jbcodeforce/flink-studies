@@ -539,8 +539,34 @@ The following table list some classical use cases and the expected roles:
 | Admin the org | OrganizationAdmin |  
 | Access to encryption keys | DeveloperRead on the key. DeveloperWrite for the key generation |
 
-Examples of Terraform definitions for service account, (FlinkDeveloper, DevelopManage) roles, and role binding on GCP [cc-flink-rbac](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/cc-flink-rbac).
+Examples of Terraform definitions for service account, (FlinkDeveloper, DevelopManager roles, and role binding on GCP [cc-flink-rbac](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/cc-flink-rbac).
 
+### Permissions
+* Different service accounts:
+    * Service Account: `app-manager` - used by Terraform to manage the Flink statements.
+    * Service Account: `statements-runner` - the Principal of the Flink statements. It determines the permissions inherited by the statements.
+  
+* Permissions
+    * Service Account: `app-manager`
+        - Role: *FlinkDeveloper*, Resource: Compute Pool = `<compute-pool>` (or Env = `<environment>`, for all Compute Pools in the Environment)
+        - Role: *ResourceOwner*, Resource: Kafka cluster = `<cluster>`, Topics = `*` (All topics) 
+        - Role: *ResourceOwner*, Resource: Kafka cluster = `<cluster>`, Transactions = `_confluent-flink_*` (All transactions with prefix `_confluent-flink_`)
+        - Role: *ResourceOwner*, Resource: Env = `<environment>`, Schema Subjects = `*` (All subjects in the Schema Registry of the Environment)
+        - Role: *Assigner*, Principal: Service Account = `statements-runner`
+    * Service Account: `statements-runner`
+        - Role: *FlinkDeveloper*, Resource: Compute Pool = `<compute-pool>` (or Env = `<environment>`)
+        - Role: *DeveloperRead*, Resource: Kafka cluster = `<cluster>`, Topics = `*` (All topics) 
+        - Role: *DeveloperWrite*, Resource: Kafka cluster = `<cluster>`, Topics = `*` (All topics) 
+        - Role: *DeveloperRead*, Resource: Kafka cluster = `<cluster>`, Transactions = `_confluent-flink_*` (All transactions with this prefix)
+        - Role: *DeveloperWrite*, Resource: Kafka cluster = `<cluster>`, Transactions = `_confluent-flink_*` (All transactions with this prefix)
+        - Role: *DeveloperManage*, Resource: Kafka cluster = `<cluster>`, Topics = `*` (All topics) 
+        - Role: *DeveloperWrite*, Resource: Env = `<environment>`, Schema Subjects = `*` (All subjects)
+
+> ℹ️ The "all topics" and "all schema" scopes can be reduced using naming conventions and specifying prefixes to the topic names.
+
+> The roles *DeveloperManage* on all topics, and *DeveloperWrite* on all Schema Registry subjects assigned to `statements-runner` are required only to execute `CREATE TABLE` statements. If you do not have any `CREATE TABLE` statement you can omit them.
+
+> ⚠️ Setting the *Assigner* role in the UI works the other way around: you go to the Access details of `statements-runner` (the target, not the assigner), select "+ Add role assignment", select the `app-manager` Service Account and the role *Assigner*.
 
 ## Understanding pricing
 

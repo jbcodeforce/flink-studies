@@ -8,18 +8,50 @@ The Terraform module is for a **GCP** Confluent Cloud. It defines environment, *
 
 The demonstration includes a shell example that deploys a Flink SQL statement via the REST API.
 
+## Context
+* Roles required for each of the Service Accounts. Refer to the [Grant Role-Based Access in Confluent Cloud for Apache Flink public documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/flink-rbac.html) for an explanation of each role.
+* Different service accounts:
+
+  1. Service Account: `platform-info` - associated with the Confluent Cloud API used by Terraform. This Service Account has read-only permissions and is only used to fetch information about existing resources.
+  2. Service Account: `app-manager` - used by Terraform to manage the Flink statements.
+  3. Service Account: `statements-runner` - the Principal of the Flink statements. It determines the permissions inherited by the statements.
+  
+* Permissions
+  1. Service Account: `platform-info`
+        - Role: *Operator*, Resource: Environment = `<environment>`
+  2. Service Account: `app-manager`
+        - Role: *FlinkDeveloper*, Resource: Compute Pool = `<compute-pool>` (or Env = `<environment>`, for all Compute Pools in the Environment)
+        - Role: *ResourceOwner*, Resource: Kafka cluster = `<cluster>`, Topics = `*` (All topics) 
+        - Role: *ResourceOwner*, Resource: Kafka cluster = `<cluster>`, Transactions = `_confluent-flink_*` (All transactions with prefix `_confluent-flink_`)
+        - Role: *ResourceOwner*, Resource: Env = `<environment>`, Schema Subjects = `*` (All subjects in the Schema Registry of the Environment)
+        - Role: *Assigner*, Principal: Service Account = `statements-runner`
+  3. Service Account: `statements-runner`
+        - Role: *FlinkDeveloper*, Resource: Compute Pool = `<compute-pool>` (or Env = `<environment>`)
+        - Role: *DeveloperRead*, Resource: Kafka cluster = `<cluster>`, Topics = `*` (All topics) 
+        - Role: *DeveloperWrite*, Resource: Kafka cluster = `<cluster>`, Topics = `*` (All topics) 
+        - Role: *DeveloperRead*, Resource: Kafka cluster = `<cluster>`, Transactions = `_confluent-flink_*` (All transactions with this prefix)
+        - Role: *DeveloperWrite*, Resource: Kafka cluster = `<cluster>`, Transactions = `_confluent-flink_*` (All transactions with this prefix)
+        - Role: *DeveloperManage*, Resource: Kafka cluster = `<cluster>`, Topics = `*` (All topics) 
+        - Role: *DeveloperWrite*, Resource: Env = `<environment>`, Schema Subjects = `*` (All subjects)
+
+> ℹ️ The "all topics" and "all schema" scopes can be reduced using naming conventions and specifying prefixes to the topic names.
+
+> The roles *DeveloperManage* on all topics, and *DeveloperWrite* on all Schema Registry subjects assigned to `statements-runner` are required only to execute `CREATE TABLE` statements. If you do not have any `CREATE TABLE` statement you can omit them.
+
+> ⚠️ Setting the *Assigner* role in the UI works the other way around: you go to the Access details of `statements-runner` (the target, not the assigner), select "+ Add role assignment", select the `app-manager` Service Account and the role *Assigner*.
+
+
 ## FAQs
 
 The following frequently asked questions this demonstration addresses are:
 
 * How environments are related to organisation, kafka cluster and flink compute pool?
-  * Organization is the billing entity and container for users, service accounts, API keys and secrets and cloud environments. When registering to CC, one org is created with the owner being the user who created it. Other users are invited to the organization.
-  * Environments defines governance architecture, may have multiple kafka clusters, schema registry, flink compute pools, network configurations. 
+  * Organization is the billing entity and container for users, service accounts, API keys and secrets and cloud environments. When registering to CC, one org is created with the owner being the user who created it. Other users are invited to the organization. Service accounts are added too.
+  * Environments defines governance architecture, may have multiple kafka clusters, one schema registry, multiple flink compute pools and network configurations. 
   * Environments may be isolated for different deployment scope like dev, staging or production.
-  * Compute pools groups resources for running Flink statements, which may scale down to zero. Flink is a regional service, compute pools are defined per cloud provider/region
-  * 
+  * Compute pools groups resources for running Flink statements, which may scale down to zero. Flink is a regional service, compute pools are defined per cloud provider/region.
 * how to have compute pools setup?  per team or a single compute pool?
-  * Compute pool is just a container to enable running flink statements with fault tolerance and auto scaling, within a region of a cloud provider. It defines a set of maximun physical resources to run Flink jobs. [See ](./infrastructure.tf)
+  * Compute pool is just a container to enable running flink statements with fault tolerance and auto scaling, within a region of a cloud provider. It defines a set of maximun physical resources to run Flink jobs. [See infrastructure.tf](./infrastructure.tf)
     ```json
     resource "confluent_flink_compute_pool" "pool" {
       count        = var.create_flink_compute_pool ? 1 : 0
@@ -34,9 +66,11 @@ The following frequently asked questions this demonstration addresses are:
     }
     ```
   * Compute pool must be in the same cloud provider and region as the Kafka clusters with the data you want to process.
-  * The resources provided by a compute pool are shared among all statements that use them. This is one way to support multi tenancy for line of business.
+  * The resources provided by a compute pool are shared among all statements that use them. This is one way to support multi tenancy per line of business.
   * When default compute pools are enabled, all users can use Flink.
-  * Compute pool can be created by FlinkAdmin
+ 
+
+  * Compute pool can be created by FlinkAdmin role
   * FlinkDeveloper role can be granted at the organization level or at the environment level. You can also grant it at the compute-pool level to restrict a user’s access to specific pools only.
     ```json
     resource "confluent_role_binding" "flink-developer-compute-pool-example-rb" {
@@ -89,9 +123,6 @@ If `terraform plan` fails on Schema Registry provider attributes, you likely hav
 ## Apply
 
 ```bash
-export CONFLUENT_CLOUD_API_KEY="<org-admin-key>"
-export CONFLUENT_CLOUD_API_SECRET="<org-admin-secret>"
-
 cd deployment/cc-flink-rbac
 cp terraform.tfvars.example terraform.tfvars
 # modify the tfvars file
