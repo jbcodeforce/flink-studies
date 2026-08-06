@@ -40,12 +40,6 @@ variable "confluent_cloud_api_secret" {
   sensitive   = true
 }
 
-variable "cc_availability" {
-  description = "Kafka cluster availability (SINGLE_ZONE or MULTI_ZONE)"
-  type        = string
-  default     = "SINGLE_ZONE"
-}
-
 variable "flink_max_cfu" {
   description = "Max CFU per Flink compute pool"
   type        = number
@@ -59,7 +53,7 @@ variable "topic_partitions" {
 }
 
 variable "enable_cluster_link" {
-  description = "Provision topics, bidirectional Cluster Linking, and DR mirrors (iteration 2)"
+  description = "Provision topics, destination-initiated Cluster Linking (primary → DR), and DR mirrors (iteration 2)"
   type        = bool
   default     = false
 }
@@ -84,7 +78,7 @@ variable "confluent_external_id" {
 }
 
 variable "cluster_link_name" {
-  description = "Bidirectional cluster link name (same name both directions)"
+  description = "Destination-initiated cluster link name (primary → DR)"
   type        = string
-  default     = "dr-rides-bidirectional"
+  default     = "dr-rides-primary-to-dr"
 }

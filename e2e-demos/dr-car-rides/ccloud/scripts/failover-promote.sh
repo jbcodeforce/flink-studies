@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/export-env.sh" dr
 
 TOPICS=(rides_raw rides_clean driver_stats)
-LINK="${CLUSTER_LINK_NAME:-dr-rides-bidirectional}"
+LINK="${CLUSTER_LINK_NAME:-dr-rides-primary-to-dr}"
 
 echo "=== Promote failover (mirror topics) ==="
 echo "Cluster: $KAFKA_CLUSTER_ID  link: $LINK"

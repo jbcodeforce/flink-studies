@@ -13,6 +13,5 @@ CREATE TABLE IF NOT EXISTS rides_raw (
 WITH (
     'key.format' = 'json-registry',
     'value.format' = 'json-registry',
-    'value.fields-include' = 'all',
-    'kafka.consumer.isolation-level' = 'read-uncommitted'
+    'value.fields-include' = 'all'
 );

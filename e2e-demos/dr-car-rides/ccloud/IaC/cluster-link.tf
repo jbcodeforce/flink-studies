@@ -1,6 +1,7 @@
 # -----------------------------------------------------------------------------
-# Topics on primary + bidirectional Cluster Link + mirror topics on DR
+# Topics on primary + destination-initiated Cluster Link (primary → DR) + mirrors
 # Gated by enable_cluster_link (iteration 2).
+# DR must be Enterprise (see confluent.tf); primary stays Standard (source only).
 # -----------------------------------------------------------------------------
 
 locals {
@@ -36,25 +37,26 @@ resource "confluent_kafka_topic" "primary" {
   }
 }
 
-# Bidirectional cluster link (both directions, same link_name)
+# Destination-initiated link: DR (Enterprise) pulls from primary (source).
 resource "confluent_cluster_link" "primary_to_dr" {
   count = var.enable_cluster_link ? 1 : 0
 
-  link_name = var.cluster_link_name
-  link_mode = "BIDIRECTIONAL"
+  link_name       = var.cluster_link_name
+  link_mode       = "DESTINATION"
+  connection_mode = "OUTBOUND"
 
-  local_kafka_cluster {
-    id            = data.confluent_kafka_cluster.primary.id
-    rest_endpoint = data.confluent_kafka_cluster.primary.rest_endpoint
+  source_kafka_cluster {
+    id                 = data.confluent_kafka_cluster.primary.id
+    bootstrap_endpoint = data.confluent_kafka_cluster.primary.bootstrap_endpoint
     credentials {
       key    = confluent_api_key.app_manager_primary_kafka.id
       secret = confluent_api_key.app_manager_primary_kafka.secret
     }
   }
 
-  remote_kafka_cluster {
-    id                 = confluent_kafka_cluster.dr.id
-    bootstrap_endpoint = confluent_kafka_cluster.dr.bootstrap_endpoint
+  destination_kafka_cluster {
+    id            = confluent_kafka_cluster.dr.id
+    rest_endpoint = confluent_kafka_cluster.dr.rest_endpoint
     credentials {
       key    = confluent_api_key.app_manager_dr_kafka.id
       secret = confluent_api_key.app_manager_dr_kafka.secret
@@ -67,35 +69,6 @@ resource "confluent_cluster_link" "primary_to_dr" {
   ]
 }
 
-resource "confluent_cluster_link" "dr_to_primary" {
-  count = var.enable_cluster_link ? 1 : 0
-
-  link_name = var.cluster_link_name
-  link_mode = "BIDIRECTIONAL"
-
-  local_kafka_cluster {
-    id            = confluent_kafka_cluster.dr.id
-    rest_endpoint = confluent_kafka_cluster.dr.rest_endpoint
-    credentials {
-      key    = confluent_api_key.app_manager_dr_kafka.id
-      secret = confluent_api_key.app_manager_dr_kafka.secret
-    }
-  }
-
-  remote_kafka_cluster {
-    id                 = data.confluent_kafka_cluster.primary.id
-    bootstrap_endpoint = data.confluent_kafka_cluster.primary.bootstrap_endpoint
-    credentials {
-      key    = confluent_api_key.app_manager_primary_kafka.id
-      secret = confluent_api_key.app_manager_primary_kafka.secret
-    }
-  }
-
-  depends_on = [
-    confluent_cluster_link.primary_to_dr,
-  ]
-}
-
 # Mirror topics on DR (destination must not already have these topics)
 resource "confluent_kafka_mirror_topic" "dr" {
   for_each = local.cluster_link_topics
@@ -105,7 +78,7 @@ resource "confluent_kafka_mirror_topic" "dr" {
   }
 
   cluster_link {
-    link_name = confluent_cluster_link.dr_to_primary[0].link_name
+    link_name = confluent_cluster_link.primary_to_dr[0].link_name
   }
 
   kafka_cluster {
@@ -119,7 +92,7 @@ resource "confluent_kafka_mirror_topic" "dr" {
 
   depends_on = [
     confluent_kafka_topic.primary,
-    confluent_cluster_link.dr_to_primary,
+    confluent_cluster_link.primary_to_dr,
   ]
 
   lifecycle {

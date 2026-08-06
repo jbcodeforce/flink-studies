@@ -10,7 +10,7 @@ Reuses existing **j9r-env** / **j9r-kafka** as primary (via `import-j9r-env` rem
 | 2 | `enable_cluster_link` + `enable_schema_linking` | Topics, Cluster Linking, mirrors, SR IMPORT + exporter |
 | later | `enable_tableflow` | AWS S3/Glue/IAM + Tableflow provider integrations |
 
-## Apply order
+
 
 ### 2. Apply iteration 1 (Confluent DR core)
 

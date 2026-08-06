@@ -10,6 +10,5 @@ CREATE TABLE IF NOT EXISTS driver_stats (
 WITH (
     'key.format' = 'json-registry',
     'value.format' = 'json-registry',
-    'value.fields-include' = 'all',
-    'kafka.consumer.isolation-level' = 'read-uncommitted'
+    'value.fields-include' = 'all'
 );

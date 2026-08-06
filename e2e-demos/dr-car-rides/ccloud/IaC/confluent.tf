@@ -37,11 +37,12 @@ resource "confluent_environment" "dr" {
 
 resource "confluent_kafka_cluster" "dr" {
   display_name = "${var.prefix}-dr-kafka-${random_id.suffix.hex}"
-  availability = var.cc_availability
+  # Enterprise requires HIGH; needed for Cluster Linking on the DR destination.
+  availability = "HIGH"
   cloud        = "AWS"
   region       = var.dr_region
 
-  standard {}
+  enterprise {}
 
   environment {
     id = confluent_environment.dr.id

@@ -10,8 +10,7 @@ dr_region      = "us-east-1"
 # confluent_cloud_api_key    = ""
 # confluent_cloud_api_secret = ""
 
-cc_availability = "SINGLE_ZONE"
-flink_max_cfu   = 10
+flink_max_cfu = 10
 
 # Incremental build flags (defaults match iteration 1)
 enable_cluster_link   = false # iteration 2: topics + Cluster Linking + mirrors
