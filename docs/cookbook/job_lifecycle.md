@@ -331,7 +331,10 @@ Also when the state size is too large, consider separating the new statement int
 ### 4.1- Recipe: Scale a Flink Job to Handle Increased Load
 
 #### Context
+
 You see sustained backpressure in the Flink UI or high operator utilization, and the job is falling behind (increasing end-to-end latency, growing Kafka lag, etc.).
+
+In Confluent Cloud for Flink it is possible to see some 'Compute Pool Exhausted' message on a query or with compute pool metrics. CFU is also correlated to the maximum number of statements that can run on a compute pool. Autoscaler can also need to scale above CFU max, and reports exhauted capability.
 
 #### Preconditions / Checklist
 
@@ -392,13 +395,102 @@ If errors appear or performance worsens:
 * Reevaluate resource allocation or code hot spots before attempting scale-out again.
 
 
-### 4.2  Handling backpressure and hot keys.
+### 4.2- Recipe: Handling backpressure and hot keys
+
 #### Context
+
+Use this recipe when backpressure persists after you have checked cluster or compute-pool capacity, or when one parallel subtask is near 100% busy while sibling subtasks are mostly idle (high data skew). Kafka lag, Messages Behind, and CFU exhaustion can be symptoms of skew, not only of undersizing.
+
+Contrast with [§4.1](#41-recipe-scale-a-flink-job-to-handle-increased-load): raising parallelism does not redistribute work when a single key owns most of the traffic. Tuning guidance also states to fix skew before scaling — see [Flink Tuning on Kubernetes](flink_app_tuning.md#when-to-scale-what).
+
 #### Preconditions / Checklist
+
+* Metrics available: Flink Web UI (OSS / CP Flink) or Query Profiler (Confluent Cloud).
+* You know which operators are keyed (`GROUP BY`, join keys, upsert / primary key, window key).
+* Kafka partition (bucket) counts for source topics are known.
+* Baseline recorded before changes: lag or Messages Behind, backpressure %, busy %, data skew %.
+
 #### Inputs / Parameters
+
+* Job or statement id, current parallelism, and keyed columns.
+* Observed skew and hottest subtask id (from UI or Query Profiler).
+* Chosen remediation: key enrichment, salting, two-phase aggregation, or repartition after keys are balanced.
+
 #### Procedure
+
+1. Confirm skew versus capacity
+    * High skew plus one hot subtask: continue here.
+    * All subtasks hot and low skew: use [§4.1](#41-recipe-scale-a-flink-job-to-handle-increased-load).
+
+1. Locate the hot operator
+
+=== "Apache Flink / CP Flink"
+
+    In the Flink Web UI, open the Backpressure view and compare busy time and data skew across subtasks. Metric definitions are in [§2 Understanding the Flink UI](#2-understanding-the-flink-ui). Note which operator sits immediately upstream of the backpressured edge.
+
+=== "Confluent Cloud"
+
+    Open the statement Query Profiler and inspect backpressure, busyness, and skew at task and operator level. See [Query Profiler](../techno/ccloud-flink.md#query-profiler). Correlate with Messages Behind / pending records on the statement.
+
+1. Identify the hot key(s)
+
+    Count records by the candidate key over a recent window (full-history counts can mislead during catch-up):
+
+    ```sql
+    SELECT
+        id,
+        tenant_id,
+        count(*) AS record_count
+    FROM table_name
+    GROUP BY id, tenant_id
+    ```
+
+    Order by `record_count` descending and look for keys that dominate. For percentile / z-score classification, see [How to search for hot key?](../coding/flink-sql-2.md#troubleshooting-sql-statement-running-slow).
+
+1. Pick a remediation (ordered ladder)
+
+    Apply the lightest change that the business model allows:
+
+    1. Enrich the key / add a dimension when a second column is available and correct for the aggregation or join (composite `GROUP BY`, or `DISTRIBUTED BY HASH(k1, k2)` on sink tables). See [partition and distribution notes](../coding/flink-sql-1.md).
+    1. Salt hot keys for joins or aggregations: attach a salt, process locally, then merge on the original key. Example pattern (join on salted keys):
+
+        ```sql
+        -- Local path: join / aggregate on (business_key, salt_id)
+        -- Global path: re-aggregate or upsert by business_key only
+        SELECT u.*, g.group_name
+        FROM users_salted u
+        JOIN groups_salted g
+          ON u.group_id = g.id AND u.salt_id = g.salt_id
+        ```
+
+        Lab scripts: [code/flink-sql/04-2-joins/data_skew](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/04-2-joins/data_skew).
+
+    1. Pre-aggregate or split hot-key traffic onto a dedicated statement or topic so the main keyed operator stays balanced.
+    1. Only after keys are more even, increase partitions and parallelism using [§4.1](#41-recipe-scale-a-flink-job-to-handle-increased-load).
+
+1. Deploy and verify
+
+    * Logic or key changes on stateful statements follow statement evolution / savepoint practices in [§3 Upgrading Jobs Safely](#3-upgrading-jobs-safely).
+    * After deploy, watch skew %, backpressure, and lag for 10–15 minutes at steady state (not only during catch-up).
+
+#### Validation
+
+* Data skew drops on the previously hot operator.
+* Backpressure falls across subtasks, not only as a job-level average.
+* For salted paths: final merge restores correct global aggregates / upserts (no duplicates, no missing keys).
+
 #### Rollback
+
+* Revert to the previous statement or job version. On OSS / CP Flink with state, restore from the pre-change savepoint if the DAG is still compatible.
+* If salting produced wrong results, stop the new statement, keep consumers on the prior sink, and discard or quarantine the salted output topic.
+
 #### Gotchas
+
+* Scaling past Kafka partition count does not raise source throughput; scaling a keyed operator does not help when one key owns the load.
+* Salt without a final merge breaks global aggregates and upsert semantics. Prefer matching upsert / primary key and bucket key where possible ([flink-sql-2](../coding/flink-sql-2.md#understand-the-physical-execution-plan-for-a-sql-query)).
+* Null and default keys (`NULL`, `''`, `0`, `'unknown'`) are classic hot keys; fix upstream or route them explicitly.
+* Temporary skew during catch-up or backfill can look like a permanent hot key — wait for steady state before changing keys.
+* Broader bottleneck triage (network, RocksDB, GC) remains in [§7.2](#72-identifying-bottlenecks-sources-network-rocksdb).
 
 ## 5- Backfills and Reprocessing
 ### 5.1- Recipe: Replaying Kafka topics from older offsets.

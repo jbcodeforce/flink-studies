@@ -2,6 +2,11 @@
 
 This folder includes different dbt studies. This is coupled with the [dbt chapter](https://jbcodeforce.github.io/flink-studies/coding/dbt).  The `airbnb` is to use [duckdb](#using-duckdb-as-data-warehouse) as target of the `dbt` processing for data warehouse demo. `airbnb_streaming` is the same implementation using dbt and Confluent Cloud for Flink [dbt-confluent](#with-dbt-confluent---flink_workshop-project) demonstration. Finally `flink_workshop` folder includes a pure Flink workshop ported to dbt.
 
+UNDER CONSTRUCTION
+### Tracking
+
+- [ ] 
+
 ## Using duckdb as data warehouse
 
 ### Prerequisites
@@ -313,14 +318,14 @@ Therefore I see two needs:
 
 Use `[code/flink-sql/tools/migrate_dml_to_dbt](../flink-sql/tools/migrate_dml_to_dbt)` to convert demo `dml.*.sql` files into dbt models with matching `schema.yml` column types from the paired `ddl.*.sql`. 
 
-### Gap analysis with shift_left utils CLI
+### Gap analysis with shift_left utils CLI - 07/02/2026
 
 - Kimball structure under `models/` can be bootstrapped with `migrate_dml_to_dbt.py` (see above).
-- No metada data for statement children relationship, but could be kept as-is with shift_left. (medium term this). 
+- No metada data for statement children relationship, but may be kept as-is with shift_left. (medium term this). dbt supports seeing children relation with the `+` postfix.
 - no undeploy statements command
 - no drop table from a list of tables
 - no cross cut deployment support: only sources, only a data producct
 - no concept of statefulness with different approach to deployment -> the response is to transform to materialized tables. But this will not address children relationship.
-- no children relationship understanding
+- no children relationship management
 - unit tests not isolated per table
 

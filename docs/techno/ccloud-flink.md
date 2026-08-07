@@ -235,7 +235,7 @@ User may use the workspace to develop and research new query. Data engineers hav
 
 Users need to recall that once the Flink job is started, they cannot modify it: they need to stop before any future edition. Restarting may mean reprocess from the earliest records. 
 
-Workspace is used for development, but as best practice, it is recommended to persist the Flink SQL query in a git repository and manage the deployment using Confluent CLI, [dbt](../coding/dbt.md) or the [shift_left CLI tool](https://jbcodeforce.github.io/shift_left_utils/blue_green_deploy/).
+Workspace is used for development, but as best practice, it is recommended to persist the Flink SQL query in a git repository and manage the deployment using Confluent CLI, [dbt](../coding/dbt.md) or the [shift_left CLI tool](https://jbcodeforce.github.io/shift_left_utils/blue_green_deploy/). For the day-to-day operating model that separates Workspace exploration from code organization and statement deployment, see [Day-to-day data engineering](../methodology/data_eng_101.md).
 
 <figure markdown='span'>
 ![](./diagrams/sql_dev_lf.drawio.png){width=700}

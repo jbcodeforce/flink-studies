@@ -42,6 +42,7 @@ nav:
       - Complex Event Processing: coding/cep.md
   - Methodology:
     - Data as a product: methodology/data_as_a_product.md
+    - Day-to-day data engineering: methodology/data_eng_101.md
     - Event Storming: https://jbcodeforce.github.io/eda-studies/methodology/event-storming/
     - Flink Project Management: cookbook/pm.md
     - Migrate to real-time processing tools: https://jbcodeforce.github.io/migration-to-flink-skills/

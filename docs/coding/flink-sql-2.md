@@ -703,6 +703,21 @@ The source topic should be in append mode because over-window aggregation does n
     The minimum out-of-orderness is 50ms and can be set up to 7 days. See [Confluent documentation.](https://docs.confluent.io/cloud/current/flink/reference/functions/datetime-functions.html#flink-sql-source-watermark-function) 
 
 
+### Late Events
+
+[Late Events](https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/dev/datastream/operators/windows/#allowed-lateness) are relevant only when you have event-time based operators, like window aggregations. These operators drop late events, silently with Flink SQL, while in DataStream API developer can handle them using [side output](https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/dev/datastream/operators/windows/#getting-late-data-as-a-side-output). Remember that when a late event arrive but not dropped, it could trigger another firing for the window. 
+
+When statements do not have any event-time operation, it can safely  be ignored late. Nothing will be dropped.
+
+The task/operator metric `numLateRecordsDropped` counts the records dropped for being late by these operators
+
+[Confluent Cloud for Flink](https://docs.confluent.io/cloud/current/flink/how-to-guides/handle-late-arriving-data.html) offers a setting: [`'late-handling.mode' = 'filter'`](https://docs.confluent.io/cloud/current/flink/how-to-guides/handle-late-arriving-data.html#configure-late-data-filtering), to drop or filter out events that fall behind the defined watermark. Two modes supported: pass-through, filter. With path-through the Flink operators will apply thei own semantic to manage late events, which may lead to drop.
+
+Filter allows developers to filter late event immediately, at the source operator level, and decide how to handle them explicitly regardless of the type of downstream operators. Events with timestamp <=  watermark are send to this "side output". 
+
+Filtered events remain in a System Table (<table_name>$late) for inspection or [reprocessing](https://docs.confluent.io/cloud/current/flink/how-to-guides/handle-late-arriving-data.html#reprocessing-patterns) (an union of non-late and late records).
+
+Retention of late event in the `$late` is the same as the source table.
 
 ## Joins
 

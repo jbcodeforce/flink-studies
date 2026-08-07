@@ -11,11 +11,11 @@ compiled: false
 * [Dbt core](https://github.com/dbt-labs/dbt-core) is an open source ELT CLI and database agnostic used to allow data analysts and engineers building reliable, modular data pipelines, creating "models" (SELECT statements) that are version-controlled, automatically documented, and tested for quality before consumption by analytics tools.  Learn more about `dbt` [in the docs](https://docs.getdbt.com/docs/introduction).
 * [dbt Cloud](https://www.getdbt.com/product/dbt): is the managed service with a web-based IDE, scheduler, job orchestration, and monitoring...
 
-Supported by ISVs in lake house market. 
+Supported by ISVs in lake house indsutry. 
 
 ## Relation with Flink
 
-Confluent has also developed a [dbt adapter](https://pypi.org/project/dbt-confluent/) to deploy Flink SQL statements into Confluent Cloud for Flink. It aims to support standard `dbt` commands (init, debug, run, test, docs generate, etc.) against Confluent Cloud for Flink, so teams can manage pipelines end-to-end from `dbt` rather than using Terraform or confluent cli.
+Confluent has also developed a [dbt adapter](https://pypi.org/project/dbt-confluent/) to deploy Flink SQL statements into Confluent Cloud for Flink. It aims to support standard `dbt` commands like init, debug, run, test, docs generate, etc... against Confluent Cloud for Flink, so teams can manage pipelines end-to-end from `dbt` rather than using Terraform or `confluent` cli.
 
 We will first work on one concrete [example for a database](#a-data-warehouse-example), and then work on a [Confluent Cloud Flink project](#a-confluent-cloud-flink-example).
 
