@@ -151,7 +151,7 @@ Next we will cover the `dbt` [main concepts](#major-dbt-concepts) with concrete 
           type: confluent
     ```
 
-    It is a reusable connection that can be referenced by any dbt project:
+    It is a reusable connection that can be referenced by any dbt projects:
     ```yaml
     name: 'flink_workshop'
     version: '1.0.0'
@@ -169,7 +169,7 @@ Next we will cover the `dbt` [main concepts](#major-dbt-concepts) with concrete 
     * *Table*: Replaces the entire target table with each run. Ideal for smaller datasets or full-refresh batches.
     * *Incremental*: Updates only new or changed data using append, merge, or delete+insert.
     * *Microbatch*: Breaks massive datasets into smaller, time-based segments (e.g., daily) that process independently.
-    * *External*: Reads from and exports results directly to files (Parquet, CSV, JSON) on local storage or S3.
+    * *External*: Reads from and exports results directly to files (Parquet, CSV, JSON) on local storage or S3 buckets.
 
 * `dbt` encourages building complex transformations in smaller, reusable SQL steps, reducing repetitive code.
 * `dbt` uses a template mechanism (jinja), functions and a set of features to organize SQL and cross reference them. 
@@ -177,7 +177,7 @@ Next we will cover the `dbt` [main concepts](#major-dbt-concepts) with concrete 
 * **Models**: are the basic building blocks of the business logic. They includes materialized tables and views, and SQL files. Models can reference each others and use templates and macros. 
 * **Resources types** includes models, seeds, snapshots, tests, sources
 * **Properties** describe resources
-* **Configurations** control how `dbt` builds resources in the warehouse. Could be set cross resources in `dbt_project.yml`, in a `properties.yml` under a folder, `config()` in a sql or resource file.
+* **Configurations** control how `dbt` builds resources in the warehouse. Could be set cross resources in `dbt_project.yml`, in a `properties.yml` under a folder, or within the `config()` function in a sql or resource file.
 
 ### Models
 
@@ -198,7 +198,7 @@ The table below lists when to use View vs Table:
 
 * `dbt` provides built-in testing (e.g., uniqueness, non-null checks) to catch broken logic 
 * **schema** is the data contract of elements of the model, and defined in a separate yaml file.
-* There are two macros to cross reference tables: `{{ ref() }}` used to reference a table within a model and `{{source() }}` to reference external data sources. 
+* There are two macros to cross reference tables: `{{ ref() }}` used to reference a table within a model and `{{ source() }}` to reference external data sources. 
 
 ???+ handson "Create the first model"
     [See the duckdb example](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt) to review the detailed steps to build an analytic data warehouse. The principle is to get ETL to move data to a landing zone, in the datawarehouse `raw` schema.
@@ -223,7 +223,7 @@ sources:
         identifier: raw_listings
 ```
 
-Table defined in sources, will be referenced in other SQL model using: `{{ source('airbnb', 'listings') }}`. 
+Table defined in sources, will be referenced in other SQL models using: `{{ source('airbnb', 'listings') }}`. 
 
 From there, one of the first development step is to process those raw tables to create src tables, which include filtered records, deduplicated, and even with some data transformation like flattening hierarchical columns. The models to do so can be saved in a `models/src` folder:
 
@@ -295,10 +295,10 @@ models/
 
 `dbt` names a model from the file name, not from the folder path.
 
-* For `models/sources/src_hosts.sql` the model name is `src_hosts`
-* Use `ref('src_hosts')`, not `ref('sources.hosts.src_hosts')`
+* For `models/src/src_hosts.sql` the model name is `src_hosts`
+* Use `ref('src_hosts')`, not `ref('src.hosts.src_hosts')`
 
-So if two subfolders both contain model.sql, you get a name collision, therefore it is recommended to use distinct filenames (dim_hosts.sql, fct_reviews.sql), or set an explicit alias in config.
+So if two subfolders both contain a `model.sql`, you get a name collision, therefore it is recommended to use distinct filenames (dim_hosts.sql, fct_reviews.sql), or set an explicit alias in config.
 
 For incremental deployment it should be possible to run `dbt` as:
 ```sh
