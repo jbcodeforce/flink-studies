@@ -12,6 +12,7 @@ UNDER CONSTRUCTION
 ### Prerequisites
 
 - Install dependencies from the dbt folder: `cd code/dbt && uv sync` (includes `dbt-duckdb`).
+- Install `duckdb` with brew
 - First time, create the `dbt` project
     ```sh
     dbt init airbnb

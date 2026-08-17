@@ -34,5 +34,10 @@
             "envManager": "ms-python.python:system",
             "packageManager": "ms-python.python:pip"
         }
+    ],
+    "cursorpyright.analysis.extraPaths": [
+        "${workspaceFolder}/code/flink-sql/07-2-raw-to-multiple-types/python",
+        "${workspaceFolder}/code/flink-sql/07-2-raw-to-multiple-types/python/producers",
+        "${workspaceFolder}/code/flink-sql"
     ]
 }

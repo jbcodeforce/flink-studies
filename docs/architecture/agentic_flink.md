@@ -10,7 +10,7 @@ compiled: false
 
 ???- "Version"
     Create 07/2025
-    Update - 04/26/26
+    Update - 08/08/26
 
 Industry analysts (for example Gartner) project strong adoption of agentic AI in enterprise applications by 2028, with significant potential impact on automation and cost. Treat such figures as directional, not precise forecasts. One of the problems is that organizations do not have the right data for AI. Classical ML models are trained from historical data using batch processing; they are tailored for a specific use case with a specific feature set. Generative models are built on public human-generated unstructured information, and they generalize across many tasks. They do not know your organization’s data. Therefore a key challenge is to **deliver the right data at the right time with the right context.**
 
@@ -80,16 +80,17 @@ Agents should not be limited to one database; they should participate in an ecos
 Examples from early adopters:
 
 * Detecting changes in trading volume and alerting a person; learning trends on individual names.
+* Detect changes in telemetries from IoT devices and manufacturing equipments.
 * Detecting changes in campaign engagement.
 * Spikes or dips in new patient registrations by location.
 * Product reviews: classify sentiment, then use anomaly detection on negative share to catch incidents early.
 
-## Requirements (grouped)
+## Requirements
 
 ### Cost, throughput, and models
 
-* **Cost model:** Pushing every business event through an LLM is often prohibitively expensive. Use traditional ML (anomaly, fraud, forecasting) or rules as a first-pass filter, and reserve LLM steps for high-value windows.
-* **Inference and enrichment:** Fresh data from transactions into context for agents; stale data drives weak recommendations. Private data is often integrated at inference and through RAG rather than by training on all of it in the public model.
+* **Cost model:** Pushing every business event through an LLM is often prohibitively expensive. Use traditional ML (anomaly detection, fraud detection, forecasting) or business rules as a first-pass filter, and reserve LLM steps for text based tasks.
+* **Inference and enrichment:** As already said, fresh data from transactions into context for agents brings more value than stale data. Stale data drives weak recommendations. Private data is often integrated at inference and through RAG rather than by training on all of it in the public model.
 
 ### Data preparation and search
 
@@ -189,17 +190,20 @@ Checkpointing and Kafka groups are where you get progress and reprocessing seman
 
 ### Confluent Intelligence
 
-Confluent’s stream processing and governance offerings help you build event-driven pipelines for continuous AI context: capture data as it is generated, curate it in Flink SQL, and serve it to AI systems. The product direction is a unified, real-time, trust-oriented view of the business. See [Confluent Intelligence](https://www.confluent.io/product/confluent-intelligence/).
+Confluent’s stream processing and governance offerings help you build event-driven pipelines for continuous AI context: capture data as it is generated, curate it in Flink SQL, and serve it to AI systems. The product direction is a unified, real-time, trust-oriented view of the business. See [Confluent Intelligence](https://www.confluent.io/product/confluent-intelligence/). Current generative AI use data to continuously learning and adapting the logic and response. This should not be considered without risk, and static business logic and rules should never be undeterministic. Rule based systems have still their important play in modern AI, ignoring it, will lead company in mined land.
 
 [Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/ai/overview.html) combines, at a high level:
 
 1. **Built-in ML in SQL:** [model-oriented functions](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html) for anomaly detection, forecasting, and similar use cases, with downstream routing to topics or agents.
 2. **Streaming agents:** [Streaming Agents](https://docs.confluent.io/cloud/current/ai/overview.html) run as Flink-backed, stateful units with timers and replay-friendly testing story (see Confluent docs for current limits and regions).
-3. **Real-time Context Engine:** can expose governed, materialized data to other apps, in some flows via MCP, so not every team must hand-wire Kafka details.
+3. **Real-time Context Engine:** can expose governed, materialized data to other apps, in some flows via MCP, so not every team must hand-wire Kafka details. It is enabled at a topic level. 
+  ![](./images/ctx_engine_topic.png)
+
+  Once enabled, 3 tools are available: `getMetadata`, `listTopics`, `queryData` to a code agent like Claude, Cursor or your own.
 
 Layers Confluent often highlights:
 
-* **Real-time processing:** Kafka paired with Flink, with [ML](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html) and [preprocessing](https://docs.confluent.io/cloud/current/flink/reference/functions/ml-preprocessing-functions.html) helpers in SQL, including [anomaly](https://docs.confluent.io/cloud/current/ai/builtin-functions/detect-anomalies.html) examples (for example ARIMA-style and MAD, per documentation).
+* **Real-time processing:** Kafka paired with Flink, with [ML](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html) and [preprocessing](https://docs.confluent.io/cloud/current/flink/reference/functions/ml-preprocessing-functions.html) helpers in SQL, including [anomaly detection](https://docs.confluent.io/cloud/current/ai/builtin-functions/detect-anomalies.html) using ARIMA-style and MAD algorithms.
 
 * [Anomaly detection predefined function for Flink processing](https://docs.confluent.io/cloud/current/ai/builtin-functions/detect-anomalies.html):
     * Detect anomalies in your data using a forecasting model based on Autoregressive Integrated Moving Average (ARIMA). - ML_DETECT_ANOMALIES
