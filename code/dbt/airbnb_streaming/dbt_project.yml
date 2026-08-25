@@ -32,9 +32,13 @@ clean-targets:         # directories to be removed by `dbt clean`
 models:
   airbnb_streaming:
     # Config indicated by + and applies to all files under models/example/
-    example:
-      +materialized: view
-
+    user_reviews:
+      sources:
+        +materialized: streaming_table
+      dimensions:
+        +materialized: streaming_table
+      facts:
+        +materialized: streaming_table
 seeds:
   airbnb_streaming:
     +execution_mode: snapshot

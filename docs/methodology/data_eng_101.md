@@ -317,6 +317,11 @@ The command creates two files under the $HOME/.shift_left folder:
 | modified_flink_files.txt | json | contains a filelist with element like: <code>{"table_name": "p1_dim_c2",</br>"file_modified_url": "...pipelines/dimensions/p1/dim_c2/sql-scripts/ddl.dim_c2.sql",</br>"same_sql_content": false,"running": false }</code> |
 | modified_flink_files_short.txt | txt | list of table name only |
 
+With this, it will be possible to assess the execution plan with:
+
+```sql
+shift_left pipeline build-execution-plan --table-list-file-name  ~/.shift_left/modified_flink_files_short.txt
+```
 
 The DDL Flink statements need to have a new table name with the next version postfix (e.g. int_3_v2). 
 
@@ -362,7 +367,7 @@ shift_left pipeline deploy --table-list-file-name statement_list.txt --may-start
 
 ## A day-to-day loop
 
-The following loop is enough to operate without leaving this mental model. 
+The following loop is enough to operate without leaving this mental model. Hands-on commands and a C360 walkthrough are in the [DE lab](https://jbcodeforce.github.io/shift_left_utils/tutorial/de_lab/).
 
 1. Explore in the Workspace (or read existing table SQL in git) to learn shapes and prove a join.
 2. Add or change the table folder and DDL/DML in git; open a reviewable change.

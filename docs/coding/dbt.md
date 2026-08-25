@@ -6,12 +6,21 @@ tags: [flink, coding, dbt]
 type: article
 compiled: false
 ---
+
 # Data Build Tool Summary
 
+???- info "Version"
+    - Created 03/2026
+    - Last Update 08/2026: clean structure
+
+## Context
+
+* Before dbt, analytics/data teams wrote SQL transformations directly against the warehouse by hand with virtually no version control, no tests, no reusable dependencies, no documentation. 'dbt' was created to treat SQL transformations as software. It is now the standard for modern data processing.
+* Dependencies are managed by dbt, tests and docs are all versioned. 
 * [Dbt core](https://github.com/dbt-labs/dbt-core) is an open source ELT CLI and database agnostic used to allow data analysts and engineers building reliable, modular data pipelines, creating "models" (SELECT statements) that are version-controlled, automatically documented, and tested for quality before consumption by analytics tools.  Learn more about `dbt` [in the docs](https://docs.getdbt.com/docs/introduction).
 * [dbt Cloud](https://www.getdbt.com/product/dbt): is the managed service with a web-based IDE, scheduler, job orchestration, and monitoring...
 
-Supported by ISVs in lake house indsutry. 
+Supported by ISVs in lake house industry. 
 
 ## Relation with Flink
 
@@ -36,20 +45,25 @@ The classical dbt use cases are:
 
 * We need Python, as `dbt` should be installed in a virtual environment. [See installation instructions](https://docs.getdbt.com/docs/core/installation-overview). See the [supported Python database](https://docs.getdbt.com/faqs/Core/install-python-compatibility)
 * Create a `$HOME/.dbt` folder to let `dbt` persists the `profile.yaml` file to keep user and Database credentials. 
-1. Start a new python session under your working folder (e.g. dbt)
+* Start a new python session under your working folder (e.g. dbt)
   ```sh
   uv venv
   source .venv/bin/activate
   ```
-1. Install `dbt`, and dbt adapter for duckdb
+* Install `dbt`, and dbt adapter for duckdb
   ```sh
   uv add dbt-duckdb
   ```
 
-  and dbt adapter for Confluent Cloud for Flink
+* Add dbt adapter for Confluent Cloud for Flink
   ```sh
   uv add dbt-confluent
   ```
+
+* Upgrade:
+  ```sh
+   uv pip install --upgrade dbt-confluent
+   ```
 
 ## Getting started
 
@@ -66,7 +80,7 @@ This example is in [code/dbt/airbnb](https://github.com/jbcodeforce/flink-studie
     dbt init airbnb
     ```
 
-    while running this command, it will ask to set the `dbt` profile for this project (I selected duckdb). A project profile is a YAML file containing the connection details for your chosen data platform.  When there is an existing `~/.dbt/profiles.yml`, the previous command will add a new stanza to it like:
+    while running this command, it will ask to set the `dbt` profile for this project (e.g. duckdb). A project profile is a YAML file containing the connection details for your chosen data platform.  When there is an existing `~/.dbt/profiles.yml`, the previous command will add a new stanza to it like:
 
     ```yaml
     airbnb:
@@ -115,16 +129,16 @@ This example is in [code/dbt/airbnb](https://github.com/jbcodeforce/flink-studie
 
 Next we will cover the `dbt` [main concepts](#major-dbt-concepts) with concrete examples.
 
-### A Confluent Cloud Flink example
+### A Confluent Cloud Flink SQL example
 
 * [See documentation of Confluent dbt adapter](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/deploy-flink-dbt.html) for installation.
   ```sh
   pip install dbt-confluent
   # or
-  uv add  dbt-confluent
+  uv pip install  dbt-confluent
   ```
 
-  Flink SQLs are defined in Models and `dbt` processes them for the deployment to Confluent Cloud using the statement REST API. When adopting a 'shift left' strategy of moving part of the star model to real time processing, it makes sense to manage real-time streaming project as data engineers manages data warehouse or lakehouse projects.
+  Flink SQLs are defined in Models and `dbt` processes them for the deployment to Confluent Cloud using the statement REST API. When adopting a 'shift left' strategy of moving part of the [star model](https://jbcodeforce.github.io/flink-studies/cookbook/pm/#the-star-schema) to real time processing, it makes sense to manage real-time streaming project as data engineers manage their data warehouse or lakehouse projects.
 
 * Create the project
   ```sh
@@ -151,14 +165,14 @@ Next we will cover the `dbt` [main concepts](#major-dbt-concepts) with concrete 
           type: confluent
     ```
 
-    It is a reusable connection that can be referenced by any dbt projects:
-    ```yaml
-    name: 'flink_workshop'
-    version: '1.0.0'
-    profile: 'cc_flink'
-    ```
-    
-    So it makes sense to rename the `flink_workshop` to ``cc_flink`.
+  It is a reusable connection that can be referenced by any dbt projects:
+  ```yaml
+  name: 'flink_workshop'
+  version: '1.0.0'
+  profile: 'cc_flink'
+  ```
+  
+  So it makes sense to rename the `flink_workshop` to ``cc_flink` to represent a connection to Confluent Cloud.
 
 
 * [profile.yaml](https://docs.getdbt.com/docs/local/profiles.yml?version=1.12) defines information to connect to database.
@@ -277,7 +291,7 @@ For source freshness, it is recommended to define refreshness condition on raw t
 
 `dbt` recursively scans everything under model-paths (by default models/). `dbt run`, `dbt build`, and `dbt seed` will all find those `.sql` files and deploy/run them.
 
-The folder structure under the models folder can be a hierarchy based on the kimball architecture or star schema [See PM methodology](../cookbook/pm.md#flink-project-management):
+The folder structure under the models folder can be a hierarchy based on the kimball architecture or star schema, with folder name to map table under consideration,  [see the PM methodology chapter for details](../cookbook/pm.md#flink-project-management):
 ```sh
 models/
   sources/
@@ -300,14 +314,14 @@ models/
 
 So if two subfolders both contain a `model.sql`, you get a name collision, therefore it is recommended to use distinct filenames (dim_hosts.sql, fct_reviews.sql), or set an explicit alias in config.
 
-For incremental deployment it should be possible to run `dbt` as:
-```sh
-uv run dbt run --select dimensions.hosts 
-# or --select dimensions.*
+* For incremental deployment it should be possible to run `dbt` as:
+  ```sh
+  uv run dbt run --select dimensions.hosts 
+  # or --select dimensions.*
 
-# Select a unique model
-uv run dbt  run --project-dir . --select withdrawals_by_account.sql --target dev --profiles-dir ~/.dbt --full-refresh
-```
+  # Select a unique model
+  uv run dbt  run --project-dir . --select withdrawals_by_account.sql --target dev --profiles-dir ~/.dbt --full-refresh
+  ```
 
 ### Materializations
 
@@ -466,9 +480,7 @@ There are two strategies for assessing data changes:
 
 * An update to an existing record and a new `dbt snapshot` will create historical record.
 
----
-
-## Tests
+### Tests
 
 * Two types of tests:
     * Unit Tests
@@ -491,7 +503,7 @@ There are two strategies for assessing data changes:
 
 * To run the tests
   ```sh
-  dbt text --target duckdb -x
+  dbt test --target duckdb -x
   # -x it to continue even if one test fails
   ```
 
@@ -501,6 +513,8 @@ There are two strategies for assessing data changes:
   ```
 
 ## Confluent Cloud Flink Specifics
+
+Confluent has developed two Python modules: [`dbt-confluent`](https://pypi.org/project/dbt-confluent/) (adapt dbt-core to confluent cloud) and [`confluent-sql`](https://pypi.org/project/confluent-sql/) (Python DBAPI V2 Compatible driver to be able to run snapshot, streaming queries with different cursors). 
 
 In Confluent Cloud for Flink context, the `dbt run` does not process data; it deploys or updates the definition of a continuous dataflow to the streaming engine. User runs `dbt run` only when the SQL queries changes. Important chapter from [Confluent cloud product documentation on dbt.](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/deploy-flink-dbt.html)
 
@@ -518,19 +532,46 @@ In Confluent Cloud for Flink context, the `dbt run` does not process data; it de
         type: confluent
     target: dev
   ```
+  Some error messages reference "schema" when they mean "Kafka cluster/database". It is confusing to set the environment_id where is Confluent Cloud the environment name is used.
 
-Some error messages reference "schema" when they mean "Kafka cluster/database". It is confusing to set the environment_id where is Confluent Cloud the environment name is used.
-
-* The `dbt` mapping for dbt Confluent:
+* The `dbt` mapping for dbt Confluent is as follow:
 
 | Dbt construct | CC Flink | dbt confluent materialization |
 | --------- | -------- | ------- |
 | view     | create view .. as select | view |
-| table     | snapshot query | streaming_table  |
+| table     | CTAS snapshot query  | streaming_table  |
+|  |  streaming query with DDL and insert | streaming_table |
+|  |  Flink connector-backed source table | streaming_source |
+| | materialized table | |
 | incremental | not-supported | | 
 | ephemeral | not supported | | 
-| materialized_view | create table ... as select | streaming_table |
 | seeds | CREATE TABLE + INSERT VALUES (point-in-time) | seed (default) |
+
+* the dependencies are managed by using the `ref()` function as core dbt. The deployment follows a topological order.
+
+### Useful commands to remember
+
+* run a specific model:
+  ```sh
+  dbt run --select stg_orders
+  ```
+*  run all models in a specific directory:
+  ```sh
+  dbt run --select user_reviews.sources.*
+  ```
+* understand downstream impacts
+  ```sh
+  dbt ls --select stg_orders+
+  ```
+* List all models upstream of fct_revenue
+  ```sh
+  dbt ls --select +fct_revenue
+  ```
+  
+* List a model and everything upstream and downstream
+  ```sh
+  dbt ls --select +stg_orders+
+  ```
 
 ### How to
 
@@ -613,12 +654,12 @@ Some error messages reference "schema" when they mean "Kafka cluster/database". 
       }}
       ```
 
-### Flink Demos using dbt
+### Flink SQL Demos using dbt
 
 * [Jan's flink workshop ported to dbt](https://github.com/jbcodeforce/flink-studies/tree/main/code/dbt/flink_workshop)    
 * [Research on PTF](https://github.com/jbcodeforce/research/tree/main/flink-ptf-multitenant-debezium-spanout/sql/order_pipeline)
 * [wd-flink-demo](https://github.com/jbcodeforce/wd-flink-demo)
-* [Airbnb streaming](https://github.com/jbcodeforce/flink-studies/tree/main/code/dbt/airbnb)
+* [Airbnb streaming](https://github.com/jbcodeforce/flink-studies/tree/main/code/dbt/airbnb_streaming)
 * [Tool to help migrate Flink ddl and dmls to dbt model](https://github.com/jbcodeforce/flink-studies/tree/main/code/flink-sql/tools/flink_dbt_migrate)
 
 ## Sources of Information

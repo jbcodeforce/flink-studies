@@ -408,7 +408,7 @@ At the Statement level we can get the following metrics over time:
 ![](./images/statement_metrics.png)
 </figure>
 
-[See cookbook on moniutoring and alerting for more details](../cookbook/job_lifecycle.md/#6--monitoring--alerting)
+[See cookbook on moniutoring and alerting for more details](../cookbook/job_lifecycle.md/#6-monitoring-alerting)
 
 ### Degraded Statement
 
@@ -619,7 +619,7 @@ As a base for discussion, 10k record/s per CPU is reachable for simple Flink sta
 * Checkpoint is used for in-region fault tolerance. Checkpoints capture the state of a Flink job at regular intervals, including Kafka consumer offsets, operator states, and internal timers. In CC checkpoints are done every minute.
 * In case of Cloud Provider failure, there is no protection, for a region lost. To address that, architects need to set up a cross region DR strategy.
 
-The [disaster recovery is addressed in the cookbook](../cookbook/cluster_mgt.md/#3-disaster-recovery--multi-region-strategies)
+The [disaster recovery is addressed in the cookbook](../cookbook/cluster_mgt.md/#3-disaster-recovery-multi-region-strategies)
 
 ## Some FAQs
 

@@ -1,11 +1,18 @@
 # dbt Studies - Samples
 
-This folder includes different dbt studies. This is coupled with the [dbt chapter](https://jbcodeforce.github.io/flink-studies/coding/dbt).  The `airbnb` is to use [duckdb](#using-duckdb-as-data-warehouse) as target of the `dbt` processing for data warehouse demo. `airbnb_streaming` is the same implementation using dbt and Confluent Cloud for Flink [dbt-confluent](#with-dbt-confluent---flink_workshop-project) demonstration. Finally `flink_workshop` folder includes a pure Flink workshop ported to dbt.
+This folder includes different dbt studies. This is coupled with the [dbt chapter](https://jbcodeforce.github.io/flink-studies/coding/dbt).  
 
-UNDER CONSTRUCTION
+* The `airbnb` is to use [duckdb](#using-duckdb-as-data-warehouse) as target of the `dbt` processing for data warehouse demo [See Duckdb section](#using-duckdb-as-data-warehouse). 
+* `airbnb_streaming` is the same implementation using dbt and dbt adapter for Confluent Cloud for Flink [dbt-confluent](#with-dbt-confluent---flink_workshop-project) demonstration. 
+* Finally `flink_workshop` folder includes a pure Flink workshop ported to dbt (see [this later section](#with-dbt-confluent---flink_workshop-project)).
+
+UNDER CONSTRUCTION : updated 08/25/2026
+
 ### Tracking
 
-- [ ] 
+- [x] AirBnb with duckdb, main SQLs 
+- [ ] airbnb as streaming
+- [x] Flink Workshop using dbt
 
 ## Using duckdb as data warehouse
 
@@ -17,6 +24,7 @@ UNDER CONSTRUCTION
     ```sh
     dbt init airbnb
     ```
+
 - The following step is already done: Place raw CSVs in `code/dbt/airbnb/data/`: `listings.csv`, `hosts.csv`, `reviews.csv`. Sources: [bootcamp resources](https://github.com/nordquant/complete-dbt-bootcamp-zero-to-hero/blob/main/_course_resources/course-resources.md) or S3 `s3://dbt-datasets/listings.csv`, `s3://dbt-datasets/reviews.csv`, `s3://dbt-datasets/hosts.csv`.
 
 ### Raw landing zone
@@ -36,7 +44,8 @@ The landing zone is used for raw data, mostly coming from CSVs, or ETL processin
 
 4. Review the raw tables. [See my summary on duckdb](https://jbcodeforce.github.io/db-play/duckdb/)
   ```sql
-    .open ./data/airbnb.duckdb
+    duckdb "${DBT_DUCKDB_PATH:-./data/airbnb.duckdb}"
+    D .open ./data/airbnb.duckdb
     D show databases;
     ┌───────────────┐
     │ database_name │
@@ -44,6 +53,10 @@ The landing zone is used for raw data, mostly coming from CSVs, or ETL processin
     ├───────────────┤
     │ airbnb        │
     └───────────────┘
+    
+    D use airbnb;
+    D show schemas;
+    D  use raw;
     D show tables;
     D select * from  raw.raw_reviews;
     D describe raw.raw_reviews;
@@ -83,6 +96,7 @@ airbnb:
 ```
 
 Verify in duckdb with:
+
 ```sql
 show tables;
 select * from seed_full_moon_dates limit 10;
@@ -100,7 +114,7 @@ select * from seed_full_moon_dates limit 10;
           identifier: raw_listings
   ```
 
-- Add SQL for deduplicating the `raw.raw_hosts` data. Create a `models/sources` folder and add the following query named `src_hosts.sql`. 
+- Add SQL for deduplicating the `raw.raw_hosts` data. Create a `models/src` folder and add the following query named `src_hosts.sql`. 
 
 ```sql
 WITH ranked_hosts AS (
@@ -128,7 +142,7 @@ WHERE
 
 *Using SQL materialized view, we do not use `INSERT INTO`, as it will be added automatically by `dbt*
 
-Running the following command
+Running the following commands:
 
 ```sh
 dbt run --target dev
@@ -214,7 +228,7 @@ FROM
 
 * To run the tests
   ```sh
-  dbt text --target duckdb -x
+  dbt test --target duckdb -x
   # -x it to continue even if one test fails
   ```
 
@@ -250,11 +264,11 @@ FROM
 
 ## With dbt-confluent - airbnb_streaming project
 
-The [airbnb_streaming](airbnb_streaming/) project targets Confluent Cloud for Flink via the `cc_flink` profile. Unlike DuckDB, `dbt run` deploys streaming SQL statements to Confluent Cloud for Flink rather than batch-transforming warehouse tables.
+The [airbnb_streaming](airbnb_streaming/) project targets Confluent Cloud for Flink via the `cc_flink` profile. Unlike with DuckDB, a `dbt run` deploys streaming SQL statements to Confluent Cloud for Flink.
 
 ### Prerequisites
 
-1. From `code/dbt/`, install deps: `uv sync`.
+1. From `code/dbt/`, install dependencies: `uv sync`.
 2. Configure `~/.dbt/profiles.yml` with a `cc_flink` profile (see [docs/coding/dbt.md](https://jbcodeforce.github.io/flink-studies/coding/dbt)).
 3. Export Flink API credentials:
   ```bash
@@ -275,10 +289,10 @@ The [airbnb_streaming](airbnb_streaming/) project targets Confluent Cloud for Fl
 
   ```bash
   cd code/dbt
-  uv run dbt seed --project-dir airbnb_streaming --profiles-dir ~/.dbt --target dev
+  uv run dbt seed --project-dir airbnb_streaming --target dev
   ```
 
-* Validate in the Flink SQL workspace:
+* Validate in the Confluent Cloud Flink SQL Workspace:
 
 ```sql
 SELECT * FROM raw_full_moon_dates LIMIT 5;
@@ -306,12 +320,12 @@ See [flink_workshop/README.md](flink_workshop/README.md) for model catalog, dbt 
 
 I found not user friendly to develop a Flink SQL in the Confluent Workspace, then save it to a git repository and then refactor it, completly blindly to dbt syntax. This is error prone, and more work for the Flink developers. 
 
+I understand the data engineers, used to use `dbt` on a daily basis, being able to start from dbt templating/model and let the tool deploy to CC is a nice approach. But one of the strength of Confluent Cloud is to develop query on data present on any topic of one to many kafka clusters, so one of the first touch point to Kafka data is the Flink Workspace. 
 
-I understand the data engineers, used to use dbt on a daily basis, being able to start from dbt templating/model and let the tool deploy to CC is a nice approach. But one of the strength of Confluent Cloud is to develop query on data present on any topic of one to many kafka clusters, so the new development tool for data engineer is the Workspace. 
-
-Knowing that Terraform should not be used for deploying Flink statement, as terraform state external to the runtime environment, leads to strange behavior that consider completed statements (like DDL) to be recreated each time a `terraform apply` is done, dramatically impacting existing running dml statements. 
+Knowing that Terraform should not be used for deploying Flink statement, as terraform state external to the runtime environment, leads to strange behaviors that consider completed statements (like DDL) to be recreated each time a `terraform apply` is done, dramatically impacting existing running dml statements. 
 
 Therefore I see two needs:
+
 1. having a tool that processes Flink SQL as created in the workspace, but saved in a git repository, and deploy the statements by layer or hierarchical pipeline, taking into account what is running. This is the goal of [shift_left utils](https://jbcodeforce.github.io/shift_left_utils) or the [cc_deploy/deploy_flink_statements.py](../flink-sql/tools/cc_deploy/deploy_flink_statements.py)
 1. having a tool to take an existing Flink SQL and transform it for dbt with schema definition and test. This is [flink_dbt_migrate](../flink-sql/tools/flink_dbt_migrate/) tool.
 
@@ -325,8 +339,10 @@ Use `[code/flink-sql/tools/migrate_dml_to_dbt](../flink-sql/tools/migrate_dml_to
 - No metada data for statement children relationship, but may be kept as-is with shift_left. (medium term this). dbt supports seeing children relation with the `+` postfix.
 - no undeploy statements command
 - no drop table from a list of tables
+- No schema/database create or drop. Kafka clusters are managed elsewhere
 - no cross cut deployment support: only sources, only a data producct
 - no concept of statefulness with different approach to deployment -> the response is to transform to materialized tables. But this will not address children relationship.
 - no children relationship management
 - unit tests not isolated per table
+- No metrics information as part of the statement metadata as complexity and statefulness
 

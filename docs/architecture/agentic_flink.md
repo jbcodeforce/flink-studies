@@ -94,15 +94,15 @@ Examples from early adopters:
 
 ### Data preparation and search
 
-* **Offline training and features:** Many models still need batch prepared, clean data (SQL, Python) and feature pipelines. That data is often at rest before it trains predictive models.
+* **Offline training and features:** Many models still need batch preparation, clean data and feature pipelines. That data is often at rest before it trains predictive models.
 * **Search and graph:** Full text, vector, and graph retrieval enrich LLM context. Point-in-time and temporal joins matter so retrieval matches event time, not "whatever was latest in the index."
-* **RAG in motion:** RAG should update as sources change; static snapshots fall behind.
-* **Remote scoring:** Streams may call remote model endpoints; protect with backpressure, timeouts, and budgets.
+* **RAG in motion:** RAG should be updated as sources change. Using static snapshots fall behind and bring poor data quality.
+* **Remote scoring:** Stream processing may call remote model endpoints. Implementation needs to protect with backpressure, timeouts, retries and budgets.
 
 ### Platform and operations
 
 * Prefer event-driven integration: messaging and stream contracts instead of only static orchestrators (for example Apache Airflow) for all operational reactions, use batch orchestration where it fits, streams where time is of the essence.
-* Event processing can trigger agents (for example for customer inquiries). External tools can be reached via MCP or direct APIs, depending on the pattern above.
+* Event processing can trigger agents. External tools can be reached via MCP, cli or direct APIs, depending on the pattern above.
 * Embedded and edge cases (for example drones) add safety and bandwidth constraints beyond the data center.
 
 ???- info "Decision Intelligent Platforms"
