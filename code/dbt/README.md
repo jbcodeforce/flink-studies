@@ -331,7 +331,7 @@ Therefore I see two needs:
 
 ### Migrate existing Flink DML to dbt models
 
-Use `[code/flink-sql/tools/migrate_dml_to_dbt](../flink-sql/tools/migrate_dml_to_dbt)` to convert demo `dml.*.sql` files into dbt models with matching `schema.yml` column types from the paired `ddl.*.sql`. 
+Use [code/flink-sql/tools/migrate_dml_to_dbt](../flink-sql/tools/migrate_dml_to_dbt) to convert demo `dml.*.sql` files into dbt models with matching `schema.yml` column types from the paired `ddl.*.sql`. 
 
 ### Gap analysis with shift_left utils CLI - 07/02/2026
 

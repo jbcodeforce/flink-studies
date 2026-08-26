@@ -284,14 +284,17 @@ DR for Flink depends on the deployment model (Confluent Cloud, Confluent Platfor
 
     Apply the sharing responsibility of resiliency: cloud provider for resiliency **of** the cloud: infrastructure. Customer responsible for resiliency **in** the cloud: adopting instance deployment across multiple locations, support self-healing, design for resilience.
 
-* Cloud Providers are offering multiple regions for disaster recovery, and multiple availability zones within a region for high-availability. They do not communicate on how the physical allocation is done between physical data centers. But it is possible that an availability zone is a data center building in other part of the city. DR may be acceptable to use different buildings in the same city, but in general it is a region failover to mitigate regional outages.
-* If availabilty zones is sufficient to support disaster management, it is the most cost effective solution as a lot of services, like Kafka, support synchronous replications between AZs. Always clarify those topologies with cloud provider.
+* Cloud Providers are offering multiple regions for disaster recovery, and multiple availability zones within a region for high-availability. They do not communicate on how the physical allocation is done between physical data centers. But it is possible that an availability zone is a data center building in other part of the city, with fiber optical links. DR may be acceptable to use different buildings in the same city, but in general it is a region failover to mitigate regional outages.
+* If availabilty zones is sufficient to support disaster management, it is the most cost effective solution as a lot of services, like Kafka, support synchronous replications between AZs. Always clarify those topologies with the cloud provider.
 
 <figure markdown="span">
 ![](./diagrams/dr-region-az.drawio.png)
 </figure>
 
 * Failure to one Cloud Provider's AZ should be easily recoverable, and are well managed by software like Kafka, Flink, kubernetes...
+* In recent data center disasters, most of the failure were linked to networking configuration issues, cutting the access to control plane: it is always difficult to take the decision to failover in this case. Recent wars are also showing a data center can be a target to bombing, and failover region may be in other countries.
+
+In this recipe we consider region failover.
 
 ### Assessing resiliency needs
 
@@ -300,32 +303,41 @@ DR for Flink depends on the deployment model (Confluent Cloud, Confluent Platfor
     * business metrics used to measure impact? and any existing metrics and tools to compute outage impact. 
     * 70% of CIO wants to be resilient, 80% have nothing in place, and most has no real metrics.
 * Assess what is the current method to detect downtime, and the definition of downtime. Moving to a standby region cost time and effort, getting a clear assessment of what downtime means is very important before triggering the failover. Is it latency? is it missing orders? Is it network split?
-* Get an application inventory by category of criticality, including compliance requirements
+* Get an application inventory by category of criticality, including compliance requirements. 
+
 * What is the process in place to alert human for downtime?
-* What are the current observability practice?
-* What is the current recovery strategy? When companies are asking ISV to support some DR requirements, it should never be in a vaccum, but part of bigger initiative. I recall spending 3 hours on technical meeting on how to support DR for our software and discovering that the DR building was another room in the same building as the primary network... 
+* What are the current observability practices to clearly identify disaster?
+* What is the current recovery strategy? When companies are asking ISV to support some DR requirements, it should never be in a vaccum, but part of bigger initiative. I recall spending 3 hours on technical meeting on how to support DR for our software and discovering that the DR site was another room in the same building as the primary site... 
 
 
 As any flink solution, the following need to be deeply assessed:
 
-* What Flink application and SQL statements to consider in scope of DR?
-* Can Flink's state be recreated?  This is driven by the underlying Kafka Clusters RPO and their retention.
+* What Flink application and SQL statements to consider in scope of DR? Map applications, flink pipelines with their expected RPO and RTO. When building analytics data products, most likely those metrics can be relaxed. Here is a simple template:
+
+    | Data product | Flink Pipeline DML | Consumers | RTO | RPO |
+    | -------------|--------------------|-----------|-----| ----|
+    | c360 analytics | dml.c360-fact-cust.sql | BI dashboard | 4 hours |  20 mn   |  
+    |              |                    |           |     |     |
+
+* Can Flink's state be recreated?  This is driven by the underlying Kafka Clusters RPO and the retention policies.
 * How long is tolerable to recreate that state? This is driven by the overall RTO. 
-* What is the semantic expected by consumer apps? This is driven by consuming apps tolerances. Semantics options are: exactly-once, at-least once (duplicate possible), at-most once (data loss and duplicate possible).
+* What is the semantic expected by consumer applications? This is driven by consuming app tolerance. Semantics options are: exactly-once, at-least once (duplicate possible), at-most once (data loss and duplicate possible).
 * Is the Flink job processing deterministic? will a Flink job always output the same results?
 
 
 ### Strategies for DR
 
-* **Backup/restore** is for lower priority workload, cost less, and provision cloud resources after the event. RTO/RPO in hours
-* **Pilot Light**: Data is live but services are idle. Provision some resource and scale after event. RPO/RTO on 10s of minutes
+* **Backup/restore** is for lower priority workload, cost less, and provision cloud resources after the event. RTO/RPO in hours.
+* **Pilot Light**: Data is live but services are idle. Provision some resource and scale after event. RPO/RTO in 10s of minutes.
 * **Warm standby**: The DR site is always running but smaller scale. Resources will scale after the event. RPO/RTO at the minutes level.
 * **Multi-site active/active**: Zero downtime, near zero data loss. This is really for mission critical services. 
 
 For Flink we can consider two main patterns:
 
 * **Active/active**: Two (or more) regions run identical Flink jobs continuously, both processing the same input (with replication delay in the secondary). Best for low RTO, large state, or when you need exactly-once semantics and both regions to produce the same results.
-* **Active/passive**: Flink runs only in the primary region; in the DR region, Flink jobs are started on failover. Best when state can be recreated quickly (e.g. stateless or small time windows) or when at-least-once/at-most-once is acceptable. It is relevant for use cases that fail forward, and that require failing back to the original region within weeks of the outage. Stateful/windowed Flink statements may still be deployed in this mode, but those statements need to be running against mirrored input topics, allowing Flink to maintain equivalent state with the primary region. Do not mirror flink sink topics because asynchronous replication can leave state inconsitent.
+* **Active/passive**: Flink runs only in the primary region. In the DR region, Flink jobs are started at failover time. Best when state can be recreated quickly (e.g. stateless or small time windows) or when at-least-once/at-most-once is acceptable. It is relevant for use cases that fail forward, and that require failing back to the original region within weeks of the outage. Stateful/windowed Flink statements may still be deployed in this mode, but those statements need to be running against mirrored source topics, allowing Flink to maintain equivalent state with the primary region. Do not mirror any flink sink topics because asynchronous replication can leave state inconsistent and duplicates.
+
+We are going to detail those patterns.
 
 ### DSP Elements to consider
 
@@ -333,17 +345,19 @@ Recall a traditional data streaming processing includes at least the following c
 
 <figure markdown="span">
 ![](./diagrams/raw-to-sink.drawio.png)
+<caption>**Figure: Flink Statement Pipeline with src and sinks**</caption>
 </figure>
 
-Another view will be at the deployed components, which we can assess how, each component, needs to support DR:
+The following view presnts the deployed components, which we should assess how, each component, needs to support DR:
 
 <figure markdown="span">
 ![](./diagrams/dsp-elements.drawio.png)
+<caption>**Figure: DSP components to consider for DR**</caption>
 </figure>
 
 | DSP Components | DR Considerations | 
 | -------------- | ------------------ |
-| **Kafka Topics** | Data replications and offset intregrity | 
+| **Kafka Topics** | Data replications and offset integrity | 
 | **Schemas** | Same version, schemaId integrity |
 | **Kafka source connectors** | Configurations for both sites | 
 | **Kafka sink connectors** | Configurations for both sites  |
@@ -383,12 +397,7 @@ The following figures illustrate what elements need to be considered for disaste
 
 * Need to decide which elements can run and being created in the DR site.
 * Active means, clients applications write data to the primary cluster. Passive, DR site, captures the replicated data and schemas. Active/active, clients write to either cluster.
-* Map applications, flink pipelines with their expected RPO and RTO. When building analytics data products, most likely those metrics can be relaxed. Here is a simple template:
 
-    | Data product | Flink Pipeline DML | Consumers | RTO | RPO |
-    | -------------|--------------------|-----------|-----| ----|
-    | c360 analytics | dml.c360-fact-cust.sql | BI dashboard | 4 hours |  20 mn   |  
-    |              |                    |           |     |     |
 
 * How networking hostname and CIDRs are defined in both sites. 
 * Flink Statements are most of the time stateful, and run continuously. Rebuild state cost RTO. A Flink statement stopped and restarted is the same as starting a new job. Assess if sources topics have extactly the same records.

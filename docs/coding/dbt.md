@@ -455,9 +455,9 @@ This is set in the config() element.
 The goal is to keep history of changes to the records over time and not just the last record per key. `dbt` adds `dbt_valid_from` and `dbt_valid_to` columns to mark each records to be valid for a from and to times. A current correct records have `dbt_valid_to` sets to null.
 
 There are two strategies for assessing data changes:
-* *Timestamp*: a unique key and updated_at fields is defined at the source model. These columns are used for determining changes
-* *Check*: any changes in a set of columns (or all columns) will be picked up as an update.
 
+* *Timestamp*: a unique key and updated_at fields is defined at the source model. These columns are used for determining changes.
+* *Check*: any changes in a set of columns (or all columns) will be picked up as an update.
 * **snapshots** live in the `snapshot` folder and are used for tracking changes. To create snapshots we need a yaml file under the `snapshot` folder:
     ```yaml
     snapshots:
@@ -483,6 +483,7 @@ There are two strategies for assessing data changes:
 ### Tests
 
 * Two types of tests:
+
     * Unit Tests
     * Data Tests: run on actual data
 
@@ -548,6 +549,7 @@ In Confluent Cloud for Flink context, the `dbt run` does not process data; it de
 | seeds | CREATE TABLE + INSERT VALUES (point-in-time) | seed (default) |
 
 * the dependencies are managed by using the `ref()` function as core dbt. The deployment follows a topological order.
+* Re-running `dbt run` against an existing `table`, `streaming_table`, or `streaming_source` does **not** re-create it.
 
 ### Useful commands to remember
 
@@ -567,7 +569,7 @@ In Confluent Cloud for Flink context, the `dbt run` does not process data; it de
   ```sh
   dbt ls --select +fct_revenue
   ```
-  
+
 * List a model and everything upstream and downstream
   ```sh
   dbt ls --select +stg_orders+
@@ -575,6 +577,25 @@ In Confluent Cloud for Flink context, the `dbt run` does not process data; it de
 
 ### How to
 
+???+ question "How to define an existing topic as source?"
+    A Kafka topic may exist as raw data, output of a CDC connector for example. Define the table as a source (models/sources.yml):
+
+    ```yaml
+    - name: raw_listings
+      schema: j9r-kafka
+      tables:
+        - name: raw_listings
+    - name: raw_hosts
+      schema: j9r-kafka
+      tables:
+        - name: raw_hosts
+    - name: raw_reviews
+      schema: j9r-kafka
+      tables:
+        - name: raw_reviews
+    ```
+
+    
 ???+ handson "Seed reference data on Confluent Cloud for Flink"
     The [airbnb_streaming](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/airbnb_streaming) project loads small reference CSVs into Flink tables with `dbt seed`. The dbt-confluent adapter infers column types from the CSV (via agate) and issues `CREATE TABLE` followed by `INSERT INTO ... VALUES`. Override types in `seeds/seeds.yml` when inference is too coarse (e.g. map date strings to `DATE`).
 

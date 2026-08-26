@@ -1,0 +1,19 @@
+models:
+    - name: raw_hosts
+      schema: j9r-kafka
+      tables:
+        - name: raw_hosts
+          columns:
+            - name: host_id
+              data_type: string
+            - name: host_name
+              data_type: string
+            - name: is_superhost
+              data_type: boolean
+            - name: created_at
+              data_type: string
+            - name: updated_at
+              data_type: string
+      config:
+        contract:
+          enforced: true

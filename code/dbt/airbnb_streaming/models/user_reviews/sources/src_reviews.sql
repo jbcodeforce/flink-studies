@@ -1,3 +1,10 @@
+-- After editing this query, you MUST run `dbt run --full-refresh` to deploy the change.
+-- Schema-drift detection only checks columns, types, and WITH options — query logic
+-- changes are not detected and will be silently skipped on a normal `dbt run`.
+{{ config(
+    contract={'enforced': false}
+) }}
+
 WITH ranked_reviews AS (
      SELECT
         *,
@@ -6,7 +13,7 @@ WITH ranked_reviews AS (
             ORDER BY date DESC
         ) AS row_num
     FROM
-        {{ ref('raw_reviews') }}
+        {{ source('raw_reviews', 'raw_reviews') }}
     WHERE listing_id IS NOT NULL
 )
 SELECT
