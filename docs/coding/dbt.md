@@ -26,7 +26,7 @@ Supported by ISVs in lake house industry.
 
 Confluent has also developed a [dbt adapter](https://pypi.org/project/dbt-confluent/) to deploy Flink SQL statements into Confluent Cloud for Flink. It aims to support standard `dbt` commands like init, debug, run, test, docs generate, etc... against Confluent Cloud for Flink, so teams can manage pipelines end-to-end from `dbt` rather than using Terraform or `confluent` cli.
 
-We will first work on one concrete [example for a database](#a-data-warehouse-example), and then work on a [Confluent Cloud Flink project](#a-confluent-cloud-flink-example).
+We will first work on one concrete [example for a database](#a-data-warehouse-example), and then work on a [Confluent Cloud Flink project](#a-confluent-cloud-flink-sql-example).
 
 [See Confluent cloud product documentation on dbt.](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/deploy-flink-dbt.html)
 
@@ -73,7 +73,7 @@ A `dbt` project is a directory on the data engineer's machine containing a lot o
 
 ### A data warehouse example
 
-This example is in [code/dbt/airbnb](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/airbnb) and use `duckdb` as data base engine.
+This example is in [code/dbt/airbnb](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/airbnb) and use `duckdb` as database engine.
 
 1. Create the `dbt` project
     ```sh
@@ -517,6 +517,10 @@ There are two strategies for assessing data changes:
 
 Confluent has developed two Python modules: [`dbt-confluent`](https://pypi.org/project/dbt-confluent/) (adapt dbt-core to confluent cloud) and [`confluent-sql`](https://pypi.org/project/confluent-sql/) (Python DBAPI V2 Compatible driver to be able to run snapshot, streaming queries with different cursors). 
 
+<figure markdown='span'>
+![](./diagrams/dbt_cc.drawio.png)
+</figure>
+
 In Confluent Cloud for Flink context, the `dbt run` does not process data; it deploys or updates the definition of a continuous dataflow to the streaming engine. User runs `dbt run` only when the SQL queries changes. Important chapter from [Confluent cloud product documentation on dbt.](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/deploy-flink-dbt.html)
 
 * A `dbt` schema is a Flink database, while a `dbt` database is a Flink Catalog, and finally a `dbt` identifier is a Flink Table. The `dbname` field in `profiles.yml` actually refers to a Kafka cluster name. 
@@ -537,18 +541,18 @@ In Confluent Cloud for Flink context, the `dbt run` does not process data; it de
 
 * The `dbt` mapping for dbt Confluent is as follow:
 
-| Dbt construct | CC Flink | dbt confluent materialization |
-| --------- | -------- | ------- |
-| view     | create view .. as select | view |
-| table     | CTAS snapshot query  | streaming_table  |
-|  |  streaming query with DDL and insert | streaming_table |
-|  |  Flink connector-backed source table | streaming_source |
-| | materialized table | |
-| incremental | not-supported | | 
-| ephemeral | not supported | | 
-| seeds | CREATE TABLE + INSERT VALUES (point-in-time) | seed (default) |
+    | Dbt construct | CC Flink | dbt confluent materialization |
+    | --------- | -------- | ------- |
+    | view     | create view .. as select | view |
+    | table     | CTAS snapshot query  | streaming_table  |
+    |  |  streaming query with DDL and insert | streaming_table |
+    |  |  Flink connector-backed source table | streaming_source |
+    | | materialized table | |
+    | incremental | not-supported | | 
+    | ephemeral | not supported | | 
+    | seeds | CREATE TABLE + INSERT VALUES (point-in-time) | seed (default) |
 
-* The dependencies are managed by using the `ref()` function as core dbt. The deployment follows a topological order.
+* The dependencies are managed by using the `ref()` or `source()` functions as core dbt does. The deployment follows a topological order.
 * Re-running `dbt run` against an existing `table`, `streaming_table`, or `streaming_source` does **not** re-create it.
 
 ### Useful commands to remember
@@ -577,17 +581,18 @@ In Confluent Cloud for Flink context, the `dbt run` does not process data; it de
 
 ### Added tools
 
-The [code/dbt/tools](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/tools) folder includes a set of useful tool to complement your dbt Confluent project.
+The [code/dbt/tools](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/tools) folder includes a set of useful tool to complement your dbt Confluent project management.
+
+<figure markdown='span'>
+![](./diagrams/dbt_other_tools.drawio.png)
+</figure>
 
 | Tool | Goal | Usage |
 | ---- | ---- | ------- |
-| sr_to_dbt_yaml.py | Fetches the key and/or value schema registered in
-Confluent Schema Registry for a given Kafka topic and emits a ready-to-paste
-dbt YAML block |  [uv run sr_to_dbt_yaml.py raw_hosts](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/tools/README.md) |
-| sql_to_dbt_yaml.py | parses a dbt SQL model file and emits a ready-to-paste
-`models:` YAML block, resolving column names and data types entirely from the
-SQL and the upstream model / source definitions in the project | uv run sql_to_dbt_yaml.py ../airbnb_streaming/models/user_reviews/dimensions/dim_listings_with_hosts.sql |
-| [flink_dbt_migrate](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/tools/flink_dbt_migrate) | Taking one or more Flink SQL queries in the form of ddl, dml or ctas and transform them for dbt processing | |
+| sl_dbt.py | Manage your project from batch to dbt and Flink SQL. (shift_left) | `sl_dbt add <data_product>` | 
+| sr_to_dbt_yaml.py | Fetches the key and/or value schema registered in Confluent Schema Registry for a given Kafka topic and emits a ready-to-paste dbt YAML block |  [uv run sr_to_dbt_yaml.py raw_hosts](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/tools/README.md) |
+| sql_to_dbt_yaml.py | parses a dbt SQL model file and emits a ready-to-paste `models:` YAML block, resolving column names and data types entirely from the SQL and the upstream model / source definitions in the project | `uv run sql_to_dbt_yaml.py ../airbnb_streaming/models/user_reviews/dimensions/dim_listings_with_hosts.sql` |
+| [flink_dbt_migrate](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/tools/flink_dbt_migrate) | Taking one or more Flink SQL queries in the form of ddl, dml or ctas and transform them for dbt processing | `flink_dbt_migrate.migrate_dml_to_dbt ../cc-flink/dml.enriched_orders.sql ../cc_dbt/models/intermediates/enriched_orders`|
 
 
 
