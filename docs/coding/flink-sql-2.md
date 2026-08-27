@@ -64,6 +64,40 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 * Add a NULL to a string column:  `insert into sl_raw_groups values('grp_001','tenant-01','gp_n1', 'g_typ_1', CAST(NULL AS STRING), false)`
 * Specifying the columns to use: `insert into sl_raw_groups(group_id,tenant_id) VALUES('grp_001','tenant-01')`, this will populate the missing columns with null.
 
+???+ question "How to propagate NULL value in a src table column to sink table?"
+    A src table may have null value in the testresult column. Does Flink propagate those values?
+    * create a src_table
+    ```sql
+    CREATE TABLE src_table (
+        case_id STRING,
+        testresults STRING
+    ) WITH (
+        'value.format' = 'json-registry'
+    );
+    ```
+    Add some values:
+    ```sql
+    insert into src_table(case_id,testresults) VALUES('case_001', 'result_01'), ('case_002', CAST(NULL AS STRING)), ('case_003', 'result_03');
+    ```
+    Now create a sink_table as:
+    ```sql
+    CREATE TABLE sink_table (
+        case_id STRING,
+        testresults STRING,
+        first_ts TIMESTAMP_LTZ(3)
+    ) WITH (
+        'value.format' = 'json-registry'
+    );
+    ```
+    Add some DML to apply business logic:
+    ```sql
+    insert into sink_table select case_id, testresults, `$rowtime` as first_ts from src_table
+    ```
+    Validate the null are propagated:
+    ![](./images/null_propagated.png)
+
+
+
 ### Filtering
 
 * [Start with this Confluent tutorial](https://developer.confluent.io/confluent-tutorials/filtering/flinksql/) or [the Apache Flink `SELECT` documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/select/).

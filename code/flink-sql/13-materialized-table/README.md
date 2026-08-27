@@ -2,20 +2,21 @@
 
 Two presentations:
 
-
 1. [Apache flink](#apache-flink)
-1. [Confluent Cloud](#confluent-cloud-for-flink)
+1. [Confluent Cloud for Flink](#confluent-cloud-for-flink)
+
+See also the [MT summary chapter](https://jbcodeforce.github.io/flink-studies/coding/flink-sql-3/) and [Confluent Cloud Documentation]()
 
 ## Apache Flink
 
-This is the implementation [of the Flink quickstart](https://nightlies.apache.org/flink/flink-docs-release-2.2/docs/dev/table/materialized-table/quickstart/) with local OSS Flink and some explanations not in the source documentations.
+This is the implementation [of the Flink quickstart](https://nightlies.apache.org/flink/flink-docs-release-2.2/docs/dev/table/materialized-table/quickstart/) with local OSS Flink and some explanations I added, not in the source documentations.
 
-### Prepare the cluster:
+### Prepare the cluster
 
 * If not done before, run: `setup.sh`
 * Start cluster and gateway
     ```sh
-    export FLINK_HOME=$(pwd)/../../deployment/product-tar/flink-2.2.0
+    export FLINK_HOME=$(pwd)/../../deployment/product-tar/flink-2.3.0
     export FLINK_CONF_DIR=$(pwd)
     $FLINK_HOME/bin/start-cluster.sh
     $FLINK_HOME/bin/sql-gateway.sh start
@@ -114,7 +115,7 @@ This is the implementation [of the Flink quickstart](https://nightlies.apache.or
     You will find that a new Flink streaming job for continuous refresh the materialized table is started and restored state from the specified savepoint path
 
 ### Change the table schema
-* Alter the table:
+* Alter the table, add a new nullable column:
     ```
     ALTER MATERIALIZED TABLE continuous_users_shops AS
     SELECT
@@ -131,7 +132,7 @@ This is the implementation [of the Flink quickstart](https://nightlies.apache.or
 
     ```
 
-    The existing refresh statment is finished, and a new one is running. In continuous mode, this may create duplicates.
+    The existing refresh statment is finished, and a new one is running. In continuous mode, this **may create duplicates**.
 
 
 ### Reconnecting
@@ -181,7 +182,7 @@ export SCHEMA_REGISTRY_API_SECRET=
     uv run python 13-materialized-table/rides_producer.py --count 50 --schema ride --interval 0.5
     ```
 
-* Create materialized tables as `dim-rides` using the [cc/dml.dim-rides.sql](./cc/dml.dim-rides.sql)
+* Create materialized tables as `dim-rides` using the [cc-flink/dml.dim-rides.sql](./cc-flink/dml.dim-rides.sql)
 
 * Query the resulting table:
     ```sql
