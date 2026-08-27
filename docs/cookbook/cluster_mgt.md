@@ -285,7 +285,7 @@ DR for Flink depends on the deployment model (Confluent Cloud, Confluent Platfor
     Apply the sharing responsibility of resiliency: cloud provider for resiliency **of** the cloud: infrastructure. Customer responsible for resiliency **in** the cloud: adopting instance deployment across multiple locations, support self-healing, design for resilience.
 
 * Cloud Providers are offering multiple regions for disaster recovery, and multiple availability zones within a region for high-availability. They do not communicate on how the physical allocation is done between physical data centers. But it is possible that an availability zone is a data center building in other part of the city, with fiber optical links. DR may be acceptable to use different buildings in the same city, but in general it is a region failover to mitigate regional outages.
-* If availabilty zones is sufficient to support disaster management, it is the most cost effective solution as a lot of services, like Kafka, support synchronous replications between AZs. Always clarify those topologies with the cloud provider.
+* If availabilty zones is sufficient to support disaster management, it is the most cost effective solution as a lot of services, like Kafka, support synchronous replications between AZs (See [Confluent resilience documentation](https://docs.confluent.io/cloud/current/clusters/resilience.html)). Always clarify those topologies with the cloud provider.
 
 <figure markdown="span">
 ![](./diagrams/dr-region-az.drawio.png)

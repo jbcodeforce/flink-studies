@@ -545,6 +545,7 @@ dependencies = [
     { name = "authlib" },
     { name = "cachetools" },
     { name = "confluent-kafka" },
+    { name = "confluent-sql" },
     { name = "dagster-dbt" },
     { name = "dagster-webserver" },
     { name = "dbt-autofix" },
@@ -552,6 +553,9 @@ dependencies = [
     { name = "dbt-core" },
     { name = "dbt-duckdb" },
     { name = "dbt-snowflake" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "typer" },
 ]
 
 [package.metadata]
@@ -559,6 +563,7 @@ requires-dist = [
     { name = "authlib", specifier = ">=1.6.5" },
     { name = "cachetools", specifier = ">=6.2.1" },
     { name = "confluent-kafka", specifier = ">=2.6.0" },
+    { name = "confluent-sql", specifier = ">=0.4.0" },
     { name = "dagster-dbt", specifier = ">=0.28.14" },
     { name = "dagster-webserver", specifier = ">=1.12.14" },
     { name = "dbt-autofix", specifier = ">=0.20.0" },
@@ -566,6 +571,9 @@ requires-dist = [
     { name = "dbt-core", specifier = ">=1.11.12" },
     { name = "dbt-duckdb", specifier = ">=1.10.1" },
     { name = "dbt-snowflake", specifier = ">=1.11.2" },
+    { name = "pydantic", specifier = ">=2.11.0" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
+    { name = "typer", specifier = ">=0.15.0" },
 ]
 
 [[package]]

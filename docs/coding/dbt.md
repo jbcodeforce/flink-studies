@@ -519,20 +519,30 @@ Confluent has developed two Python modules: [`dbt-confluent`](https://pypi.org/p
 
 <figure markdown='span'>
 ![](./diagrams/dbt_cc.drawio.png)
+<caption>**dbt Confluent adapter to dbt with CC REST API access**</caption>
 </figure>
 
-In Confluent Cloud for Flink context, the `dbt run` does not process data; it deploys or updates the definition of a continuous dataflow to the streaming engine. User runs `dbt run` only when the SQL queries changes. Important chapter from [Confluent cloud product documentation on dbt.](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/deploy-flink-dbt.html)
+In Confluent Cloud for Flink context, the `dbt run` does not process data; it deploys or updates the definition of a continuous dataflow to the streaming engine. User runs `dbt run` only when the SQL queries changes. 
+
+Read the getting started and installation in [Confluent cloud product documentation on dbt.](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/deploy-flink-dbt.html) Some information of the `dbt init` step:
+
+* It creates a `$HOME/.dbt/profiles.yaml` with the connection to Confluent Cloud, kafka cluster name 
+* It creates the project folders to manage artifacts. But those are high level and we need other tool to apply naming conventions and good repository structure.
 
 * A `dbt` schema is a Flink database, while a `dbt` database is a Flink Catalog, and finally a `dbt` identifier is a Flink Table. The `dbname` field in `profiles.yml` actually refers to a Kafka cluster name. 
+* The profiles.yaml define a set of connection to different environment and compute pools. Below is an example of connection definition in a `$HOME/.dbt/profiles.yaml`:
   ```yaml
   cc_flink:
     outputs:
       dev:
+        cloud_provider: aws
+        cloud_region: us-west-2
         dbname: j9r-kafka
         environment_id: env-yk3jm6
-        execution_mode: streaming_query
+        compute_pool_id: lfcp-11p88z
         statement_label: dbt-confluent
         statement_name_prefix: dbt-
+        endpoint: https://flink.us-east-2.aws.private.confluent.cloud  -- in case the cluster is in private network
         threads: 1
         type: confluent
     target: dev
@@ -554,6 +564,58 @@ In Confluent Cloud for Flink context, the `dbt run` does not process data; it de
 
 * The dependencies are managed by using the `ref()` or `source()` functions as core dbt does. The deployment follows a topological order.
 * Re-running `dbt run` against an existing `table`, `streaming_table`, or `streaming_source` does **not** re-create it.
+
+### Code Repository
+
+We propose to adopt two types of project organization:
+
+1. kimball with data product.
+  ```sh
+  crm-analytics
+  ├── docs
+  ├── IaC
+  ├── pipelines
+  │   ├── dbt_project.yml
+  │   ├── macros
+  │   ├── models
+  │   │   ├── intermediates
+  │   │   │   └── c360
+  │   │   ├── marts
+  │   │   │   └── c360
+  │   │   └── sources
+  │   │       └── c360
+  │   ├── seeds
+  │   └── tests
+  ├── sl_dbt.yaml
+  └── tools
+  ```
+
+1. data product with star schema
+  ```sh
+  crm-analytics
+  ├── docs
+  ├── IaC
+  ├── pipelines
+  │   ├── dbt_project.yml
+  │   ├── macros
+  │   ├── models
+  │   │   └── c360
+  │   │       ├── dimensions
+  │   │       ├── facts
+  │   │       ├── schema.yml
+  │   │       └── sources
+  │   ├── seeds
+  │   └── tests
+  ├── sl_dbt.yaml
+  └── tools
+  ```
+
+The common parts include:
+* a docs folder for future documentation
+* IaC for terraform content to declare compute pool, service account, api keys and secrets
+* tools for future scripts and other tools
+* pipelines to includes the different dbt constructs
+* sl_dbt.yml a metadata file used by this tool 
 
 ### Useful commands to remember
 

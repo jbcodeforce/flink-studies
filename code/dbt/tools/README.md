@@ -1,5 +1,34 @@
 # Tools for dbt project management
 
+## dbt project management
+
+dbt init is creating very simple project, and we may want to adopt a star schema or kimball with data product.
+
+### Usage 
+
+* Initialise a kimball project
+
+```sh
+uv run tools/sl_dbt.py init crm-analytics --type kimball --profile cc_flink
+```
+
+* Initialise a data products project
+```sh
+uv run tools/sl_dbt.py init crm-analytics --profile cc_flink
+```
+
+* Add a data product
+```sh
+uv run tools/sl_dbt.py add-data-product crm-analytics c360
+```
+
+* Add a table for a data product
+
+```sh
+uv run tools/sl_dbt.py add-data-product crm-analytics c360
+```
+
+---
 
 ## Schema Registry → dbt YAML
 

@@ -1,6 +1,6 @@
 # Flink SQL development tools
 
-A set of tools to help developing and deploying Flink SQL on Confluent Cloud, or CP Flink.
+A set of tools to help developing and deploying Flink SQL on Confluent Cloud, or CP Flink and manage the demonstrations in this flink-sql folder. [See also dbt related tools](../../dbt/tools/README.md)
 
 ## Setup
 
@@ -11,9 +11,7 @@ uv sync
 
 ## Sync from cc-tools
 
-`cc_deploy` and `manifest` are copies from
-`migration-to-flink-skills/cc-tools/src`. Sync only when upstream file SHAs
-change; the fingerprint is `cc-tools-sync.sha256`.
+`cc_deploy` and `manifest` are copies from `migration-to-flink-skills/cc-tools/src`. The `./sync-cc-tools.sh` tool syncs only when upstream file SHAs change; the fingerprint is `cc-tools-sync.sha256`.
 
 ```sh
 cd code/flink-sql/tools
@@ -25,7 +23,7 @@ CC_TOOLS_SRC=/path/to/cc-tools/src ./sync-cc-tools.sh
 
 ## create_deploy_manifest
 
-Each demo folder for cc deployment should include a `deploy_manifest.json` file to declare what to deploy. This file lists a set of group and then in each groups the name of the statement and file to match.
+Each demo folder for `cc-flink` deployment should include a `deploy_manifest.json` file to declare what to deploy. This file lists a set of groups and then in each group the name of the statement and file to match.
 
 ```json
 {
@@ -50,7 +48,7 @@ Each demo folder for cc deployment should include a `deploy_manifest.json` file 
 cd code/flink-sql/tools
 
 # Preview without writing
-uv run python -m cc_deploy.create_deploy_manifest --sql-dir ../11-puzzles/my_demo --dry-run
+uv run python -m manifest.manifest_cli --sql-dir ../11-puzzles/my_demo --dry-run
 
 # Write deploy_manifest.json
 uv run python -m cc_deploy.create_deploy_manifest --sql-dir ../11-puzzles/my_demo --prefix my-demo
@@ -345,14 +343,6 @@ uv run python -m cc_deploy.register_schema delete --manifest schema-manifest.jso
 # Permanent delete: Need to do previous step, to do a soft delete before hard delete
 uv run python -m cc_deploy.register_schema delete --manifest schema-manifest.json --permanent
 ```
-
----
-
-## Migrate Flink DML to dbt
-
-Convert Flink `INSERT INTO ... SELECT` pipeline statements into dbt `streaming_table` models for [dbt-confluent](https://pypi.org/project/dbt-confluent/), convert DDL to schema. Column types and table options are taken from the paired DDL file.
-
-[See dedicated readme](./flink_dbt_migrate/README.md)
 
 
 
