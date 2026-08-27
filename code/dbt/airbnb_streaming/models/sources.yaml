@@ -7,6 +7,27 @@ sources:
     schema: j9r-kafka
     tables:
       - name: raw_listings
+        columns:
+        - name: listing_id
+          data_type: string
+        - name: listing_url
+          data_type: string
+        - name: listing_name
+          data_type: string
+        - name: room_type
+          data_type: string
+        - name: minimum_nights
+          data_type: int
+        - name: host_id
+          data_type: string
+        - name: price_str
+          data_type: string
+        - name: price
+          data_type: double
+        - name: created_at
+          data_type: string
+        - name: updated_at
+          data_type: string
     config:
       contract:
         enforced: true
@@ -33,6 +54,17 @@ sources:
     schema: j9r-kafka
     tables:
       - name: raw_reviews
+        columns:
+          - name: listing_id
+            data_type: string
+          - name: date
+            data_type: string
+          - name: reviewer_name
+            data_type: string
+          - name: comments
+            data_type: string
+          - name: sentiment
+            data_type: string
     config:
       contract:
         enforced: true

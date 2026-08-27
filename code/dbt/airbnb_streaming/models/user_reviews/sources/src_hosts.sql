@@ -2,23 +2,23 @@
 -- Schema-drift detection only checks columns, types, and WITH options — query logic
 -- changes are not detected and will be silently skipped on a normal `dbt run`.
 {{ config(
-    contract={'enforced': false}
+    contract={'enforced': true}
 ) }}
 
 WITH ranked_hosts AS (
     SELECT
         *,
         ROW_NUMBER() OVER (
-            PARTITION BY id
+            PARTITION BY host_id
             ORDER BY updated_at DESC, created_at DESC
         ) AS row_num
     FROM
         {{ source('raw_hosts', 'raw_hosts') }}
-    WHERE id IS NOT NULL
+    WHERE host_id IS NOT NULL
 )
 SELECT
-    id AS host_id,
-    name AS host_name,
+    host_id,
+    host_name,
     is_superhost,
     created_at,
     updated_at

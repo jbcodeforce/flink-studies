@@ -1,16 +1,16 @@
 models:
-  - name: src_hosts
+  - name: src_reviews
     config:
       contract:
         enforced: false
     columns:
-      - name: host_id
+      - name: listing_id
         data_type: varchar(2147483647)
-      - name: host_name
+      - name: review_date
         data_type: varchar(2147483647)
-      - name: is_superhost
-        data_type: boolean
-      - name: created_at
+      - name: reviewer_name
         data_type: varchar(2147483647)
-      - name: updated_at
+      - name: review_text
+        data_type: varchar(2147483647)
+      - name: review_sentiment
         data_type: varchar(2147483647)

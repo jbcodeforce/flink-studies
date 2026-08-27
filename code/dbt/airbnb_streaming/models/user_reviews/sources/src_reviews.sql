@@ -2,7 +2,7 @@
 -- Schema-drift detection only checks columns, types, and WITH options — query logic
 -- changes are not detected and will be silently skipped on a normal `dbt run`.
 {{ config(
-    contract={'enforced': false}
+    contract={'enforced': true}
 ) }}
 
 WITH ranked_reviews AS (
@@ -10,7 +10,7 @@ WITH ranked_reviews AS (
         *,
         ROW_NUMBER() OVER (
             PARTITION BY listing_id
-            ORDER BY date DESC
+            ORDER BY `date` DESC
         ) AS row_num
     FROM
         {{ source('raw_reviews', 'raw_reviews') }}
@@ -18,7 +18,7 @@ WITH ranked_reviews AS (
 )
 SELECT
     listing_id,
-    date AS review_date,
+    `date` AS review_date,
     reviewer_name,
     comments AS review_text,
     sentiment AS review_sentiment

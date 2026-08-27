@@ -1,6 +1,6 @@
 # DR Car Rides — Active/Passive Disaster Recovery Demo
 
-The goal it to demonstrate a data stream processing (DSP) disaster recovery scenarion and solution. At the high level, a DSP solution includes the following elements:
+The goal it to demonstrate a data stream processing (DSP) disaster recovery scenario and solution. At the high level, a DSP solution includes the following elements:
 
 ![](./docs/raw-to-sink.drawio.png)
 

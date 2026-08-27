@@ -1,0 +1,24 @@
+models:
+  - name: src_listings
+    config:
+      contract:
+        enforced: false
+    columns:
+      - name: listing_id
+        data_type: varchar(2147483647)
+      - name: listing_name
+        data_type: varchar(2147483647)
+      - name: listing_url
+        data_type: varchar(2147483647)
+      - name: room_type
+        data_type: varchar(2147483647)
+      - name: minimum_nights
+        data_type: BIGINT
+      - name: host_id
+        data_type: varchar(2147483647)
+      - name: price_str
+        data_type: varchar(2147483647)
+      - name: created_at
+        data_type: varchar(2147483647)
+      - name: updated_at
+        data_type: varchar(2147483647)

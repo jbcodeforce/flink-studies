@@ -1,0 +1,16 @@
+models:
+- name: dim_hosts_cleansed
+  config:
+    contract:
+      enforced: false
+  columns:
+  - name: host_id
+    data_type: varchar(2147483647)
+  - name: host_name
+    data_type: varchar(2147483647)
+  - name: is_superhost
+    data_type: boolean
+  - name: created_at
+    data_type: varchar(2147483647)
+  - name: updated_at
+    data_type: varchar(2147483647)

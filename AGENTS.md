@@ -18,6 +18,8 @@ This is a comprehensive Apache Flink learning and demonstration repository conta
 - Simple how-to guides for Flink SQL operations
 - Basic SQL patterns and common use cases
 - Data transformation examples
+### `/code/dbt` - dbt examples
+- simple code for dbt confluent, and dbt ETL with duckdb
 
 #### `/code/flink-java` - Java DataStream API Examples  
 - Java-based Flink applications
@@ -40,7 +42,6 @@ This is a comprehensive Apache Flink learning and demonstration repository conta
   - Document deployment best practices
 
 #### Key Deployment Types:
-- **Docker**: Local development and testing environments
 - **Kubernetes**: Production-ready K8s deployments with operators
 - **Confluent Cloud**: Cloud-native Flink deployments
 - **Custom Images**: Specialized Flink runtime configurations
@@ -52,13 +53,6 @@ This is a comprehensive Apache Flink learning and demonstration repository conta
   - Ensure demos work across different deployment environments
   - Keep demos updated with latest Flink and Kafka versions
   - Document business use cases and technical implementation
-
-#### Demo Categories:
-- **CDC & Data Transformation**: Change data capture and real-time transformations
-- **Deduplication**: Advanced deduplication strategies
-- **E-commerce Analytics**: Real-time sales and customer analytics
-- **External Lookups**: Integration with external data sources
-- **JSON Processing**: Complex JSON transformation patterns
 
 ### `/assistant` - AI/ML Integration
 - Text QA assistant for Flink documentation

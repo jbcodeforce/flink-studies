@@ -548,22 +548,22 @@ In Confluent Cloud for Flink context, the `dbt run` does not process data; it de
 | ephemeral | not supported | | 
 | seeds | CREATE TABLE + INSERT VALUES (point-in-time) | seed (default) |
 
-* the dependencies are managed by using the `ref()` function as core dbt. The deployment follows a topological order.
+* The dependencies are managed by using the `ref()` function as core dbt. The deployment follows a topological order.
 * Re-running `dbt run` against an existing `table`, `streaming_table`, or `streaming_source` does **not** re-create it.
 
 ### Useful commands to remember
 
 * run a specific model:
   ```sh
-  dbt run --select stg_orders
+  dbt run --select src_listings
   ```
 *  run all models in a specific directory:
   ```sh
-  dbt run --select user_reviews.sources.*
+  dbt run --select user_reviews.dimensions
   ```
 * understand downstream impacts
   ```sh
-  dbt ls --select stg_orders+
+  dbt ls --select src_listings+
   ```
 * List all models upstream of fct_revenue
   ```sh
@@ -575,6 +575,22 @@ In Confluent Cloud for Flink context, the `dbt run` does not process data; it de
   dbt ls --select +stg_orders+
   ```
 
+### Added tools
+
+The [code/dbt/tools](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/tools) folder includes a set of useful tool to complement your dbt Confluent project.
+
+| Tool | Goal | Usage |
+| ---- | ---- | ------- |
+| sr_to_dbt_yaml.py | Fetches the key and/or value schema registered in
+Confluent Schema Registry for a given Kafka topic and emits a ready-to-paste
+dbt YAML block |  [uv run sr_to_dbt_yaml.py raw_hosts](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/tools/README.md) |
+| sql_to_dbt_yaml.py | parses a dbt SQL model file and emits a ready-to-paste
+`models:` YAML block, resolving column names and data types entirely from the
+SQL and the upstream model / source definitions in the project | uv run sql_to_dbt_yaml.py ../airbnb_streaming/models/user_reviews/dimensions/dim_listings_with_hosts.sql |
+| [flink_dbt_migrate](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/tools/flink_dbt_migrate) | Taking one or more Flink SQL queries in the form of ddl, dml or ctas and transform them for dbt processing | |
+
+
+
 ### How to
 
 ???+ question "How to define an existing topic as source?"
@@ -582,7 +598,7 @@ In Confluent Cloud for Flink context, the `dbt run` does not process data; it de
 
     ```yaml
     - name: raw_listings
-      schema: j9r-kafka
+      schema: j9r-kafka -- kafka cluster name in CC
       tables:
         - name: raw_listings
     - name: raw_hosts
@@ -594,6 +610,56 @@ In Confluent Cloud for Flink context, the `dbt run` does not process data; it de
       tables:
         - name: raw_reviews
     ```
+
+    Then add columns definition matching the schema definition from the topic. 
+    ```yaml
+      - name: raw_listings
+        schema: j9r-kafka
+        tables:
+          - name: raw_listings
+            columns:
+              - name: id
+                data_type: string
+              - name: name
+                data_type: string
+              - name: listing_url
+                data_type: string
+              - name: room_type
+                data_type: string
+              - name: minimum_nights
+                data_type: int
+              - name: host_id
+                data_type: string
+              - name: price
+                data_type: string
+              - name: created_at
+                data_type: string
+              - name: updated_at
+                data_type: string
+    ```
+    When our models have `+materialized: streaming_table` set , it triggers the Confluent macro `materialization_streaming_table_confluent` which calls assert_columns_equivalent.
+
+    Finally add for each Flink statement that will create sink record, a yaml definition for the columns name and type. For example a file named `src_hosts_models.yaml`:
+
+    ```yaml
+    models:
+    - name: src_hosts
+      config:
+        contract:
+          enforced: false
+      columns:
+        - name: host_id
+          data_type: varchar(2147483647)
+        - name: host_name
+          data_type: varchar(2147483647)
+        - name: is_superhost
+          data_type: varchar(2147483647)
+        - name: created_at
+          data_type: varchar(2147483647)
+        - name: updated_at
+          data_type: varchar(2147483647)
+    ```
+
 
     
 ???+ handson "Seed reference data on Confluent Cloud for Flink"
@@ -621,7 +687,7 @@ In Confluent Cloud for Flink context, the `dbt run` does not process data; it de
 
 
 ???+ question "How to specify table properties?"
-    Use the config function, and the `with` as json.
+    Use the config function, and the `with` proiperties section as json.
 
     ```sql
     {{ config(

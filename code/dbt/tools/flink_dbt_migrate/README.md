@@ -1,4 +1,4 @@
-#  Migrate Flink DML to dbt
+#  Migrate Flink DML to dbt tool
 
 ## Problem Statement
 
@@ -9,7 +9,7 @@ Adopting dbt means developers need to refactor this Flink SQL into dbt templatin
 
 * Taking one or more Flink SQL queries in the form of ddl, dml or ctas and transform them for dbt processing
 * Create schema.yaml definition from DDLs 
-* As in 2026, any developers are using AI, it may ne relevant to add some skill and tools or even agent to automate as much as possible this migration. 
+* As in 2026, any developers are using AI, it may be relevant to add some skill and tools or even agent to automate as much as possible this migration. 
 
 ## Requirements 
 

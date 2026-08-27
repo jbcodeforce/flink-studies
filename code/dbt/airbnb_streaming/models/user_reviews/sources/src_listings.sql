@@ -3,28 +3,28 @@
 -- changes are not detected and will be silently skipped on a normal `dbt run`.
 
 {{ config(
-    contract={'enforced': false}
+    contract={'enforced': true}
 ) }}
 
 WITH ranked_listings AS (
     SELECT
         *,
         ROW_NUMBER() OVER (
-            PARTITION BY id
+            PARTITION BY listing_id
             ORDER BY updated_at DESC, created_at DESC
         ) AS row_num
     FROM
         {{ source('raw_listings', 'raw_listings') }}
-    WHERE id IS NOT NULL
+    WHERE listing_id IS NOT NULL
 )
 SELECT
-    id AS listing_id,
-    name AS listing_name,
+    listing_id,
+    listing_name,
     listing_url,
     room_type,
     minimum_nights,
     host_id,
-    price AS price_str,
+    price_str,
     created_at,
     updated_at
 FROM  ranked_listings

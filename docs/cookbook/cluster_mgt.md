@@ -358,7 +358,7 @@ The following view presnts the deployed components, which we should assess how, 
 | DSP Components | DR Considerations | 
 | -------------- | ------------------ |
 | **Kafka Topics** | Data replications and offset integrity | 
-| **Schemas** | Same version, schemaId integrity |
+| **Schemas** | Same versions on both sides, schemaId integrity |
 | **Kafka source connectors** | Configurations for both sites | 
 | **Kafka sink connectors** | Configurations for both sites  |
 | **Flink applications/statements** | Same Version deployment, state construction, offsets propagation |
@@ -368,11 +368,11 @@ The following view presnts the deployed components, which we should assess how, 
 
 Obviously all other components of the figure above needs to have DR runbooks too.
 
-
 When looking at the Flink architecture, it is important to recall that Flink relies on low-latency inter-node communication (TaskManagers exchanging shuffle data via RPCs) and tight state coordination, running one cluster across regions creates severe network bottlenecks and split-brain risks. Most of modern flink deployments are done as FlinkApplication on top of an orchestrator like kubernetes, the worker nodes host those applications, and application is job manager and n task manager. Flink Kubernetes Operator acts as a control plane to manage the application deployment life cycle.
 
 <figure markdown="span">
 ![](./diagrams/flink-arch.drawio.png)
+<caption>**Figure: Flink Components with underlying services**</caption>
 </figure>
 
 Instead, multi-region resiliency requires deploying independent, fully self-contained Flink clusters in each region, paired with a cross-region streaming data pipeline. Also the source and sink connector selections impact the design of Flink DR solution. Using Kafka or Iceberg connectors have very different impacts.
@@ -382,14 +382,14 @@ The following figures illustrate what elements need to be considered for disaste
 === "Confluent Cloud"
     ![](./diagrams/cc-dr-elements.drawio.png)
 
-    * The blue color border means, those elements can be configured as code.
-    * Confluent Cloud control plane and data planes are separate points of failures. Data plane can run in any supported Cloud provire regions.
+    * The blue color border means, those elements can be configured as infrastructure as code (e.g. terraform).
+    * Confluent Cloud control plane and data planes are separate points of failures. Data plane can run in any supported Cloud provider's regions.
     * Communication between Control plane and data planes is done with the 'mothership' kafka cluster.
    
     [See Confluent Cloud resilience chapter.](https://docs.confluent.io/cloud/current/clusters/resilience.html)
 
-
 === "Confluent Platform"
+    * TBC
     * The blue color border means, those elements can be configured as code.
 
 === "Apache Flink"
@@ -427,7 +427,7 @@ On Confluent Cloud, [Cluster Linking](https://docs.confluent.io/cloud/current/mu
 
 On Confluent Platform or self-managed Flink, you replicate topics (and offsets) and schemas by your own means (e.g. MirrorMaker, cluster links, or shared storage).
 
-Primary cluster means, Kafka cluster getting the write operations. Secondary cluster is read-only. A generic DR components view is in figure below:
+A generic DR components view is in figure below:
 
 <figure markdown="span">
 ![](./diagrams/dr_act_act.drawio.png)
@@ -436,19 +436,12 @@ Primary cluster means, Kafka cluster getting the write operations. Secondary clu
 
 For Confluent Platform or Apache Flink on Kubernetes the replications includes resource definitions, configurations, savepoints replications. It is easier to test and practice DR by moving producers and consumers to the DR cluster and reversing the direction of data and metadata.
 
-
-To consider:
-
-* More complicated to orchestrate as the process needs to recreate tables and jobs during failover
-* Topic retention > Time window needed to recreate state (dictated by window size or TTL). Without enough retention, results will be wrong, or only subset of queries would work.
-* Any time window and aggregation needs to use event time and not processing time.
-
-
 #### Preconditions / Checklist
 
-* Kafka (and Schema Registry) DR is in place: topics and consumer offsets replicated to the secondary cluster; schemas replicated (e.g. Schema Linking on Confluent Cloud).
-* Cluster Linking is asynchronous: RPO is bounded by mirror lag while RTO depends on client failover and (for active-passive) time to start Flink and restore state, which may take hours.
-* Topic retention in DR must exceed the time needed to rebuild state (e.g. window size or TTL). Use event time (not processing time) for windows and aggregations so replay produces correct results.
+* Kafka and Schema Registry DR are in place: topics and consumer offsets replicated to the secondary cluster; schemas replicated (e.g. Schema Linking on Confluent Cloud).
+* Cluster Linking is asynchronous: RPO is bounded by mirror lag while RTO depends on client failover and time to start Flink and restore state, which may take hours.
+* Topic retention in DR must exceed the time needed to rebuild state (e.g. window size or TTL). Without enough retention, results will be wrong, or only subset of queries would work. 
+* Use event time (not processing time) for windows and aggregations so replay produces correct results.
 * Create the appropriate role bindings in the DR environment for applications and users that will failover.
 * Assess if cluster links need to be set bi-directional to easily failback to primary, once failed over.
 
@@ -457,7 +450,7 @@ To consider:
 | Parameters | Description |
 | ---------| ----------- |
 | Primary / DR cluster bootstrap, API keys | Stored in service discovery / vault for fast client switch on failover. |
-| Cluster Linking config (Confluent Cloud) | This is a direct connection between source and destination clusters. Consumer partition-offset sync, ACL sync, mirror topics (or auto-create), optional filters. |
+| Kafka Cluster Linking config (Confluent Cloud) | This is a direct connection between source and destination clusters. Consumer partition-offset sync, ACL sync, mirror topics (or auto-create), optional filters. |
 | Schema Linking | To replicate schemas between Registries. It replicates the schema ID for data consistency. The schema  replication is always active/passive as the destination registry is in `import` mode only. |
 | Flink state recreation window | Max window/TTL and retention must allow full replay. |
 | Semantics | Exactly-once (active-active with deterministic jobs), at-least-once, or at-most-once (affects duplicate handling and restore guarantees). |
@@ -465,8 +458,8 @@ To consider:
 #### Procedure
 
 1. Set up DR cluster with mirrored topics (and consumer offsets) and schemas. Ensure retention in DR > time to rebuild Flink state (window size or TTL).
-2. Keep Flink job definitions and savepoints/checkpoint config in version control for automation. Do not run Flink in DR during normal operation.
-3. On failover: switch Kafka consumers to the DR cluster; create/start Flink statements in DR (from savepoint if available, or from earliest offset so states are rebuilt from replicated input). Prefer event-time windows so replay is correct.
+2. Keep Flink job definitions in version control for automation. Do not run Flink in DR during normal operation.
+3. On failover: switch Kafka consumers to the DR cluster; create/start Flink statements in DR (from specific offsets if available, or from earliest offset so states are rebuilt from replicated input). 
 4. Confluent Cloud: see [Cluster Linking DR and Failover](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/dr-failover.html) (create DR cluster, cluster link, mirror topics, consumer offset sync, ACL sync). Provision API keys for the DR cluster in advance and store them in a vault for low RTO.
 
 **Monitoring**
@@ -484,17 +477,9 @@ To consider:
 
 * After primary region recovery: decide whether to fail back (switch clients and optionally Flink back to primary) or keep running in DR. If failing back, replicate any new data produced in DR back to primary (e.g. bidirectional cluster link) and then switch clients and Flink back to primary.
 
-#### Gotchas
-
-* All Flink DR depends on Kafka (and SR) DR; without replicated topics and offsets, Flink cannot recover correctly in the DR region.
-* Active-passive with stateful jobs: RTO must be greater than the time to restore state from replicated input; otherwise use active-active or accept semantics/state trade-offs.
-* Kafka concumers on passive side, must accept some RPO.
-* Consumer offset sync (Confluent Cloud) is asynchronous; after failover, consumers may see a small number of duplicates, therefore design for idempotency.
-* Confluent Cloud is regional: there is no built-in cross-region state replication; you achieve DR by running Flink in the DR region and feeding it from replicated Kafka/Schema Registry.
-
 #### Schema Management
 
-* When disaster failover happens, Flink can keep reading schema-based data only if schemas have already been replicated to the DR region’s Schema Registry via Schema Linking.
+* When disaster failover happens, Flink can keep reading schema-based data only if schemas have already been replicated to the DR region’s Schema Registry via Schema Linking. Otherwise record deserialization will fail.
 * In the standard DR pattern, primary SR stays READWRITE, secondary SR stays IMPORT, and during failover you must reverse the schema link. [See product documentation](https://docs.confluent.io/cloud/current/sr/schema-linking.html#configure-credentials-on-the-destination).
 * On failover, ensure Schema Link is caught up, then promote/switch Kafka side.
 * If you need Flink to run CREATE TABLE after failover, the DR side must allow schema writes to the active SR and the user/service account must have the required SR/Kafka permissions

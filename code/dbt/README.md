@@ -11,7 +11,7 @@ UNDER CONSTRUCTION : updated 08/25/2026
 ### Tracking
 
 - [x] AirBnb with duckdb, main SQLs 
-- [ ] airbnb as streaming
+- [x] airbnb as streaming
 - [x] Flink Workshop using dbt
 
 ## Using duckdb as data warehouse
