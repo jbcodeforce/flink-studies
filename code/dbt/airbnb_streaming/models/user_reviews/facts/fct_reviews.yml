@@ -1,0 +1,20 @@
+models:
+  - name: fct_reviews
+    config:
+      contract:
+        enforced: false
+    columns:
+      - name: listing_id
+        data_type: varchar(2147483647)
+        constraints:
+        - type: not_null
+        - type: primary_key
+          expression: "not enforced"
+      - name: review_date
+        data_type: varchar(2147483647)
+      - name: reviewer_name
+        data_type: varchar(2147483647)
+      - name: review_text
+        data_type: varchar(2147483647)
+      - name: review_sentiment
+        data_type: varchar(2147483647)

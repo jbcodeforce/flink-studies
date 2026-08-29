@@ -33,8 +33,10 @@ models:
   airbnb:
     +materialized: view
     dimensions:
-      +materialized: table 
+      +materialized: table
     sources:
+      +materialized: table
+    facts:
       +materialized: table
 data_tests:
   +store_failures: true

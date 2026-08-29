@@ -221,6 +221,28 @@ FROM
   src_listings
 ```
 
+### Facts
+
+| Fact Table | Key Questions Answered |
+|---|---|
+| `fct_listing_pricing` | What is the price distribution by room type? Which listings are luxury vs budget? |
+| `fct_review_summary` | Which listings have the highest positive-sentiment rate by month? Do full moons affect review sentiment? |
+| `fct_host_performance` | Who are the top-performing hosts? Does superhost status correlate with sentiment score? |
+| `fct_listing_activity` | Which listings are dormant? What is the review velocity per listing? |
+| `dim_date` | Slice all facts by weekday, season, quarter, full-moon phase |
+
+To validate those with a new: `dbt run` then:
+
+```sql
+duckdb "${DBT_DUCKDB_PATH:-./data/airbnb.duckdb}"
+use airbnb;
+select * from fct_host_performance;
+select * from fct_listing_activity;
+select * from fct_listing_pricing;
+select * from fct_review_summary;
+```
+
+
 ### Tests
 
 * Defining test is by adding a `schema.yaml` with conditions on table columns
@@ -228,7 +250,7 @@ FROM
 
 * To run the tests
   ```sh
-  dbt test --target duckdb -x
+  dbt test --target dev -x
   # -x is to continue even if one test fails
   ```
 
@@ -289,7 +311,7 @@ The [airbnb_streaming](airbnb_streaming/) project targets Confluent Cloud for Fl
 
   ```bash
   cd code/dbt
-  uv run dbt seed --project-dir airbnb_streaming --target dev
+  uv run dbt seed --project airbnb_streaming --target dev
   ```
 
 * Validate in the Confluent Cloud Flink SQL Workspace:
@@ -315,6 +337,37 @@ To run it do:
 ```sh
 uv run python scripts/produce_to_kafka.py
 ```
+
+Each raw_topic needs to be defined in the sources.yml. As an example the raw_host is defined with schema referncing the name of the kafka cluster in Confluent Cloud.
+
+
+```yaml
+ - name: raw_hosts
+  schema: j9r-kafka
+  tables:
+    - name: raw_hosts
+      columns:
+        - name: host_id
+          data_type: string
+        - name: host_name
+          data_type: string
+        - name: is_superhost
+          data_type: boolean
+        - name: created_at
+          data_type: string
+        - name: updated_at
+          data_type: string
+```
+
+To get the column definition there is a tool to help reading the key and/or value schema registered under ``{topic}-key`` /
+``{topic}-value`` and prints a ready-to-paste dbt YAML block to stdout.
+
+```sh
+# under dbt/tools
+# be sure to have set the env variables
+uv run sr_to_dbt_yaml.py raw_hosts
+```
+
 
 ### Add raw processing
 
@@ -361,12 +414,23 @@ WHERE
     row_num = 1
 ```
 
-Each create table needs a schema definition. This is done using <table_name>_models.yaml file. This file can be created automatically with the following command:
+Each create table needs a schema definition. This is done using <table_name>.yml file. This file can be created automatically by using a tools which parses a dbt SQL model and emit a ready-to-paste ``models:`` YAML block. Run it with the following command:
 
-```
+```sh
+# in tools
+uv run sql_to_dbt_yaml.py ../airbnb_streaming/models/user_reviews/dimensions/dim_listings_with_hosts.sql
+# copy the generated yml in dim_listings_with_hosts.yml
 ```
 
-The final
+### For the facts
+
+The difference with batch are:
+
+* changelog.mode needs to be set. Use = append for simple projections, upsert for joins/aggregations
+* Column types use Flink types: varchar(2147483647) for strings, bigint for ints, decimal(10,2) for prices, boolean for booleans, DATE for dates
+* Each SQL file gets a companion .yml file declaring column types
+*  In Flink SQL the aggregation must use a streaming-compatible pattern — a TUMBLE window on review_date (truncated to month boundary) would require event-time, but the dates in the streaming project are stored as varchar. The correct streaming approach is a running GROUP BY (no window), which Flink supports as a retract/upsert aggregation. The key is changelog.mode: upsert and grouping by (listing_id, review_month) where review_month is derived via CAST(SUBSTRING(review_date, 1, 7) || '-01' AS DATE) 
+* DATEDIFF('day', a, b)	is now TIMESTAMPDIFF(DAY, a, b)
 
 ## With dbt-confluent - flink_workshop project
 
@@ -401,14 +465,16 @@ Use [code/flink-sql/tools/migrate_dml_to_dbt](../flink-sql/tools/migrate_dml_to_
 
 ### Gap analysis with shift_left utils CLI - 07/02/2026
 
-- Kimball structure under `models/` can be bootstrapped with `migrate_dml_to_dbt.py` (see above).
+- Kimball structure under `models/` can be bootstrapped with `sl_dbt.py` tool.
+  ```sh
+
+  ```
+
 - No metada data for statement children relationship, but may be kept as-is with shift_left. (medium term this). dbt supports seeing children relation with the `+` postfix.
 - no undeploy statements command
 - no drop table from a list of tables
-- No schema/database create or drop. Kafka clusters are managed elsewhere
-- no cross cut deployment support: only sources, only a data producct
+- no cross cut deployment support: we can deploy sources by doing `dbt run --select sources` but it will be challenging to do a data product, except if the repository is structured as data product
 - no concept of statefulness with different approach to deployment -> the response is to transform to materialized tables. But this will not address children relationship.
-- no children relationship management
-- unit tests not isolated per table
+- no children relationship management: create v2, and redeploy children to consume from v2. Materialized Table is the official response but we need to validate
 - No metrics information as part of the statement metadata as complexity and statefulness
 

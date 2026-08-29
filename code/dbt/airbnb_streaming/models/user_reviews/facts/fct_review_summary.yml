@@ -1,0 +1,29 @@
+models:
+- name: fct_review_summary
+  description: "Monthly review aggregation per listing with sentiment breakdown and full-moon count (running upsert aggregation)"
+  config:
+    contract:
+      enforced: false
+  columns:
+  - name: listing_id
+    data_type: varchar(2147483647)
+    constraints:
+      - type: not_null
+      - type: primary_key
+        expression: "not enforced"
+  - name: review_month
+    data_type: date
+    constraints:
+      - type: not_null
+  - name: total_reviews
+    data_type: bigint
+  - name: positive_reviews
+    data_type: int
+  - name: neutral_reviews
+    data_type: int
+  - name: negative_reviews
+    data_type: int
+  - name: positive_pct
+    data_type: decimal(5,1)
+  - name: full_moon_reviews
+    data_type: int

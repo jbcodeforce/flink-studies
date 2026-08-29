@@ -1,0 +1,3 @@
+pipelines_dir: .
+project_type: data-product
+profile_name: cc_flink

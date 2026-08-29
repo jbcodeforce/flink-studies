@@ -1,0 +1,27 @@
+models:
+- name: fct_listing_pricing
+  description: "Pricing snapshot per listing with price tier and minimum-stay bucket"
+  config:
+    contract:
+      enforced: false
+  columns:
+  - name: listing_id
+    data_type: varchar(2147483647)
+    constraints:
+      - type: not_null
+      - type: primary_key
+        expression: "not enforced"
+  - name: host_id
+    data_type: varchar(2147483647)
+  - name: room_type
+    data_type: varchar(2147483647)
+  - name: minimum_nights
+    data_type: bigint
+  - name: price
+    data_type: decimal(10,2)
+  - name: snapshot_date
+    data_type: date
+  - name: price_tier
+    data_type: varchar(9)
+  - name: min_stay_bucket
+    data_type: varchar(8)

@@ -1,0 +1,33 @@
+models:
+- name: fct_host_performance
+  description: "Monthly host performance scorecard: active listings, sentiment score, and estimated revenue proxy (running upsert aggregation)"
+  config:
+    contract:
+      enforced: false
+  columns:
+  - name: host_id
+    data_type: varchar(2147483647)
+    constraints:
+      - type: not_null
+      - type: primary_key
+        expression: "not enforced"
+  - name: is_superhost
+    data_type: boolean
+  - name: review_month
+    data_type: date
+    constraints:
+      - type: not_null
+  - name: active_listings
+    data_type: bigint
+  - name: total_reviews
+    data_type: bigint
+  - name: positive_reviews
+    data_type: int
+  - name: negative_reviews
+    data_type: int
+  - name: sentiment_score
+    data_type: decimal(5,1)
+  - name: avg_price
+    data_type: decimal(10,2)
+  - name: estimated_monthly_revenue
+    data_type: decimal(14,2)

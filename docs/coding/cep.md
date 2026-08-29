@@ -74,3 +74,29 @@ FlinkCEP supports the following forms of contiguity between events:
 * **Non-Deterministic Relaxed Contiguity**: Further relaxes contiguity, allowing additional matches that ignore some matching events (use `followedByAny()`).
 
 
+## MATCH_RECOGNIZE 
+
+[MATCH_RECOGNIZE](https://nightlies.apache.org/flink/flink-docs-release-2.2/docs/dev/table/sql/queries/match_recognize/) detects sequences of events in an ordered stream. The main pieces are:
+
+* PARTITION BY: independent pattern matching per key
+* ORDER BY: event-time ordering
+* PATTERN: event sequence
+* DEFINE: condition for each pattern variable
+* MEASURES: output fields
+* WITHIN: optional time limit for the complete match
+
+Flink requires a time attribute/watermark for MATCH_RECOGNIZE, and the input should generally be append-only
+
+### Useful pattern operators
+
+```
+(A B C)       Exact sequence
+A+            One or more A events
+A*            Zero or more A events
+A{3}          Exactly three A events
+A{3,}         At least three A events
+A{2,5}        Between two and five A events
+(A | B)       A or B
+```
+
+For practical demos, prefer a bounded pattern such as A{1,4} or add WITHIN. Flink maintains state for partially matched patterns, and unbounded or highly flexible quantifiers can cause significant state growth. Also, a greedy quantifier cannot be the final element of a Flink pattern; add a terminating variable when necessary.  

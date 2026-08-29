@@ -25,7 +25,7 @@ uv run tools/sl_dbt.py add-data-product crm-analytics c360
 * Add a table for a data product
 
 ```sh
-uv run tools/sl_dbt.py add-data-product crm-analytics c360
+uv run tools/sl_dbt.py add-table crm-analytics src_customers c360 --table-type dim
 ```
 
 ---

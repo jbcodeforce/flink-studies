@@ -1,0 +1,51 @@
+models:
+- name: fct_listing_activity
+  description: "Per-listing engagement snapshot: review velocity, recency, and activity status (New / Active / Dormant)"
+  config:
+    contract:
+      enforced: false
+  columns:
+  - name: listing_id
+    data_type: varchar(2147483647)
+    constraints:
+      - type: not_null
+      - type: primary_key
+        expression: "not enforced"
+  - name: host_id
+    data_type: varchar(2147483647)
+  - name: room_type
+    data_type: varchar(2147483647)
+  - name: price
+    data_type: decimal(10,2)
+  - name: first_review_date
+    data_type: timestamp_ltz
+  - name: last_review_date
+    data_type: timestamp_ltz
+  - name: total_reviews
+    data_type: bigint
+  - name: days_active
+    data_type: int
+  - name: avg_days_between_reviews
+    data_type: decimal(10,1)
+  - name: days_since_last_review
+    data_type: int
+  - name: activity_status
+    data_type: varchar(2147483647)
+  unit_tests:
+    - name: test_fct_listing_calculate_act_status
+      description: "Validates that activity status is set to dormant"
+      model: fct_listing_activity
+      given:
+        - input: ref('fct_reviews')
+          rows:
+            - listing_id: 'Test_1'
+              review_date: '2024-01-15 10:00:00'
+              $rowtime: '2024-01-20 00:01:00'
+        - input: ref('dim_listings_cleansed')
+          format: dict
+          rows:
+            - {listing_id: 'Test_1', host_id: 'H1', room_type: 'flat', price: 100}
+      expect:
+        format: dict
+        rows:
+          - {listing_id: 'Test_1', host_id: 'H1', room_type: 'flat', price: 100, activity_status: 'New'}

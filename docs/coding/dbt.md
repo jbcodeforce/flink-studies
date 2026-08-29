@@ -504,7 +504,7 @@ There are two strategies for assessing data changes:
 
 * To run the tests
   ```sh
-  dbt test --target duckdb -x
+  dbt test --target dev -x
   # -x it to continue even if one test fails
   ```
 
@@ -564,6 +564,9 @@ Read the getting started and installation in [Confluent cloud product documentat
 
 * The dependencies are managed by using the `ref()` or `source()` functions as core dbt does. The deployment follows a topological order.
 * Re-running `dbt run` against an existing `table`, `streaming_table`, or `streaming_source` does **not** re-create it.
+* `--full-refresh` drops the Kafka topic, and create everythin. But the downstream statement keeps reporting `Running` with zero exceptions while consuming nothing. 
+* Using a select with '+' postfix will rebuild the current statement and its children.
+* Re-submitting an append-mode INSERT that replays from earliest, against a table deliberately not dropped, will create duplicates
 
 ### Code Repository
 
@@ -611,15 +614,29 @@ We propose to adopt two types of project organization:
   ```
 
 The common parts include:
+
 * a docs folder for future documentation
 * IaC for terraform content to declare compute pool, service account, api keys and secrets
 * tools for future scripts and other tools
 * pipelines to includes the different dbt constructs
 * sl_dbt.yml a metadata file used by this tool 
 
+### Naming convention
+
+* It is recommended to apply some table and statement naming convention
+* Use statement name property in the config to control the name of the statement, specially during development as external tool can stop and delete running statement and drop tables to clean a dev environment.
+  ```yaml
+      statement_name='dev_crm_customers',
+  ```
+
+### Organize table and tests
+
 ### Useful commands to remember
 
-* 
+* Compile dbt models to Flink SQL to review
+  ```sh
+  ```
+
 * run a specific model:
   ```sh
   dbt run --select src_listings
@@ -632,15 +649,65 @@ The common parts include:
   ```sh
   dbt ls --select src_listings+
   ```
+  Results from the [airbnb_streaming](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/airbnb_streaming):
+  ```sh
+  airbnb_streaming.user_reviews.dimensions.dim_listings_cleansed
+  airbnb_streaming.user_reviews.dimensions.dim_listings_with_hosts
+  airbnb_streaming.user_reviews.facts.fct_host_performance
+  airbnb_streaming.user_reviews.facts.fct_listing_activity
+  airbnb_streaming.user_reviews.facts.fct_listing_pricing
+  airbnb_streaming.user_reviews.sources.src_listings
+  ```
+
 * List all models upstream of fct_revenue
   ```sh
-  dbt ls --select +fct_revenue
+  dbt ls --select +fct_reviews
+  ```
+  Results from the [airbnb_streaming](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/airbnb_streaming):
+  ```sh
+  airbnb_streaming.user_reviews.facts.fct_reviews
+  airbnb_streaming.user_reviews.sources.src_reviews
+  source:airbnb_streaming.raw_reviews.raw_reviews
   ```
 
 * List a model and everything upstream and downstream
   ```sh
-  dbt ls --select +stg_orders+
+  dbt ls --select +fct_reviews+
   ```
+  Results from the [airbnb_streaming](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/airbnb_streaming):
+  ```sh
+  airbnb_streaming.user_reviews.facts.fct_host_performance
+  airbnb_streaming.user_reviews.facts.fct_listing_activity
+  airbnb_streaming.user_reviews.facts.fct_review_summary
+  airbnb_streaming.user_reviews.facts.fct_reviews
+  airbnb_streaming.user_reviews.sources.src_reviews
+  source:airbnb_streaming.raw_reviews.raw_reviews
+  ```
+
+* Generate docs and see it in web browser, see lineage graph.
+  ```sh
+  dbt docs generate
+  dbt docs serve
+  ```
+  ![](./images/airbnb_lineage.png)
+
+* Run unit tests
+  ```sh
+  dbt test --select "test_type:unit"
+  ```
+
+### Constraints
+
+* dbt has no cascade, it will not propagate dowstream modification: --full-refresh is a global invocation flag. If we need to change downstream we need to be explicit by selecting the children of the modified intermediate statement
+* The support of v2 table, needs to be done manually
+
+### Testing
+
+[See Confluent documentation for testing definition](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/deploy-flink-dbt.html#step-5-test-your-models) and [dbt testing](https://docs.getdbt.com/docs/build/unit-tests?version=2).
+- It is possible to define tests at the flink statement model level. Data engineer can define mock input data and validate output to expected values. This unit test definition can be added to the yml file that defines the columns contract or as a separate <table_name>_unit_tests.yml.
+- Only unit test models that contain complex business logic
+- Only include the specific columns relevant to the business logic you are validating. dbt automatically fills in missing columns with null values or infers them from your schema
+- If you version your models (e.g., v1, v2), use the versions: tag inside your unit test block to target specific versions so older logic test configurations do not break newer iterations
 
 ### Added tools
 
@@ -652,10 +719,11 @@ The [code/dbt/tools](https://github.com/jbcodeforce/flink-studies/tree/master/co
 
 | Tool | Goal | Usage |
 | ---- | ---- | ------- |
-| sl_dbt.py | Manage your project from batch to dbt and Flink SQL. (shift_left) | `sl_dbt add <data_product>` | 
+| [sl_dbt.py](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/tools/sl_dbt.py) | Manage your project from batch to dbt and Flink SQL. (shift_left) | `sl_dbt init <project_root>`,  `sl_dbt add-data-product <data_product>`, `sl_dbt.py add-table crm-analytics src_customers c360 --table-type dim`| 
 | sr_to_dbt_yaml.py | Fetches the key and/or value schema registered in Confluent Schema Registry for a given Kafka topic and emits a ready-to-paste dbt YAML block |  [uv run sr_to_dbt_yaml.py raw_hosts](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/tools/README.md) |
 | sql_to_dbt_yaml.py | parses a dbt SQL model file and emits a ready-to-paste `models:` YAML block, resolving column names and data types entirely from the SQL and the upstream model / source definitions in the project | `uv run sql_to_dbt_yaml.py ../airbnb_streaming/models/user_reviews/dimensions/dim_listings_with_hosts.sql` |
 | [flink_dbt_migrate](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/tools/flink_dbt_migrate) | Taking one or more Flink SQL queries in the form of ddl, dml or ctas and transform them for dbt processing | `flink_dbt_migrate.migrate_dml_to_dbt ../cc-flink/dml.enriched_orders.sql ../cc_dbt/models/intermediates/enriched_orders`|
+| statement_management.py | help to stop and delete statements created by dbt | 
 
 
 

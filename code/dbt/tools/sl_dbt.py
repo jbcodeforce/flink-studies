@@ -57,9 +57,73 @@ dbt_packages/
 logs/
 """
 
+_SQL_TMPL = """
+-- After editing this query, you MUST run `dbt run --full-refresh` to deploy the change.
+-- Schema-drift detection only checks columns, types, and WITH options — query logic
+-- changes are not detected and will be silently skipped on a normal `dbt run`.
+{{ config(
+    materialized = 'streaming_table',
+    with= {
+        'changelog.mode': 'append',
+        'connector': 'confluent',
+        'kafka.cleanup-policy': 'delete',
+        'kafka.compaction.time': '0 ms',
+        'kafka.max-message-size': '2097164 bytes',
+        'scan.bounded.mode': 'unbounded',
+        'scan.startup.mode': 'earliest-offset',
+        'value.format': 'avro-registry'
+    }
+) }}
+--- to modify!
+SELECT 1;
+"""
+
+_YML_TMPL= """
+models:
+- name: {table_name}
+  description: ""
+  config:
+    contract:
+      enforced: true
+  columns:
+  - name: _id
+    data_type: varchar(2147483647)
+    constraints:
+      - type: not_null
+      - type: primary_key
+        expression: "not enforced"
+  - name: is_superhero
+    data_type: boolean
+  - name: review_month
+    data_type: date
+    constraints:
+      - type: not_null
+  - name: big_value
+    data_type: bigint
+  - name: review_ts
+    data_type: timestamp_ltz
+  - name: price_as_double
+    data_type: decimal(10,1)
+  - name: small_int
+    data_type: int
+"""
+
 class ProjectType(str, enum.Enum):
     data_product = "data-product"
     kimball = "kimball"
+
+class TableType(str, enum.Enum):
+    source    = "source"
+    src       = "src"
+    dimension = "dimension"
+    dim       = "dim"
+    fact      = "fact"
+    other     = "other"
+
+    def canonical(self) -> "TableType":
+        """Resolve aliases to their canonical member."""
+        _aliases = {TableType.src: TableType.source, TableType.dim: TableType.dimension}
+        return _aliases.get(self, self)
 
 def _write(path: Path, content: str) -> None:
     """Write *content* to *path*, creating parent directories as needed."""
@@ -196,7 +260,41 @@ def add_data_product(
                 pass
             except PermissionError:
                 pass
+    typer.echo(f"Data Product added {dp_dir.resolve()}")
 
+
+@app.command()
+def add_table(
+    project_root: Annotated[Path, typer.Argument(help="Existing project root folder path")],
+    name: Annotated[str, typer.Argument(help="table name (lowercase, underscores)")],
+    data_product_name: Annotated[str, typer.Argument(help="Data-product name (lowercase, underscores)")],
+    table_type: Annotated[TableType,
+        typer.Option(
+            help=(
+                "'source': statement to process raw records as sources. "
+                 "'src': statement to process raw records as sources. "
+                "'dimension': statement to build star schema - dimension."
+                "'dim': statement to build star schema - dimension."
+                "'fact': statement to build star schema - fact."
+                "'other': not in previous category"
+            ),
+        )] = TableType.source
+    ):
+    table_type = table_type.canonical()
+    meta = load_metadata(project_root)
+    if meta.project_type == ProjectType.data_product:
+        dp_path = project_root / meta.pipelines_dir / "models" / data_product_name
+        if table_type in [TableType.source, TableType.dimension, TableType.fact]:
+            table_path = dp_path / f"{table_type.value}s"
+        else:
+            table_path = dp_path
+
+    else:
+        table_path = project_root / meta.pipelines_dir / "models" / "sources" / name
+
+    _write(table_path / f"{name}.sql", _SQL_TMPL)
+    _write(table_path / f"{name}.yml", _YML_TMPL.format(table_name=name))
+    typer.echo(f"Statement/Table added as {name}.sql in {table_path.resolve()}")
 
 if __name__ == "__main__":
     app()
