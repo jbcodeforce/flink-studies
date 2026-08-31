@@ -2663,8 +2663,10 @@ dependencies = [
     { name = "ddgs" },
     { name = "ollama" },
     { name = "openai" },
+    { name = "pyyaml" },
     { name = "rich" },
     { name = "sqlalchemy" },
+    { name = "typer" },
 ]
 
 [package.metadata]
@@ -2676,8 +2678,10 @@ requires-dist = [
     { name = "ddgs", specifier = ">=9.14.4" },
     { name = "ollama", specifier = ">=0.4.0" },
     { name = "openai", specifier = ">=2.38.0" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "rich", specifier = ">=15.0.0" },
     { name = "sqlalchemy", specifier = ">=2.0.50" },
+    { name = "typer", specifier = ">=0.15.0" },
 ]
 
 [[package]]

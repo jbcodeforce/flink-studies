@@ -737,7 +737,7 @@ Once the job is deployed we can see the pod and then using the user interface th
 * Example of deploying Java based [SQL Runner](https://github.com/apache/flink-Kubernetes-operator/blob/main/examples/flink-sql-runner-example/README.md) to interpret a Flink SQL script: package it as docker images, and deploy it with a Session Job. There is a equivalent for Python using [Pyflink](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/overview/).
 
     * [See the ported code for Java](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/sql-runner)
-    * And for the [Python implementation](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql-demos/flink-python-sql-runner)
+    * And for the [Python implementation](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/flink-python-sql-runner)
 
 
 ### Flink State Snapshot

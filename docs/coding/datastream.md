@@ -176,14 +176,14 @@ flink run -d -c jbcodeforce.p1.WordCountMain /home/my-flink/target/my-flink-
 !!!- Error "Attention Scala and DataSet aPi do not exist anymore"
     Deprecated from Flink 1.18.
 
-The examples directly in the [my-flink project under the  jbcodeforce.p1 package](https://github.com/jbcodeforce/flink-studies/blob/master/flink-java/my-flink/src/main/java/jbcodeforce/p1):
+The examples directly in the [my-flink project under the  jbcodeforce.p1 package](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-java/my-flink/src/main/java/jbcodeforce/p1):
 
-* [PersonFiltering.java](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/PersonFiltering.java) filter a persons datastream using person's age to create a new "adult" output data stream. This example uses test data from a list of person and uses a filtering class which implements the filter method. This code can execute in VSCode or any IDE
-* [InnerJoin](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/InnerJoin.java) Proceed two files and do an inner join by using the same key on both files. See next section for details.
-* [LeftOuterJoin](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/LeftOuterJoin.java) results will include matching records from both tuples and non matching from left (so person) (`personSet.leftOuterJoin(locationSet)`).
-* [RightOuterJoin](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/RightOuterJoin.java) matching records present in both data sets and non matching from the right.
-* [Full outer join](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/FullOuterJoin.java) when matching and non matching are present. See [fulljoinout.csv output file](https://github.com/jbcodeforce/flink-studies/tree/master/my-flink/data/fulljoinout.csv).
-* [Traditional word count from a text](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/p1/WordCountMain.java) uses a filter function to keep line starting by a pattern (letter 'N'), then it uses a tokenizer function to build a tuple for each word with a count of 1. The last step of the flow is to groupBy word and sum the element. Not obvious.
+* [PersonFiltering.java](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-java/my-flink/src/main/java/jbcodeforce/p1/PersonFiltering.java) filter a persons datastream using person's age to create a new "adult" output data stream. This example uses test data from a list of person and uses a filtering class which implements the filter method. This code can execute in VSCode or any IDE
+* [InnerJoin](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-java/my-flink/src/main/java/jbcodeforce/p1/InnerJoin.java) Proceed two files and do an inner join by using the same key on both files. See next section for details.
+* [LeftOuterJoin](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-java/my-flink/src/main/java/jbcodeforce/p1/LeftOuterJoin.java) results will include matching records from both tuples and non matching from left (so person) (`personSet.leftOuterJoin(locationSet)`).
+* [RightOuterJoin](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-java/my-flink/src/main/java/jbcodeforce/p1/RightOuterJoin.java) matching records present in both data sets and non matching from the right.
+* [Full outer join](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-java/my-flink/src/main/java/jbcodeforce/p1/FullOuterJoin.java) when matching and non matching are present. See [fulljoinout.csv output file](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-java/my-flink/data/fulljoinout.csv).
+* [Traditional word count from a text](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-java/my-flink/src/main/java/jbcodeforce/p1/WordCountMain.java) uses a filter function to keep line starting by a pattern (letter 'N'), then it uses a tokenizer function to build a tuple for each word with a count of 1. The last step of the flow is to groupBy word and sum the element. Not obvious.
 
 ### Inner join
 
@@ -240,7 +240,7 @@ non matching records coming from the left part of the join:
 
 The output can also be a stream (as sink): writeAsText(),.. writeToSocket, addSink...
 
-See example in `my-flink` project source [WordCountSocketStream](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/datastream/WordCountSocketStreaming.java), and to test it, use the `nc -l 9999` tool to open a socket on port 9999 and send text message.
+See example in `my-flink` project source [WordCountSocketStream](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-java/my-flink/src/main/java/jbcodeforce/datastream/WordCountSocketStreaming.java), and to test it, use the `nc -l 9999` tool to open a socket on port 9999 and send text message.
 
 When using docker we need to open a socket in the same network as the Flink task manager, the command looks like:
 
@@ -250,7 +250,7 @@ docker run -t --rm --network  flink-studies_default --name ncs -h ncshost subfuz
 
 ### Compute average profit per product
 
-The data set [avg.txt](https://github.com/jbcodeforce/flink-studies/tree/master/my-flink/data/avg.txt) represents transactions for a given product with its sale profit. The goal is to compute the average profit per product per month. 
+The data set [avg.txt](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-java/my-flink/data/avg.txt) represents transactions for a given product with its sale profit. The goal is to compute the average profit per product per month. 
 
 The solution use Map - Reduce functions.
 
@@ -263,7 +263,7 @@ The solution use Map - Reduce functions.
 
 * Output:
 
-In the class [datastream.ProfitAverageMR](https://github.com/jbcodeforce/flink-studies/blob/master/my-flink/src/main/java/jbcodeforce/datastream/ProfitAverageMR.java), the DataStream loads the input file as specified in  `--input` argument and then splits record to get columns as tuple attributes.
+In the class [datastream.ProfitAverageMR](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-java/my-flink/src/main/java/jbcodeforce/datastream/ProfitAverageMR.java), the DataStream loads the input file as specified in  `--input` argument and then splits record to get columns as tuple attributes.
 
 ```java
  DataStream<String> saleStream = env.readTextFile(params.get("input"));

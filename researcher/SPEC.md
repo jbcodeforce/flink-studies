@@ -1,4 +1,4 @@
-√# Local Flink Research Digest for `jbcodeforce/flink-studies`
+# Local Flink Research Digest for `jbcodeforce/flink-studies`
 
 ## Purpose
 

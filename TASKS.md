@@ -130,7 +130,6 @@
 ## Notes
 
 - Tasks should be updated weekly based on progress
-- New tasks can be added as needed
 - Priority levels may shift based on community feedback
 - Each task should have clear acceptance criteria
 - Tasks should be broken down into smaller sub-tasks when needed 

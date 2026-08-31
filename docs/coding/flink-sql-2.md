@@ -964,7 +964,7 @@ The pattern is better implemented in a separate topic, to avoid having records t
 Here is a list of important tutorials on Joins:
 
 * [Confluent Cloud: joins documentation](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html) explains how joins behave in Flink SQL.
-* [Confluent Developer: How to join streams](https://developer.confluent.io/tutorials/join-a-stream-to-a-stream/flinksql.html). Related exercises live in the [flink-sql/04-joins folder](https://github.com/jbcodeforce/flink-studies/tree/master/flink-sql/04-joins) for Confluent Cloud or Confluent Platform for Flink.
+* [Confluent Developer: How to join streams](https://developer.confluent.io/tutorials/join-a-stream-to-a-stream/flinksql.html). Related exercises live in the [flink-sql/04-joins folder](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/04-joins) for Confluent Cloud or Confluent Platform for Flink.
 * [Confluent temporal join documentation.](https://docs.confluent.io/cloud/current/flink/reference/queries/joins.html#temporal-joins)
 * [Window Join Queries in Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/flink/reference/queries/window-join.html)
 * [Temporal Join Study in this repo.](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/09-temporal-joins)

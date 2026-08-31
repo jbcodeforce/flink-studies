@@ -1,0 +1,9 @@
+models:
+- name: temp_chg
+  columns:
+  - name: sensor_id
+    data_type: int
+  - name: temperature
+    data_type: decimal(3,2)
+  - name: ts 
+    data_type: timestamp_ltz

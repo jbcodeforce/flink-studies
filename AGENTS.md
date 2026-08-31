@@ -1,7 +1,7 @@
 # Agent Description for Flink Studies Repository
 
 ## Repository Overview
-This is a comprehensive Apache Flink learning and demonstration repository containing practical examples, deployment configurations, documentation, and end-to-end demos for real-world streaming data scenarios.
+This is a comprehensive Apache Flink and Confluent Cloud data streaming processing, learning and demonstration repository containing practical examples, deployment configurations, documentation, and end-to-end demos for real-world streaming data scenarios.
 
 ## Repository Structure & Agent Responsibilities
 
@@ -59,6 +59,10 @@ This is a comprehensive Apache Flink learning and demonstration repository conta
 - Corpus building for knowledge base
 - SQL query assistance and validation
 
+### `/tools`
+- Script to help manage demonstration and studies
+- Script to do web research on Flink articles
+
 ## Agent Capabilities & Responsibilities
 
 ### Core Competencies Required:
@@ -82,6 +86,7 @@ This is a comprehensive Apache Flink learning and demonstration repository conta
    - Java and Python programming for Flink applications
    - SQL query optimization and debugging
    - CI/CD pipeline maintenance
+   - for Python code use `uv` as package managers and virtual environment management.
 
 ### Primary Agent Tasks:
 - **Code Maintenance**: Keep all code examples functional and up-to-date

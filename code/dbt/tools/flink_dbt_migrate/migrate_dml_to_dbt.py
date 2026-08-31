@@ -322,9 +322,5 @@ app = typer.Typer(add_completion=False)
 app.command()(migrate)
 
 
-def main() -> None:
-    app()
-
-
 if __name__ == "__main__":
-    main()
+    app()

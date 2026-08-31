@@ -2,17 +2,17 @@
 
 ## dbt project management
 
-dbt init is creating very simple project, and we may want to adopt a star schema or kimball with data product.
+dbt init is creating very simple project, and we may want to adopt a  data product with star schema first or kimball with data product.
 
 ### Usage 
 
-* Initialise a kimball project
+* Initialise a kimball project named crm-analytics in a folder ./crm-analytics, using an existing dbt profile
 
 ```sh
 uv run tools/sl_dbt.py init crm-analytics --type kimball --profile cc_flink
 ```
 
-* Initialise a data products project
+* Initialise a data products project named crm-analytics in a folder ./crm-analytics
 ```sh
 uv run tools/sl_dbt.py init crm-analytics --profile cc_flink
 ```
@@ -22,7 +22,7 @@ uv run tools/sl_dbt.py init crm-analytics --profile cc_flink
 uv run tools/sl_dbt.py add-data-product crm-analytics c360
 ```
 
-* Add a table for a data product
+* Add a table `src_customers` for a data product `c360` to the crm-analytics project 
 
 ```sh
 uv run tools/sl_dbt.py add-table crm-analytics src_customers c360 --table-type dim
@@ -32,9 +32,7 @@ uv run tools/sl_dbt.py add-table crm-analytics src_customers c360 --table-type d
 
 ## Schema Registry → dbt YAML
 
-`sr_to_dbt_yaml.py` fetches the key and/or value schema registered in
-Confluent Schema Registry for a given Kafka topic and emits a ready-to-paste
-dbt YAML block. Supports **JSON Schema** and **Avro** subjects.
+`sr_to_dbt_yaml.py` fetches the key and/or value schema registered in Confluent Schema Registry for a given Kafka topic and emits a ready-to-paste dbt model YAML block. Supports **JSON Schema** and **Avro** subjects.
 
 ### Required credentials
 
@@ -113,9 +111,7 @@ models:
 
 ## dbt SQL → dbt Model YAML
 
-`sql_to_dbt_yaml.py` parses a dbt SQL model file and emits a ready-to-paste
-`models:` YAML block, resolving column names and data types entirely from the
-SQL and the upstream model / source definitions in the project.
+`sql_to_dbt_yaml.py` parses a dbt SQL model file and emits a ready-to-paste `models:` YAML block, resolving column names and data types entirely from the SQL and the upstream model / source definitions in the project.
 
 It handles:
 - `{{ ref('model') }}` and `{{ source('schema', 'table') }}` Jinja calls
@@ -192,9 +188,7 @@ models:
 
 ### Reusable library
 
-The schema-fetching and YAML-rendering logic lives in
-`code/flink-sql/cm_py_lib/schema_registry.py` and can be imported directly
-from any script in the repo:
+The schema-fetching and YAML-rendering logic lives in `code/flink-sql/cm_py_lib/schema_registry.py` and can be imported directly from any script in the repo:
 
 ```python
 from cm_py_lib.schema_registry import SchemaFetcher, schema_to_columns, render_sources_yaml
@@ -205,3 +199,8 @@ columns = schema_to_columns(schema, schema_type)
 print(render_sources_yaml("raw_hosts", "j9r-kafka", columns))
 ```
 
+---
+
+## Flink DML query to dbt project
+
+[See dedicated README](./flink_dbt_migrate/README.md)

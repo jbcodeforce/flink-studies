@@ -471,7 +471,7 @@ Use [code/flink-sql/tools/migrate_dml_to_dbt](../flink-sql/tools/migrate_dml_to_
   ```
 
 - No metada data for statement children relationship, but may be kept as-is with shift_left. (medium term this). dbt supports seeing children relation with the `+` postfix.
-- no undeploy statements command
+- no undeploy statements command for a given source or fact tables. (reverse topological sort)
 - no drop table from a list of tables
 - no cross cut deployment support: we can deploy sources by doing `dbt run --select sources` but it will be challenging to do a data product, except if the repository is structured as data product
 - no concept of statefulness with different approach to deployment -> the response is to transform to materialized tables. But this will not address children relationship.
