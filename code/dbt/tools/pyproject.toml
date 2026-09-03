@@ -16,3 +16,16 @@ dependencies = [
     "sqlalchemy>=2.0.50",
     "sqlglot>=25.0.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["flink_dbt_migrate*"]

@@ -17,7 +17,8 @@ from flink_dbt_migrate.rewrite_refs import collect_cte_names, rewrite_refs
 from flink_dbt_migrate.type_map import flink_type_to_dbt
 from flink_dbt_migrate.validate_compile import DbtCompileError, DbtCompileResult
 
-FLINK_SQL = Path(__file__).resolve().parents[2]
+# tests/ → tools/ → dbt/ → code/ → repo root, then into code/flink-sql
+FLINK_SQL = Path(__file__).resolve().parents[3] / "flink-sql"
 CART_UPDATE = FLINK_SQL / "11-puzzles/cart_update"
 ROLLING = FLINK_SQL / "10-windowing/tumble_then_hop_rolling"
 JOINS_CC_FLINK = FLINK_SQL / "04-joins/cc-flink"
@@ -33,7 +34,7 @@ def cli_runner() -> CliRunner:
 def test_cli_dry_run(cli_runner: CliRunner, tmp_path: Path) -> None:
     result = cli_runner.invoke(
         app,
-        [str(ROLLING / "dml.rolling_features.sql"), str(tmp_path)],
+        ["migrate", str(ROLLING / "dml.rolling_features.sql"), str(tmp_path)],
     )
 
     assert result.exit_code == 0
@@ -46,7 +47,7 @@ def test_cli_dry_run(cli_runner: CliRunner, tmp_path: Path) -> None:
 def test_cli_write(cli_runner: CliRunner, tmp_path: Path) -> None:
     result = cli_runner.invoke(
         app,
-        [str(ROLLING / "dml.rolling_features.sql"), str(tmp_path), "--write"],
+        ["migrate", str(ROLLING / "dml.rolling_features.sql"), str(tmp_path), "--write"],
     )
 
     assert result.exit_code == 0
@@ -58,7 +59,7 @@ def test_cli_write(cli_runner: CliRunner, tmp_path: Path) -> None:
 def test_cli_missing_statement_file(cli_runner: CliRunner, tmp_path: Path) -> None:
     result = cli_runner.invoke(
         app,
-        [str(tmp_path / "missing.sql"), str(tmp_path)],
+        ["migrate", str(tmp_path / "missing.sql"), str(tmp_path)],
     )
 
     assert result.exit_code == 1
@@ -70,7 +71,7 @@ def test_cli_check_exits_when_output_would_change(
 ) -> None:
     result = cli_runner.invoke(
         app,
-        [str(ROLLING / "dml.rolling_features.sql"), str(tmp_path), "--check"],
+        ["migrate", str(ROLLING / "dml.rolling_features.sql"), str(tmp_path), "--check"],
     )
 
     assert result.exit_code == 1
@@ -82,13 +83,13 @@ def test_cli_check_passes_when_files_match(
 ) -> None:
     write = cli_runner.invoke(
         app,
-        [str(ROLLING / "dml.rolling_features.sql"), str(tmp_path), "--write"],
+        ["migrate", str(ROLLING / "dml.rolling_features.sql"), str(tmp_path), "--write"],
     )
     assert write.exit_code == 0
 
     check = cli_runner.invoke(
         app,
-        [str(ROLLING / "dml.rolling_features.sql"), str(tmp_path), "--check"],
+        ["migrate", str(ROLLING / "dml.rolling_features.sql"), str(tmp_path), "--check"],
     )
     assert check.exit_code == 0
 
@@ -97,6 +98,7 @@ def test_cli_ref_table_override(cli_runner: CliRunner, tmp_path: Path) -> None:
     result = cli_runner.invoke(
         app,
         [
+            "migrate",
             str(ROLLING / "dml.rolling_features.sql"),
             str(tmp_path),
             "--ref-table",
@@ -112,19 +114,19 @@ def test_cli_write_refuses_overwrite_without_force(
     cli_runner: CliRunner, tmp_path: Path
 ) -> None:
     dml = str(ROLLING / "dml.rolling_features.sql")
-    first = cli_runner.invoke(app, [dml, str(tmp_path), "--write"])
+    first = cli_runner.invoke(app, ["migrate", dml, str(tmp_path), "--write"])
     assert first.exit_code == 0
 
-    second = cli_runner.invoke(app, [dml, str(tmp_path), "--write"])
+    second = cli_runner.invoke(app, ["migrate", dml, str(tmp_path), "--write"])
     assert second.exit_code == 1
     assert "already exists" in second.stderr
 
 
 def test_cli_write_force_overwrites(cli_runner: CliRunner, tmp_path: Path) -> None:
     dml = str(ROLLING / "dml.rolling_features.sql")
-    cli_runner.invoke(app, [dml, str(tmp_path), "--write"])
+    cli_runner.invoke(app, ["migrate", dml, str(tmp_path), "--write"])
 
-    result = cli_runner.invoke(app, [dml, str(tmp_path), "--write", "--force"])
+    result = cli_runner.invoke(app, ["migrate", dml, str(tmp_path), "--write", "--force"])
     assert result.exit_code == 0
     assert "Wrote" in result.stdout
 
@@ -167,7 +169,7 @@ def test_cli_validate_success(cli_runner: CliRunner, tmp_path: Path) -> None:
     ):
         result = cli_runner.invoke(
             app,
-            [dml, str(tmp_path), "--validate", "--dbt-project-dir", str(mock_result.project_dir)],
+            ["migrate", dml, str(tmp_path), "--validate", "--dbt-project-dir", str(mock_result.project_dir)],
         )
 
     assert result.exit_code == 0
@@ -195,7 +197,7 @@ def test_cli_validate_body_mismatch(cli_runner: CliRunner, tmp_path: Path) -> No
     ):
         result = cli_runner.invoke(
             app,
-            [dml, str(tmp_path), "--validate", "--dbt-project-dir", str(mock_result.project_dir)],
+            ["migrate", dml, str(tmp_path), "--validate", "--dbt-project-dir", str(mock_result.project_dir)],
         )
 
     assert result.exit_code == 1
@@ -214,7 +216,7 @@ def test_cli_validate_compile_failure(cli_runner: CliRunner, tmp_path: Path) -> 
     ):
         result = cli_runner.invoke(
             app,
-            [dml, str(tmp_path), "--validate", "--dbt-project-dir", str(project_dir)],
+            ["migrate", dml, str(tmp_path), "--validate", "--dbt-project-dir", str(project_dir)],
         )
 
     assert result.exit_code == 1
@@ -244,7 +246,7 @@ def test_cli_no_sources_preserves_ref(cli_runner: CliRunner, tmp_path: Path) -> 
     ddl = str(JOINS_CC_FLINK / "ddl.enriched_orders.sql")
     result = cli_runner.invoke(
         app,
-        [dml, str(tmp_path), "--ddl-file", ddl, "--no-sources"],
+        ["migrate", dml, str(tmp_path), "--ddl-file", ddl, "--no-sources"],
     )
 
     assert result.exit_code == 0
@@ -365,10 +367,94 @@ def test_cli_migrate_enriched_orders_write(cli_runner: CliRunner, tmp_path: Path
 
     result = cli_runner.invoke(
         app,
-        [dml, str(target), "--ddl-file", ddl, "--write", "--source-name", "cc_flink"],
+        ["migrate", dml, str(target), "--ddl-file", ddl, "--write", "--source-name", "cc_flink"],
     )
     assert result.exit_code == 0
     assert (project / "models" / "sources.yaml").exists()
     assert "{{ source('cc_flink', 'd04_orders') }}" in (
         target / "d04_enriched_orders.sql"
     ).read_text(encoding="utf-8")
+
+# ---------------------------------------------------------------------------
+# pipeline_definition.json integration
+# ---------------------------------------------------------------------------
+
+def _make_pipeline_tree(tmp_path: Path) -> tuple[Path, Path]:
+    """Create a minimal pipeline tree with a parent table referenced via pipeline_definition.json.
+
+    Structure:
+      pipelines/
+        sources/src_events/sql-scripts/
+          ddl.src_events.sql   ← parent DDL (NOT in the DML's own folder)
+        dimensions/dim_summary/
+          pipeline_definition.json
+          sql-scripts/
+            dml.dim_summary.sql
+            ddl.dim_summary.sql
+    """
+    pipelines = tmp_path / "pipelines"
+    src_scripts = pipelines / "sources/src_events/sql-scripts"
+    src_scripts.mkdir(parents=True)
+    (src_scripts / "ddl.src_events.sql").write_text(
+        "CREATE TABLE src_events (id BIGINT, ts TIMESTAMP(3), PRIMARY KEY (id) NOT ENFORCED)"
+        " WITH ('changelog.mode' = 'upsert');",
+        encoding="utf-8",
+    )
+
+    dim_dir = pipelines / "dimensions/dim_summary"
+    dim_scripts = dim_dir / "sql-scripts"
+    dim_scripts.mkdir(parents=True)
+    (dim_scripts / "ddl.dim_summary.sql").write_text(
+        "CREATE TABLE dim_summary (id BIGINT, total DECIMAL(10,2), PRIMARY KEY (id) NOT ENFORCED)"
+        " WITH ('changelog.mode' = 'upsert');",
+        encoding="utf-8",
+    )
+    (dim_scripts / "dml.dim_summary.sql").write_text(
+        "INSERT INTO dim_summary SELECT id, CAST(id AS DECIMAL(10,2)) FROM src_events;",
+        encoding="utf-8",
+    )
+    import json
+    pipeline_def = {
+        "table_name": "dim_summary",
+        "parents": [
+            {
+                "table_name": "src_events",
+                "ddl_ref": "pipelines/sources/src_events/sql-scripts/ddl.src_events.sql",
+            }
+        ],
+    }
+    (dim_dir / "pipeline_definition.json").write_text(
+        json.dumps(pipeline_def), encoding="utf-8"
+    )
+
+    return pipelines, dim_scripts / "dml.dim_summary.sql"
+
+
+def test_crawl_pipeline_folder_uses_pipeline_definition(tmp_path: Path) -> None:
+    """upstream_ddl_map is populated from pipeline_definition.json parents."""
+    from flink_dbt_migrate.migrate_dml_to_dbt import crawl_pipeline_folder
+
+    pipelines, _ = _make_pipeline_tree(tmp_path)
+    entries = crawl_pipeline_folder(pipelines)
+
+    assert len(entries) == 1
+    entry = entries[0]
+    assert entry.table_name == "dim_summary"
+    assert "src_events" in entry.upstream_ddl_map
+    assert entry.upstream_ddl_map["src_events"].name == "ddl.src_events.sql"
+
+
+def test_migrate_uses_pipeline_definition_ddl(tmp_path: Path) -> None:
+    """migrate_dml_to_dbt resolves upstream DDL via upstream_ddl_map instead of failing."""
+    pipelines, dml_path = _make_pipeline_tree(tmp_path)
+    src_ddl = pipelines / "sources/src_events/sql-scripts/ddl.src_events.sql"
+
+    result = migrate_dml_to_dbt(
+        dml_path,
+        tmp_path / "models/dim_summary",
+        upstream_ddl_map={"src_events": src_ddl},
+    )
+
+    assert result.model_name == "dim_summary"
+    assert "src_events" in result.model_sql
+

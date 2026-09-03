@@ -157,7 +157,7 @@ def create_pipelines_hierarchy(pipelines_dir: Path, type: ProjectType, profile_n
     for empty_dir in ( "macros", "seeds",  "tests"):
         _write(pipelines_dir / empty_dir / ".gitkeep", "")
     models_path = pipelines_dir / "models"
-    models_path.parent.mkdir( exist_ok=True)
+    models_path.mkdir(parents=True, exist_ok=True)
     if type == ProjectType.kimball:
         for kb_dir in ["sources", "intermediates", "marts"]:
             _write(pipelines_dir / "models" / kb_dir / ".gitkeep", "")
@@ -173,7 +173,7 @@ class ProjectMetadata(BaseModel):
 
     pipelines_dir: str        # name of the folder holding dbt SQL (e.g. "pipelines")
     project_type: ProjectType
-    profile_name: str
+    dbt_profile_name: str
 
     def to_yaml(self) -> str:
         """Serialise the model to a YAML string (enum values as plain strings)."""
@@ -230,7 +230,7 @@ def init(
         (project_root / sub).mkdir(exist_ok=True)
     pipelines_name = "pipelines"
     create_pipelines_hierarchy(project_root / pipelines_name, type, profile)
-    save_metadata(project_root, ProjectMetadata(pipelines_dir=pipelines_name, project_type=type, profile_name=profile))
+    save_metadata(project_root, ProjectMetadata(pipelines_dir=pipelines_name, project_type=type, dbt_profile_name=profile))
     typer.echo(f"Project initialised at {project_root.resolve()}")
 
 

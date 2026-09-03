@@ -270,6 +270,7 @@ def _run_agent(issues: list[Issue], model_id: str, base_url: str) -> None:
     try:
         from agno.agent import Agent
         from agno.models.openai.like import OpenAILike
+        from agno.tools.coding import CodingTools
     except ImportError:
         console.print("[red]agno is not installed. Run: uv add agno[/red]")
         raise typer.Exit(1)
@@ -286,18 +287,28 @@ def _run_agent(issues: list[Issue], model_id: str, base_url: str) -> None:
         "be, or whether the link should simply be removed. Be concise.\n\n"
         "Issues:\n" + "\n".join(summary_lines)
     )
-
+    workspace =  (Path.cwd() / ".." ).resolve()
+    tools=CodingTools(
+        base_dir=workspace,
+        restrict_to_base_dir=True,
+        enable_ls=True,
+        enable_read_file=True,
+        enable_write_file=True,
+        enable_edit_file=True,
+        enable_run_shell=True,
+    )
     agent = Agent(
         name="doc-sync-agent",
-        model=OpenAILike(id=model_id, base_url=base_url, api_key="localkey"),
+        model=OpenAILike(id=model_id, base_url=base_url, api_key="local-key"),
         markdown=True,
+        tools=[tools]
     )
 
     console.rule("[bold yellow]Agent suggestions for ambiguous issues[/bold yellow]")
     console.print(f"[dim]Model: {model_id} @ {base_url}[/dim]\n")
     response = agent.run(prompt)
     if response.content:
-        console.print(response.content)
+        console.print(response.content, stream= True)
 
 
 # ── Commands ──────────────────────────────────────────────────────────────────

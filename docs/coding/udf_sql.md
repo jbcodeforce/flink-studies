@@ -50,6 +50,8 @@ Developers can leverage ny existing libraries like Geospatial calculation, Math 
 ???+ question "When to use Python UDFs"
     Python UDFs should be used if developer needs a certain Python library to solve a business problem and it doesn't exist otherwise. 
 
+???+ question "What is the CFU for UDF?"
+    In Confluent Cloud [UDF consumes CFU](https://docs.confluent.io/cloud/current/flink/concepts/statement-cfu-metrics.html) in multiple of 0.25 CFU. They should scale with the Flink statement parallelism. The statement CFU metric shows the resources that your SQL statements consume, along with the resources that any UDF instances the statement might invoke consume.
 
 ## Implementation approach
 

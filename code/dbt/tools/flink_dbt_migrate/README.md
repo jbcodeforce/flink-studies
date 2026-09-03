@@ -33,8 +33,29 @@ Projects managed by the shift_left utils adopt a special structure and enforce b
 
 ### Methodology
 
-1. Create a dbt project: `uv run tools/sl_dbt.py init cc_dbt --type kimball --profile cc_flink`
-1. Modify the `~/.dbt/profile.yaml` to add Confluent Cloud environment, kafka_cluster, and all other settings...
+1. Create a dbt project. We will take as an example the migration of one of the demos for shift_left. In the commands below we assume the project: [flink_project_demos](https://github.com/jbcodeforce/flink_project_demos) is at the same level as flink-studies:
+
+  ```sh
+  cd flink-studies/code/dbt
+  uv run tools/sl_dbt.py init /Users/jerome/Documents/Code/flink_project_demos/customer_360/c360_flink_dsp_dbt --profile cc_flink
+  ```
+
+  The output looks like:
+  ```sh
+  c360_flink_dsp_dbt
+  ├── docs
+  ├── IaC
+  ├── pipelines
+  │   ├── dbt_project.yml
+  │   ├── macros
+  │   ├── models
+  │   ├── seeds
+  │   └── tests
+  ├── sl_dbt.yaml
+  └── tools
+  ```
+
+1. If not done before, modify the `~/.dbt/profile.yaml` to add Confluent Cloud environment, kafka_cluster, and all other settings...
   ```yaml
   cc_flink:
     outputs:
@@ -66,47 +87,54 @@ Projects managed by the shift_left utils adopt a special structure and enforce b
 
 * The migration tool is exposed as a CLI (Typer-based):
   ```sh
-  python -m flink_dbt_migrate.migrate_dml_to_dbt [OPTIONS] DML_PATH TARGET_PATH
+  # under 
+   uv run flink_dbt_migrate/migrate_dml_to_dbt.py migrate-sl-folder [OPTIONS] PIPELINES_PATH TARGET_PATH
   ```
 
   Positional Arguments
 
-  - `DML_PATH`: Path to the source Flink DML SQL file (e.g., `dml.rolling_features.sql`).
+  - `PIPELINES_PATH`: Path to a complete `pipelines` folder with a lot of SQL files
   - `TARGET_PATH`: Path for the generated model and schema files, or a directory (if `--write` is used).
 
   Options
 
-  - `--ddl-path`, `-d`  Path to a DDL file (`ddl.<table>.sql`) for full schema information. If not set, will attempt to infer schema from DML or existing ddl. file in the same folder with the same name as the dml
   - `--write`, `-w`  Write output files (`.sql`, `schema.yml`) to `TARGET_PATH`. If omitted, prints model SQL and YAML to stdout (dry-run).
-  - `--ref-overrides`  Comma-separated mapping for table names to dbt refs.  
-      Format: `original1:override1,original2:override2`  
-      Useful for renaming sources or intermediate tables in dbt.
   - `--help`  Show usage and options.
 
 
-* Some examples
+* Migrate a folder with a lot of shift_left SQL ddl and dml.
   ```sh
   # Dry-run
-  uv run python -m flink_dbt_migrate.migrate_dml_to_dbt ../04-joins/cc-flink/dml.enriched_orders.sql ../04-joins/cc_dbt/models/intermediates/enriched_orders 
+   uv run flink_dbt_migrate/migrate_dml_to_dbt.py migrate-sl-folder ~/Documents/Code/flink_project_demos/customer_360/c360_flink_processing/pipelines ../tmp --write
+  ```
 
-  # Write model and schema YAML (force rewrite)
+* Write model and schema YAML (force rewrite)
+  ```sh
   uv run python -m flink_dbt_migrate.migrate_dml_to_dbt dml.rolling_features.sql models/intermediates/rolling_features --write --force
+  ```
 
-  # Provide a DDL for schema extraction
+* Provide a DDL for schema extraction
+  ```sh
   uv run python -m flink_dbt_migrate.migrate_dml_to_dbt ../04-joins/cc-flink/dml.enriched_orders.sql ../04-joins/cc_dbt/models/intermediates/enriched_orders --ddl-file ../04-joins/cc-flink/ddl.enriched_orders.sql    --write --force
+  ```
 
-  # Override a ref name for dbt source resolution
+* Override a ref name for dbt source resolution
+  ```sh
   uv run python -m flink_dbt_migrate.migrate_dml_to_dbt dml.rolling_features.sql models/intermediates/rolling_features --write --ref-overrides events:src_events
+  ```
 
-  # Override DDL discovery or ref() mapping
+* Override DDL discovery or ref() mapping
+  ```sh
   uv run python  -m flink_dbt_migrate.migrate_dml_to_dbt \
     ../10-windowing/tumble_then_hop_rolling/dml.rolling_features.sql \
     ../../dbt/airbnb_streaming/models/intermediates/ \
     --ddl-file ../10-windowing/tumble_then_hop_rolling/ddl.rolling_features.sql \
     --ref-table events=src_events \
     --write
+  ```
 
-  # Validate migration with dbt compile (compare query body + reconstructed INSERT)
+* Validate migration with dbt compile (compare query body + reconstructed INSERT)
+  ```sh
   uv sync --extra validate
   uv run python -m flink_dbt_migrate.migrate_dml_to_dbt \
       ../04-joins/cc-flink/dml.enriched_orders.sql \

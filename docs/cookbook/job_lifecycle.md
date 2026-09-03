@@ -54,6 +54,7 @@ There is only yaml manifest to deploy application that will take into account en
 
 * For end-to-end validation of CP Flink with the employee demo, see [code/flink-sql/00-basic-sql](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/00-basic-sql#readme.md#confluent-platform-for-flink-on-kubernetes) and run `cp_flink_employees_demo.py`.
 
+* See the [how to guide - Resolve common query problems.](https://docs.confluent.io/cloud/current/flink/how-to-guides/resolve-common-query-problems.html)
 ## 2- Understanding the Flink UI
 
 #### Context
@@ -94,11 +95,11 @@ Once a Flink query is deployed and run 'forever', how to change it? to fix issue
 
 ### Statement Evolution Context
 
-The general strategy for query evolution is to replace the existing statement and the corresponding tables it maintains with a new statement and new tables. The process is described in [this product chapter](https://docs.confluent.io/cloud/current/flink/concepts/schema-statement-evolution.html#query-evolution) and should be viewed within two folds depending of stateless or statefulness of the statement. The initial state of the process involves a pipeline of Flink SQL statements and consumers processing Kafka records from various topics. 
+The general strategy for query evolution is to replace the existing statement and the corresponding tables it maintains with a new statement and new tables. The process is described in [this Confluent Cloud product documentation](https://docs.confluent.io/cloud/current/flink/concepts/schema-statement-evolution.html#query-evolution) and should be viewed within two folds depending of stateless or statefulness of the statement. The initial state of the process involves a pipeline of Flink SQL statements and consumers processing Kafka records from various topics. 
 
 By principles any Flink DAG code is immutable, so statement needs to be stopped and a new version started! This is not as simple as it may look, as there will be impacts to any non-idempotent consumers. 
 
-The Flink SQL statements has limited parts that are mutables. See the [Confluent Cloud product documentation for details](https://docs.confluent.io/cloud/current/flink/concepts/schema-statement-evolution.html).  In Confluent Cloud the principal name and compute pool metadata are mutable when stopping and resuming the statement. Developers may stop and resume a statement using Console, CLI, API or even Terraform scripts.
+The Flink SQL statements has limited parts that are mutables. In Confluent Cloud the principal name and compute pool metadata are mutable when stopping and resuming the statement. Developers may stop and resume a statement using Console, CLI, API or even Terraform scripts.
 
 Here are example using confluent cli:
 
@@ -718,8 +719,6 @@ The following figures represents the different components for performance testin
 === "Confluent Platform/ Flink OSS - SQL"
     ![](./diagrams/k8s-flink-sql-perf-test.drawio.png)
 
-
-
 #### The following baseline abacus are used
 
 * Typical Flink node configuration:
@@ -850,7 +849,7 @@ Revert memory and network settings; redeploy from savepoint if required.
 
 ## 8- Common Incident Recipes
 
-See Confluent Product documentation for [troubleshoot Flink SQL statements](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/query-profiler.html#troubleshoot-flink-sql-statements).
+See Confluent Product documentation for [troubleshoot Flink SQL statements](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/query-profiler.html#troubleshoot-flink-sql-statements) and [how to guide - Resolve common query problems.](https://docs.confluent.io/cloud/current/flink/how-to-guides/resolve-common-query-problems.html)
 
 ### 8.1 Job stuck in “restarting” or “failing” loop.
 #### Context

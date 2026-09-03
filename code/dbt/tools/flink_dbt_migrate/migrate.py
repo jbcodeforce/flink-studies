@@ -42,6 +42,7 @@ def migrate_dml_to_dbt(
     source_project_dir: Path | None = None,
     source_name: str | None = None,
     resolve_sources: bool = True,
+    upstream_ddl_map: dict[str, Path] | None = None,
 ) -> MigrationResult:
     statement_path = Path(statement_file).resolve()
     target_path = Path(target_dir).resolve()
@@ -73,6 +74,7 @@ def migrate_dml_to_dbt(
         ref_overrides=ref_overrides,
         source_name=resolved_source_name,
         resolve_sources=resolve_sources,
+        upstream_ddl_map=upstream_ddl_map,
     )
 
     model_sql = emit_model_sql(

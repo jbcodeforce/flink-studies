@@ -797,6 +797,14 @@ The [code/dbt/tools](https://github.com/jbcodeforce/flink-studies/tree/master/co
     ```
 
 
+???+ question "How to specify compute pool?"
+    Setting a default compute pool is set in the connection definition in `profile.yml`. It is possible to define this at the model level using compute_pool in config element.
+    ```yaml
+    models:
+      - name: my_heavy_model
+        config:
+          compute_pool: "my-large-pool"
+    ```
     
 ???+ handson "Seed reference data on Confluent Cloud for Flink"
     The [airbnb_streaming](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/airbnb_streaming) project loads small reference CSVs into Flink tables with `dbt seed`. The dbt-confluent adapter infers column types from the CSV (via agate) and issues `CREATE TABLE` followed by `INSERT INTO ... VALUES`. Override types in `seeds/seeds.yml` when inference is too coarse (e.g. map date strings to `DATE`).

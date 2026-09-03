@@ -6,8 +6,6 @@ This folder includes different dbt studies. This is coupled with the [dbt chapte
 * `airbnb_streaming` is the same implementation using dbt and dbt adapter for Confluent Cloud for Flink [dbt-confluent](#with-dbt-confluent---flink_workshop-project) demonstration. 
 * Finally `flink_workshop` folder includes a pure Flink workshop ported to dbt (see [this later section](#with-dbt-confluent---flink_workshop-project)).
 
-UNDER CONSTRUCTION : updated 08/25/2026
-
 ### Tracking
 
 - [x] AirBnb with duckdb, main SQLs 
@@ -459,9 +457,9 @@ Therefore I see two needs:
 1. having a tool that processes Flink SQL as created in the workspace, but saved in a git repository, and deploy the statements by layer or hierarchical pipeline, taking into account what is running. This is the goal of [shift_left utils](https://jbcodeforce.github.io/shift_left_utils) or the [cc_deploy/deploy_flink_statements.py](../flink-sql/tools/cc_deploy/deploy_flink_statements.py)
 1. having a tool to take an existing Flink SQL and transform it for dbt with schema definition and test. This is [flink_dbt_migrate](../flink-sql/tools/flink_dbt_migrate/) tool.
 
-### Migrate existing Flink DML to dbt models
+### Migrate existing shift_left Flink project to dbt models
 
-Use [code/flink-sql/tools/migrate_dml_to_dbt](../flink-sql/tools/migrate_dml_to_dbt) to convert demo `dml.*.sql` files into dbt models with matching `schema.yml` column types from the paired `ddl.*.sql`. 
+Use [code/dbt/tools/flink_dbt_migrate](../tools/flink_dbt_migrate) to convert demo `dml.*.sql` files into dbt models with matching `schema.yml` column types from the paired `ddl.*.sql`. 
 
 ### Gap analysis with shift_left utils CLI - 07/02/2026
 

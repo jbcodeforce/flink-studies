@@ -1,0 +1,39 @@
+{
+  "user_agent": "cc-sql-tools/0.1",
+  "groups": {
+    "pipeline": [
+      {
+        "name": "02dedup-00-ddl-source",
+        "file": "00_ddl_source.sql"
+      },
+      {
+        "name": "02dedup-01-ddl-sink-buggy",
+        "file": "01_ddl_sink_buggy.sql"
+      },
+      {
+        "name": "02dedup-02-ddl-sink-safe",
+        "file": "02_ddl_sink_safe.sql"
+      },
+      {
+        "name": "02dedup-05-proof-v3-retract-frankenstein",
+        "file": "05_proof_v3_retract_frankenstein.sql"
+      },
+      {
+        "name": "02dedup-06-dml-buggy",
+        "file": "06_dml_buggy.sql"
+      },
+      {
+        "name": "02dedup-07-dml-safe",
+        "file": "07_dml_safe.sql"
+      }
+    ]
+  },
+  "deploy_all": [
+    "pipeline"
+  ],
+  "undeploy_all": [
+    "pipeline"
+  ],
+  "drop_tables": [],
+  "drop_statement_prefix": "cc-flink-drop"
+}

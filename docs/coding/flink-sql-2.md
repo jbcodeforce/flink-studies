@@ -231,6 +231,15 @@ When summitting statement via the REST API, the mode is set via spec properties.
 
 Flink automatically switches to batch mode processing. Snapshot queries use read-committed as the default isolation level, which aligns with Kafka’s exactly-once semantics (EOS).
 
+### Confluent [bootstrap query]()
+
+Flink has the [HybridSource](https://nightlies.apache.org/flink/flink-docs-stable/docs/connectors/datastream/hybridsource/) capability to sequentially read input from heterogeneous sources to produce a single input stream. A typical use case is to read days of data from S3 bucket and then continue to consume streaming data from Kafka. The historical records source needs to be bounded. 
+
+* This should be set in a with property
+```sql
+
+```
+
 ### Deduplication
 
 Deduplication will occur on `upsert` table with primary key: the last records per `$rowtime` or other timestamp will be kept. When the source table is in `append` mode, the approach is to use the [ROW_NUMBER()](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/#aggregate-functions) combined with [OVER()](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/over-agg/):
@@ -275,6 +284,10 @@ select *  FROM (
 ```
 
 * It is important to note that developers should not assume if deduplication is done in CTE, follow up operation may not introduce duplicates. For example, a `CROSS JOIN UNNEST` (or any fan-out) multiplies rows. If the fan-out logic or join keys are not unique, you can create multiple identical final records per primary key. Using `GROUP BY` may help but it has to be done on the same key. It may be relevant to add a second dedup close to the final sink, on the final primary key for that sink. So try to dedup early to make upstream analytics sane. And after any fan-out / UNNEST / joins that can introduce duplicates, dedup again immediately before writing the final table.
+
+???- info "The Frankenstein rows"
+    The dimension deduplication pattern above may produce "Frankenstein rows" — output rows whose column values are silently blended from different source rows, violating row integrity.
+    [See this dedicated lab to assess the type of queries that may generate those rows](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/02-deduplication)
 
 ### Transformation
 
@@ -743,7 +756,7 @@ The source topic should be in append mode because over-window aggregation does n
 
 When statements do not have any event-time operation, it can safely  be ignored late. Nothing will be dropped.
 
-The task/operator metric `numLateRecordsDropped` counts the records dropped for being late by these operators
+The task/operator metric `numLateRecordsDropped` counts the records dropped for being late by these operators.
 
 [Confluent Cloud for Flink](https://docs.confluent.io/cloud/current/flink/how-to-guides/handle-late-arriving-data.html) offers a setting: [`'late-handling.mode' = 'filter'`](https://docs.confluent.io/cloud/current/flink/how-to-guides/handle-late-arriving-data.html#configure-late-data-filtering), to drop or filter out events that fall behind the defined watermark. Two modes supported: pass-through, filter. With path-through the Flink operators will apply thei own semantic to manage late events, which may lead to drop.
 
@@ -945,7 +958,7 @@ The pattern is better implemented in a separate topic, to avoid having records t
         FROM heartbeat
     )
     ```
-* Implement the windowing or other temporal operations on the CTE
+* Implement the windowing or other temporal operations on the CTE, and remove the heartbeat record.
     ```sql
     SELECT * 
     FROM (

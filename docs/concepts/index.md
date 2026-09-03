@@ -582,7 +582,7 @@ ALTER TABLE <table_name> DROP _part;
 
 *This section assumes familiarity with SQL, joins, and stateful processing. It lives in the concepts chapter because it does not fit neatly elsewhere.*
 
-When dealing with large-scale datasets and state, keys used for upserts, joins, or aggregations may be subject to data skew.
+When dealing with large-scale datasets and state, keys used for upserts, joins, or aggregations may be subject to [data skew](https://docs.confluent.io/cloud/current/flink/how-to-guides/resolve-common-query-problems.html#troubleshoot-data-skew).
 Hot keys are routed to the same Flink subtask. Those operator instances receive most of the records while others stay idle. Scaling the number of TaskManagers does not help if most records still go to the same task. 
 
 It is important to compute the number of keys found in left and right tables. NULL key may be found, and may be also very common. 

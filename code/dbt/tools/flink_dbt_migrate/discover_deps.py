@@ -135,8 +135,10 @@ def resolve_upstream_deps(
     ref_overrides: dict[str, str] | None = None,
     source_name: str | None = None,
     resolve_sources: bool = True,
+    upstream_ddl_map: dict[str, Path] | None = None,
 ) -> list[UpstreamDep]:
     ref_overrides = ref_overrides or {}
+    upstream_ddl_map = upstream_ddl_map or {}
     cte_names = collect_cte_names(dml.body)
     upstream_tables = collect_upstream_tables(dml.body, cte_names)
     resolved_source_name = source_name or default_source_name(source_project_dir)
@@ -184,7 +186,11 @@ def resolve_upstream_deps(
             )
             continue
 
-        ddl_path = discover_upstream_ddl(source_project_dir, table_name)
+        # Use pipeline_definition.json index first, fall back to filesystem scan
+        if table_name in upstream_ddl_map:
+            ddl_path = upstream_ddl_map[table_name]
+        else:
+            ddl_path = discover_upstream_ddl(source_project_dir, table_name)
         ddl = parse_ddl(ddl_path.read_text(encoding="utf-8"))
         deps.append(
             UpstreamDep(

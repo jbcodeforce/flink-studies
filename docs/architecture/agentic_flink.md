@@ -146,6 +146,8 @@ Lilian Weng’s agent survey [via this summary](https://jbcodeforce.github.io/ML
 <figcaption>EDA for agents: services publish facts; stream processors derive features and triggers; agent runtimes and tools sit behind clear contracts, often with multiple consumer groups and replays for test.</figcaption>
 </figure>
 
+The event-driven agent may be implemented using Apache Flink for stateful aggregation, data transformation and filtering to prepare a relevant and fresh context to the LLM. The agent remote call the inference endpoint.  
+
 With Kafka, you can replay a time range to reproduce why a probabilistic model behaved a certain way, usually easier than re-building a one-off batch extract for the same question.
 
 LLMs are not the only implementation: classic ML scoring, calibrated rules, and NN models all have a place, depending on cost and risk.
@@ -154,29 +156,6 @@ LLMs are not the only implementation: classic ML scoring, calibrated rules, and 
 
 The following pattern appears throughout this book: ingest events, derive time-bounded state, optionally score with cheap models, then optionally call expensive tools or LLMs, and emit downstream facts (also durable on Kafka) for other agents and systems.
 
-```mermaid
-flowchart LR
-  subgraph ingest [Ingest]
-    A[Event sources]
-  end
-  subgraph flink [Stream processing]
-    B[State and windows]
-    C[Pre-filter ML or rules]
-  end
-  subgraph ai [Model and tools]
-    D[LLM or remote inference]
-  end
-  subgraph out [Outcomes]
-    E[Downstream topic or API]
-  end
-  A --> B
-  B --> C
-  C -->|Escalation only| D
-  C --> E
-  D --> E
-```
-
-Checkpointing and Kafka groups are where you get progress and reprocessing semantics: design idempotent sinks and dedupe where at-least-once delivery is possible.
 
 ## Technologies
 
@@ -195,7 +174,7 @@ Confluent’s stream processing and governance offerings help you build event-dr
 [Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/ai/overview.html) combines, at a high level:
 
 1. **Built-in ML in SQL:** [model-oriented functions](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html) for anomaly detection, forecasting, and similar use cases, with downstream routing to topics or agents.
-2. **Streaming agents:** [Streaming Agents](https://docs.confluent.io/cloud/current/ai/overview.html) run as Flink-backed, stateful units with timers and replay-friendly testing story (see Confluent docs for current limits and regions).
+2. **Streaming agents:** [Streaming Agents](https://docs.confluent.io/cloud/current/ai/streaming-agents/overview.html) run as Flink-backed, stateful units with timers and replay-friendly testing story (see Confluent docs for current limits and regions).
 3. **Real-time Context Engine:** can expose governed, materialized data to other apps, in some flows via MCP, so not every team must hand-wire Kafka details. It is enabled at a topic level. 
   ![](./images/ctx_engine_topic.png)
 
@@ -206,6 +185,7 @@ Layers Confluent often highlights:
 * **Real-time processing:** Kafka paired with Flink, with [ML](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html) and [preprocessing](https://docs.confluent.io/cloud/current/flink/reference/functions/ml-preprocessing-functions.html) helpers in SQL, including [anomaly detection](https://docs.confluent.io/cloud/current/ai/builtin-functions/detect-anomalies.html) using ARIMA-style and MAD algorithms.
 
 * [Anomaly detection predefined function for Flink processing](https://docs.confluent.io/cloud/current/ai/builtin-functions/detect-anomalies.html):
+
     * Detect anomalies in your data using a forecasting model based on Autoregressive Integrated Moving Average (ARIMA). - ML_DETECT_ANOMALIES
     * Detect univariate and multivariate anomalies in your data by using Median Absolute Deviation (MAD) - ML_DETECT_ANOMALIES_ROBUST 
     * Detect anomalies in time-series data using model-based inference with foundation models like TimesFM - AI_DETECT_ANOMALIES uses models that are managed by Confluent and hosted in Confluent Cloud.
@@ -219,7 +199,7 @@ Other agent protocols (for product integration) include [Google A2A](https://dev
 
 #### Quick demonstration (Confluent Cloud)
 
-`CREATE MODEL`, `CREATE TOOL`, and `CREATE AGENT` are Confluent Cloud Flink SQL features. They are not part of plain open-source Apache Flink. You need a Confluent Cloud environment, and the right accesses.
+`CREATE MODEL`, `CREATE TOOL`, and `CREATE AGENT` are Confluent Cloud Flink SQL features to define streaming agents. They are not part of plain open-source Apache Flink. You need a Confluent Cloud environment, and the right accesses.
 
 Typical order of operations in the Console or SQL workspace:
 
@@ -241,7 +221,7 @@ CREATE AGENT support_triage_agent
   );
 ```
 
-This repository’s SQL tutorials that run on Confluent are under [code/flink-sql/12-ai-agents](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/12-ai-agents) (for example anomaly gating). The local Apache Flink Agents path is under [e2e-demos/agentic-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/agentic-demo).
+The [code/flink-sql/12-ai-agents](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/12-ai-agents) includes an example of anomaly gating. The local Apache Flink Agents demo is under [e2e-demos/agentic-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/agentic-demo).
 
 ### Confluent Cloud - MCP Server
 

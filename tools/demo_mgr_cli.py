@@ -21,6 +21,7 @@ class ProjectType(str, enum.Enum):
 
 class PlatformType(str, enum.Enum):
     ccf = "cc-flink"
+    ccdbt = "cc-dbt"
     oss = "oss"
     cpf = "cp-flink"
     all = "all"
@@ -39,7 +40,7 @@ def init(
         typer.Option(
             help=(
                 "'e2e': Folder tree for e2e demo, which include IaC. "
-                "'study': t."
+                "'study': study in flink-sql or other path."
             ),
         ),
     ] = ProjectType.study,
@@ -67,9 +68,11 @@ def init(
             _write(project_root / "cp-flink" / ".gitkeep", "")
         case PlatformType.oss:
             _write(project_root / "oss" / ".gitkeep", "")
-        case PlatformType.cc_flink:
+        case PlatformType.ccf:
             _write(project_root / "cc-flink" / ".gitkeep", "")
-        case PlatformType.cp_flink:
+        case PlatformType.ccdbt:
+            _write(project_root / "cc-dbt" / "".gitkeep", "")
+        case PlatformType.cpf:
             _write(project_root / "cp-flink" / ".gitkeep", "")
     if project_type == ProjectType.e2edemo:
         _write(project_root / "IaC" / ".gitkeep", "")

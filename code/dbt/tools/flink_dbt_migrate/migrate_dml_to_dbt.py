@@ -3,7 +3,10 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Annotated
 
@@ -11,7 +14,7 @@ import typer
 
 from flink_dbt_migrate.compare_sql import compare_migration, format_compare_report
 from flink_dbt_migrate.migrate import migrate_dml_to_dbt
-from flink_dbt_migrate.parse_dml import parse_dml
+from flink_dbt_migrate.parse_dml import discover_ddl_path, parse_dml
 from flink_dbt_migrate.temp_write import begin_temp_write, restore_temp_write
 from flink_dbt_migrate.validate_compile import (
     DbtCompileError,
@@ -20,6 +23,116 @@ from flink_dbt_migrate.validate_compile import (
     validate_compiled_migration,
 )
 
+app = typer.Typer(add_completion=False)
+
+
+# ---------------------------------------------------------------------------
+# Pipeline folder crawler
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class TableEntry:
+    """A single table discovered inside a shift_left pipeline folder."""
+
+    table_name: str
+    dml_path: Path
+    ddl_path: Path
+    dml_sha256: str
+    relative_path: Path  # path from pipeline root to the table's parent dir
+    # table_name → absolute DDL path for upstream tables, sourced from pipeline_definition.json
+    upstream_ddl_map: dict[str, Path] = field(default_factory=dict)
+
+
+def _upstream_ddl_map_from_pipeline_def(
+    table_dir: Path,
+    pipelines_root: Path,
+) -> dict[str, Path]:
+    """Read pipeline_definition.json and return {table_name: abs_ddl_path} for all parents."""
+    pipeline_def = table_dir / "pipeline_definition.json"
+    if not pipeline_def.is_file():
+        return {}
+    try:
+        data = json.loads(pipeline_def.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+    ddl_map: dict[str, Path] = {}
+    for parent in data.get("parents", []):
+        name = parent.get("table_name", "")
+        ddl_ref = parent.get("ddl_ref", "")
+        if name and ddl_ref:
+            abs_ddl = (pipelines_root / ddl_ref).resolve()
+            if abs_ddl.is_file():
+                ddl_map[name] = abs_ddl
+    return ddl_map
+
+
+def _find_pipelines_root(folder: Path) -> Path:
+    """Walk up from *folder* to find the directory that contains a 'pipelines/' sub-tree.
+
+    Falls back to *folder* itself if no such ancestor is found.
+    """
+    current = folder.resolve()
+    for ancestor in [current, *current.parents]:
+        if (ancestor / "pipelines").is_dir():
+            return ancestor
+    return current
+
+
+def crawl_pipeline_folder(folder: Path) -> list[TableEntry]:
+    """Recursively walk *folder* and return one TableEntry per discoverable table.
+
+    A table is discoverable when:
+    - a ``sql_scripts/`` subdirectory exists, AND
+    - at least one ``dml.*.sql`` file is present, AND
+    - a matching ``ddl.*.sql`` can be resolved via the standard discovery rules.
+
+    Tables whose DDL cannot be found are skipped with a warning on stderr.
+    Upstream DDL paths are resolved from ``pipeline_definition.json`` when present.
+    """
+    folder = folder.resolve()
+    pipelines_root = _find_pipelines_root(folder)
+
+    entries: list[TableEntry] = []
+    for sql_scripts_dir in sorted(folder.rglob("sql-scripts")):
+        if not sql_scripts_dir.is_dir():
+            continue
+        table_dir = sql_scripts_dir.parent
+        upstream_ddl_map = _upstream_ddl_map_from_pipeline_def(table_dir, pipelines_root)
+
+        for dml_file in sorted(sql_scripts_dir.glob("dml.*.sql")):
+            try:
+                dml_text = dml_file.read_text(encoding="utf-8")
+                dml = parse_dml(dml_text, source_file=dml_file.name)
+                ddl_file_path = Path(
+                    discover_ddl_path(str(dml_file), dml.target_table)
+                )
+            except FileNotFoundError as exc:
+                typer.echo(f"WARNING: skipping {dml_file.name} — {exc}", err=True)
+                continue
+            except ValueError as exc:
+                typer.echo(f"WARNING: skipping {dml_file.name} — {exc}", err=True)
+                continue
+
+            sha256 = hashlib.sha256(dml_file.read_bytes()).hexdigest()
+            # relative_path: from folder root to the table directory (parent of sql_scripts)
+            relative_path = table_dir.relative_to(folder)
+            entries.append(
+                TableEntry(
+                    table_name=dml.target_table,
+                    dml_path=dml_file,
+                    ddl_path=ddl_file_path,
+                    dml_sha256=sha256,
+                    relative_path=relative_path,
+                    upstream_ddl_map=upstream_ddl_map,
+                )
+            )
+    return entries
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 def parse_ref_table(value: str) -> tuple[str, str]:
     if "=" not in value:
@@ -100,6 +213,98 @@ def run_validate(
         raise typer.Exit(1)
 
 
+# ---------------------------------------------------------------------------
+# CLI commands
+# ---------------------------------------------------------------------------
+
+@app.command()
+def migrate_sl_folder(
+    pipeline_dir: Annotated[
+        Path,
+        typer.Argument(help="Shift-left pipelines folder (or sub-folder) to crawl"),
+    ],
+    dbt_project_dir: Annotated[
+        Path,
+        typer.Argument(help="dbt project root; models are written under models/"),
+    ],
+    write: Annotated[
+        bool,
+        typer.Option("--write", help="Write output files (default: dry-run)"),
+    ] = False,
+    force: Annotated[
+        bool,
+        typer.Option("--force", help="Overwrite existing models and schema.yml entries"),
+    ] = False,
+    materialized: Annotated[
+        str,
+        typer.Option("--materialized", help="dbt materialization (default: streaming_table)"),
+    ] = "streaming_table",
+) -> None:
+    """Crawl a shift-left pipelines folder and migrate every table to dbt.
+
+    Each table must have a ``sql_scripts/`` directory containing ``ddl.{table}.sql``
+    and ``dml.{table}.sql``.  The source hierarchy is mirrored into the dbt project:
+
+        pipelines/dimensions/customer/  →  dbt_project/models/dimensions/customer/
+    """
+    pipeline_dir = pipeline_dir.resolve()
+    dbt_project_dir = dbt_project_dir.resolve()
+
+    if not pipeline_dir.is_dir():
+        typer.echo(f"Pipeline directory not found: {pipeline_dir}", err=True)
+        raise typer.Exit(1)
+
+    typer.echo(f"Crawling {pipeline_dir} ...")
+    entries = crawl_pipeline_folder(pipeline_dir)
+
+    if not entries:
+        typer.echo("No tables discovered (no sql_scripts/ directories with dml.*.sql found).")
+        raise typer.Exit(0)
+
+    # Print inventory
+    typer.echo(f"\nDiscovered {len(entries)} table(s):")
+    col = max(len(e.table_name) for e in entries)
+    for e in entries:
+        typer.echo(f"  {e.table_name:<{col}}  sha256={e.dml_sha256[:12]}…  ({e.relative_path})")
+    typer.echo("")
+
+    if not write:
+        typer.echo("Dry-run mode — pass --write to generate dbt model files.")
+        raise typer.Exit(0)
+
+    models_root = dbt_project_dir / "models"
+    migrated = 0
+    failures: list[tuple[str, str]] = []
+
+    for entry in entries:
+        target_dir = models_root / entry.relative_path
+        try:
+            result = migrate_dml_to_dbt(
+                entry.dml_path,
+                target_dir,
+                ddl_file=entry.ddl_path,
+                materialized=materialized,
+                force=force,
+                upstream_ddl_map=entry.upstream_ddl_map,
+            )
+            target_dir.mkdir(parents=True, exist_ok=True)
+            result.model_path.write_text(result.model_sql, encoding="utf-8")
+            result.schema_path.write_text(result.schema_yml, encoding="utf-8")
+            typer.echo(f"  ✓  {entry.table_name}: wrote {result.model_path.relative_to(dbt_project_dir)}")
+            if result.sources_yml is not None and result.sources_path is not None:
+                result.sources_path.parent.mkdir(parents=True, exist_ok=True)
+                result.sources_path.write_text(result.sources_yml, encoding="utf-8")
+            migrated += 1
+        except Exception as exc:  # noqa: BLE001
+            failures.append((entry.table_name, str(exc)))
+            typer.echo(f"  ✗  {entry.table_name}: {exc}", err=True)
+
+    typer.echo(f"\n{migrated} migrated, {len(failures)} failed.")
+    if failures:
+        raise typer.Exit(1)
+
+
+@app.command()
 def migrate(
     statement_file: Annotated[
         Path,
@@ -316,10 +521,6 @@ def migrate(
             sources_path=result.sources_path,
             sources_yml=result.sources_yml,
         )
-
-
-app = typer.Typer(add_completion=False)
-app.command()(migrate)
 
 
 if __name__ == "__main__":

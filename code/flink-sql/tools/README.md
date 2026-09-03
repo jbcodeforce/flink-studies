@@ -118,23 +118,6 @@ make drop-tables   # drop tables only
 
 Demo Makefiles delegate to `tools/Makefile` with `SQL_DIR` set to the demo path.
 
-### Library API
-
-The deployment tool is also a set of components within a python library that can be reused. Import from `cc_deploy` for custom scripts:
-
-```python
-from pathlib import Path
-from cc_deploy import get_config, load_manifest, deploy_statements, full_undeploy
-
-manifest = load_manifest(Path("deploy_manifest.json"))
-deploy_statements(
-    manifest.statements_for("ddl"),
-    sql_dir=Path("."),
-    config=get_config(),
-    user_agent=manifest.user_agent,
-)
-full_undeploy(manifest, config=get_config())
-```
 
 ### Custom groups
 
@@ -162,9 +145,25 @@ make deploy-op_ddl
 
 Add a custom group to `undeploy_all` if its statements should be stopped during full teardown.
 
+### Library API
+
+The deployment tool is also a set of components within a python library that can be reused. Import from `cc_deploy` for custom scripts:
+
+```python
+from pathlib import Path
+from cc_deploy import get_config, load_manifest, deploy_statements, full_undeploy
+
+manifest = load_manifest(Path("deploy_manifest.json"))
+deploy_statements(
+    manifest.statements_for("ddl"),
+    sql_dir=Path("."),
+    config=get_config(),
+    user_agent=manifest.user_agent,
+)
+full_undeploy(manifest, config=get_config())
+```
+
 --- 
-
-
 
 ## Snapshot query
 

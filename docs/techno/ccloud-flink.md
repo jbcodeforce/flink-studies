@@ -343,7 +343,7 @@ All Flink tables have `error-handling.mode` as a table option, with the default 
     ```
 
 
-## Networking overview
+## Networking Overview
 
 [See the product documentation for managing Networking on Confluent Cloud.](https://docs.confluent.io/cloud/current/networking/overview.html) 
 
@@ -362,21 +362,29 @@ Kafka clusters have the following properties:
 
 * PLATT is independant of the network type: PrivateLink, VPC peering or transit GTW.
 
-## Autopilot
+## Autopilot / auto-scaling
 
-[Autopilot](https://docs.confluent.io/cloud/current/flink/concepts/autopilot.html) automatically scales up and down compute pool resources needed by SQL statements. It uses the property of parallelism for operator to be able to scale up and down. `SELECT` always runs a parallelism of 1. Only `CREATE TABLE AS`, `INSERT INTO` and `EXECUTE STATEMENT SET` are considered by Autopilot for scaling. Global aggregate are not parallelized. The main goal of the auto scaler is to maintain optimum  throughput and number of resources (or CFUs). 
+[Autopilot](https://docs.confluent.io/cloud/current/flink/concepts/autopilot.html) automatically scales up and down compute pool resources needed by SQL statements. It uses the property of parallelism for operator to be able to scale up and down. `SELECT` always runs a parallelism of 1. Only `CREATE TABLE AS`, `INSERT INTO` and `EXECUTE STATEMENT SET` are considered by Autopilot for scaling. Global aggregates are not parallelized. The main goal of the auto scaler is to maintain optimum  throughput and number of resources (or CFUs). 
 
-The SQL workspace reports the [scaling status](https://docs.confluent.io/cloud/current/flink/concepts/autopilot.html#scaling-status).  It is important that each job has a maximum parallelism, limited by the number of resource available. For source operators within a Flink DAG the limit is the number of  partitions in the input Kafka topics. 
+The SQL workspace reports the [scaling status](https://docs.confluent.io/cloud/current/flink/concepts/autopilot.html#scaling-status).  It is important that each job has a maximum parallelism, limited by the number of resource available. For source operators within a Flink DAG the limit is the number of  partitions in the input Kafka topics. Source operators run in a java thread, but this is not linked to the number of CFU.
 
 If there is some data skew and one operator is set with a parallel of 1 then there is no need to scale.
 
 When the compute pool is exhausted, try to add more CFU or stop some running statements to free up resources.
 
-The autoscaler is using historical metrics to take the decision to scale up. 3 to 4 minutes of data are needed. A job should scale up within minutes if the backlog is constantly growing, and scale down if there are no input data and the backlog. The interesting metrics is the pending records. The algorithm needs to take into account the pending records amount, the current processing capacity, the time to scale up, but also the input data rate, the output data rate for each operator in the DAG. There is no way updfront to estimate the needed capacity. This is why it is important to assess the raw input table/kafka size and avoid restarting the first Flink statements that are filtering, deduplicating records to reduce the number of messages to process downstream of the data pipeline.
+The autoscaler is using historical metrics to take the decision to scale up. 3 to 4 minutes of data are needed. A job should scale up within minutes if the backlog is constantly growing, and scale down if there are no input data and the backlog. To be more precise, once all the tasks within a DAG are running, the engine waits for one minute to get stable metrics, then get metrics over 3 minutes. From there decision to scale is computed, and checkpoint triggered if it needs to scale up or done. When checkpoint is done, scaling is executed. If checkpoint completion takes too long, autoscaling can be significantly delayed beyond.
+
+The metrics used are the pending records, `idle/backpressure/busyTimeMsPerSecond` and `numRecordsInPerSecond / numRecordsOutPerSecond`. The algorithm needs to take into account the pending records amount, the current processing capacity, the time to scale up, but also the input data rate, the output data rate for each operator in the DAG. 
+
+There is no way to estimate upfront the needed capacity. This is why it is important to assess the raw input table/kafka size and avoid restarting the first Flink statements that are filtering, deduplicating records to reduce the number of messages to the data pipeline downstream.
 
 Autopilot exposes the CFU usage in CFU minutes via the metrics API at the compute pool level.
 
-When multiple statements are in the same compute pool, new statement will not get resource until existing one scales down. Consider looking at Statement in Pending state and reallocated them to other compute pool. The total number of jobs is less than the CFU limit.
+When multiple statements are in the same compute pool, new statement will not get resource until existing ones scale down. Consider looking at Statement in Pending state and reallocated them to other compute pool. The total number of jobs should always be less than the CFU limit.
+
+Finally state size may also trigger scaling. Consider a rule of thumb to get 10GB per task manager, around 50GB per CFU so there is a soft limit to 500GB of state. [See detail in this documentation](https://docs.confluent.io/cloud/current/flink/concepts/autopilot.html#state-size). Statements are forcibly stopped if they exceed the soft limit of 500GB, but they can be resumed. Above 1,000 GB hard limit the statement fails and cannot resume. 
+
+[See also the statement size discussion.](https://docs.confluent.io/cloud/current/flink/concepts/statements.html#limits-on-state-size)
 
 ???- question "When a statement is not scaling up what can be done?"
         Consider looking at the CFU limit of the compute poolas it may has been reached. The Flink job may have reached it’s effective max parallelism, due to not enough Kafka topic partition from the input tables. Consider looking at the data skew, as a potential cause for scale-ups inefficiency. 
@@ -636,4 +644,4 @@ The [disaster recovery is addressed in the cookbook](../cookbook/cluster_mgt.md/
 
 * [Confluent Flink workshop](https://github.com/confluentinc/commercial-workshops/tree/master/series-getting-started-with-cc/workshop-flink) to learn how to build stream processing applications using Apache Flink® on Confluent Cloud.
 * [Shoe-store workshop](https://github.com/jbcodeforce/shoe-store) with Terraform and SQL demonstration using DataGen.
-* [SQL coding practices from this repo.](../coding/flink-sql-1.md) and [this](../coding/flink-sql-2.md).
+* [SQL coding practices from this repo.](../coding/flink-sql-1.md), [dml practice](../coding/flink-sql-2.md), [materialized table](../coding/flink-sql-3.md) and [advance topics](../coding/flink-sql-adv.md).
