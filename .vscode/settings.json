@@ -1,14 +1,25 @@
 {
     "java.configuration.updateBuildConfiguration": "automatic",
-    "python.defaultInterpreterPath": "${workspaceFolder}/code/flink-sql/07-2-raw-to-multiple-types/python/.venv/bin/python",
+
+    // ── Python interpreter ──────────────────────────────────────────────────
+    // The project-specific environment is selected via python-envs.pythonProjects below.
     "python.terminal.activateEnvironment": true,
-    "python.languageServer": "Jedi",
+
+    // Pylance is required for cross-file "Find References", "Go to Definition",
+    // rename, and hover-type information. Jedi only works within a single file.
+    "python.languageServer": "Pylance",
+
+    // Paths that Pylance's static analyser resolves imports from
     "python.analysis.extraPaths": [
+        "${workspaceFolder}/code/dbt/tools",
         "${workspaceFolder}/code/flink-sql/07-2-raw-to-multiple-types/python",
         "${workspaceFolder}/code/flink-sql/07-2-raw-to-multiple-types/python/producers",
         "${workspaceFolder}/code/flink-sql"
     ],
-    "jedi.extraPaths": [
+
+    // ── Pylance / Pyright (Cursor uses cursorpyright.*) ────────────────────
+    "cursorpyright.analysis.extraPaths": [
+        "${workspaceFolder}/code/dbt/tools",
         "${workspaceFolder}/code/flink-sql/07-2-raw-to-multiple-types/python",
         "${workspaceFolder}/code/flink-sql/07-2-raw-to-multiple-types/python/producers",
         "${workspaceFolder}/code/flink-sql"
@@ -28,16 +39,18 @@
     ],
     "cursorpyright.analysis.typeCheckingMode": "off",
     "cursorpyright.nodeMaxOldSpaceSize": 8192,
+
+    // ── Per-project venv registrations ─────────────────────────────────────
     "python-envs.pythonProjects": [
         {
-            "path": ".",
-            "envManager": "ms-python.python:system",
+            "path": "code/dbt/tools",
+            "envManager": "ms-python.python:venv",
+            "packageManager": "ms-python.python:pip"
+        },
+        {
+            "path": "code/flink-sql/07-2-raw-to-multiple-types/python",
+            "envManager": "ms-python.python:venv",
             "packageManager": "ms-python.python:pip"
         }
-    ],
-    "cursorpyright.analysis.extraPaths": [
-        "${workspaceFolder}/code/flink-sql/07-2-raw-to-multiple-types/python",
-        "${workspaceFolder}/code/flink-sql/07-2-raw-to-multiple-types/python/producers",
-        "${workspaceFolder}/code/flink-sql"
     ]
 }

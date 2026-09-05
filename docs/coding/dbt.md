@@ -885,6 +885,31 @@ The [code/dbt/tools](https://github.com/jbcodeforce/flink-studies/tree/master/co
       }}
       ```
 
+???+ info "Privatre networking / using endpoint"
+    For private networking it is recommended to set the `endpoint` parameter in the profile.yml. In this case you need to remove the prodiver and region:
+    ```yaml
+    cc_flink:
+    outputs:
+      dev:
+        endpoint: https://flink....aws.private.confluent.cloud
+        compute_pool_id: lfcp-11p88z
+        dbname: j9r-kafka
+        environment_id: '{{ env_var(''ENVIRONMENT_ID'') }}'
+        flink_api_key: '{{ env_var(''FLINK_API_KEY'') }}'
+        flink_api_secret: '{{ env_var(''FLINK_API_SECRET'') }}'
+        organization_id: '{{ env_var(''ORGANIZATION_ID'') }}'
+        statement_label: dbt-confluent
+        statement_name_prefix: dbt-
+        threads: 1
+        type: confluent
+    ```
+
+???+ question "NullConverter error"
+    The error is: "NullConverter cannot convert Python None to statement string directly. Use AnnotatedNull to specify the desired SQL type for NULL parameters."
+
+    The error NullConverter cannot convert Python None to statement string directly. Use AnnotatedNull to specify the desired SQL type for NULL parameters is thrown by dbt's seed compiler when it encounters an empty CSV cell (representing NULL) and cannot determine the SQL type to annotate it.
+
+
 ### Flink SQL Demos using dbt
 
 * [Jan's flink workshop ported to dbt](https://github.com/jbcodeforce/flink-studies/tree/main/code/dbt/flink_workshop)    

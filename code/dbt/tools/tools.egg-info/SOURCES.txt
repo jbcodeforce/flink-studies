@@ -14,6 +14,7 @@ flink_dbt_migrate/rewrite_refs.py
 flink_dbt_migrate/temp_write.py
 flink_dbt_migrate/type_map.py
 flink_dbt_migrate/validate_compile.py
+tests/test_compare_sql.py
 tests/test_migrate_dml_to_dbt.py
 tools.egg-info/PKG-INFO
 tools.egg-info/SOURCES.txt

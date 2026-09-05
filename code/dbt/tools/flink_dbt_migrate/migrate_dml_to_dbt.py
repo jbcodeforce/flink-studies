@@ -13,8 +13,16 @@ from typing import Annotated
 import typer
 
 from flink_dbt_migrate.compare_sql import compare_migration, format_compare_report
-from flink_dbt_migrate.migrate import migrate_dml_to_dbt
-from flink_dbt_migrate.parse_dml import discover_ddl_path, parse_dml
+from flink_dbt_migrate.migrate import (
+    migrate_dml_to_dbt,
+    migrate_values_dml_to_seed,
+)
+from flink_dbt_migrate.parse_dml import (
+    discover_ddl_path,
+    is_values_insert,
+    parse_dml,
+    parse_values_dml,
+)
 from flink_dbt_migrate.temp_write import begin_temp_write, restore_temp_write
 from flink_dbt_migrate.validate_compile import (
     DbtCompileError,
@@ -41,6 +49,7 @@ class TableEntry:
     relative_path: Path  # path from pipeline root to the table's parent dir
     # table_name → absolute DDL path for upstream tables, sourced from pipeline_definition.json
     upstream_ddl_map: dict[str, Path] = field(default_factory=dict)
+    is_seed: bool = False
 
 
 def _upstream_ddl_map_from_pipeline_def(
@@ -103,9 +112,13 @@ def crawl_pipeline_folder(folder: Path) -> list[TableEntry]:
         for dml_file in sorted(sql_scripts_dir.glob("dml.*.sql")):
             try:
                 dml_text = dml_file.read_text(encoding="utf-8")
-                dml = parse_dml(dml_text, source_file=dml_file.name)
+                is_seed = is_values_insert(dml_text)
+                if is_seed:
+                    target_table = parse_values_dml(dml_text, source_file=dml_file.name).target_table
+                else:
+                    target_table = parse_dml(dml_text, source_file=dml_file.name).target_table
                 ddl_file_path = Path(
-                    discover_ddl_path(str(dml_file), dml.target_table)
+                    discover_ddl_path(str(dml_file), target_table)
                 )
             except FileNotFoundError as exc:
                 typer.echo(f"WARNING: skipping {dml_file.name} — {exc}", err=True)
@@ -119,12 +132,13 @@ def crawl_pipeline_folder(folder: Path) -> list[TableEntry]:
             relative_path = table_dir.relative_to(folder)
             entries.append(
                 TableEntry(
-                    table_name=dml.target_table,
+                    table_name=target_table,
                     dml_path=dml_file,
                     ddl_path=ddl_file_path,
                     dml_sha256=sha256,
                     relative_path=relative_path,
                     upstream_ddl_map=upstream_ddl_map,
+                    is_seed=is_seed,
                 )
             )
     return entries
@@ -143,6 +157,66 @@ def parse_ref_table(value: str) -> tuple[str, str]:
     if not table or not model:
         raise typer.BadParameter(f"Expected TABLE=MODEL mapping, got: {value!r}")
     return table, model
+
+
+def run_migrate_seed(
+    statement_file: Path,
+    seeds_dir: Path,
+    *,
+    ddl_file: Path | None,
+    seed_name: str | None,
+    write: bool,
+    force: bool,
+    check: bool,
+) -> None:
+    try:
+        result = migrate_values_dml_to_seed(
+            statement_file,
+            seeds_dir,
+            ddl_file=ddl_file,
+            seed_name=seed_name,
+            force=force,
+        )
+    except (ValueError, FileNotFoundError) as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+
+    existing_csv = (
+        result.csv_path.read_text(encoding="utf-8") if result.csv_path.exists() else ""
+    )
+    existing_schema = (
+        result.schema_path.read_text(encoding="utf-8")
+        if result.schema_path.exists()
+        else ""
+    )
+    would_change = existing_csv != result.csv_text or existing_schema != result.schema_yml
+
+    if check and would_change:
+        typer.echo(
+            f"Output differs from {result.csv_path} / {result.schema_path}; run with --write",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    if write:
+        seeds_dir.mkdir(parents=True, exist_ok=True)
+        if result.csv_path.exists() and not force:
+            typer.echo(
+                f"Seed already exists: {result.csv_path} (use --force to overwrite)",
+                err=True,
+            )
+            raise typer.Exit(1)
+        result.csv_path.write_text(result.csv_text, encoding="utf-8")
+        result.schema_path.write_text(result.schema_yml, encoding="utf-8")
+        typer.echo(f"Wrote {result.csv_path}")
+        typer.echo(f"Wrote {result.schema_path}")
+        typer.echo(f"DDL source: {result.ddl_path}", err=True)
+    else:
+        print("# --- seed csv ---")
+        print(result.csv_text, end="")
+        print("# --- schema.yml ---")
+        print(result.schema_yml, end="")
+        print(f"# DDL source: {result.ddl_path}", file=sys.stderr)
 
 
 def run_validate(
@@ -178,6 +252,7 @@ def run_validate(
             if dbt_project_dir is not None
             else find_dbt_project(target_dir)
         )
+        typer.echo(f"Call validate for {project_dir} model: {model_name} in {dbt_target}")
         compile_result = validate_compiled_migration(
             project_dir,
             result_model_path,
@@ -273,10 +348,31 @@ def migrate_sl_folder(
         raise typer.Exit(0)
 
     models_root = dbt_project_dir / "models"
+    seeds_root = dbt_project_dir / "seeds"
     migrated = 0
     failures: list[tuple[str, str]] = []
 
     for entry in entries:
+        if entry.is_seed:
+            try:
+                seed_result = migrate_values_dml_to_seed(
+                    entry.dml_path,
+                    seeds_root,
+                    ddl_file=entry.ddl_path,
+                    force=force,
+                )
+                seeds_root.mkdir(parents=True, exist_ok=True)
+                seed_result.csv_path.write_text(seed_result.csv_text, encoding="utf-8")
+                seed_result.schema_path.write_text(seed_result.schema_yml, encoding="utf-8")
+                typer.echo(
+                    f"  ✓  {entry.table_name}: wrote {seed_result.csv_path.relative_to(dbt_project_dir)}"
+                )
+                migrated += 1
+            except Exception as exc:  # noqa: BLE001
+                failures.append((entry.table_name, str(exc)))
+                typer.echo(f"  ✗  {entry.table_name}: {exc}", err=True)
+            continue
+
         target_dir = models_root / entry.relative_path
         try:
             result = migrate_dml_to_dbt(
@@ -401,10 +497,36 @@ def migrate(
             help="Skip upstream source discovery; keep ref()-only rewrite",
         ),
     ] = False,
+    seed_name: Annotated[
+        str | None,
+        typer.Option(
+            "--seed-name",
+            help="Output seed name for INSERT INTO ... VALUES files "
+            "(default: INSERT INTO target table)",
+        ),
+    ] = None,
 ) -> None:
     if not statement_file.is_file():
         typer.echo(f"Statement file not found: {statement_file}", err=True)
         raise typer.Exit(1)
+
+    if is_values_insert(statement_file.read_text(encoding="utf-8")):
+        if validate:
+            typer.echo(
+                "--validate is not supported for INSERT INTO ... VALUES seeds",
+                err=True,
+            )
+            raise typer.Exit(1)
+        run_migrate_seed(
+            statement_file,
+            target_dir,
+            ddl_file=ddl_file,
+            seed_name=seed_name or model_name,
+            write=write,
+            force=force,
+            check=check,
+        )
+        return
 
     ref_overrides = dict(parse_ref_table(item) for item in ref_table)
     profiles_dir = dbt_profiles_dir.expanduser() if dbt_profiles_dir else None
@@ -471,7 +593,7 @@ def migrate(
             err=True,
         )
         raise typer.Exit(1)
-
+    typer.echo(f"result= {result}")
     if write:
         target_dir.mkdir(parents=True, exist_ok=True)
         if result.model_path.exists() and not force:

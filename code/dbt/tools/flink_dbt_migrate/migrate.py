@@ -11,9 +11,10 @@ from flink_dbt_migrate.discover_deps import (
 )
 from flink_dbt_migrate.emit_model import emit_model_sql
 from flink_dbt_migrate.emit_schema import emit_schema_yml
+from flink_dbt_migrate.emit_seed import emit_seed_csv, emit_seed_schema_yml
 from flink_dbt_migrate.emit_sources import SOURCES_YML_NAME, emit_sources_yml
 from flink_dbt_migrate.parse_ddl import parse_ddl
-from flink_dbt_migrate.parse_dml import discover_ddl_path, parse_dml
+from flink_dbt_migrate.parse_dml import discover_ddl_path, parse_dml, parse_values_dml
 from flink_dbt_migrate.validate_compile import find_dbt_project
 
 
@@ -111,4 +112,67 @@ def migrate_dml_to_dbt(
         sources_yml=sources_yml,
         sources_path=sources_path,
         upstream_tables=[dep.table_name for dep in upstream_deps],
+    )
+
+
+@dataclass(frozen=True)
+class SeedMigrationResult:
+    seed_name: str
+    csv_text: str
+    schema_yml: str
+    csv_path: Path
+    schema_path: Path
+    ddl_path: Path
+
+
+def migrate_values_dml_to_seed(
+    statement_file: str | Path,
+    seeds_dir: str | Path,
+    *,
+    ddl_file: str | Path | None = None,
+    seed_name: str | None = None,
+    force: bool = False,
+) -> SeedMigrationResult:
+    statement_path = Path(statement_file).resolve()
+    seeds_path = Path(seeds_dir).resolve()
+    dml_text = statement_path.read_text(encoding="utf-8")
+    values_dml = parse_values_dml(dml_text, source_file=statement_path.name)
+
+    resolved_seed_name = seed_name or values_dml.target_table
+    ddl_path = Path(
+        discover_ddl_path(
+            str(statement_path),
+            values_dml.target_table,
+            str(ddl_file) if ddl_file else None,
+        )
+    )
+    ddl = parse_ddl(ddl_path.read_text(encoding="utf-8"))
+
+    if values_dml.columns:
+        columns = values_dml.columns
+    else:
+        columns = [column.name for column in ddl.columns]
+        if values_dml.rows and len(values_dml.rows[0]) != len(columns):
+            raise ValueError(
+                f"INSERT INTO {values_dml.target_table} VALUES has "
+                f"{len(values_dml.rows[0])} values per row but the DDL declares "
+                f"{len(columns)} columns; provide an explicit column list"
+            )
+
+    csv_text = emit_seed_csv(columns, values_dml.rows)
+    schema_yml = emit_seed_schema_yml(
+        seeds_path,
+        resolved_seed_name,
+        ddl,
+        source_filename=statement_path.name,
+        force=force,
+    )
+
+    return SeedMigrationResult(
+        seed_name=resolved_seed_name,
+        csv_text=csv_text,
+        schema_yml=schema_yml,
+        csv_path=seeds_path / f"{resolved_seed_name}.csv",
+        schema_path=seeds_path / "schema.yml",
+        ddl_path=ddl_path,
     )

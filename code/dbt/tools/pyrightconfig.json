@@ -1,0 +1,18 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.12",
+  "pythonPath": ".venv/bin/python",
+  "extraPaths": [
+    "."
+  ],
+  "include": [
+    ".",
+    "flink_dbt_migrate"
+  ],
+  "exclude": [
+    ".venv",
+    "**/__pycache__"
+  ],
+  "typeCheckingMode": "off"
+}

@@ -5,15 +5,17 @@ from __future__ import annotations
 import re
 
 _SIMPLE_TYPES = {
-    "STRING": "string",
-    "INT": "int",
-    "INTEGER": "int",
-    "BIGINT": "bigint",
-    "BOOLEAN": "boolean",
-    "DATE": "date",
-    "FLOAT": "float",
-    "DOUBLE": "double",
-    "BYTES": "bytes",
+    "STRING": "VARCHAR",
+    "INT": "INT",
+    "INTEGER": "INT",
+    "BIGINT": "BIGINT",
+    "BOOLEAN": "BOOLEAN",
+    "DATE": "DATE",
+    "FLOAT": "FLOAT",
+    "DOUBLE": "DOUBLE",
+    "BYTES": "BYTES",
+    "TINYINT": "TINYINT",
+    "SMALLINT": "SMALLINT",
 }
 
 _TIMESTAMP_RE = re.compile(r"^TIMESTAMP\s*\(\s*(\d+)\s*\)$", re.IGNORECASE)
@@ -29,10 +31,10 @@ def flink_type_to_dbt(flink_type: str) -> str:
 
     timestamp_match = _TIMESTAMP_RE.match(normalized)
     if timestamp_match:
-        return f"timestamp({timestamp_match.group(1)})"
+        return f"TIMESTAMP({timestamp_match.group(1)})"
 
     decimal_match = _DECIMAL_RE.match(normalized)
     if decimal_match:
-        return f"decimal({decimal_match.group(1)}, {decimal_match.group(2)})"
+        return f"DECIMAL({decimal_match.group(1)}, {decimal_match.group(2)})"
 
-    return normalized.lower()
+    return normalized.upper()
