@@ -14,4 +14,17 @@ In Confluent Cloud load data from kafka topic or tableflow table, to load histor
 * Reading historical data from Iceberg table do not guaranty the record order (using kafka offset for example). This could affect correctness of query operator like LAST_VALUE, LAG, MATCH_RECOGNIZE. Event-Time dependent operators may experience latent results.
 * Reading historical data from Kafka, will keep offset ordering per partition.
 
+## Changelog PTF
+
+A changelog is a stream of row-level changes, where each record says whether a row was created, updated, or deleted. Some sources use their own format to carry the change operation. Confluent Cloud for Flink has now two PTF to control how to interpret and then produce changelog streams. 
+
+See the [CC documentation](https://docs.confluent.io/cloud/current/flink/reference/functions/changelog-conversion.html) and the [How-to guide](https://docs.confluent.io/cloud/current/flink/how-to-guides/read-write-custom-changelog.html). The how to guide is also implemented as a demonstration in [code/flink-sql/16-changelog-conversion](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/16-changelog-conversion)
+
+
+| PTF | Direction | What it does |
+|---|---|---|
+| `FROM_CHANGELOG` | **Inbound** | Reads an append-only stream carrying a user-defined op field and converts it into a Flink updating table by mapping each op code to a Flink row kind (`+I`, `-U`, `+U`, `-D`). |
+| `TO_CHANGELOG` | **Outbound** | Converts a Flink updating table back into a plain append stream where every row (including deletes) carries an explicit op code a non-Flink consumer can act on. |
+
+
 

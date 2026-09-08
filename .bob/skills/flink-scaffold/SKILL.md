@@ -35,43 +35,57 @@ Do **not** ask for things already provided in the user's message.
 
 ## Step 2 — Resolve the target path
 
-Build the absolute project root based on project type:
+Build the project root path based on project type:
 
 | Project type | Base directory | Example full path |
 |---|---|---|
 | `e2e` | `e2e-demos/` | `e2e-demos/fraud-detection` |
 | `study` | `code/flink-sql/` | `code/flink-sql/16-pattern-matching` |
 
+The CLI lives at the **workspace root** under `tools/`, not under `code/flink-sql/tools/`.
+Always run it with `cwd = "tools"` (workspace-root-relative).
+
 ---
 
 ## Step 3 — Run the CLI
 
-Execute [`tools/demo_mgr_cli.py`](tools/demo_mgr_cli.py) via `uv run` from the `tools/` directory:
+#### IMPORTANT — correct invocation
+
+The CLI has **no `init` subcommand**. `project_root` is a bare positional argument.
+The correct form is:
 
 ```bash
-cd tools && uv run demo_mgr_cli.py init <project_root> --project-type <e2e|study> --platform <cc-flink|cp-flink|oss|all>
+uv run python demo_mgr_cli.py <project_root_relative_to_tools> --project-type <e2e|study> --platform <cc-flink|cp-flink|oss|all>
 ```
 
-Concrete examples:
-
-```bash
-# New e2e demo for all platforms
-cd tools && uv run demo_mgr_cli.py init ../e2e-demos/fraud-detection --project-type e2e --platform all
-
-# New flink-sql study for Confluent Cloud only
-cd tools && uv run demo_mgr_cli.py init ../code/flink-sql/16-pattern-matching --project-type study --platform cc-flink
-```
-
-Use `execute_command` with `cwd` set to `tools`:
+Run with `execute_command`, `cwd = "tools"`:
 
 ```
 execute_command(
-  command = "uv run demo_mgr_cli.py init <resolved_path> --project-type <type> --platform <platform>",
+  command = "uv run python demo_mgr_cli.py <path_relative_to_tools> --project-type <type> --platform <platform>",
   cwd     = "tools"
 )
 ```
 
-where `<resolved_path>` is relative to the workspace root (e.g. `../e2e-demos/fraud-detection`).
+Because `cwd` is `tools/` (workspace root), paths for studies and demos must be prefixed
+with `../`:
+
+| Project type | Example command from `cwd=tools` |
+|---|---|
+| `study` | `uv run python demo_mgr_cli.py ../code/flink-sql/16-pattern-matching --project-type study --platform cc-flink` |
+| `e2e` | `uv run python demo_mgr_cli.py ../e2e-demos/fraud-detection --project-type e2e --platform all` |
+
+#### If the CLI fails with a SyntaxError on line 74
+
+There is a known typo in [`tools/demo_mgr_cli.py:74`](tools/demo_mgr_cli.py:74) — an extra
+quote in the `cc-dbt` case. Fix it before running:
+
+```python
+# Wrong (original):
+_write(project_root / "cc-dbt" / "".gitkeep", "")
+# Correct:
+_write(project_root / "cc-dbt" / ".gitkeep", "")
+```
 
 ---
 
@@ -128,9 +142,98 @@ Use `apply_diff` or `search_and_replace` to do this minimally.
 
 ---
 
-## Step 6 — Report
+## Step 6 — Generate `deploy_manifest.json`
+
+After writing SQL files into the platform sub-folder (e.g. `cc-flink/`), generate the
+deployment manifest automatically using `manifest_cli`. This tool lives in
+`code/flink-sql/tools/` and paths are relative to that directory.
+
+```bash
+# Preview without writing (dry-run)
+uv run python -m manifest.manifest_cli --sql-dir ../<slug>/cc-flink --dry-run
+
+# Write deploy_manifest.json
+uv run python -m manifest.manifest_cli --sql-dir ../<slug>/cc-flink
+```
+
+Run with `execute_command`, `cwd = "code/flink-sql/tools"`.
+
+The CLI infers groups from SQL file naming conventions:
+
+| File name pattern | Group assigned |
+|---|---|
+| `ddl.*.sql` | `ddl` |
+| `dml.insert_*.sql` | `data` |
+| `dml.update_*.sql` | `scenario` |
+| all other `dml.*.sql` | `pipeline` |
+
+#### After generation — always patch these fields
+
+The auto-generated manifest needs manual corrections before use:
+
+| Field | Issue | Correct value |
+|---|---|---|
+| `user_agent` | Generic default | `"flink-studies-<slug>/0.1"` |
+| `drop_tables` | Order may be wrong | Must be **sinks first**, sources last to avoid FK/dependency errors |
+| `drop_statement_prefix` | Generic default | `"<prefix>-drop"` matching the study prefix |
+| `deploy_all` | May include `pipeline` before `data` | Must be `["ddl", "data", "pipeline"]` |
+| `undeploy_all` | May include `data` | Should be `["pipeline"]` only — data inserts are not long-running statements |
+| Statement names | May have redundant double segments | Verify names like `cc-flink-pipeline-pipeline-foo` and simplify |
+
+Write the corrected manifest with `write_file` after reviewing the dry-run output.
+
+---
+
+## Step 7 — Write the Makefile
+
+Create a `Makefile` at the study root that delegates to `tools/Makefile`. Copy this pattern
+exactly (it is identical across all modern studies):
+
+```makefile
+TOOLS := $(abspath ../tools)
+DEMO  := $(abspath cc-flink)
+
+.PHONY: sync deploy undeploy drop-tables deploy-% undeploy-%
+
+sync:
+	$(MAKE) -C $(TOOLS) sync
+
+deploy:
+	$(MAKE) -C $(TOOLS) deploy SQL_DIR=$(DEMO)
+
+undeploy:
+	$(MAKE) -C $(TOOLS) undeploy SQL_DIR=$(DEMO)
+
+drop-tables:
+	$(MAKE) -C $(TOOLS) drop-tables SQL_DIR=$(DEMO)
+
+deploy-%:
+	$(MAKE) -C $(TOOLS) deploy-$* SQL_DIR=$(DEMO)
+
+undeploy-%:
+	$(MAKE) -C $(TOOLS) undeploy-$* SQL_DIR=$(DEMO)
+```
+
+**`TOOLS` always points to `../tools`** (the shared `code/flink-sql/tools/` directory).
+**`DEMO` points to `./cc-flink`** (adjust to `./cp-flink` or `./oss` as needed).
+
+Do **not** use the older pattern from `05-changelog/Makefile` that hard-codes credentials
+and calls `confluent flink statement create` directly — that pattern is deprecated.
+
+---
+
+## Step 8 — Report
 
 Tell the user:
 - Full path created
 - Platform sub-folders scaffolded
-- Next suggested step (e.g. "Add your SQL files under `cc-flink/` and fill in `README.md`")
+- Files created (DDL, DML, manifest, Makefile, README)
+- Deployment workflow:
+  ```sh
+  make sync          # once: install tool deps
+  make deploy-ddl    # create tables/topics
+  make deploy-data   # seed data
+  make deploy-pipeline  # start streaming statements
+  make undeploy      # stop statements
+  make drop-tables   # drop tables
+  ```

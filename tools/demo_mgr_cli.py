@@ -71,7 +71,7 @@ def init(
         case PlatformType.ccf:
             _write(project_root / "cc-flink" / ".gitkeep", "")
         case PlatformType.ccdbt:
-            _write(project_root / "cc-dbt" / "".gitkeep", "")
+            _write(project_root / "cc-dbt" / ".gitkeep", "")
         case PlatformType.cpf:
             _write(project_root / "cp-flink" / ".gitkeep", "")
     if project_type == ProjectType.e2edemo:

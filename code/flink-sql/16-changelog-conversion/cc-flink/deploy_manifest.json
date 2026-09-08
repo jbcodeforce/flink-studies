@@ -1,0 +1,25 @@
+{
+  "user_agent": "flink-studies-d16-changelog-conversion/0.1",
+  "deploy_all": ["ddl", "data", "pipeline"],
+  "undeploy_all": ["pipeline"],
+  "drop_tables": [
+    "d16_orders_out",
+    "d16_orders",
+    "d16_raw_orders"
+  ],
+  "drop_statement_prefix": "d16-drop",
+  "groups": {
+    "ddl": [
+      {"name": "d16-ddl-raw-orders",  "file": "ddl.raw_orders.sql"},
+      {"name": "d16-ddl-orders",       "file": "ddl.orders.sql"},
+      {"name": "d16-ddl-orders-out",   "file": "ddl.orders_out.sql"}
+    ],
+    "data": [
+      {"name": "d16-data-insert-raw-orders", "file": "dml.insert_raw_orders.sql"}
+    ],
+    "pipeline": [
+      {"name": "d16-pipeline-from-changelog", "file": "dml.pipeline_from_changelog.sql"},
+      {"name": "d16-pipeline-to-changelog",   "file": "dml.pipeline_to_changelog.sql"}
+    ]
+  }
+}
