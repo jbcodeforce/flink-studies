@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from cc_deploy.kafka_client import is_internal_topic
+from kafka.kafka_client import is_internal_topic
 
 DEFAULT_MANIFEST_NAME = "drop_tables_manifest.json"
 DEFAULT_STATEMENT_PREFIX = "cleanup-drop"

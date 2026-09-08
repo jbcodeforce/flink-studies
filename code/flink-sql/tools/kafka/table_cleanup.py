@@ -3,10 +3,10 @@
 List Kafka topics into an editable drop manifest, then drop Flink SQL tables.
 
 Usage:
-  uv run python -m cc_deploy.table_cleanup list --output drop_tables_manifest.json
-  uv run python -m cc_deploy.table_cleanup list --dry-run
-  uv run python -m cc_deploy.table_cleanup drop --manifest drop_tables_manifest.json
-  uv run python -m cc_deploy.table_cleanup drop --manifest drop_tables_manifest.json --dry-run
+  uv run python -m kafka.table_cleanup list --output drop_tables_manifest.json
+  uv run python -m kafka.table_cleanup list --dry-run
+  uv run python -m kafka.table_cleanup drop --manifest drop_tables_manifest.json
+  uv run python -m kafka.table_cleanup drop --manifest drop_tables_manifest.json --dry-run
 
 Environment: ~/.confluent/.env (override with CONFLUENT_ENV_FILE).
 """
@@ -19,15 +19,16 @@ import os
 import sys
 from pathlib import Path
 
-from cc_deploy.drop_tables_manifest import (
+from kafka.drop_tables_manifest import (
     DEFAULT_MANIFEST_NAME,
     build_manifest_from_topics,
     load_manifest,
     tables_to_drop,
     write_manifest,
 )
-from cc_deploy.flink_deploy import drop_tables_by_name, get_config, load_dotenv_file
-from cc_deploy.kafka_client import list_topics
+from cc_deploy.deploy_flink_statements import load_dotenv_file
+from cc_deploy.flink_deploy import drop_tables_by_name, get_config
+from kafka.kafka_client import list_topics
 
 
 def parse_args() -> argparse.Namespace:

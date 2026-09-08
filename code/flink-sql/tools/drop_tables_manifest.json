@@ -2,98 +2,213 @@
   "source": "kafka",
   "bootstrap_servers": "pkc-rgm37.us-west-2.aws.confluent.cloud:9092",
   "database": "j9r-kafka",
-  "generated_at": "2026-07-23T23:29:59.951587+00:00",
+  "generated_at": "2026-09-08T17:52:15.360314+00:00",
   "statement_prefix": "cleanup-drop",
   "tables": [
     {
-      "topic": "acting_events",
-      "table": "acting_events",
+      "topic": "CLIENT_ACCOUNTS_FULL_STREAM",
+      "table": "CLIENT_ACCOUNTS_FULL_STREAM",
       "drop": true
     },
     {
-      "topic": "acting_events_drama",
-      "table": "acting_events_drama",
+      "topic": "app_usage_raw",
+      "table": "app_usage_raw",
       "drop": true
     },
     {
-      "topic": "acting_events_other",
-      "table": "acting_events_other",
+      "topic": "customers_raw",
+      "table": "customers_raw",
       "drop": true
     },
     {
-      "topic": "all_publications",
-      "table": "all_publications",
+      "topic": "dim_hosts_cleansed",
+      "table": "dim_hosts_cleansed",
       "drop": true
     },
     {
-      "topic": "clicks",
-      "table": "clicks",
+      "topic": "dim_listings_cleansed",
+      "table": "dim_listings_cleansed",
       "drop": true
     },
     {
-      "topic": "connect-configs",
-      "table": "connect-configs",
+      "topic": "dim_listings_with_hosts",
+      "table": "dim_listings_with_hosts",
       "drop": true
     },
     {
-      "topic": "connect-offsets",
-      "table": "connect-offsets",
+      "topic": "dim_output_buggy",
+      "table": "dim_output_buggy",
       "drop": true
     },
     {
-      "topic": "connect-status",
-      "table": "connect-status",
+      "topic": "dim_output_safe",
+      "table": "dim_output_safe",
       "drop": true
     },
     {
-      "topic": "detected_clicks",
-      "table": "detected_clicks",
+      "topic": "dim_source_events",
+      "table": "dim_source_events",
       "drop": true
     },
     {
-      "topic": "george_martin",
-      "table": "george_martin",
+      "topic": "driver_stats",
+      "table": "driver_stats",
       "drop": true
     },
     {
-      "topic": "kochnt_precheckin_load_st",
-      "table": "kochnt_precheckin_load_st",
+      "topic": "fct_host_performance",
+      "table": "fct_host_performance",
       "drop": true
     },
     {
-      "topic": "pspull00_ct",
-      "table": "pspull00_ct",
+      "topic": "fct_listing_activity",
+      "table": "fct_listing_activity",
       "drop": true
     },
     {
-      "topic": "pspull00_curr",
-      "table": "pspull00_curr",
+      "topic": "fct_listing_pricing",
+      "table": "fct_listing_pricing",
       "drop": true
     },
     {
-      "topic": "pspull00_pk_timestamps",
-      "table": "pspull00_pk_timestamps",
+      "topic": "fct_review_summary",
+      "table": "fct_review_summary",
       "drop": true
     },
     {
-      "topic": "radar_geofence_flat_st",
-      "table": "radar_geofence_flat_st",
+      "topic": "fct_reviews",
+      "table": "fct_reviews",
       "drop": true
     },
     {
-      "topic": "radar_hist_st",
-      "table": "radar_hist_st",
+      "topic": "loyalty_program_raw",
+      "table": "loyalty_program_raw",
       "drop": true
     },
     {
-      "topic": "radar_trip_flat_st",
-      "table": "radar_trip_flat_st",
+      "topic": "orders",
+      "table": "orders",
+      "drop": true
+    },
+    {
+      "topic": "product_table",
+      "table": "product_table",
+      "drop": true
+    },
+    {
+      "topic": "products_raw",
+      "table": "products_raw",
       "drop": true
     },
     {
       "topic": "raw_account_events",
       "table": "raw_account_events",
-      "drop": false
+      "drop": true
+    },
+    {
+      "topic": "raw_classical_songs",
+      "table": "raw_classical_songs",
+      "drop": true
+    },
+    {
+      "topic": "raw_full_moon_dates",
+      "table": "raw_full_moon_dates",
+      "drop": true
+    },
+    {
+      "topic": "raw_hosts",
+      "table": "raw_hosts",
+      "drop": true
+    },
+    {
+      "topic": "raw_listings",
+      "table": "raw_listings",
+      "drop": true
+    },
+    {
+      "topic": "raw_reviews",
+      "table": "raw_reviews",
+      "drop": true
+    },
+    {
+      "topic": "rides_clean",
+      "table": "rides_clean",
+      "drop": true
+    },
+    {
+      "topic": "rides_raw",
+      "table": "rides_raw",
+      "drop": true
+    },
+    {
+      "topic": "shipments",
+      "table": "shipments",
+      "drop": true
+    },
+    {
+      "topic": "shipments_raw",
+      "table": "shipments_raw",
+      "drop": true
+    },
+    {
+      "topic": "shipped_orders",
+      "table": "shipped_orders",
+      "drop": true
+    },
+    {
+      "topic": "sink_table",
+      "table": "sink_table",
+      "drop": true
+    },
+    {
+      "topic": "source_table",
+      "table": "source_table",
+      "drop": true
+    },
+    {
+      "topic": "src_hosts",
+      "table": "src_hosts",
+      "drop": true
+    },
+    {
+      "topic": "src_listings",
+      "table": "src_listings",
+      "drop": true
+    },
+    {
+      "topic": "src_reviews",
+      "table": "src_reviews",
+      "drop": true
+    },
+    {
+      "topic": "src_table",
+      "table": "src_table",
+      "drop": true
+    },
+    {
+      "topic": "support_ticket_raw",
+      "table": "support_ticket_raw",
+      "drop": true
+    },
+    {
+      "topic": "table_test",
+      "table": "table_test",
+      "drop": true
+    },
+    {
+      "topic": "tracking_events_raw",
+      "table": "tracking_events_raw",
+      "drop": true
+    },
+    {
+      "topic": "transaction_items_raw",
+      "table": "transaction_items_raw",
+      "drop": true
+    },
+    {
+      "topic": "tx_raw",
+      "table": "tx_raw",
+      "drop": true
     }
   ]
 }

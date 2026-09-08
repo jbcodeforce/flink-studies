@@ -27,8 +27,8 @@ Projects managed by the `shift_left` utilities adopt a specific folder structure
 - [x] Resolve upstream tables from `FROM` / `JOIN` / `TABLE(...)` as `{{ ref() }}` or `{{ source() }}`; generates/updates `sources.yaml`
 - [x] Transform `INSERT INTO ... VALUES` DML into a dbt CSV seed + `seeds/schema.yml` entry (auto-detected by `migrate` and `migrate-sl-folder`)
 - [ ] Validate generated Flink SQL after `dbt compile` against the source DML
-- [ ] Full project migration: <https://github.com/jbcodeforce/flink_project_demos/tree/main/customer_360/c360_flink_processing>
-
+- [ ] Full project migration: <https://github.com/jbcodeforce/flink_project_demos/tree/main/customer_360/c360_flink_processing> to c360_flink_dsp_dbt folder
+- [ ] Migrate bigger repository
 
 ---
 
@@ -53,7 +53,7 @@ Projects managed by the `shift_left` utilities adopt a specific folder structure
 
 ---
 
-## Sequence Flow — `migrate-sl-folder`
+## Sequence Flow — `migrate a shif_left utils pipelines folder`
 
 This is the batch command that migrates a full `shift_left` pipelines folder.
 

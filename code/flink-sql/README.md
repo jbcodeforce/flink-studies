@@ -21,7 +21,7 @@ The [flink-sql/tools](./tools/README.md) folder includes tools to deploy and man
 | `deploy_flink_statements` | Deploy, undeploy, and drop tables for statement groups defined in a manifest |
 | `run_snapshot_query` | Run a bounded point-in-time query against an existing table |
 | `run_streaming_query` | Run a continuous query and print rows as they arrive |
-| `migrate_dml_to_dbt` | Convert Flink `INSERT INTO` DML statements into dbt `streaming_table` models |
+
 
 ---
 
@@ -186,7 +186,7 @@ Utilities for wide-table generation and Flink SQL.
 | `cc_flink_rest_client.py` | Complete | Confluent Cloud | Manual (requests REST) |
 | `flink_wide_table.sql` | Complete | Local / Confluent Cloud | Manual |
 | `gen_flink_wide_table.py` | Complete | Local | Manual |
-
+| `kafka/table_cleanup.py`  | | | |
 ---
 
 ## triage

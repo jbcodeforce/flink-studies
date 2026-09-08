@@ -4,6 +4,10 @@
 {{ config(
     contract={'enforced': true},
     materialized = 'streaming_table',
+    distributed_by={
+      'columns': ['host_id'],
+      'buckets': 4
+    }
     with= {
         'changelog.mode': 'append',
         'connector': 'confluent',

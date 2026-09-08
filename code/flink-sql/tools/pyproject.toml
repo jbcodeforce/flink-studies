@@ -5,10 +5,11 @@ description = "Shared Confluent Cloud Flink SQL deploy, snapshot, and streaming 
 requires-python = ">=3.12"
 dependencies = [
     "confluent-kafka[avro,schema-registry]>=2.4.0",
-    "confluent-sql>=0.3.1",
+    "confluent-sql>=0.4.0",
     "pydantic>=2.12.0",
     "python-dotenv>=1.0.0",
     "pyyaml>=6.0",
+    "requests>=2.32.0",
     "typer>=0.12.0",
 ]
 
@@ -18,7 +19,7 @@ dev = [
 ]
 validate = [
     "dbt-core>=1.11.11",
-    "dbt-confluent>=0.2.1",
+    "dbt-confluent>=0.3.0",
 ]
 
 [project.scripts]

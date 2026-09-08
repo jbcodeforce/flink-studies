@@ -237,13 +237,13 @@ List Kafka topics into a JSON file, edit which tables to drop, then run `DROP TA
 cd code/flink-sql/tools
 
 # Write drop_tables_manifest.json (user topics only; internals excluded)
-uv run python -m cc_deploy.table_cleanup list --output drop_tables_manifest.json
+uv run python -m kafka.table_cleanup list --output drop_tables_manifest.json
 
 # Preview without writing
-uv run python -m cc_deploy.table_cleanup list --dry-run
+uv run python -m kafka.table_cleanup list --dry-run
 
 # Include internal topics in manifest (still default drop: false)
-uv run python -m cc_deploy.table_cleanup list --include-internal
+uv run python -m kafka.table_cleanup list --include-internal
 ```
 
 **Step 2 — edit the manifest** — set `"drop": false` or remove rows for topics/tables to keep. Edit `"table"` if the Flink table name differs from the Kafka topic.
@@ -252,10 +252,10 @@ uv run python -m cc_deploy.table_cleanup list --include-internal
 
 ```sh
 # Dry-run: print DROP statements only
-uv run python -m cc_deploy.table_cleanup drop --manifest drop_tables_manifest.json --dry-run
+uv run python -m kafka.table_cleanup drop --manifest drop_tables_manifest.json --dry-run
 
 # Execute drops for entries with drop: true
-uv run python -m cc_deploy.table_cleanup drop --manifest drop_tables_manifest.json
+uv run python -m kafka.table_cleanup drop --manifest drop_tables_manifest.json
 ```
 
 Stop running Flink statements first (`deploy_flink_statements undeploy`) if pipelines reference these tables.
@@ -282,8 +282,7 @@ drop_tables_by_name(tables_to_drop(entries), config=get_config())
 
 ## Register schema (Schema Registry)
 
-Register a standalone Avro (`.avsc`) or JSON Schema (`.json`) under
-RecordNameStrategy. Subject defaults:
+Register a standalone Avro (`.avsc`) or JSON Schema (`.json`) under RecordNameStrategy. Subject defaults:
 
 | Type | Default subject |
 |------|-----------------|
@@ -303,12 +302,12 @@ Requires Schema Registry env vars in `~/.confluent/.env` (same as producers):
 ```sh
 cd code/flink-sql/tools
 
-uv run python -m cc_deploy.register_schema \
+uv run python -m kafka.register_schema \
   ../07-1-multiple-event-types/python/schemas/DeviceCloseDetail.avsc
 
-uv run python -m cc_deploy.register_schema register path/to/schema.json
-uv run python -m cc_deploy.register_schema path/to/schema.json --subject my.custom.Subject
-uv run python -m cc_deploy.register_schema path/to/file.txt --type JSON --subject MyType
+uv run python -m kafka.register_schema register path/to/schema.json
+uv run python -m kafka.register_schema path/to/schema.json --subject my.custom.Subject
+uv run python -m kafka.register_schema path/to/file.txt --type JSON --subject MyType
 ```
 
 Example subject for `DeviceCloseDetail.avsc`:
@@ -322,10 +321,10 @@ Same workflow as table cleanup: list into JSON, edit which subjects to remove, t
 
 ```sh
 # Write schema-manifest.json (all subjects default delete: true)
-uv run python -m cc_deploy.register_schema list --output schema-manifest.json
+uv run python -m kafka.register_schema list --output schema-manifest.json
 
 # Preview without writing
-uv run python -m cc_deploy.register_schema list --dry-run
+uv run python -m kafka.register_schema list --dry-run
 ```
 
 **Step 2 — edit the manifest** — set `"delete": false` or remove rows for subjects to keep.
@@ -334,13 +333,13 @@ uv run python -m cc_deploy.register_schema list --dry-run
 
 ```sh
 # Dry-run: print subjects only
-uv run python -m cc_deploy.register_schema delete --manifest schema-manifest.json --dry-run
+uv run python -m kafka.register_schema delete --manifest schema-manifest.json --dry-run
 
 # Soft-delete entries with delete: true
-uv run python -m cc_deploy.register_schema delete --manifest schema-manifest.json
+uv run python -m kafka.register_schema delete --manifest schema-manifest.json
 
-# Permanent delete: Need to do previous step, to do a soft delete before hard delete
-uv run python -m cc_deploy.register_schema delete --manifest schema-manifest.json --permanent
+# Permanent delete: Need to do previous step, to do a soft delete before hard delete, with dependants
+uv run python -m kafka.register_schema delete --manifest schema-manifest.json --permanent
 ```
 
 

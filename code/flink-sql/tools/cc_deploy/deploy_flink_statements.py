@@ -60,7 +60,20 @@ def resolve_dotenv_path(repo_root: Path | None = None) -> Path | None:
 
 
 def load_dotenv_file(*, start: Path | None = None) -> bool:
-    """Load env from ``DOTENV_FILE`` or repo-root ``.env``."""
+    """Load env from ``CONFLUENT_ENV_FILE``, ``~/.confluent/.env``, or repo-root ``.env``."""
+    # 1. Explicit override via CONFLUENT_ENV_FILE env var
+    explicit = os.environ.get("CONFLUENT_ENV_FILE")
+    if explicit:
+        p = Path(explicit).expanduser()
+        if p.is_file():
+            return load_dotenv(p, override=True)
+
+    # 2. ~/.confluent/.env (conventional Confluent Cloud credentials location)
+    default_home = Path("~/.confluent/.env").expanduser()
+    if default_home.is_file():
+        return load_dotenv(default_home, override=True)
+
+    # 3. Repo-root .env (original behaviour)
     try:
         root = find_repo_root(start)
     except FileNotFoundError:

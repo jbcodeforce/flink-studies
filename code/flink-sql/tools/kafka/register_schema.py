@@ -9,13 +9,17 @@ Override with ``--subject``. Schema type is inferred from the extension
 (``.avsc`` → AVRO, ``.json`` → JSON) or set with ``--type``.
 
 Usage:
-  uv run python -m cc_deploy.register_schema \\
+  uv run python -m kafka.register_schema \\
     ../07-1-multiple-event-types/python/schemas/DeviceCloseDetail.avsc
 
-  uv run python -m cc_deploy.register_schema register path/to/schema.json
-  uv run python -m cc_deploy.register_schema list --output schema-manifest.json
-  uv run python -m cc_deploy.register_schema delete --manifest schema-manifest.json
-  uv run python -m cc_deploy.register_schema delete --manifest schema-manifest.json --permanent
+  uv run python -m kafka.register_schema register path/to/schema.json
+  uv run python -m kafka.register_schema list --output schema-manifest.json
+  uv run python -m kafka.register_schema delete --manifest schema-manifest.json
+  uv run python -m kafka.register_schema delete --manifest schema-manifest.json --permanent
+
+  # When a schema is referenced by another schema (SR error 42206), resolve
+  # and delete the referencing schemas first:
+  uv run python -m kafka.register_schema delete --manifest schema-manifest.json --permanent --resolve-references
 
 Environment (``~/.confluent/.env`` by default; override with ``CONFLUENT_ENV_FILE``):
   SCHEMA_REGISTRY_ENDPOINT
@@ -33,10 +37,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
+import urllib.parse
+
+import requests
+
 from confluent_kafka.schema_registry import Schema, SchemaRegistryClient
 from confluent_kafka.schema_registry.error import SchemaRegistryError
 
-from cc_deploy.flink_deploy import load_dotenv_file
+from cc_deploy.deploy_flink_statements import load_dotenv_file
 
 SchemaType = Literal["AVRO", "JSON"]
 
@@ -47,7 +55,7 @@ _EXT_TO_TYPE: dict[str, SchemaType] = {
     ".json": "JSON",
 }
 
-_ACTIONS = frozenset({"list", "delete", "register"})
+_ACTIONS = frozenset({"list", "delete", "register", "debug-refs"})
 
 
 @dataclass(frozen=True)
@@ -183,29 +191,216 @@ def subjects_to_delete(entries: list[SchemaEntry]) -> list[str]:
     return [entry.subject for entry in entries if entry.delete]
 
 
+# ---------------------------------------------------------------------------
+# Reference resolution helpers
+# ---------------------------------------------------------------------------
+
+def _sr_http_session() -> tuple[str, requests.Session]:
+    """Return (base_url, authenticated requests.Session) from env."""
+    url = os.environ.get("SCHEMA_REGISTRY_ENDPOINT", "http://localhost:8081").rstrip("/")
+    session = requests.Session()
+    user = os.environ.get("SCHEMA_REGISTRY_API_KEY", "")
+    password = os.environ.get("SCHEMA_REGISTRY_API_SECRET", "")
+    if user:
+        session.auth = (user, password)
+    return url, session
+
+
+def get_subject_versions(subject: str, *, include_deleted: bool = False) -> list[int]:
+    """Return all version numbers registered under *subject*."""
+    base, session = _sr_http_session()
+    params = {"deleted": "true"} if include_deleted else {}
+    encoded = urllib.parse.quote(subject, safe="")
+    resp = session.get(f"{base}/subjects/{encoded}/versions", params=params, timeout=10)
+    if resp.status_code == 404:
+        return []
+    resp.raise_for_status()
+    return resp.json()
+
+
+def get_referencedby(subject: str, version: int | str = "latest") -> list[int]:
+    """
+    Return the list of global schema IDs that reference ``subject`` at ``version``.
+
+    Queries both the active and deleted registrations so that soft-deleted
+    referencing schemas are included in the result.
+
+    Uses the Schema Registry REST API endpoint:
+      GET /subjects/{subject}/versions/{version}/referencedby
+    """
+    base, session = _sr_http_session()
+    encoded = urllib.parse.quote(subject, safe="")
+    url = f"{base}/subjects/{encoded}/versions/{version}/referencedby"
+    # ?deleted=true surfaces IDs whose referencing subject was already soft-deleted
+    all_ids: set[int] = set()
+    for params in ({}, {"deleted": "true"}):
+        resp = session.get(url, params=params, timeout=10)
+        if resp.status_code == 404:
+            continue
+        resp.raise_for_status()
+        result = resp.json()
+        if isinstance(result, list):
+            all_ids.update(result)
+    return list(all_ids)
+
+
+def get_subject_for_schema_id(schema_id: int) -> list[str]:
+    """
+    Return subjects that own the given global schema ID.
+
+    Uses: GET /schemas/ids/{id}/versions
+    Returns a list of {"subject": ..., "version": ...} objects.
+    """
+    base, session = _sr_http_session()
+    # /schemas/ids/{id}/versions returns [{"subject":..,"version":..}, ...]
+    for params in ({}, {"deleted": "true"}):
+        resp = session.get(
+            f"{base}/schemas/ids/{schema_id}/versions",
+            params=params,
+            timeout=10,
+        )
+        if resp.status_code == 404:
+            continue
+        resp.raise_for_status()
+        data = resp.json()
+        if isinstance(data, list) and data:
+            return [
+                item["subject"]
+                for item in data
+                if isinstance(item, dict) and "subject" in item
+            ]
+    return []
+
+
+def resolve_delete_order(subjects: list[str]) -> list[str]:
+    """
+    Expand *subjects* with any schemas that reference them, ordered so that
+    referencing schemas come before the schemas they reference.
+
+    Algorithm: BFS from each requested subject through ``referencedby``,
+    then return a topologically sorted list (referencing first, referenced last).
+    """
+    # BFS: discover all referencing schema IDs and map them back to subjects
+    all_subjects: list[str] = list(subjects)
+    visited_ids: set[int] = set()
+    queue: list[str] = list(subjects)
+
+    while queue:
+        subject = queue.pop(0)
+        versions = get_subject_versions(subject)
+        for version in versions:
+            ref_ids = get_referencedby(subject, version)
+            for schema_id in ref_ids:
+                if schema_id in visited_ids:
+                    continue
+                visited_ids.add(schema_id)
+                ref_subjects = get_subject_for_schema_id(schema_id)
+                for ref_subj in ref_subjects:
+                    if ref_subj not in all_subjects:
+                        print(
+                            f"  [resolve] '{ref_subj}' references '{subject}' "
+                            f"(schema_id={schema_id}) — will delete first",
+                            file=sys.stderr,
+                        )
+                        all_subjects.insert(0, ref_subj)
+                        queue.append(ref_subj)
+
+    # Referencing subjects were prepended; the original subjects land at the end.
+    # Deduplicate while preserving order (first occurrence wins = referencing first).
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for s in all_subjects:
+        if s not in seen:
+            seen.add(s)
+            ordered.append(s)
+    return ordered
+
+
+# ---------------------------------------------------------------------------
+# Delete
+# ---------------------------------------------------------------------------
+
+# SR 404-family error codes that mean "already gone / already soft-deleted"
+_SR_404_CODES = frozenset({
+    40401,  # Subject not found
+    40402,  # Version not found (Confluent Cloud: "was soft deleted")
+    40403,  # Schema not found
+    40404,  # Subject version soft-deleted
+})
+
+
+def _delete_subject_permanent(subject: str, sr: SchemaRegistryClient) -> list[int]:
+    """
+    Permanently delete *subject* using the required two-step sequence:
+      1. Soft-delete  (marks versions as deleted)
+      2. Hard-delete  (permanent=True removes them from storage)
+
+    Step 1 is skipped gracefully if the subject is already soft-deleted
+    (Confluent Cloud returns SR codes 40401/40402/40403 in that case).
+    """
+    try:
+        sr.delete_subject(subject, permanent=False)
+    except SchemaRegistryError as exc:
+        # Any 404-family code means "already soft-deleted" — safe to continue
+        if exc.error_code not in _SR_404_CODES:
+            raise RuntimeError(
+                f"Failed to soft-delete subject '{subject}': {exc}"
+            ) from exc
+        print(
+            f"  [info] '{subject}' already soft-deleted, proceeding to permanent delete",
+            file=sys.stderr,
+        )
+
+    try:
+        versions = sr.delete_subject(subject, permanent=True)
+    except SchemaRegistryError as exc:
+        raise RuntimeError(
+            f"Failed to permanently delete subject '{subject}': {exc}"
+        ) from exc
+    return list(versions)
+
+
 def delete_subjects(
     subjects: list[str],
     *,
     permanent: bool = False,
+    resolve_references: bool = False,
     client: SchemaRegistryClient | None = None,
 ) -> list[tuple[str, list[int]]]:
     """
     Soft- or permanently-delete each subject.
 
+    When *resolve_references* is True (recommended with *permanent=True*),
+    any schemas that reference the requested subjects are discovered via the
+    ``/referencedby`` API and deleted first so that Schema Registry error
+    42206 is avoided.
+
+    Permanent deletion uses the required two-step sequence (soft then hard)
+    so that Confluent Cloud SR does not return 42206 on already-active schemas.
+
     Returns list of ``(subject, deleted_versions)``.
     Raises on the first Schema Registry failure.
     """
+    if resolve_references:
+        print("Resolving schema references …", file=sys.stderr)
+        subjects = resolve_delete_order(subjects)
+
     sr = client or schema_registry_client()
     results: list[tuple[str, list[int]]] = []
     for subject in subjects:
         try:
-            versions = sr.delete_subject(subject, permanent=permanent)
+            if permanent:
+                versions = _delete_subject_permanent(subject, sr)
+            else:
+                versions = list(sr.delete_subject(subject, permanent=False))
+        except RuntimeError:
+            raise
         except SchemaRegistryError as exc:
             raise RuntimeError(
                 f"Failed to delete subject '{subject}' "
                 f"(permanent={permanent}): {exc}"
             ) from exc
-        results.append((subject, list(versions)))
+        results.append((subject, versions))
     return results
 
 
@@ -291,6 +486,25 @@ def _add_register_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def cmd_debug_refs(args: argparse.Namespace) -> None:
+    """Print every version of a subject and the schema IDs that reference it."""
+    subject = args.subject
+    print(f"\nSubject: {subject}")
+
+    versions = get_subject_versions(subject, include_deleted=True)
+    if not versions:
+        print("  No versions found (subject may not exist).")
+        return
+
+    print(f"  Versions: {versions}")
+    for version in versions:
+        ref_ids = get_referencedby(subject, version)
+        print(f"  Version {version} — referencedby IDs: {ref_ids or '(none)'}")
+        for schema_id in ref_ids:
+            ref_subjects = get_subject_for_schema_id(schema_id)
+            print(f"    schema_id={schema_id} → subjects: {ref_subjects}")
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     raw = list(sys.argv[1:] if argv is None else argv)
 
@@ -322,6 +536,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Print manifest JSON without writing a file",
     )
 
+    debug_p = sub.add_parser(
+        "debug-refs",
+        help="Show which schema IDs reference a given subject (for diagnosing error 42206)",
+    )
+    debug_p.add_argument("subject", help="Subject name to inspect")
+
     delete_p = sub.add_parser("delete", help="Delete subjects marked in the manifest")
     delete_p.add_argument(
         "--manifest",
@@ -338,6 +558,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--permanent",
         action="store_true",
         help="Permanently delete subjects (default: soft delete)",
+    )
+    delete_p.add_argument(
+        "--resolve-references",
+        action="store_true",
+        dest="resolve_references",
+        help=(
+            "Before deleting, discover schemas that reference the target subjects "
+            "and delete them first (avoids SR error 42206). "
+            "Implied automatically when --permanent is used."
+        ),
     )
 
     return parser.parse_args(raw)
@@ -407,8 +637,14 @@ def cmd_delete(args: argparse.Namespace) -> None:
         print("No subjects marked for delete in manifest.", file=sys.stderr)
         sys.exit(1)
 
+    # --resolve-references is implied when --permanent is used
+    resolve = args.resolve_references or args.permanent
+
     mode = "permanent" if args.permanent else "soft"
     if args.dry_run:
+        if resolve:
+            print("Resolving schema references (dry-run) …", file=sys.stderr)
+            subjects = resolve_delete_order(subjects)
         for subject in subjects:
             print(f"DELETE SUBJECT {subject} ({mode})")
         print(
@@ -418,7 +654,11 @@ def cmd_delete(args: argparse.Namespace) -> None:
         return
 
     try:
-        results = delete_subjects(subjects, permanent=args.permanent)
+        results = delete_subjects(
+            subjects,
+            permanent=args.permanent,
+            resolve_references=resolve,
+        )
     except RuntimeError as exc:
         print(exc, file=sys.stderr)
         sys.exit(1)
@@ -438,6 +678,8 @@ def main(argv: list[str] | None = None) -> None:
         cmd_list(args)
     elif args.action == "delete":
         cmd_delete(args)
+    elif args.action == "debug-refs":
+        cmd_debug_refs(args)
 
 
 if __name__ == "__main__":
