@@ -14,7 +14,7 @@ The chapter is about comparing some other technology with Apache Flink and when 
 
 * Flink is a complete streaming computation system that supports HA, Fault-tolerance, self-monitoring, and a variety of deployment models.
 * Kafka Streams is a library that any  standard Java application can embed and hence does not attempt to dictate a deployment method
-* Kafka Streams within k8s will provide horizontal scaling. But it is bounded by the number of partitions. Resilience is ensured with Kafka topics.
+* Kafka Streams within k8s will provide horizontal scaling. But it is bounded by the number of Kafka partitions. Resilience is ensured with Kafka topics.
 * In term of application Life Cycle:
     * Flink: User’s stream processing code is deployed and **run as a job** in the Flink cluster
     * Kakfa Streams: User’s stream processing code **runs inside Java application**

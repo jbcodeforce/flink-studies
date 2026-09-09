@@ -33,27 +33,48 @@ table properties (append / retract / upsert) without custom op fields.
 
 ## Demo architecture
 
-```
-d16_raw_orders (Kafka topic)
-  append-only, op STRING field
-  op codes: 'c' 'ub' 'ua' 'd'
-        │
-        │  FROM_CHANGELOG
-        │  PARTITION BY order_id
-        │  op_mapping: c→INSERT, ub→UPDATE_BEFORE, ua→UPDATE_AFTER, d→DELETE
-        ▼
-d16_orders (Kafka topic, compacted)
-  upsert — Flink updating table
-  Primary Key: order_id
-        │
-        │  TO_CHANGELOG
-        │  PARTITION BY order_id
-        │  op_mapping: INSERT→'c', UPDATE_AFTER→'u', DELETE→'d'
-        ▼
-d16_orders_out (Kafka topic)
-  append-only, op STRING field
-  op codes: 'c' 'u' 'd'  ← ready for any downstream consumer
-```
+* Raw orders has the following records (OP column is the row kind in Flink, while `op` column is the CDC custom values to support):
+    ![](./docs/d16_raw_orders.png)
+
+    with the following characteristics
+    ```
+    d16_raw_orders
+      append-only, op STRING field
+      op codes: 'c' 'ub' 'ua' 'd'
+    ```
+
+* Transform to upsert - compacted d16_orders table using: 
+    ```sql
+      FROM_CHANGELOG
+        PARTITION BY order_id
+        op_mapping: c→INSERT, ub→UPDATE_BEFORE, ua→UPDATE_AFTER, d→DELETE
+    ```
+
+    ![](./docs/d16_orders.png)
+
+* Perform aggregation to a fact tables with product_id as key
+  ```sql
+  insert into d16_order_count
+  SELECT product_id, SUM(*) AS cnt
+  FROM d16_orders
+  GROUP BY product_id;
+  ```
+
+  See [cc-flink/dml.order_count.sql](./cc-flink/dml.order_count.sql)
+
+  ![](./docs/d16_order_count.png)
+
+* Finalize to an append using TO_CHANGELOG
+    ```sql
+        TO_CHANGELOG
+          PARTITION BY order_id
+          op_mapping: INSERT→'c', UPDATE_AFTER→'u', DELETE→'d'
+    ```
+
+* Here is an example of outcome with the row kind
+    ![](./docs/d16_fct_product_usage.png)
+
+The result is appended to d16_fct_product_usage (append-only topic).  Every row there — including a delete — is a fully serialised Kafka record with a non-null value and an explicit 'op' field.  This is different from a Kafka tombstone (null value); use it when the consumer cannot handle tombstones.
 
 ---
 
@@ -63,7 +84,8 @@ d16_orders_out (Kafka topic)
 |---|---|---|---|
 | `d16_raw_orders` | `ddl.raw_orders.sql` | append | Inbound custom CDC stream. Carries `op STRING` with user-defined codes. |
 | `d16_orders` | `ddl.orders.sql` | upsert | Materialised Flink updating table. PK `order_id`. Written by `FROM_CHANGELOG`. |
-| `d16_orders_out` | `ddl.orders_out.sql` | append | Outbound custom changelog. Carries `op STRING` stamped by `TO_CHANGELOG`. |
+| `d16_order_count` | `ddl.order_count.sql` | append | Outbound custom changelog. Carries `op STRING` stamped by `TO_CHANGELOG`. |
+| `d16_fct_product_usage` | `ddl.order_count.sql` | append | Outbound custom changelog. Carries `op STRING` stamped by `TO_CHANGELOG`. |
 
 ---
 

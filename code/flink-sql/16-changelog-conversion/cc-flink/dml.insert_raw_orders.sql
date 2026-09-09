@@ -31,4 +31,16 @@ INSERT INTO d16_raw_orders (order_id, user_id, product_id, quantity, amount, op)
     (4, 'user_3', 'RAISIN',  4, 6.00,  'c'),
 
     -- order 5: plain create
-    (5, 'user_2', 'POPCORN', 1, 3.50,  'c');
+    (5, 'user_2', 'POPCORN', 1, 3.50,  'c'),
+    -- Order 6 to 9 to add record per product
+    (6, 'user_4', 'POPCORN', 3, 3.50,  'c'),
+    (7, 'user_3', 'BANANA',  9, 7.50,  'c'),
+    (8, 'user_4', 'APPLE', 5, 3.50,  'c'),
+    (9, 'user_3', 'PIZZA',  1, 7.50,  'c');
+
+    -- product_id sum is now
+    -- BANANA  14
+    -- PIZZA    3
+    -- POPCORN  4
+    -- APPLE.   5
+    -- RAISIN.  4

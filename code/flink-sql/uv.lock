@@ -264,14 +264,14 @@ schema-registry = [
 
 [[package]]
 name = "confluent-sql"
-version = "0.3.1"
+version = "0.5.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d0/a6/a0a5cbe3ed306c04801bc9b21aabc5fba3149e0400dfcdd666f0b79f33ba/confluent_sql-0.3.1.tar.gz", hash = "sha256:d2c19cfa90b3540fff5476730fd348c72cfc90629cf0ca1d4e8ff5ae2b07fe5b", size = 199471, upload-time = "2026-05-21T14:10:44.581Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/31/60/4e873a7579d8f7ba35fd42730c012220fac1f0df6878245aca86808ae6c3/confluent_sql-0.5.4.tar.gz", hash = "sha256:db557e2bc2a5b4ba8ee1aef2baa306495eabac73b752516269c4b1e40e8b7d03", size = 303289, upload-time = "2026-09-08T15:17:42.691Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/12/b7/a182469c07abea12c29d5e697c6febd7aa9c940d3a1088dcd09064eda8c2/confluent_sql-0.3.1-py3-none-any.whl", hash = "sha256:13b08e238f693c1f6059f53ef06153ae5afb39cd1a36db79d1824021a6627cc2", size = 73950, upload-time = "2026-05-21T14:10:43.382Z" },
+    { url = "https://files.pythonhosted.org/packages/bb/9d/f5efd5d7aff73ca1cdf5bb68b818c292f4f90e08b4ea8f9ded75f476df60/confluent_sql-0.5.4-py3-none-any.whl", hash = "sha256:71488ade6c8f8982889de7a7c3041f96774f73f2bedb636aa015f6f0b137f0df", size = 113646, upload-time = "2026-09-08T15:17:41.532Z" },
 ]
 
 [[package]]
@@ -377,7 +377,7 @@ wheels = [
 
 [[package]]
 name = "dbt-confluent"
-version = "0.2.1"
+version = "0.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "agate" },
@@ -387,9 +387,9 @@ dependencies = [
     { name = "dbt-core" },
     { name = "httpx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cb/73/e23f06d6e3d577e7e21d38183c0ffb78aea3c859f8af6ad65c756ee2e2d2/dbt_confluent-0.2.1.tar.gz", hash = "sha256:3e68ee2bac9130508ea3a3589966eb8ffca9b29296af4d5803f912bcd1d2082f", size = 141082, upload-time = "2026-05-27T14:22:10.076Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9c/c3/f9e12a2ea36581d8a3618ba99a38ef9727efc07ade055b0d17d00af881f2/dbt_confluent-0.3.1.tar.gz", hash = "sha256:def9243982ed05749dabc85bb2904f9181ff4e75d935af9943894f5356712965", size = 155132, upload-time = "2026-09-09T15:58:17.195Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/52/53/428e35732a89d76d95c5a6fa37197450ce90dacee2b4ba2cbc988dfe9cb7/dbt_confluent-0.2.1-py3-none-any.whl", hash = "sha256:29017108c925e7846eb5380f92ea65f9f94f86c502279a5694415d553e9eb457", size = 41616, upload-time = "2026-05-27T14:22:08.562Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/2d/2446270d6704528bacfb6c87202607e1d9dd6f98b21997833de6168c966f/dbt_confluent-0.3.1-py3-none-any.whl", hash = "sha256:ce61a28d584963f6f3d6bec3429cf03375162e2966065500ad68dc1f3c96138a", size = 51215, upload-time = "2026-09-09T15:58:15.966Z" },
 ]
 
 [[package]]
@@ -500,6 +500,7 @@ dependencies = [
     { name = "authlib" },
     { name = "cachetools" },
     { name = "confluent-kafka", extra = ["schema-registry"] },
+    { name = "confluent-sql" },
     { name = "dbt-confluent" },
     { name = "jsonschema" },
     { name = "orjson" },
@@ -513,8 +514,9 @@ dependencies = [
 requires-dist = [
     { name = "authlib", specifier = ">=1.6.5" },
     { name = "cachetools", specifier = ">=6.2.1" },
-    { name = "confluent-kafka", extras = ["schema-registry"], specifier = ">=2.3.0" },
-    { name = "dbt-confluent", specifier = ">=0.2.1" },
+    { name = "confluent-kafka", extras = ["schema-registry"], specifier = ">=2.6.0" },
+    { name = "confluent-sql", specifier = ">=0.5.4" },
+    { name = "dbt-confluent", specifier = ">=0.3.0" },
     { name = "jsonschema", specifier = ">=4.25.1" },
     { name = "orjson", specifier = ">=3.11.3" },
     { name = "psycopg2", specifier = ">=2.9.11" },

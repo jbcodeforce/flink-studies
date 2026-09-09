@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from flink_dbt_migrate.discover_deps import UpstreamDep
 from flink_dbt_migrate.parse_ddl import DdlTable
-from flink_dbt_migrate.parse_dml import DmlStatement
-from flink_dbt_migrate.rewrite_refs import collect_cte_names, rewrite_refs
+from flink_dbt_migrate.parse_dml import DmlStatement, collect_cte_names
+from flink_dbt_migrate.rewrite_refs import rewrite_refs
 
 
 def format_config_block(

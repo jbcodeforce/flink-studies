@@ -5,12 +5,11 @@
 --   'u' = update  (was UPDATE_AFTER)
 --   'd' = delete  (was DELETE)
 -- A microservice, Connect sink, or non-Flink consumer can act on 'op' directly.
-CREATE TABLE IF NOT EXISTS d16_orders_out (
-    order_id    INT,
-    user_id     STRING,
+CREATE TABLE IF NOT EXISTS d16_fct_product_usage (
     product_id  STRING,
-    op          STRING          -- op code stamped by TO_CHANGELOG
-) DISTRIBUTED BY HASH(order_id) INTO 1 BUCKETS
+    op          STRING,         -- op code stamped by TO_CHANGELOG
+    cnt       BIGINT
+) DISTRIBUTED BY HASH(product_id) INTO 1 BUCKETS
 WITH (
     'changelog.mode'        = 'append',
     'value.format'          = 'avro-registry',

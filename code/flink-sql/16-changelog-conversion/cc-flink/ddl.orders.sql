@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS d16_orders (
     quantity    INT,
     amount      DOUBLE,
     PRIMARY KEY (order_id) NOT ENFORCED
-) DISTRIBUTED BY HASH(order_id) INTO 1 BUCKETS
+) DISTRIBUTED BY HASH(order_id) INTO 2 BUCKETS
 WITH (
     'changelog.mode'        = 'upsert',
     'key.format'            = 'avro-registry',

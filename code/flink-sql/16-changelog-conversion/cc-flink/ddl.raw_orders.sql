@@ -7,11 +7,11 @@
 -- FROM_CHANGELOG reads this table and translates 'op' into Flink row kinds.
 CREATE TABLE IF NOT EXISTS d16_raw_orders (
     order_id    INT,
-    op          STRING,        -- custom op code; NOT a Flink system column
     user_id     STRING,
     product_id  STRING,
     quantity    INT,
-    amount      DOUBLE
+    amount      DOUBLE,
+        op          STRING        -- custom op code; NOT a Flink system column
 
 ) DISTRIBUTED BY HASH(order_id) INTO 1 BUCKETS
 WITH (

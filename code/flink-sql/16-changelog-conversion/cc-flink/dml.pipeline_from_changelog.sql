@@ -13,16 +13,16 @@
 -- Materialising first is required: a foreground SELECT directly on a
 -- FROM_CHANGELOG upsert output can silently return wrong results (known
 -- limitation documented at docs.confluent.io).
---
+-- The output includes every input column except the operation-code column, which Flink interprets and removes
 -- PARTITION BY order_id ensures all changes for the same key are processed
 -- by the same Flink task, preserving event order.
 
-INSERT INTO d16_orders_out
-SELECT order_id, op, user_id, product_id, quantity, amount
+INSERT INTO d16_orders
+SELECT order_id, user_id, product_id, quantity, amount
 FROM FROM_CHANGELOG(
     input      => TABLE d16_raw_orders PARTITION BY order_id,
     op         => DESCRIPTOR(op),
-    op_mapping => MAP[
+    op_mapping => MAP[ --  map to row kind
         'c',  'INSERT',
         'ub', 'UPDATE_BEFORE',
         'ua', 'UPDATE_AFTER',
