@@ -89,27 +89,6 @@ The result is appended to d16_fct_product_usage (append-only topic).  Every row 
 
 ---
 
-## Op code convention
-
-The seed data and pipelines use the same op codes as the Confluent how-to guide:
-
-| Code | Meaning | Maps to Flink row kind |
-|---|---|---|
-| `c` | create | `INSERT` (`+I`) |
-| `ub` | update-before | `UPDATE_BEFORE` (`-U`) |
-| `ua` | update-after | `UPDATE_AFTER` (`+U`) |
-| `d` | delete | `DELETE` (`-D`) |
-
-`TO_CHANGELOG` uses a simpler outbound mapping (no before-image):
-
-| Flink row kind | Outbound op code |
-|---|---|
-| `INSERT` | `c` |
-| `UPDATE_AFTER` | `u` |
-| `DELETE` | `d` |
-
----
-
 ## Prerequisites
 
 - Confluent Cloud account with a Flink compute pool
@@ -150,13 +129,12 @@ Creates three tables in order: `d16_raw_orders` → `d16_orders` → `d16_orders
 make deploy-data
 ```
 
-Inserts 10 rows into `d16_raw_orders` covering a full order lifecycle:
+Inserts 14 rows into `d16_raw_orders` covering a full order lifecycle:
 - `order_id = 1`: create (`c`) → update-before (`ub`) → update-after (`ua`) → delete (`d`)
 - `order_id = 3`: create → price correction pair (`ub`/`ua`)
 - `order_id = 2, 4, 5`: plain creates (`c`)
 
-**What to observe in `d16_raw_orders` topic:** 10 append records, each with a non-null `op`
-field. Flink sees them all as plain inserts — the `op` field is just a data column at this point.
+**What to observe in `d16_raw_orders` topic:** append records, each with a non-null `op` field. Flink sees them all as plain inserts — the `op` field is just a data column at this point.
 
 ### 4. Start the pipelines
 
@@ -164,60 +142,7 @@ field. Flink sees them all as plain inserts — the `op` field is just a data co
 make deploy-pipeline
 ```
 
-This starts two background Flink statements in order:
-
-**`d16-pipeline-from-changelog`** — reads `d16_raw_orders` through `FROM_CHANGELOG`:
-```sql
-INSERT INTO d16_orders
-SELECT order_id, user_id, product_id, quantity, amount
-FROM FROM_CHANGELOG(
-    input      => TABLE d16_raw_orders PARTITION BY order_id,
-    op         => DESCRIPTOR(op),
-    op_mapping => MAP['c','INSERT', 'ub','UPDATE_BEFORE', 'ua','UPDATE_AFTER', 'd','DELETE']
-);
-```
-
-**`d16-pipeline-to-changelog`** — converts `d16_orders` back through `TO_CHANGELOG`:
-```sql
-INSERT INTO d16_orders_out
-SELECT * FROM TO_CHANGELOG(
-    input      => TABLE d16_orders PARTITION BY order_id,
-    op         => DESCRIPTOR(op),
-    op_mapping => MAP['INSERT','c', 'UPDATE_AFTER','u', 'DELETE','d']
-);
-```
-
----
-
-## What to observe
-
-### `d16_orders` topic (upsert / compacted)
-
-- `order_id = 1` first arrives as a regular record (create), is then updated (the compacted
-  topic shows the final value), and finally appears as a **tombstone** (null value record) —
-  because `d16_orders` is an upsert table and Flink writes a real Kafka tombstone on `DELETE`.
-- `order_id = 3` shows the price-corrected amount (`20.00`); the intermediate `18.00` value
-  may have been coalesced within a checkpoint.
-- `order_id = 2, 4, 5` each appear as a single record with their create values.
-
-In Flink SQL:
-```sql
-SELECT * FROM d16_orders;
--- order_id = 1 is gone (deleted), remaining orders show final values.
-```
-
-### `d16_orders_out` topic (append)
-
-- Every change is a **fully serialised Kafka record with a non-null value** — including
-  deletes. A delete for `order_id = 1` arrives as `+I[1, user_1, APPLE, 'd']`, not a
-  tombstone. This is the key difference from upsert tables: `TO_CHANGELOG` is for consumers
-  that can't handle Kafka tombstones.
-- The `op` column carries `'c'`, `'u'`, or `'d'` — ready for any microservice or
-  Connect sink to process without understanding Flink internals.
-
----
-
-## Teardown
+### 5. Teardown
 
 ```sh
 make undeploy      # stops the two pipeline Flink statements
@@ -228,27 +153,12 @@ make drop-tables   # drops d16_orders_out, d16_orders, d16_raw_orders (in that o
 
 ## Known limitations
 
-1. **1:1 record mapping** — `FROM_CHANGELOG` maps each input record to exactly one row kind.
-   A single message cannot be split into a `UPDATE_BEFORE` / `UPDATE_AFTER` pair. This is why
-   systems like DynamoDB (which carry both old and new images in a single `MODIFY` event) must
-   map `MODIFY` → `UPDATE_AFTER` only, producing an upsert stream instead of a retract stream.
+1. **1:1 record mapping** — `FROM_CHANGELOG` maps each input record to exactly one row kind. A single message cannot be split into a `UPDATE_BEFORE` / `UPDATE_AFTER` pair. This is why
+   systems like DynamoDB (which carry both old and new images in a single `MODIFY` event) must map `MODIFY` → `UPDATE_AFTER` only, producing an upsert stream instead of a retract stream.
 
-2. **Upsert output foreground SELECT limitation** — If `FROM_CHANGELOG`'s `op_mapping`
-   contains no `UPDATE_BEFORE` (upsert mode), the result **cannot** be read by a foreground
-   `SELECT` directly. Always materialise via `INSERT INTO` first, then query the sink table.
-   This demo avoids the issue by mapping all four row kinds (retract mode).
+2. **Upsert output foreground SELECT limitation** — If `FROM_CHANGELOG`'s `op_mapping` contains no `UPDATE_BEFORE` (upsert mode), the result **cannot** be read by a foreground
+   `SELECT` directly. Always materialise via `INSERT INTO` first, then query the sink table. 
 
-3. **`FROM_CHANGELOG` is an advanced feature** — Flink does not validate that the incoming
-   stream is a correct changelog. An incorrect mapping can produce silently wrong downstream
-   results. Ensure: every update/delete refers to a key you've already inserted; all op codes
-   are mapped; events for the same key are in order; the key is unique per row.
+3. **`FROM_CHANGELOG` is an advanced feature** — Flink does not validate that the incoming stream is a correct changelog. An incorrect mapping can produce silently wrong downstream
+   results. Ensure: every update/delete refers to a key you've already inserted; all op codes are mapped; events for the same key are in order; the key is unique per row.
 
----
-
-## Advanced: DynamoDB Streams
-
-The Confluent how-to guide includes a worked example for ingesting Amazon DynamoDB Streams
-(a non-Debezium CDC format with nested `NewImage` / `OldImage` typed attributes). The pattern
-is identical — define a `dynamodb_cdc` append table with a `ROW<...>` column and computed
-column projections, then call `FROM_CHANGELOG` with `MODIFY → UPDATE_AFTER`. See:
-[Example: convert Amazon DynamoDB Streams change data](https://docs.confluent.io/cloud/current/flink/how-to-guides/read-write-custom-changelog.html#flink-read-write-changelog-dynamodb-example)

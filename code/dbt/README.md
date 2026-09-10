@@ -309,7 +309,7 @@ The [airbnb_streaming](airbnb_streaming/) project targets Confluent Cloud for Fl
 
   ```bash
   cd code/dbt
-  uv run dbt seed --project airbnb_streaming --target dev
+  uv run dbt seed --project-dir airbnb_streaming --target dev
   ```
 
 * Validate in the Confluent Cloud Flink SQL Workspace:
@@ -336,7 +336,7 @@ To run it do:
 uv run python scripts/produce_to_kafka.py
 ```
 
-Each raw_topic needs to be defined in the sources.yml. As an example the raw_host is defined with schema referncing the name of the kafka cluster in Confluent Cloud.
+Each raw_topic needs to be defined in the `sources.yml`. As an example, the `raw_host` is defined with schema referencing the name of the kafka cluster in Confluent Cloud.
 
 
 ```yaml
@@ -379,10 +379,6 @@ In the models/user_reviews/sources folder, define the 3 dbt model to deduplicate
         'changelog.mode': 'append',
         'connector': 'confluent',
         'kafka.cleanup-policy': 'delete',
-        'kafka.compaction.time': '0 ms',
-        'kafka.max-message-size': '2097164 bytes',
-        'kafka.retention.size': '0 bytes',
-        'kafka.retention.time': '0 ms',
         'scan.bounded.mode': 'unbounded',
         'scan.startup.mode': 'earliest-offset',
         'value.format': 'avro-registry'
@@ -424,11 +420,22 @@ uv run sql_to_dbt_yaml.py ../airbnb_streaming/models/user_reviews/dimensions/dim
 
 The difference with batch are:
 
-* changelog.mode needs to be set. Use = append for simple projections, upsert for joins/aggregations
+* changelog.mode needs to be set. Use = `append` for simple projections, `upsert` for joins/aggregations:
+  ```yaml
+  ```
+
 * Column types use Flink types: varchar(2147483647) for strings, bigint for ints, decimal(10,2) for prices, boolean for booleans, DATE for dates
-* Each SQL file gets a companion .yml file declaring column types
-*  In Flink SQL the aggregation must use a streaming-compatible pattern — a TUMBLE window on review_date (truncated to month boundary) would require event-time, but the dates in the streaming project are stored as varchar. The correct streaming approach is a running GROUP BY (no window), which Flink supports as a retract/upsert aggregation. The key is changelog.mode: upsert and grouping by (listing_id, review_month) where review_month is derived via CAST(SUBSTRING(review_date, 1, 7) || '-01' AS DATE) 
+* Better to organize the table per folder with each SQL file gets a companion .yml file declaring column types
+* In Flink SQL the aggregation must use a streaming-compatible pattern — a TUMBLE window on review_date (truncated to month boundary) would require event-time, but the dates in the streaming project are stored as varchar. The correct streaming approach is a running GROUP BY (no window), which Flink supports as a retract/upsert aggregation. The key is changelog.mode: upsert and grouping by (listing_id, review_month) where review_month is derived via CAST(SUBSTRING(review_date, 1, 7) || '-01' AS DATE) 
 * DATEDIFF('day', a, b)	is now TIMESTAMPDIFF(DAY, a, b)
+
+### Undeploy
+
+dbt does not offer a undeploy of tables. Which in the case of Flink Statements may be an issue for development or staging environment. We propose the following tools:
+
+* Build a manifest for the tables of the project
+
+* Drop tables
 
 ## With dbt-confluent - flink_workshop project
 

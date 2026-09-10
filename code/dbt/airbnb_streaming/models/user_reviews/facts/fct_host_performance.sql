@@ -11,11 +11,7 @@
     with= {
         'changelog.mode': 'upsert',
         'connector': 'confluent',
-        'kafka.cleanup-policy': 'delete',
-        'kafka.compaction.time': '0 ms',
-        'kafka.max-message-size': '2097164 bytes',
-        'kafka.retention.size': '0 bytes',
-        'kafka.retention.time': '0 ms',
+        'kafka.cleanup-policy': 'compact',
         'scan.bounded.mode': 'unbounded',
         'scan.startup.mode': 'earliest-offset',
         'value.format': 'avro-registry'

@@ -10,11 +10,7 @@
     with= {
         'changelog.mode': 'upsert',
         'connector': 'confluent',
-        'kafka.cleanup-policy': 'delete',
-        'kafka.compaction.time': '0 ms',
-        'kafka.max-message-size': '2097164 bytes',
-        'kafka.retention.size': '0 bytes',
-        'kafka.retention.time': '0 ms',
+        'kafka.cleanup-policy': 'compact',
         'scan.bounded.mode': 'unbounded',
         'scan.startup.mode': 'earliest-offset',
         'value.format': 'avro-registry'
@@ -57,17 +53,17 @@ SELECT
   r.first_review_date,
   r.last_review_date,
   r.total_reviews,
-  TIMESTAMPDIFF(DAY, r.first_review_date, r.last_review_date)           AS days_active,
+  TIMESTAMPDIFF(DAY, r.first_review_date, r.last_review_date)        AS days_active,
   CAST(
     CAST(TIMESTAMPDIFF(DAY, r.first_review_date, r.last_review_date) AS DOUBLE)
     / NULLIF(CAST(r.total_reviews - 1 AS DOUBLE), 0.0)
     AS DECIMAL(10, 1)
-  )                                                                      AS avg_days_between_reviews,
-  TIMESTAMPDIFF(DAY, r.last_review_date, r.current_ts)                  AS days_since_last_review,
+  )                                                                  AS avg_days_between_reviews,
+  TIMESTAMPDIFF(DAY, r.last_review_date, r.current_ts)               AS days_since_last_review,
   CASE
-    WHEN r.total_reviews <= 3                                                       THEN 'New'
-    WHEN TIMESTAMPDIFF(DAY, r.last_review_date, r.current_ts) <= 180               THEN 'Active'
-    ELSE                                                                                 'Dormant'
-  END                                                                    AS activity_status
+    WHEN r.total_reviews <= 3                                        THEN 'New'
+    WHEN TIMESTAMPDIFF(DAY, r.last_review_date, r.current_ts) <= 180 THEN 'Active'
+    ELSE                                                                  'Dormant'
+  END                                                                AS activity_status
 FROM listings l
 INNER JOIN review_agg r ON l.listing_id = r.listing_id

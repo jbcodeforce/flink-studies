@@ -513,6 +513,8 @@ There are two strategies for assessing data changes:
   dbt test -s mart_fullmoon_reviews
   ```
 
+---
+
 ## Confluent Cloud Flink Specifics
 
 Confluent has developed two Python modules: [`dbt-confluent`](https://pypi.org/project/dbt-confluent/) (adapt dbt-core to confluent cloud) and [`confluent-sql`](https://pypi.org/project/confluent-sql/) (Python DBAPI V2 Compatible driver to be able to run snapshot, streaming queries with different cursors). 
