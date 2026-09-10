@@ -1,6 +1,0 @@
-authlib>=1.7.2
-cachetools>=7.1.7
-confluent-kafka>=2.10.0
-rich>=15.0.0
-sqlalchemy>=2.0.50
-sqlglot>=25.0.0

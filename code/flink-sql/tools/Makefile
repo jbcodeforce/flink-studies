@@ -1,27 +1,38 @@
-# Shared Flink SQL deploy tools (confluent-sql REST API).
-# Install: uv sync
-# Usage: make deploy SQL_DIR=../00-basic-sql/cc-flink
+# code/flink-sql/tools/Makefile
+#
+# Backward-compatible shim — all targets delegate to the root tools.mk,
+# which calls the flink-tools-for-agents CLI tools.
+#
+# Existing demos that do:
+#   TOOLS := $(abspath ../../tools)
+#   $(MAKE) -C $(TOOLS) deploy SQL_DIR=$(DEMO)
+# will continue to work unchanged.
+#
+# Install tools once:
+#   make sync
+#
+# Deploy a demo:
+#   make deploy SQL_DIR=../00-basic-sql/cc-flink
 
-# Prefer tools/.venv via uv (not system python3).
-PYTHON ?= uv run python
-SQL_DIR ?= ../11-puzzles/cart_update
+TOOLS_MK := $(abspath ../../../tools.mk)
+SQL_DIR  ?= .
 
-.PHONY: sync deploy undeploy drop-tables deploy-% undeploy-%
+.PHONY: sync manifest manifest-dbt manifest-dry groups \
+        deploy undeploy drop-tables deploy-% undeploy-% \
+        snapshot stream
 
-sync:
-	uv sync
-
-deploy:
-	$(PYTHON) -m cc_deploy.deploy_flink_statements --sql-dir $(SQL_DIR) deploy --group all
-
-undeploy:
-	$(PYTHON) -m cc_deploy.deploy_flink_statements --sql-dir $(SQL_DIR) undeploy --group all --no-drop-tables
-
-drop-tables:
-	$(PYTHON) -m cc_deploy.deploy_flink_statements --sql-dir $(SQL_DIR) drop-tables
+# Forward every target to tools.mk, passing SQL_DIR through.
+sync manifest manifest-dbt manifest-dry groups deploy undeploy drop-tables:
+	$(MAKE) -f $(TOOLS_MK) $@ SQL_DIR=$(SQL_DIR)
 
 deploy-%:
-	$(PYTHON) -m cc_deploy.deploy_flink_statements --sql-dir $(SQL_DIR) deploy --group $*
+	$(MAKE) -f $(TOOLS_MK) deploy-$* SQL_DIR=$(SQL_DIR)
 
 undeploy-%:
-	$(PYTHON) -m cc_deploy.deploy_flink_statements --sql-dir $(SQL_DIR) undeploy --group $*
+	$(MAKE) -f $(TOOLS_MK) undeploy-$* SQL_DIR=$(SQL_DIR)
+
+snapshot:
+	$(MAKE) -f $(TOOLS_MK) snapshot TABLE=$(TABLE) SQL_DIR=$(SQL_DIR)
+
+stream:
+	$(MAKE) -f $(TOOLS_MK) stream TABLE=$(TABLE) MAX_ROWS=$(MAX_ROWS) SQL_DIR=$(SQL_DIR)
