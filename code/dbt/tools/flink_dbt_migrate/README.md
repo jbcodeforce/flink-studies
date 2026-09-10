@@ -16,6 +16,7 @@ Projects managed by the `shift_left` utilities adopt a specific folder structure
 ## Requirements
 
 - [x] Exposed as CLI command via Typer: `flink_dbt_migrate.migrate_dml_to_dbt`
+- [ ] Support shift_left project migration <https://github.com/jbcodeforce/flink_project_demos/tree/main/customer_360/c360_flink_processing> to c360_flink_dsp_dbt folder
 - [x] Dry-run mode (prints model SQL + `schema.yml` to stdout without writing files)
 - [x] Extract schema definition from a DDL file to generate `schema.yaml`
 - [x] Infer schema from DML or an existing sibling DDL file with the same stem
@@ -27,7 +28,7 @@ Projects managed by the `shift_left` utilities adopt a specific folder structure
 - [x] Resolve upstream tables from `FROM` / `JOIN` / `TABLE(...)` as `{{ ref() }}` or `{{ source() }}`; generates/updates `sources.yaml`
 - [x] Transform `INSERT INTO ... VALUES` DML into a dbt CSV seed + `seeds/schema.yml` entry (auto-detected by `migrate` and `migrate-sl-folder`)
 - [ ] Validate generated Flink SQL after `dbt compile` against the source DML
-- [ ] Full project migration: <https://github.com/jbcodeforce/flink_project_demos/tree/main/customer_360/c360_flink_processing> to c360_flink_dsp_dbt folder
+
 - [ ] Migrate bigger repository
 
 ---

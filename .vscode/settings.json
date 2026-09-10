@@ -7,7 +7,7 @@
 
     // Pylance is required for cross-file "Find References", "Go to Definition",
     // rename, and hover-type information. Jedi only works within a single file.
-    "python.languageServer": "Pylance",
+    "python.languageServer": "None",
 
     // Paths that Pylance's static analyser resolves imports from
     "python.analysis.extraPaths": [

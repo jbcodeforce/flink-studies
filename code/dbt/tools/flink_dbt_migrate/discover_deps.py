@@ -7,8 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-from flink_dbt_migrate.parse_ddl import DdlTable, parse_ddl
-from flink_dbt_migrate.parse_dml import DmlStatement, collect_cte_names, strip_identifier
+from flink_dbt_migrate.flink_sql_processor import DdlTable, parse_ddl, DmlStatement, collect_cte_names, strip_identifier
 
 _TABLE_TAIL = r"(?=[\s,\)]|$|\s+AS\b)"
 _NOT_SUBQUERY = r"(?!\s*\()"

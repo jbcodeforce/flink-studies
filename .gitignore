@@ -47,3 +47,4 @@ e2e-demos/cc-cdc-tx-demo/cc-flink-sql/staging/
 **/dbt.log
 **/iac-outputs.json
 **/plans/
+**/dbt_out/

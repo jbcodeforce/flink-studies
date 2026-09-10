@@ -8,7 +8,7 @@ import pytest
 import yaml
 from typer.testing import CliRunner
 
-from flink_dbt_migrate.emit_seed import (
+from flink_dbt_migrate.dbt_element_mgr import (
     build_seed_schema_entry,
     emit_seed_csv,
     emit_seed_schema_yml,

@@ -6,7 +6,7 @@ import difflib
 import re
 from dataclasses import dataclass
 
-from flink_dbt_migrate.parse_dml import DmlStatement
+from flink_dbt_migrate.flink_sql_processor import DmlStatement
 
 
 @dataclass(frozen=True)

@@ -6,11 +6,7 @@ Requires-Python: >=3.12
 Description-Content-Type: text/markdown
 Requires-Dist: authlib>=1.7.2
 Requires-Dist: cachetools>=7.1.7
-Requires-Dist: chromadb>=1.5.9
 Requires-Dist: confluent-kafka>=2.10.0
-Requires-Dist: ddgs>=9.14.4
-Requires-Dist: ollama>=0.4.0
-Requires-Dist: openai>=2.38.0
 Requires-Dist: rich>=15.0.0
 Requires-Dist: sqlalchemy>=2.0.50
 Requires-Dist: sqlglot>=25.0.0

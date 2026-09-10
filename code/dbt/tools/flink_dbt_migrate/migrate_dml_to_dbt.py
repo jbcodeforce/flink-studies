@@ -3,146 +3,25 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
+from dataclasses import asdict
 import sys
-from dataclasses import dataclass, field
+import json
 from pathlib import Path
 from typing import Annotated
-
 import typer
 
-from flink_dbt_migrate.compare_sql import compare_migration, format_compare_report
+from flink_dbt_migrate.sl_discovery_mgr import crawl_pipeline_folder
 from flink_dbt_migrate.migrate import (
     migrate_dml_to_dbt,
     migrate_values_dml_to_seed,
 )
-from flink_dbt_migrate.parse_dml import (
-    discover_ddl_path,
+from flink_dbt_migrate.flink_sql_processor import (
     is_values_insert,
-    parse_dml,
-    parse_values_dml,
+        _get_logger,
 )
-from flink_dbt_migrate.temp_write import begin_temp_write, restore_temp_write
-from flink_dbt_migrate.validate_compile import (
-    DbtCompileError,
-    find_dbt_project,
-    resolve_ref_aliases,
-    validate_compiled_migration,
-)
+
 
 app = typer.Typer(add_completion=False)
-
-
-# ---------------------------------------------------------------------------
-# Pipeline folder crawler
-# ---------------------------------------------------------------------------
-
-@dataclass(frozen=True)
-class TableEntry:
-    """A single table discovered inside a shift_left pipeline folder."""
-
-    table_name: str
-    dml_path: Path
-    ddl_path: Path
-    dml_sha256: str
-    relative_path: Path  # path from pipeline root to the table's parent dir
-    # table_name → absolute DDL path for upstream tables, sourced from pipeline_definition.json
-    upstream_ddl_map: dict[str, Path] = field(default_factory=dict)
-    is_seed: bool = False
-
-
-def _upstream_ddl_map_from_pipeline_def(
-    table_dir: Path,
-    pipelines_root: Path,
-) -> dict[str, Path]:
-    """Read pipeline_definition.json and return {table_name: abs_ddl_path} for all parents."""
-    pipeline_def = table_dir / "pipeline_definition.json"
-    if not pipeline_def.is_file():
-        return {}
-    try:
-        data = json.loads(pipeline_def.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return {}
-
-    ddl_map: dict[str, Path] = {}
-    for parent in data.get("parents", []):
-        name = parent.get("table_name", "")
-        ddl_ref = parent.get("ddl_ref", "")
-        if name and ddl_ref:
-            abs_ddl = (pipelines_root / ddl_ref).resolve()
-            if abs_ddl.is_file():
-                ddl_map[name] = abs_ddl
-    return ddl_map
-
-
-def _find_pipelines_root(folder: Path) -> Path:
-    """Walk up from *folder* to find the directory that contains a 'pipelines/' sub-tree.
-
-    Falls back to *folder* itself if no such ancestor is found.
-    """
-    current = folder.resolve()
-    for ancestor in [current, *current.parents]:
-        if (ancestor / "pipelines").is_dir():
-            return ancestor
-    return current
-
-
-def crawl_pipeline_folder(folder: Path) -> list[TableEntry]:
-    """Recursively walk *folder* and return one TableEntry per discoverable table.
-
-    A table is discoverable when:
-    - a ``sql_scripts/`` subdirectory exists, AND
-    - at least one ``dml.*.sql`` file is present, AND
-    - a matching ``ddl.*.sql`` can be resolved via the standard discovery rules.
-
-    Tables whose DDL cannot be found are skipped with a warning on stderr.
-    Upstream DDL paths are resolved from ``pipeline_definition.json`` when present.
-    """
-    folder = folder.resolve()
-    pipelines_root = _find_pipelines_root(folder)
-
-    entries: list[TableEntry] = []
-    for sql_scripts_dir in sorted(folder.rglob("sql-scripts")):
-        if not sql_scripts_dir.is_dir():
-            continue
-        table_dir = sql_scripts_dir.parent
-        upstream_ddl_map = _upstream_ddl_map_from_pipeline_def(table_dir, pipelines_root)
-
-        for dml_file in sorted(sql_scripts_dir.glob("dml.*.sql")):
-            try:
-                dml_text = dml_file.read_text(encoding="utf-8")
-                is_seed = is_values_insert(dml_text)
-                if is_seed:
-                    target_table = parse_values_dml(dml_text, source_file=dml_file.name).target_table
-                else:
-                    target_table = parse_dml(dml_text, source_file=dml_file.name).target_table
-                ddl_file_path = Path(
-                    discover_ddl_path(str(dml_file), target_table)
-                )
-            except FileNotFoundError as exc:
-                typer.echo(f"WARNING: skipping {dml_file.name} — {exc}", err=True)
-                continue
-            except ValueError as exc:
-                typer.echo(f"WARNING: skipping {dml_file.name} — {exc}", err=True)
-                continue
-
-            sha256 = hashlib.sha256(dml_file.read_bytes()).hexdigest()
-            # relative_path: from folder root to the table directory (parent of sql_scripts)
-            relative_path = table_dir.relative_to(folder)
-            entries.append(
-                TableEntry(
-                    table_name=target_table,
-                    dml_path=dml_file,
-                    ddl_path=ddl_file_path,
-                    dml_sha256=sha256,
-                    relative_path=relative_path,
-                    upstream_ddl_map=upstream_ddl_map,
-                    is_seed=is_seed,
-                )
-            )
-    return entries
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -169,6 +48,10 @@ def run_migrate_seed(
     force: bool,
     check: bool,
 ) -> None:
+    _get_logger().info(
+        "run_migrate_seed | statement_file=%s seeds_dir=%s seed_name=%s write=%s force=%s check=%s",
+        statement_file, seeds_dir, seed_name, write, force, check,
+    )
     try:
         result = migrate_values_dml_to_seed(
             statement_file,
@@ -219,75 +102,6 @@ def run_migrate_seed(
         print(f"# DDL source: {result.ddl_path}", file=sys.stderr)
 
 
-def run_validate(
-    statement_file: Path,
-    result_model_path: Path,
-    result_schema_path: Path,
-    result_model_sql: str,
-    result_schema_yml: str,
-    model_name: str,
-    target_dir: Path,
-    *,
-    dbt_project_dir: Path | None,
-    dbt_target: str,
-    dbt_profiles_dir: Path | None,
-    ref_overrides: dict[str, str],
-    write: bool,
-    sources_path: Path | None,
-    sources_yml: str | None,
-) -> None:
-    should_restore = not write
-    temp_state = begin_temp_write(
-        result_model_path,
-        result_schema_path,
-        result_model_sql,
-        result_schema_yml,
-        sources_path=sources_path,
-        sources_yml=sources_yml,
-    )
-
-    try:
-        project_dir = (
-            dbt_project_dir.resolve()
-            if dbt_project_dir is not None
-            else find_dbt_project(target_dir)
-        )
-        typer.echo(f"Call validate for {project_dir} model: {model_name} in {dbt_target}")
-        compile_result = validate_compiled_migration(
-            project_dir,
-            result_model_path,
-            model_name,
-            profiles_dir=dbt_profiles_dir,
-            target=dbt_target,
-            ref_overrides=ref_overrides,
-        )
-    except (DbtCompileError, FileNotFoundError, ValueError) as exc:
-        if should_restore:
-            restore_temp_write(temp_state)
-        typer.echo(str(exc), err=True)
-        raise typer.Exit(1) from exc
-
-    source_text = statement_file.read_text(encoding="utf-8")
-    source_dml = parse_dml(source_text, source_file=statement_file.name)
-    ref_aliases = resolve_ref_aliases(
-        compile_result.project_dir,
-        model_name,
-        ref_overrides,
-    )
-    compare_result = compare_migration(
-        source_dml,
-        compile_result.compiled_sql,
-        ref_aliases,
-    )
-
-    if should_restore:
-        restore_temp_write(temp_state)
-
-    typer.echo(format_compare_report(compare_result))
-    if not compare_result.body_match:
-        raise typer.Exit(1)
-
-
 # ---------------------------------------------------------------------------
 # CLI commands
 # ---------------------------------------------------------------------------
@@ -310,10 +124,6 @@ def migrate_sl_folder(
         bool,
         typer.Option("--force", help="Overwrite existing models and schema.yml entries"),
     ] = False,
-    materialized: Annotated[
-        str,
-        typer.Option("--materialized", help="dbt materialization (default: streaming_table)"),
-    ] = "streaming_table",
 ) -> None:
     """Crawl a shift-left pipelines folder and migrate every table to dbt.
 
@@ -322,6 +132,10 @@ def migrate_sl_folder(
 
         pipelines/dimensions/customer/  →  dbt_project/models/dimensions/customer/
     """
+    _get_logger().info(
+        "migrate_sl_folder | pipeline_dir=%s dbt_project_dir=%s write=%s force=%s",
+        pipeline_dir, dbt_project_dir, write, force,
+    )
     pipeline_dir = pipeline_dir.resolve()
     dbt_project_dir = dbt_project_dir.resolve()
 
@@ -340,7 +154,7 @@ def migrate_sl_folder(
     typer.echo(f"\nDiscovered {len(entries)} table(s):")
     col = max(len(e.table_name) for e in entries)
     for e in entries:
-        typer.echo(f"  {e.table_name:<{col}}  sha256={e.dml_sha256[:12]}…  ({e.relative_path})")
+        typer.echo(f"  {e.table_name:<{col}} ({e.relative_path}) seed: {e.is_seed}")
     typer.echo("")
 
     if not write:
@@ -379,7 +193,6 @@ def migrate_sl_folder(
                 entry.dml_path,
                 target_dir,
                 ddl_file=entry.ddl_path,
-                materialized=materialized,
                 force=force,
                 upstream_ddl_map=entry.upstream_ddl_map,
             )
@@ -401,7 +214,7 @@ def migrate_sl_folder(
 
 
 @app.command()
-def migrate(
+def migrate_one_file(
     statement_file: Annotated[
         Path,
         typer.Argument(help="Flink DML file (INSERT INTO ... SELECT)"),
@@ -451,13 +264,6 @@ def migrate(
         bool,
         typer.Option("--check", help="Exit 1 if output would change (for CI)"),
     ] = False,
-    validate: Annotated[
-        bool,
-        typer.Option(
-            "--validate",
-            help="Run dbt compile and compare compiled SQL to source DML",
-        ),
-    ] = False,
     dbt_project_dir: Annotated[
         Path | None,
         typer.Option(
@@ -506,17 +312,33 @@ def migrate(
         ),
     ] = None,
 ) -> None:
+    _get_logger().info(
+        "migrate_one_file | statement_file=%s target_dir=%s model_name=%s "
+        "materialized=%s write=%s force=%s check=%s no_sources=%s",
+        statement_file, target_dir, model_name, materialized, write, force, check, no_sources,
+    )
     if not statement_file.is_file():
         typer.echo(f"Statement file not found: {statement_file}", err=True)
         raise typer.Exit(1)
-
+    print()
+    print('=' * 40, " INPUT ", "=" * 20)
+    print(f"Running migrate_dml_to_dbt with:")
+    print(f"  statement_file: {statement_file}")
+    print(f"  target_dir: {target_dir}")
+    print(f"  ddl_file: {ddl_file}")
+    mn=model_name if model_name else 'auto-derived from statement file'
+    print(f"  model_name: {mn}")
+    print(f"  materialized: {materialized}")
+    print(f"  force: {force}")
+    print(f"  check: {check}")
+    print(f"  dbt_project_dir: {dbt_project_dir}")
+    print(f"  dbt_target: {dbt_target}")
+    print(f"  dbt_profiles_dir: {dbt_profiles_dir}")
+    print(f"  source_project_dir: {source_project_dir}")
+    print(f"  source_name: {source_name}")
+    print(f"  no_sources: {no_sources}")
+    print(f"  seed_name: {seed_name}")
     if is_values_insert(statement_file.read_text(encoding="utf-8")):
-        if validate:
-            typer.echo(
-                "--validate is not supported for INSERT INTO ... VALUES seeds",
-                err=True,
-            )
-            raise typer.Exit(1)
         run_migrate_seed(
             statement_file,
             target_dir,
@@ -530,22 +352,7 @@ def migrate(
 
     ref_overrides = dict(parse_ref_table(item) for item in ref_table)
     profiles_dir = dbt_profiles_dir.expanduser() if dbt_profiles_dir else None
-    print('=' * 100)
-    print(f"Running migrate_dml_to_dbt with:")
-    print(f"  statement_file: {statement_file}")
-    print(f"  target_dir: {target_dir}")
-    print(f"  ddl_file: {ddl_file}")
-    mn=model_name if model_name else 'auto-derived from statement file'
-    print(f"  model_name: {mn}")
-    print(f"  materialized: {materialized}")
     print(f"  ref_overrides: {ref_overrides}")
-    print(f"  force: {force}")
-    print(f"  check: {check}")
-    print(f"  validate: {validate}")
-    if validate:
-        print(f"  dbt_project_dir: {dbt_project_dir}")
-        print(f"  dbt_target: {dbt_target}")
-        print(f"  dbt_profiles_dir: {dbt_profiles_dir}")
     print('=' * 100)
     try:
         result = migrate_dml_to_dbt(
@@ -555,6 +362,7 @@ def migrate(
             model_name=model_name,
             materialized=materialized,
             ref_overrides=ref_overrides,
+            dbt_project_dir=dbt_project_dir,
             force=force,
             source_project_dir=source_project_dir,
             source_name=source_name,
@@ -616,33 +424,16 @@ def migrate(
                 f"Upstream tables: {', '.join(result.upstream_tables)}",
                 err=True,
             )
-    elif not validate:
-        print("# --- model ---")
-        print(result.model_sql, end="")
-        print("# --- schema.yml ---")
-        print(result.schema_yml, end="")
-        if result.sources_yml is not None:
-            print("# --- sources.yaml ---")
-            print(result.sources_yml, end="")
-        print(f"# DDL source: {result.ddl_path}", file=sys.stderr)
 
-    if validate:
-        run_validate(
-            statement_file,
-            result.model_path,
-            result.schema_path,
-            result.model_sql,
-            result.schema_yml,
-            result.model_name,
-            target_dir,
-            dbt_project_dir=dbt_project_dir,
-            dbt_target=dbt_target,
-            dbt_profiles_dir=profiles_dir,
-            ref_overrides=ref_overrides,
-            write=write,
-            sources_path=result.sources_path,
-            sources_yml=result.sources_yml,
-        )
+    print("# --- model ---")
+    print(result.model_sql, end="")
+    print("# --- schema.yml ---")
+    print(result.schema_yml, end="")
+    if result.sources_yml is not None:
+        print("# --- sources.yaml ---")
+        print(result.sources_yml, end="")
+    print(f"# DDL source: {result.ddl_path}", file=sys.stderr)
+
 
 
 if __name__ == "__main__":
