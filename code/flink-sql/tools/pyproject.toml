@@ -17,6 +17,9 @@ dependencies = [
 dev = [
     "pytest>=8.0",
 ]
+dbt = [
+    "dbt-confluent>=0.3.0",
+]
 validate = [
     "dbt-core>=1.11.11",
     "dbt-confluent>=0.3.0",

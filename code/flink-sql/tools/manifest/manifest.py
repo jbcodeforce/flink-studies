@@ -1,5 +1,7 @@
 """
 Deploy manifest model, I/O, and template generation from Flink SQL folders.
+
+Also supports dbt-confluent projects via :func:`create_manifest_from_dbt_folder`.
 """
 
 from __future__ import annotations
@@ -9,6 +11,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+import yaml
 from pydantic import BaseModel, Field, model_validator
 
 DEFAULT_MANIFEST = "deploy_manifest.json"
@@ -273,6 +276,266 @@ def create_manifest_from_folder(
         undeploy_all=undeploy_all,
         drop_tables=drop_tables,
         drop_statement_prefix=f"{prefix}-drop",
+    )
+
+    if write:
+        write_manifest(manifest, manifest_path)
+
+    return manifest
+
+
+# ---------------------------------------------------------------------------
+# dbt-confluent project support
+# ---------------------------------------------------------------------------
+
+#: Deploy/undeploy group ordering for dbt projects (sources-first deploy,
+#: dependents-first undeploy).
+_DBT_DEPLOY_ORDER = ["seeds", "sources", "dimensions", "pipeline", "facts", "marts"]
+_DBT_UNDEPLOY_ORDER = list(reversed(_DBT_DEPLOY_ORDER))
+
+#: Map from the deepest path segment that matches a layer name to the manifest group.
+_DBT_LAYER_TO_GROUP: dict[str, str] = {
+    "sources": "sources",
+    "dimensions": "dimensions",
+    "facts": "facts",
+    "marts": "marts",
+}
+
+
+def _find_dbt_project_root(start: Path) -> Path:
+    """Locate the dbt project root from *start*.
+
+    Search order:
+    1. *start* itself contains ``dbt_project.yml``.
+    2. Walk up parents looking for ``sl_dbt.yaml`` (the shift-left marker that
+       sits alongside ``dbt_project.yml``).
+
+    Raises :class:`FileNotFoundError` if neither is found.
+    """
+    start = start.resolve()
+    candidate = start if start.is_dir() else start.parent
+    for directory in [candidate, *candidate.parents]:
+        if (directory / "dbt_project.yml").exists():
+            return directory
+        if (directory / "sl_dbt.yaml").exists():
+            return directory
+    raise FileNotFoundError(
+        f"Could not find a dbt project root (no dbt_project.yml or sl_dbt.yaml) "
+        f"starting from {start}"
+    )
+
+
+def _read_dbt_project_name(project_root: Path) -> str:
+    """Return the ``name`` field from *project_root*/dbt_project.yml."""
+    yml_path = project_root / "dbt_project.yml"
+    try:
+        data = yaml.safe_load(yml_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise ValueError(f"Cannot parse {yml_path}: {exc}") from exc
+    name = (data or {}).get("name")
+    if not name:
+        raise ValueError(f"'name' field missing in {yml_path}")
+    return str(name)
+
+
+def _read_dbt_profile_name(project_root: Path) -> str:
+    """Return the ``profile`` field from dbt_project.yml, defaulting to 'default'."""
+    yml_path = project_root / "dbt_project.yml"
+    try:
+        data = yaml.safe_load(yml_path.read_text(encoding="utf-8"))
+    except Exception:
+        return "default"
+    return str((data or {}).get("profile", "default"))
+
+
+def _read_statement_name_prefix(profile_name: str) -> str:
+    """Return ``statement_name_prefix`` for *profile_name* from ``~/.dbt/profiles.yml``.
+
+    Falls back to ``"dbt-"`` if the file is missing, the profile is not found,
+    or the key is absent.
+    """
+    profiles_path = Path.home() / ".dbt" / "profiles.yml"
+    try:
+        data = yaml.safe_load(profiles_path.read_text(encoding="utf-8")) or {}
+    except Exception:
+        return "dbt-"
+    profile = data.get(profile_name)
+    if not isinstance(profile, dict):
+        return "dbt-"
+    # Check all output targets for the key.
+    outputs = profile.get("outputs") or {}
+    for output_cfg in outputs.values():
+        if isinstance(output_cfg, dict) and "statement_name_prefix" in output_cfg:
+            return str(output_cfg["statement_name_prefix"])
+    return "dbt-"
+
+
+def _dbt_group_for_node(path: str, resource_type: str) -> str:
+    """Map a dbt node to a manifest group.
+
+    *path* is the node's ``path`` field (relative to the models directory),
+    e.g. ``user_reviews/sources/src_hosts.sql``.  We scan the *parent*
+    directory segments from right to left (skipping the filename) and return
+    the first layer name that matches.
+    Seeds use a fixed group regardless of path.
+    """
+    if resource_type == "seed":
+        return "seeds"
+    # Use parent parts only — the filename itself is not a layer name.
+    parent_parts = Path(path).parent.parts
+    for part in reversed(parent_parts):
+        segment = part.lower()
+        if segment in _DBT_LAYER_TO_GROUP:
+            return _DBT_LAYER_TO_GROUP[segment]
+    return "pipeline"
+
+
+def _read_dbt_manifest_nodes(project_root: Path) -> list[dict[str, Any]]:
+    """Read ``target/manifest.json`` and return a normalised node list.
+
+    Each entry is a dict with keys:
+    ``name``, ``path``, ``resource_type``, ``statement_name_override`` (str | None).
+
+    Raises :class:`FileNotFoundError` with a helpful message when the artifact is
+    missing (user needs to run ``dbt run`` or ``dbt compile`` first).
+    """
+    manifest_path = project_root / "target" / "manifest.json"
+    if not manifest_path.exists():
+        raise FileNotFoundError(
+            f"dbt manifest not found: {manifest_path}\n"
+            "Run 'dbt run' or 'dbt compile' inside the dbt project first."
+        )
+    raw: dict[str, Any] = json.loads(manifest_path.read_text(encoding="utf-8"))
+    nodes: list[dict[str, Any]] = []
+    for node_data in (raw.get("nodes") or {}).values():
+        resource_type = node_data.get("resource_type", "")
+        if resource_type not in ("model", "seed"):
+            continue
+        config = node_data.get("config") or {}
+        statement_name_override: str | None = config.get("statement_name") or None
+        nodes.append(
+            {
+                "name": node_data["name"],
+                "path": node_data.get("path", ""),
+                "resource_type": resource_type,
+                "statement_name_override": statement_name_override,
+            }
+        )
+    return nodes
+
+
+def _read_dbt_source_tables(project_root: Path) -> list[str]:
+    """Return raw source table names from ``models/**/sources.yaml`` files.
+
+    These are Kafka/Flink tables that dbt references via ``{{ source(...) }}`` but
+    does not own; they must still be dropped during a full teardown.
+    Returns a deduplicated list in stable (discovery) order.
+    """
+    seen: dict[str, None] = {}
+    for pattern in ("models/**/sources.yaml", "models/**/sources.yml"):
+        for sources_file in sorted(project_root.glob(pattern)):
+            try:
+                data = yaml.safe_load(sources_file.read_text(encoding="utf-8")) or {}
+            except Exception:
+                continue
+            for source in data.get("sources") or []:
+                for table in source.get("tables") or []:
+                    table_name = table.get("name")
+                    if table_name:
+                        seen[table_name] = None
+    return list(seen.keys())
+
+
+def create_manifest_from_dbt_folder(
+    project_root: Path,
+    *,
+    user_agent: str | None = None,
+    manifest_name: str = DEFAULT_MANIFEST,
+    write: bool = False,
+    overwrite: bool = False,
+) -> DeployManifest:
+    """Build a deploy manifest from a dbt-confluent project folder.
+
+    Reads ``target/manifest.json`` (dbt's build artifact) to discover model and
+    seed nodes, reconstructs the Flink statement names using the same
+    ``sanitize_statement_name`` algorithm as dbt-confluent, and groups nodes by
+    their dbt layer folder (``sources``, ``dimensions``, ``facts``, ``marts``).
+
+    The ``file`` field of every :class:`StatementRef` is set to ``"_noop"``
+    because dbt owns deployment; the manifest is used only for undeploy / drop.
+
+    ``drop_tables`` includes (in teardown order):
+    1. dbt model/seed tables (dependents first, sources/seeds last)
+    2. raw source tables from ``models/**/sources.yaml``
+
+    Requires ``dbt-confluent`` to be installed (``uv sync --extra dbt``).
+    """
+    try:
+        from dbt.adapters.confluent.naming import sanitize_statement_name as _sanitize
+    except ImportError as exc:
+        raise ImportError(
+            "dbt-confluent is required for --dbt mode. "
+            "Install with: uv sync --extra dbt"
+        ) from exc
+
+    project_root = project_root.resolve()
+    if not project_root.is_dir():
+        raise NotADirectoryError(f"dbt project root not found: {project_root}")
+
+    manifest_path = project_root / manifest_name
+    if write and manifest_path.exists() and not overwrite:
+        raise FileExistsError(
+            f"Manifest already exists: {manifest_path} (pass overwrite=True to replace)"
+        )
+
+    project_name = _read_dbt_project_name(project_root)
+    profile_name = _read_dbt_profile_name(project_root)
+    prefix = _read_statement_name_prefix(profile_name)
+    user_agent = user_agent or DEFAULT_USER_AGENT
+
+    nodes = _read_dbt_manifest_nodes(project_root)
+
+    groups: dict[str, list[StatementRef]] = {}
+    for node in nodes:
+        group = _dbt_group_for_node(node["path"], node["resource_type"])
+        override: str | None = node["statement_name_override"]
+        if override:
+            raw_name = override
+        else:
+            raw_name = f"{prefix}{project_name}-{node['name']}"
+        statement_name = _sanitize(raw_name)
+        groups.setdefault(group, []).append(
+            StatementRef(name=statement_name, file="_noop")
+        )
+
+    deploy_all = [g for g in _DBT_DEPLOY_ORDER if g in groups]
+    undeploy_all = [g for g in _DBT_UNDEPLOY_ORDER if g in groups]
+
+    # drop_tables: model/seed tables in undeploy order (dependents first), then raw sources.
+    group_to_model_names: dict[str, list[str]] = {}
+    for node in nodes:
+        grp = _dbt_group_for_node(node["path"], node["resource_type"])
+        group_to_model_names.setdefault(grp, []).append(node["name"])
+
+    drop_tables: list[str] = []
+    for grp in undeploy_all:
+        drop_tables.extend(group_to_model_names.get(grp, []))
+
+    # Append raw source tables (leaf inputs, dropped last)
+    raw_sources = _read_dbt_source_tables(project_root)
+    for src in raw_sources:
+        if src not in drop_tables:
+            drop_tables.append(src)
+
+    drop_statement_prefix = _sanitize(f"{prefix}{project_name}-drop")
+
+    manifest = DeployManifest(
+        user_agent=user_agent,
+        groups=groups,
+        deploy_all=deploy_all,
+        undeploy_all=undeploy_all,
+        drop_tables=drop_tables,
+        drop_statement_prefix=drop_statement_prefix,
     )
 
     if write:

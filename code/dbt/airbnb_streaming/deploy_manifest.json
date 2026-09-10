@@ -1,0 +1,92 @@
+{
+  "user_agent": "cc-sql-tools/0.1",
+  "groups": {
+    "sources": [
+      {
+        "name": "dbt-airbnb-streaming-src-reviews-641a06",
+        "file": "_noop"
+      },
+      {
+        "name": "dbt-airbnb-streaming-src-listings-99b825",
+        "file": "_noop"
+      },
+      {
+        "name": "dbt-airbnb-streaming-src-hosts-430c08",
+        "file": "_noop"
+      }
+    ],
+    "dimensions": [
+      {
+        "name": "dbt-airbnb-streaming-dim-listings-with-hosts-b8b475",
+        "file": "_noop"
+      },
+      {
+        "name": "dbt-airbnb-streaming-dim-listings-cleansed-db4211",
+        "file": "_noop"
+      },
+      {
+        "name": "dbt-airbnb-streaming-dim-hosts-cleansed-892aed",
+        "file": "_noop"
+      }
+    ],
+    "facts": [
+      {
+        "name": "dbt-airbnb-streaming-fct-host-performance-fefd70",
+        "file": "_noop"
+      },
+      {
+        "name": "dbt-airbnb-streaming-fct-review-summary-806037",
+        "file": "_noop"
+      },
+      {
+        "name": "dbt-airbnb-streaming-fct-listing-activity-4f2b77",
+        "file": "_noop"
+      },
+      {
+        "name": "dbt-airbnb-streaming-fct-reviews-d04f43",
+        "file": "_noop"
+      },
+      {
+        "name": "dbt-airbnb-streaming-fct-listing-pricing-d8abce",
+        "file": "_noop"
+      }
+    ],
+    "seeds": [
+      {
+        "name": "dbt-airbnb-streaming-seed-full-moon-dates-4f973a",
+        "file": "_noop"
+      }
+    ]
+  },
+  "deploy_all": [
+    "seeds",
+    "sources",
+    "dimensions",
+    "facts"
+  ],
+  "undeploy_all": [
+    "facts",
+    "dimensions",
+    "sources",
+    "seeds"
+  ],
+  "drop_tables": [
+    "fct_host_performance",
+    "fct_review_summary",
+    "fct_listing_activity",
+    "fct_reviews",
+    "fct_listing_pricing",
+    "dim_listings_with_hosts",
+    "dim_listings_cleansed",
+    "dim_hosts_cleansed",
+    "src_reviews",
+    "src_listings",
+    "src_hosts",
+    "seed_full_moon_dates",
+    "full_moon_dates",
+    "raw_listings",
+    "raw_hosts",
+    "raw_reviews"
+  ],
+  "drop_statement_prefix": "dbt-airbnb-streaming-drop-78c08b"
+}

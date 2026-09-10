@@ -23,6 +23,8 @@ CC_TOOLS_SRC=/path/to/cc-tools/src ./sync-cc-tools.sh
 
 ## create_deploy_manifest
 
+> Full reference: [manifest/README.md](manifest/README.md)
+
 Each demo folder for `cc-flink` deployment should include a `deploy_manifest.json` file to declare what to deploy. This file lists a set of groups and then in each group the name of the statement and file to match.
 
 ```json
