@@ -12,7 +12,8 @@ The chapter is about comparing some other technology with Apache Flink and when 
 
 ## Difference between Kafka Streams and Flink
 
-* Flink is a complete streaming computation system that supports HA, Fault-tolerance, self-monitoring, and a variety of deployment models.
+* *Kafka Streams* is an embeddable Java library using Kafka for coordination, repartitioning, and state changelogs
+* Flink is a dedicated distributed compute engine with its own execution and network layers. Flink is a complete streaming computation system that supports HA, Fault-tolerance, self-monitoring, and a variety of deployment models.
 * Kafka Streams is a library that any  standard Java application can embed and hence does not attempt to dictate a deployment method
 * Kafka Streams within k8s will provide horizontal scaling. But it is bounded by the number of Kafka partitions. Resilience is ensured with Kafka topics.
 * In term of application Life Cycle:
@@ -36,6 +37,33 @@ The chapter is about comparing some other technology with Apache Flink and when 
 * Kafka streams is easier to define a pipeline for Kafka records and to do the `consume - process - produce` loop. 
 * KStreams uses the Kafka Record time stamp, while with Flink we need to implement how to deserialize the KafkaRecord and get the timestamp from it.
 * Support of late arrival is easier with KStreams, while Flink uses the concept of watermark.
+
+### Performance Comparaison
+
+Apache Flink usually performs better for large, complex, stateful workloads, while Kafka Streams can be faster and more efficient for lightweight processing embedded in Kafka-based microservices.
+
+For heavy workloads, Kafka-based repartitioning can create additional produce/replicate/consume traffic, whereas Flink performs shuffles within its processing runtime
+
+Kafka Streams may nevertheless have lower practical latency for simple operations because it avoids a separate processing cluster and can keep state local. Its performance depends strongly on partition count, stream threads, topology design, and RocksDB tuning.
+
+Choose Flink when processing complexity, scale, joins, event-time semantics, or multi-system integration 
+
+The table below proposes some choices:
+
+| Scenario | Likely better choice. |
+| ---------------------- | --------------------------------|
+| Simple filters, mappings, aggregations | Kafka Streams |
+| Low-latency microservice processing | Kafka Streams |
+| Very high throughput or large-scale joins | Flink |
+| Complex event-time processing and out-of-order data | Flink |
+| Processing data from multiple systems/clusters | Flink |
+| Minimal operational complexity | Kafka Streams |
+| Existing Kafka-only architecture | Kafka Streams, Except with Confluent Cloud or Platform, Flink is an easy integration |
+
+Once you go with Flink it is recommended to use it for all the above use cases as it is easier to adopt one way to develop and deploy streaming processing. The questions come more when developers are already using Kafka Stream and want to gradualy migrate to Flink.
+
+Benchmark both with the same topology, data volume, state size, partitioning, delivery guarantee, and hardware—there is no meaningful universal “X times faster” result.
+
 
 ## KSQL and Flink SQL
 
