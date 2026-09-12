@@ -275,7 +275,9 @@ Disaster recovery is about business continuity. Review the core principles of DR
 <capture>**How much data can you afford to recreate or lose? How quickly must you recover?**</capture>
 </figure>
 
-DR for Flink depends on the deployment model (Confluent Cloud, Confluent Platform, or open-source) and always requires a DR strategy for Kafka and Schema Registry first. Data and schema replication (exact replication including offsets and schemas) are prerequisites; Flink state recovery builds on that. 
+DR for Flink depends on the deployment model (Confluent Cloud, Confluent Platform, or open-source) and always requires a DR strategy for Kafka and Schema Registry first. Data Stream Processing is not Multi-Region Cluster, it uses separate clusters with asynchronous replication/Cluster Linking instead of one stretched, synchronously replicated MRC cluster. MRC is generally used for high availability and near-zero data loss across multiple site, but only Kafka may support it. 
+
+Data and schema replication (exact replication including offsets and schemas) are prerequisites; Flink state recovery builds on that. 
 
 ???+ info "Resiliency"
     Resiliency is the ability of a workload to recover from infrastructure or service disruptions, dynamically acquire computing resources to meet demand, and mitigate disruptions, such as misconfigurations or transient network issues.  It addresses **DR** (restore service) and **Availability** (prevent loss of service).

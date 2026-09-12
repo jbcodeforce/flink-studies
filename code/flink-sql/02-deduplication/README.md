@@ -2,6 +2,7 @@
 
 ## Basic
 
+The basic dedeuplication pattern use ROW_NUMBER function.
 
 ## Frankenstein Rows
 
@@ -151,5 +152,4 @@ FROM (VALUES
 These two events may not be processed atomically by the downstream aggregation.
 
 **Expected Outcome**:
-- A Flink SQL script that creates a Kafka source topic, inserts a controlled sequence of events including a timestamp tie, and reads from the downstream aggregation sink
-  to show a transient state where `MAX(column_a)` reflects one source row and `MAX(column_b)` reflects a different source row.
+- A Flink SQL script that creates a Kafka source topic, inserts a controlled sequence of events including a timestamp tie, and reads from the downstream aggregation sink to show a transient state where `MAX(column_a)` reflects one source row and `MAX(column_b)` reflects a different source row.

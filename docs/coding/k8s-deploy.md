@@ -196,7 +196,7 @@ Network file system, SAN and any distributed storage can be used to persist Flin
 
         ![](./images/cp-console.png)
 
-* See also the [Confluent Platform releases information, for product interopability.](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
+* See also the [Confluent Platform releases information, for product interoperability.](https://docs.confluent.io/platform/current/installation/versions-interoperability.html#cp-af-compat)
 
 
 ### 3 [Confluent Manager for Flink (CMF)](https://docs.confluent.io/operator/current/co-deploy-cp.html#co-deploy-cp)

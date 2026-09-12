@@ -6,6 +6,7 @@
     Updated 12/2025 Getting started by using Flink SQL client - Add deduplicate for Apache Flink OSS
     Update 2/2026: Clean readme and automate demonstration. Add REST client in python to management statement and rund demonstration.
     Update 06/2026: Align with tools and new way to organize demo
+    Update 09/2026: move dedup to 02-deduplication
 
 This folder includes some basic SQL examples to be used with one of the following environments:
 
@@ -17,7 +18,6 @@ This folder includes some basic SQL examples to be used with one of the followin
 
 * Process employees data to aggregate by department id.
 * Table creation, loading from CSV file and writing results to CSV file (OSS)
-* Deduplication within CTE, grouping and aggregates
 
 # Employees Aggregation
 
@@ -161,7 +161,6 @@ cd code/flink-sql/00-basic-sql
 
 make sync                  # once — install tools deps
 make deploy-employees      # employees ddl + insert + employee_count
-make deploy-customers      # customers ddl + insert + dedup_customers
 make deploy                # full manifest (ddl → pipeline → data)
 make undeploy              # stop statements + drop tables
 ```
@@ -171,23 +170,6 @@ Snapshot query on `employee_count` (bounded stream):
 ```sql
 set 'sql.snapshot.mode' = 'now';
 SELECT * FROM employee_count;
-```
-
-Or via tools:
-
-```sh
-cd code/flink-sql/tools
-uv run python -m cc_deploy.run_snapshot_query --table employee_count
-```
-
-Optional Python wrapper (employees walkthrough + snapshot):
-
-```sh
-cd code/flink-sql
-uv run python 00-basic-sql/cc_flink_employees_demo.py              # deploy employees + snapshot
-uv run python 00-basic-sql/cc_flink_employees_demo.py --all        # full manifest
-uv run python 00-basic-sql/cc_flink_employees_demo.py --snapshot-query-only
-uv run python 00-basic-sql/cc_flink_employees_demo.py --delete-only
 ```
 
 See [Confluent snapshot query docs](https://docs.confluent.io/cloud/current/flink/how-to-guides/run-snapshot-query.html).
