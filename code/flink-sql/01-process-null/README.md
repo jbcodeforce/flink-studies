@@ -15,7 +15,7 @@ By default when the schema defines nullable columns flink propagates those colum
     ```
 
 * The results look like
-![](docs/coding/images/null_propagated.png)
+![](docs/null_propagated.png)
 
 * Clean with:
     ```sh
@@ -155,7 +155,7 @@ uv run produce_raw_events.py
     ```
 
 * Run a query like: `select * from raw_tickets`
-    ![](docs/coding/images/null_propagated_2.png)
+    ![](docs/null_propagated_2.png)
 
 * Create the `src_tickets` and the dml to transform the `raw_tickets`:
     ```sql
