@@ -119,19 +119,19 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     Validate the null are propagated:
     ![](./images/null_propagated.png)
 
-    As another example, use a Kafka Producer and schema registry + SQL query: the producer sends some records with missing columns. RawTicket cycling through three testresults states.
+    As another example, use a [Kafka Producer](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-sql/01-process-null/python/produce_raw_events.py) and schema registry + [SQL query](https://github.com/jbcodeforce/flink-studies/blob/master/code/flink-sql/01-process-null/cc-flink/dml.src_tickets.sql): the producer sends some records with missing column. RawTicket cycling through three testresults states.
 
-    Cycle (1-based index mod 3):
-      1 → testresults populated
-      2 → testresults explicitly None  (null in JSON)
-      0 → testresults omitted entirely (field not present in JSON)
+    * Cycle (1-based index mod 3):
+        1. testresults populated
+        2. testresults explicitly None  (null in JSON)
+        3. testresults omitted entirely (field not present in JSON)
 
     The query on the source topic returns:
 
     ![](./images/null_propagated_2.png)
 
-    Adding the src_tickets as sink table and the transformation dml, 
-    
+    Adding the src_tickets as sink table and the transformation dml, to read from raw_tickets and insert into src_tickets we can see records too.
+
 ### Filtering
 
 * [Start with this Confluent tutorial](https://developer.confluent.io/confluent-tutorials/filtering/flinksql/) or [the Apache Flink `SELECT` documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/select/).

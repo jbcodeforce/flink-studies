@@ -66,9 +66,9 @@ def _parse_args() -> argparse.Namespace:
 
 class RawTicket(BaseModel):
     case_id: str
-    description: str
-    priority: int
-    owner: str
+    description: str | None = None
+    priority: int = 2
+    owner: str | None = None
     testresults: str | None = None
     creation_ts: AwareDatetime
 

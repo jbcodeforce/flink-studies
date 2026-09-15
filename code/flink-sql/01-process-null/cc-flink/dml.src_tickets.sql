@@ -4,6 +4,6 @@ insert into src_tickets select
     priority,
     owner,
     testresults,
-    creation_ts,
+     TO_TIMESTAMP_LTZ(creation_ts ,'yyyy-MM-dd HH:mm:ss') as `creation_ts`,
     `$rowtime` as first_ts 
 from raw_tickets

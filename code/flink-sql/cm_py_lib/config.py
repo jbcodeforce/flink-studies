@@ -41,7 +41,7 @@ except ImportError:
 _LOG_FORMAT = "%(asctime)s %(levelname)s [%(name)s] %(filename)s:%(lineno)d %(message)s"
 
 
-def setup_logging(logger_name: str = "kma", log_file: str | Path = "logs/kma.log") -> logging.Logger:
+def setup_logging(logger_name: str = "flk", log_file: str | Path = "logs/flk_tools.log") -> logging.Logger:
     """Set up and return a file + stream logger."""
     _logger = logging.getLogger(logger_name)
     _logger.setLevel(logging.INFO)
