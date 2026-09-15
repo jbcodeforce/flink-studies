@@ -114,7 +114,7 @@ def _schema_is_closed(schema_dict: dict[str, Any]) -> bool:
     """True when the root object schema disallows undeclared properties."""
     return schema_dict.get('type') == 'object' and schema_dict.get('additionalProperties') is False
 
-def _field_default_value(model_class: BaseModel, field_name: str) -> Any:
+def _field_default_value(model_class: type[BaseModel], field_name: str) -> Any:
     """Return the Pydantic default for a model field, or ``PydanticUndefined``."""
     field = model_class.model_fields.get(field_name)
     if field is None:
@@ -140,7 +140,7 @@ def _close_object_schemas(node: Any) -> None:
 
 def prepare_json_schema_for_registry(
     schema_dict: dict[str, Any],
-    model_class: BaseModel,
+    model_class: type[BaseModel],
     prior_schema: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Normalize a Pydantic JSON Schema for Confluent SR registration.
@@ -209,7 +209,7 @@ class KafkaJSONProducer:
         self,
         topic_name: str = DEFAULT_TOPIC,
         use_schema_registry: bool = True,
-        model_class: BaseModel | None = None,
+        model_class: type[BaseModel] | None = None,
     ):
         self.topic_name = topic_name
         self.use_schema_registry = use_schema_registry
@@ -249,7 +249,10 @@ class KafkaJSONProducer:
         def to_dict(obj: Any, _ctx: SerializationContext) -> dict[str, Any]:
             if obj is None:
                 return None
-            return obj.model_dump(mode='json')
+            # exclude_unset=True omits fields that were never set (e.g. model_construct
+            # without a field), producing a payload without that key at all.
+            # mode='json' guarantees AwareDatetime maps to an ISO string.
+            return obj.model_dump(mode='json', exclude_unset=True)
             
         self.value_serializer = JSONSerializer(
             schema_str=schema_str,
@@ -287,7 +290,7 @@ class KafkaJSONProducer:
         print(f"Registered schema version {schema_id} for subject '{subject_name}'")
 
 
-    def ensure_value_schema(self, model_class: BaseModel) -> None:
+    def ensure_value_schema(self, model_class: type[BaseModel]) -> None:
         """Register or fetch the JSON schema for the topic value subject."""
         try:
             schema_dict=get_schema_for_topic(self.topic_name)
@@ -368,8 +371,7 @@ class KafkaJSONProducer:
                 value=value,
                 callback=self._delivery_report,
             )
-            rc = self.producer.flush()
-            print(rc)
+            self.producer.flush()
             return True
 
         except Exception as e:

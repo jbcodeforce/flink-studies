@@ -14,6 +14,7 @@ Shared broker / Schema Registry configuration matches ``kafka_json_producer``.
 from __future__ import annotations
 
 import json
+import py_avro_schema as pas
 import uuid
 from pathlib import Path
 from typing import Any
@@ -27,10 +28,13 @@ from confluent_kafka.serialization import MessageField, SerializationContext
 from cm_py_lib.config import (
     get_kafka_client_config,
     get_schema_registry_config,
-    ensure_topic_exists
+    ensure_topic_exists,
+    LOGGER
 )
 
-_SR_SUBJECT_NOT_FOUND = 40401
+from cm_py_lib.schema_registry import (
+    create_schema_registry_client,
+)
 
 
 def _identity(obj: dict[str, Any], _ctx: SerializationContext) -> dict[str, Any]:
@@ -44,6 +48,10 @@ def _avro_fqn(schema_path: Path) -> str:
     namespace = payload.get("namespace")
     return f"{namespace}.{name}" if namespace else name
 
+def pydantic_to_dict(obj: BaseModel, ctx: SerializationContext) -> dict:
+    if obj is None:
+        return None
+    return obj.model_dump(mode='python')
 
 class KafkaAvroProducer:
     """Produce Avro-encoded key/value records to Kafka via Schema Registry."""
@@ -51,97 +59,71 @@ class KafkaAvroProducer:
     def __init__(
         self,
         topic_name: str,
-        key_schema_path: Path | str,
-        value_schema_path: Path | str,
-        *,
-        value_schema_references: Sequence[Path | str] | None = None,
         use_schema_registry: bool = True,
     ) -> None:
         self.topic_name = topic_name
-        self.key_schema_path = Path(key_schema_path)
-        self.value_schema_path = Path(value_schema_path)
-        self.value_schema_references = [
-            Path(p) for p in (value_schema_references or ())
-        ]
         self.use_schema_registry = use_schema_registry
         self.schema_registry_client: SchemaRegistryClient | None = None
-        self.key_serializer: AvroSerializer | None = None
-        self.value_serializer: AvroSerializer | None = None
-
+   
         kafka_cfg = get_kafka_client_config()
         ensure_topic_exists(kafka_cfg, topic_name)
-        self.producer = Producer(
-            {
-                **kafka_cfg,
-                "delivery.timeout.ms": 15000,
-                "request.timeout.ms": 15000,
-                "client.id": f"avro-producer-{uuid.uuid4().hex[:8]}",
-            }
-        )
-
+        self.producer = self._create_producer()
         if self.use_schema_registry:
-            self.schema_registry_client = self._create_schema_registry_client()
-            self._install_serializers()
+            self.schema_registry_client = create_schema_registry_client()
 
-    def _create_schema_registry_client(self) -> SchemaRegistryClient:
-        conf = get_schema_registry_config()
-        return SchemaRegistryClient(conf)
+
+    def specify_models_from_paths(
+            self,
+            key_schema_path: Path,
+            value_schema_path: Path):
+        key_schema_str = self._read_schema(key_schema_path)
+        value_schema_str =  self._read_schema(value_schema_path)
+        self._install_serializers(key_schema_str, value_schema_str)
+
+    def specify_models_from_objects(
+        self,
+        key: BaseModel,
+        value: BaseModel): 
+        key_schema_str = pas.generate(key).decode("utf-8")
+        value_schema_str = pas.generate(value).decode("utf-8")
+        print(f"key: {key_schema_str} - value: {value_schema_str}")
+        self._install_serializers(key_schema_str, value_schema_str)
+
+    def _install_serializers(self, key_schema_str: str, value_schema_str: str) -> None:
+        self.key_serializer = AvroSerializer(
+            schema_registry_client=self.schema_registry_client, 
+            schema_str=key_schema_str,
+            to_dict=pydantic_to_dict
+        )
+        self.value_serializer = AvroSerializer(
+            schema_registry_client=self.schema_registry_client, 
+            schema_str=value_schema_str,
+            to_dict=pydantic_to_dict
+        )
+    
+    def _create_producer(self) -> Producer:
+        """Create and configure Kafka producer with environment-based settings."""
+        options = {
+            **get_kafka_client_config(),
+            'delivery.timeout.ms': 15000,
+            'request.timeout.ms': 15000,
+            'client.id': f'producer-{uuid.uuid4().hex[:8]}',
+        }
+
+        LOGGER.info("=== Kafka Producer Configuration ===")
+        LOGGER.info(f"Bootstrap servers: {options['bootstrap.servers']}")
+        LOGGER.info(f"Security protocol: {options.get('security.protocol', 'PLAINTEXT')}")
+        if options.get('sasl.mechanisms'):
+            LOGGER.info(f"SASL mechanism: {options['sasl.mechanisms']}")
+        LOGGER.info(f"Topic: {self.topic_name}")
+        LOGGER.info("===================================")
+        return Producer(options)
+
 
     def _read_schema(self, path: Path) -> str:
         if not path.is_file():
             raise FileNotFoundError(f"Avro schema not found: {path}")
         return path.read_text(encoding="utf-8")
-
-    def _ensure_subject(
-        self,
-        subject_name: str,
-        schema_path: Path,
-        *,
-        references: list[SchemaReference] | None = None,
-    ) -> Schema:
-        """Load or register a subject; return the Schema (including any references)."""
-        assert self.schema_registry_client is not None
-        try:
-            metadata = self.schema_registry_client.get_latest_version(subject_name)
-            return metadata.schema
-        except SchemaRegistryError as exc:
-            if exc.error_code != _SR_SUBJECT_NOT_FOUND:
-                raise
-        schema_str = self._read_schema(schema_path)
-        schema = Schema(schema_str, schema_type="AVRO", references=references or [])
-        schema_id = self.schema_registry_client.register_schema(subject_name, schema)
-        print(f"Registered Avro schema id {schema_id} for subject '{subject_name}'")
-        return schema
-
-    def _build_value_references(self) -> list[SchemaReference]:
-        assert self.schema_registry_client is not None
-        refs: list[SchemaReference] = []
-        for path in self.value_schema_references:
-            fqn = _avro_fqn(path)
-            # Register each referenced record under its FQN as the subject name.
-            self._ensure_subject(fqn, path)
-            version = self.schema_registry_client.get_latest_version(fqn).version
-            refs.append(SchemaReference(name=fqn, subject=fqn, version=version))
-            print(f"Schema reference ready: name={fqn} subject={fqn} version={version}")
-        return refs
-
-    def _install_serializers(self) -> None:
-        assert self.schema_registry_client is not None
-        key_schema = self._ensure_subject(
-            f"{self.topic_name}-key", self.key_schema_path
-        )
-        value_refs = self._build_value_references()
-        value_schema = self._ensure_subject(
-            f"{self.topic_name}-value",
-            self.value_schema_path,
-            references=value_refs or None,
-        )
-        self.key_serializer = AvroSerializer(
-            self.schema_registry_client, key_schema, _identity
-        )
-        self.value_serializer = AvroSerializer(
-            self.schema_registry_client, value_schema, _identity
-        )
 
     def _delivery_report(self, err, msg) -> None:
         if err is not None:
@@ -157,22 +139,19 @@ class KafkaAvroProducer:
         self.producer.flush()
         print("Producer closed successfully")
 
-    def send_record(self, key: dict[str, Any], value: dict[str, Any]) -> bool:
+    def send_record(self, current_key: BaseModel, current_value: BaseModel) -> bool:
         """Send an Avro key/value pair. Dict keys must match the ``.avsc`` fields."""
         try:
-            if self.use_schema_registry:
-                if self.key_serializer is None or self.value_serializer is None:
-                    print("Avro serializers are not initialized")
-                    return False
-                key_bytes = self.key_serializer(
-                    key, SerializationContext(self.topic_name, MessageField.KEY)
-                )
-                value_bytes = self.value_serializer(
-                    value, SerializationContext(self.topic_name, MessageField.VALUE)
-                )
-            else:
-                key_bytes = json.dumps(key).encode("utf-8")
-                value_bytes = json.dumps(value).encode("utf-8")
+            key_bytes = self.key_serializer(
+                current_key, 
+                SerializationContext(self.topic_name, 
+                MessageField.KEY)
+            )
+            value_bytes = self.value_serializer(
+                current_value, 
+                SerializationContext(self.topic_name, 
+                MessageField.VALUE)
+            )
 
             self.producer.produce(
                 self.topic_name,

@@ -1,7 +1,5 @@
 """Unit tests for cm_py_lib modules: config, kafka_json_producer, kafka_avro_producer, schema_registry."""
 
-from __future__ import annotations
-
 
 import os
 from pathlib import Path
@@ -38,7 +36,11 @@ from cm_py_lib.schema_registry import (
     render_sources_yaml,
     get_schema_for_topic,
     schema_to_columns,
+    create_schema_registry_client,
+    delete_subject,
+    delete_topic,
 )
+from confluent_kafka.admin import AdminClient
 from confluent_kafka.schema_registry.error import SchemaRegistryError
 root_env_path = Path(__file__).resolve().parents[4] / ".env"
 os.environ["DEMO_ENV_FILE"] = str(root_env_path)
@@ -235,10 +237,46 @@ def test_build_json_producer():
     result = json_producer.send_record(one_record.id, one_record)
     assert result
 
+class RecordKey(BaseModel):
+    device_id: str
+
+class RecordValue(BaseModel):
+    event_id: str
+    user_id: int | None = Field(default=None)
+    amount: float = Field(default=0.0)
+    creation_ts: datetime
+
+def test_avro_frompydantic():
+    import py_avro_schema as pas
+    a = pas.generate(RecordValue, options=pas.Option.JSON_INDENT_2)
+    assert bytes == type(a)
+    assert str == type(a.decode())
 
 def test_build_avro_producer():
-    json_producer = KafkaAvroProducer(topic_name=TEST_TOPIC_NAME, model_class=SampleModel)
-    assert json_producer
-    one_record = SampleModel(id="id_01", user_id=10, creation_ts=datetime.now(timezone.utc))
-    result = json_producer.send_record(one_record.id, one_record)
+    avro_producer = KafkaAvroProducer(topic_name="avr_" + TEST_TOPIC_NAME)
+    assert avro_producer
+    avro_producer.specify_models_from_objects(key= RecordKey, value=RecordValue)
+    key: RecordKey= RecordKey(device_id="dev_01")
+    one_record: RecordValue = RecordValue(event_id="id_02", user_id=10, creation_ts=datetime.now(timezone.utc))
+    result = avro_producer.send_record(current_key=key, current_value=one_record)
     assert result
+
+# ======= Cleanup: delete schemas then topics
+
+def test_delete_schemas():
+    """Delete all Schema Registry subjects created by the producer tests."""
+    sr = create_schema_registry_client()
+    for subject in [
+        f"{TEST_TOPIC_NAME}-value",
+        f"avr_{TEST_TOPIC_NAME}-key",
+        f"avr_{TEST_TOPIC_NAME}-value",
+    ]:
+        delete_subject(sr, subject)
+
+
+def test_delete_topics():
+    """Delete the Kafka topics created by the producer tests."""
+    from cm_py_lib.config import get_kafka_client_config
+    admin = AdminClient(get_kafka_client_config())
+    for topic in [TEST_TOPIC_NAME, f"avr_{TEST_TOPIC_NAME}"]:
+        delete_topic(admin, topic)

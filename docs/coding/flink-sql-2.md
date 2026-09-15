@@ -119,9 +119,19 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
     Validate the null are propagated:
     ![](./images/null_propagated.png)
 
-    As another example, use a Kafka Producer and schema registry, and tthe producer send some records with missing columns.
+    As another example, use a Kafka Producer and schema registry + SQL query: the producer sends some records with missing columns. RawTicket cycling through three testresults states.
 
+    Cycle (1-based index mod 3):
+      1 → testresults populated
+      2 → testresults explicitly None  (null in JSON)
+      0 → testresults omitted entirely (field not present in JSON)
 
+    The query on the source topic returns:
+
+    ![](./images/null_propagated_2.png)
+
+    Adding the src_tickets as sink table and the transformation dml, 
+    
 ### Filtering
 
 * [Start with this Confluent tutorial](https://developer.confluent.io/confluent-tutorials/filtering/flinksql/) or [the Apache Flink `SELECT` documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/select/).

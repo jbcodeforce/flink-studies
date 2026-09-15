@@ -33,6 +33,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 import yaml
+from confluent_kafka.admin import AdminClient
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.error import SchemaRegistryError
 
@@ -60,6 +61,36 @@ def create_schema_registry_client() -> SchemaRegistryClient:
         print("====================================")
 
         return SchemaRegistryClient(conf)
+
+def delete_subject(sr_client: SchemaRegistryClient, subject: str) -> None:
+    """Soft-delete then permanently delete all versions of *subject*.
+
+    Silently ignores subjects that do not exist (error code 40401).
+    """
+    try:
+        sr_client.delete_subject(subject, permanent=False)
+        sr_client.delete_subject(subject, permanent=True)
+        print(f"Deleted subject: {subject}")
+    except SchemaRegistryError as exc:
+        if exc.error_code == _SR_SUBJECT_NOT_FOUND:
+            print(f"Subject not found (skipped): {subject}")
+        else:
+            raise
+
+
+def delete_topic(admin_client: AdminClient, topic: str) -> None:
+    """Delete *topic* and wait for the broker to confirm.
+
+    Silently ignores topics that do not exist.
+    """
+    futures = admin_client.delete_topics([topic], operation_timeout=15)
+    for t, fut in futures.items():
+        try:
+            fut.result()
+            print(f"Deleted topic: {t}")
+        except Exception as exc:
+            print(f"Topic delete skipped for '{t}': {exc}")
+
 
 def value_subject_name(topic_name: str) -> str:
     return f"{topic_name}-value"

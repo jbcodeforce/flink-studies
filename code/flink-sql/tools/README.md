@@ -1,4 +1,4 @@
-# Flink SQL Deploy Tools — Shim
+# Flink SQL Tools
 
 Update 09/2026, the Python deploy tools (`cc_deploy`, `manifest`, `kafka`) have moved to the
 [flink-tools-for-agents](https://github.com/jbcodeforce/flink-tools-for-agents) repository.
@@ -50,6 +50,7 @@ make sync
   ```set
   set DEMO_ENV_FILE=.../.env
   ```
+  
 * Validate The common modules for Kafka producers and schema registry
   ```sh
   uv run pytest -vs tests/test_cm_py_lib.py 

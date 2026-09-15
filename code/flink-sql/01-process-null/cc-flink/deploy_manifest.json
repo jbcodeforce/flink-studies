@@ -1,0 +1,41 @@
+{
+  "user_agent": "cc-sql-tools/0.1",
+  "groups": {
+    "ddl": [
+      {
+        "name": "cc-flink-ddl-raw-tickets",
+        "file": "ddl.raw_tickets.sql"
+      },
+      {
+        "name": "cc-flink-ddl-src-tickets",
+        "file": "ddl.src_tickets.sql"
+      }
+    ],
+    "pipeline": [
+      {
+        "name": "cc-flink-pipeline-src-tickets",
+        "file": "dml.src_tickets.sql"
+      }
+    ],
+    "data": [
+      {
+        "name": "cc-flink-data-insert-raw-tickets",
+        "file": "insert.raw_tickets.sql"
+      }
+    ]
+  },
+  "deploy_all": [
+    "ddl",
+    "pipeline",
+    "data"
+  ],
+  "undeploy_all": [
+    "data",
+    "pipeline"
+  ],
+  "drop_tables": [
+    "src_tickets",
+    "raw_tickets"
+  ],
+  "drop_statement_prefix": "cc-flink-drop"
+}

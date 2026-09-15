@@ -8,6 +8,7 @@ dependencies = [
     "confluent-sql>=0.4.0",
     "jsonschema>=4.20.0",
     "orjson>=3.10.0",
+    "py-avro-schema>=3.8.2",
     "pydantic>=2.12.0",
     "python-dotenv>=1.0.0",
     "pyyaml>=6.0",
