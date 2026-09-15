@@ -72,8 +72,7 @@ still created if missing).
 Public API
 ----------
 - ``KafkaJSONProducer`` — main producer class
-- ``ensure_topic_exists`` — idempotent topic creation helper (also called from
-  ``KafkaJSONProducer.__init__``)
+
 
 Dependencies
 ------------
@@ -83,114 +82,48 @@ Dependencies
 """
 
 import json
-import os
-import random
-import time
 import uuid
-from datetime import datetime, timedelta
-from typing import Any, Dict, Optional, Type
+from typing import Any
 
 import jsonschema
 from confluent_kafka import Producer
-from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka.schema_registry import Schema, SchemaRegistryClient
 from confluent_kafka.schema_registry.error import SchemaRegistryError
 from confluent_kafka.schema_registry.json_schema import JSONSerializer
 from confluent_kafka.serialization import MessageField, SerializationContext
 from jsonschema import validate
 from pydantic import BaseModel
-from pydantic_core import PydanticUndefined
+from pydantic_core import PydanticUndefined, to_jsonable_python
 
-# Kafka Configuration from Environment Variables
-KAFKA_BROKERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9094')
-KAFKA_USER = os.getenv('KAFKA_API_KEY', '')
-KAFKA_PASSWORD = os.getenv('KAFKA_API_SECRET', '')
-KAFKA_SASL_MECHANISM = os.getenv('KAFKA_SASL_MECHANISM', 'SASL')
-KAFKA_SECURITY_PROTOCOL = os.getenv('KAFKA_SECURITY_PROTOCOL', 'PLAINTEXT')
-DEFAULT_TOPIC = os.getenv('KAFKA_TOPIC', 'raw-rides')
-# Schema Registry Configuration
-SCHEMA_REGISTRY_URL = os.getenv('SCHEMA_REGISTRY_ENDPOINT', 'http://localhost:8081')
-SCHEMA_REGISTRY_USER = os.getenv('SCHEMA_REGISTRY_API_KEY', '')
-SCHEMA_REGISTRY_PASSWORD = os.getenv('SCHEMA_REGISTRY_API_SECRET', '')
-
-_SR_SUBJECT_NOT_FOUND = 40401
-_SR_INCOMPATIBLE = 40901
-
-
-def _is_subject_not_found(exc: BaseException) -> bool:
-    return isinstance(exc, SchemaRegistryError) and exc.error_code == _SR_SUBJECT_NOT_FOUND
-
-
-def _is_schema_incompatible(exc: BaseException) -> bool:
-    return isinstance(exc, SchemaRegistryError) and exc.error_code == _SR_INCOMPATIBLE
+from cm_py_lib.schema_registry import (
+    create_schema_registry_client,
+    value_subject_name,
+    is_subject_not_found,
+    get_schema_for_topic,
+    is_schema_incompatible
+)
+from cm_py_lib.config import (
+    DEFAULT_TOPIC,
+    get_kafka_client_config,
+    ensure_topic_exists,
+    LOGGER
+)
 
 
 def _schema_is_closed(schema_dict: dict[str, Any]) -> bool:
     """True when the root object schema disallows undeclared properties."""
     return schema_dict.get('type') == 'object' and schema_dict.get('additionalProperties') is False
 
-
-def _resolve_kafka_security() -> tuple[str, Optional[str]]:
-    """Return (security.protocol, sasl.mechanisms) from env, with Confluent Cloud defaults."""
-    if not KAFKA_USER:
-        return KAFKA_SECURITY_PROTOCOL, None
-
-    protocol = KAFKA_SECURITY_PROTOCOL
-    mechanism = KAFKA_SASL_MECHANISM
-
-    # Common mistake: security protocol name placed in KAFKA_SASL_MECHANISM.
-    if mechanism in ('SASL_SSL', 'SASL_PLAINTEXT'):
-        if not os.getenv('KAFKA_SECURITY_PROTOCOL'):
-            protocol = mechanism
-        mechanism = 'PLAIN'
-    elif mechanism in ('', 'SASL'):
-        mechanism = 'PLAIN'
-
-    # Confluent Cloud (and most hosted clusters) require SASL_SSL when API keys are set.
-    if protocol in ('', 'PLAINTEXT') and (
-        KAFKA_USER or 'confluent.cloud' in KAFKA_BROKERS
-    ):
-        protocol = 'SASL_SSL'
-
-    return protocol, mechanism
-
-
-def _kafka_client_config() -> dict[str, str]:
-    """Shared broker/auth settings for producer and admin clients."""
-    security_protocol, sasl_mechanism = _resolve_kafka_security()
-    options: dict[str, str] = {
-        'bootstrap.servers': KAFKA_BROKERS,
-    }
-    if KAFKA_USER and sasl_mechanism:
-        options.update({
-            'security.protocol': security_protocol,
-            'sasl.mechanisms': sasl_mechanism,
-            'sasl.username': KAFKA_USER,
-            'sasl.password': KAFKA_PASSWORD,
-        })
-    return options
-
-
-def _default_replication_factor() -> int:
-    if os.getenv('KAFKA_REPLICATION_FACTOR'):
-        return int(os.getenv('KAFKA_REPLICATION_FACTOR', '3'))
-    protocol, _ = _resolve_kafka_security()
-    return 1 if protocol == 'PLAINTEXT' else 3
-
-
-def _schemas_equivalent(left: dict[str, Any], right: dict[str, Any]) -> bool:
-    """Return True when two JSON Schema dicts are structurally identical."""
-    return json.dumps(left, sort_keys=True) == json.dumps(right, sort_keys=True)
-
-
-def _field_default_value(model_class: Type[BaseModel], field_name: str) -> Any:
+def _field_default_value(model_class: BaseModel, field_name: str) -> Any:
     """Return the Pydantic default for a model field, or ``PydanticUndefined``."""
     field = model_class.model_fields.get(field_name)
     if field is None:
         return PydanticUndefined
-    if field.default_factory is not None:
-        return field.default_factory()
-    return field.default
+    val = field.get_default(call_default_factory=True)
+    if val is PydanticUndefined:
+        return PydanticUndefined
+    # Converts objects (datetime, UUID, Enum, etc.) to JSON Schema compatible values
+    return to_jsonable_python(val)
 
 
 def _close_object_schemas(node: Any) -> None:
@@ -207,7 +140,7 @@ def _close_object_schemas(node: Any) -> None:
 
 def prepare_json_schema_for_registry(
     schema_dict: dict[str, Any],
-    model_class: Type[BaseModel],
+    model_class: BaseModel,
     prior_schema: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Normalize a Pydantic JSON Schema for Confluent SR registration.
@@ -254,42 +187,12 @@ def prepare_json_schema_for_registry(
     return schema
 
 
-def ensure_topic_exists(kafka_config: dict[str, str], topic_name: str) -> None:
-    """Create the Kafka topic when it does not exist."""
-    admin = AdminClient(kafka_config)
-    try:
-        metadata = admin.list_topics(timeout=15)
-    except Exception as exc:
-        protocol = kafka_config.get('security.protocol', 'PLAINTEXT')
-        raise RuntimeError(
-            f"Failed to connect to Kafka at {kafka_config.get('bootstrap.servers')!r} "
-            f"(security.protocol={protocol}). For Confluent Cloud use "
-            "KAFKA_SECURITY_PROTOCOL=SASL_SSL and KAFKA_SASL_MECHANISM=PLAIN."
-        ) from exc
-    if topic_name in metadata.topics and metadata.topics[topic_name].error is None:
-        return
-
-    partitions = int(os.getenv('KAFKA_PARTITIONS', '1'))
-    replication_factor = _default_replication_factor()
-    futures = admin.create_topics(
-        [NewTopic(topic_name, num_partitions=partitions, replication_factor=replication_factor)]
-    )
-    for name, future in futures.items():
-        try:
-            future.result(timeout=30)
-            print(f"Created Kafka topic '{name}'.")
-        except Exception as exc:
-            if "TOPIC_ALREADY_EXISTS" in str(exc):
-                return
-            raise RuntimeError(f"Failed to create topic '{name}': {exc}") from exc
-
-
 class KafkaJSONProducer:
     """Produce JSON records to Kafka with optional Schema Registry integration.
 
     On construction:
 
-    1. Ensures ``topic_name`` exists (creates with ``KAFKA_PARTITIONS`` /
+    1. Ensures ``topic_name`` exists (creates it with ``KAFKA_PARTITIONS`` /
        ``KAFKA_REPLICATION_FACTOR`` when missing).
     2. When ``use_schema_registry`` is True, registers or loads ``{topic}-value``
        from ``model_class.model_json_schema()`` and configures ``JSONSerializer``.
@@ -302,80 +205,68 @@ class KafkaJSONProducer:
             subject does not exist yet. Required when ``use_schema_registry`` is True.
     """
 
-    def __init__(self, topic_name: str = DEFAULT_TOPIC, use_schema_registry: bool = True, model_class: Type[BaseModel] = None   ):
+    def __init__(
+        self,
+        topic_name: str = DEFAULT_TOPIC,
+        use_schema_registry: bool = True,
+        model_class: BaseModel | None = None,
+    ):
         self.topic_name = topic_name
         self.use_schema_registry = use_schema_registry
-        self.schema_registry_client: Optional[SchemaRegistryClient] = None
-        self.cached_schemas: dict[str, dict[str, Any]] = {}
-        self.value_serializer: Optional[JSONSerializer] = None
+        self.schema_registry_client: SchemaRegistryClient | None = None
+        self.cached_schemas: dict[str, dict[str, Any]| None] = {}
+        self.key_serializer: JSONSerializer | None  = None
+        self.value_serializer: JSONSerializer | None  = None
 
-        ensure_topic_exists(_kafka_client_config(), topic_name)
+        ensure_topic_exists(get_kafka_client_config(), topic_name)
         self.producer = self._create_producer()
 
         if self.use_schema_registry:
-            self.schema_registry_client = self._create_schema_registry_client()
-            self.ensure_value_schema(model_class)
+            self.schema_registry_client = create_schema_registry_client()
+            if model_class is not None:
+                self.ensure_value_schema(model_class)
 
     def _create_producer(self) -> Producer:
         """Create and configure Kafka producer with environment-based settings."""
         options = {
-            **_kafka_client_config(),
+            **get_kafka_client_config(),
             'delivery.timeout.ms': 15000,
             'request.timeout.ms': 15000,
             'client.id': f'producer-{uuid.uuid4().hex[:8]}',
         }
 
-        print("=== Kafka Producer Configuration ===")
-        print(f"Bootstrap servers: {options['bootstrap.servers']}")
-        print(f"Security protocol: {options.get('security.protocol', 'PLAINTEXT')}")
+        LOGGER.info("=== Kafka Producer Configuration ===")
+        LOGGER.info(f"Bootstrap servers: {options['bootstrap.servers']}")
+        LOGGER.info(f"Security protocol: {options.get('security.protocol', 'PLAINTEXT')}")
         if options.get('sasl.mechanisms'):
-            print(f"SASL mechanism: {options['sasl.mechanisms']}")
-        print(f"Topic: {self.topic_name}")
-        print("===================================")
-
+            LOGGER.info(f"SASL mechanism: {options['sasl.mechanisms']}")
+        LOGGER.info(f"Topic: {self.topic_name}")
+        LOGGER.info("===================================")
         return Producer(options)
 
-    def _create_schema_registry_client(self) -> SchemaRegistryClient:
-        """Create and configure Schema Registry client."""
-        conf = {'url': SCHEMA_REGISTRY_URL}
-
-        if SCHEMA_REGISTRY_USER:
-            conf.update({
-                'basic.auth.user.info': f'{SCHEMA_REGISTRY_USER}:{SCHEMA_REGISTRY_PASSWORD}',
-            })
-
-        print("=== Schema Registry Configuration ===")
-        print(f"URL: {conf['url']}")
-        print(f"Auth enabled: {bool(SCHEMA_REGISTRY_USER)}")
-        print("====================================")
-
-        return SchemaRegistryClient(conf)
-
-    def _value_subject_name(self) -> str:
-        return f"{self.topic_name}-value"
 
     def _build_value_serializer(self, schema_str: str) -> None:
         def to_dict(obj: Any, _ctx: SerializationContext) -> dict[str, Any]:
-            if isinstance(obj, BaseModel):
-                return obj.model_dump()
-            return obj
-
+            if obj is None:
+                return None
+            return obj.model_dump(mode='json')
+            
         self.value_serializer = JSONSerializer(
-            schema_str,
-            self.schema_registry_client,
-            to_dict,
+            schema_str=schema_str,
+            schema_registry_client=self.schema_registry_client,
+            to_dict = to_dict
         )
 
     def _register_and_install_schema(self, schema_dict: dict[str, Any]) -> None:
         """Register a schema version and refresh cache + serializer."""
-        subject_name = self._value_subject_name()
+        subject_name = value_subject_name(self.topic_name)
         schema_str = json.dumps(schema_dict)
         schema = Schema(schema_str, schema_type="JSON")
 
         try:
             schema_id = self.schema_registry_client.register_schema(subject_name, schema)
         except SchemaRegistryError as exc:
-            if not _is_schema_incompatible(exc):
+            if not is_schema_incompatible(exc):
                 raise
             print(
                 f"BACKWARD compatibility rejected for '{subject_name}' "
@@ -394,110 +285,27 @@ class KafkaJSONProducer:
                     self.schema_registry_client.set_compatibility(subject_name, prior_compat)
 
         print(f"Registered schema version {schema_id} for subject '{subject_name}'")
-        self.cached_schemas[self.topic_name] = schema_dict
-        self._build_value_serializer(schema_str)
 
-    def ensure_value_schema(self, model_class: Type[BaseModel]) -> None:
+
+    def ensure_value_schema(self, model_class: BaseModel) -> None:
         """Register or fetch the JSON schema for the topic value subject."""
-        if not self.schema_registry_client:
-            return
-
-        subject_name = self._value_subject_name()
         try:
-            schema_metadata = self.schema_registry_client.get_latest_version(subject_name)
-            schema_str = schema_metadata.schema.schema_str
-            schema_dict = json.loads(schema_str)
-            print(f"Retrieved schema for subject '{subject_name}' from Schema Registry")
+            schema_dict=get_schema_for_topic(self.topic_name)
         except SchemaRegistryError as exc:
-            if not _is_subject_not_found(exc):
+            if not is_subject_not_found(exc):
                 raise
-            print(f"Subject '{subject_name}' not found; registering initial schema")
+            print(f"Subject for '{self.topic_name}' not found; registering initial schema")
             schema_dict = prepare_json_schema_for_registry(
                 model_class.model_json_schema(),
                 model_class,
             )
             self._register_and_install_schema(schema_dict)
-            return
-
         self.cached_schemas[self.topic_name] = schema_dict
+        schema_str = json.dumps(schema_dict)
         self._build_value_serializer(schema_str)
 
-    def _schema_matches_record(
-        self,
-        record: BaseModel,
-        registered_schema: dict[str, Any],
-    ) -> bool:
-        """Return True when the record model matches the registered schema version."""
-        record_schema = type(record).model_json_schema()
-        if _schemas_equivalent(record_schema, registered_schema):
-            return True
-        prepared = prepare_json_schema_for_registry(
-            record_schema,
-            type(record),
-            registered_schema,
-        )
-        return _schemas_equivalent(prepared, registered_schema)
 
-    def _ensure_schema_for_record(self, record: BaseModel) -> bool:
-        """Ensure the registry schema matches the record model, evolving if needed."""
-        if not self.schema_registry_client:
-            return False
-
-        record_schema = type(record).model_json_schema()
-        registered_schema = self._get_schema_for_topic(self.topic_name)
-
-        if registered_schema is not None and self._schema_matches_record(record, registered_schema):
-            if not self._validate_against_schema(record.model_dump(), registered_schema):
-                print(f"Record validation failed for topic '{self.topic_name}'")
-                return False
-            return True
-
-        try:
-            prepared = prepare_json_schema_for_registry(
-                record_schema,
-                type(record),
-                registered_schema,
-            )
-            self._register_and_install_schema(prepared)
-        except Exception as exc:
-            print(
-                f"Failed to register evolved schema for topic '{self.topic_name}': {exc}"
-            )
-            return False
-
-        return True
-
-    def _delivery_report(self, err, msg):
-        """Callback for message delivery reports."""
-        if err is not None:
-            print(f"Message delivery failed: {err}")
-        else:
-            print(
-                f"Message delivered to {msg.topic()} [{msg.partition()}] offset {msg.offset()}"
-            )
-
-    def _get_schema_for_topic(self, topic_name: str) -> Optional[Dict[str, Any]]:
-        """Fetch JSON schema for a topic from cache or Schema Registry."""
-        if not self.use_schema_registry or not self.schema_registry_client:
-            return None
-
-        if topic_name in self.cached_schemas:
-            return self.cached_schemas[topic_name]
-
-        try:
-            subject_name = f"{topic_name}-value"
-            schema_metadata = self.schema_registry_client.get_latest_version(subject_name)
-            schema_dict = json.loads(schema_metadata.schema.schema_str)
-            self.cached_schemas[topic_name] = schema_dict
-            print(f"Retrieved schema for topic '{topic_name}' from Schema Registry")
-            return schema_dict
-        except SchemaRegistryError as exc:
-            if _is_subject_not_found(exc):
-                return None
-            print(f"Could not fetch schema for topic '{topic_name}': {exc}")
-            return None
-
-    def _validate_against_schema(self, data: Dict[str, Any], schema: Dict[str, Any]) -> bool:
+    def _validate_against_schema(self, data: dict[str, Any], schema: dict[str, Any]) -> bool:
         """Validate data against JSON schema."""
         try:
             validate(instance=data, schema=schema)
@@ -516,7 +324,17 @@ class KafkaJSONProducer:
         self.producer.flush()
         print("Producer closed successfully")
 
-    def send_record(self, message_key, record: BaseModel, key: Optional[str] = None) -> bool:
+    def _delivery_report(self, err, msg):
+        """Callback for message delivery reports."""
+        if err is not None:
+            print(f"Message delivery failed: {err}")
+        else:
+            print(
+                f"Message delivered to {msg.topic()} [{msg.partition()}] offset {msg.offset()}"
+            )
+
+
+    def send_record(self, message_key, record: BaseModel) -> bool:
         """Send a Pydantic model to Kafka with optional SR validation and encoding.
 
         When Schema Registry is enabled, compares the record's Pydantic JSON schema to
@@ -526,7 +344,6 @@ class KafkaJSONProducer:
         Args:
             message_key: Kafka message key (stringified).
             record: Payload as a Pydantic ``BaseModel`` instance.
-            key: Unused; kept for backward compatibility.
 
         Returns:
             True if the record was queued for delivery, False on validation or
@@ -534,9 +351,6 @@ class KafkaJSONProducer:
         """
         try:
             if self.use_schema_registry:
-                if not self._ensure_schema_for_record(record):
-                    return False
-
                 if self.value_serializer is None:
                     print("Schema Registry serializer is not initialized")
                     return False
@@ -554,7 +368,8 @@ class KafkaJSONProducer:
                 value=value,
                 callback=self._delivery_report,
             )
-            self.producer.poll(0)
+            rc = self.producer.flush()
+            print(rc)
             return True
 
         except Exception as e:

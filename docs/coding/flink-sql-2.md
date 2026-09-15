@@ -66,36 +66,60 @@ select * from `examples`.`marketplace`.`orders` order by $rowtime limit 10;
 
 ???+ question "How to propagate NULL value in a src table column to sink table?"
     A src table may have null value in the testresult column. Does Flink propagate those values?
-    * create a src_table
+
+    * create a raw_tickets (See [Example in flink-sql/01-process-null](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/01-process-null))
     ```sql
-    CREATE TABLE src_table (
+    CREATE TABLE raw_tickets (
         case_id STRING,
-        testresults STRING
+        testresults STRING,
+        description STRING,
+        priority INT,
+        owner STRING,
+        creation_ts TIMESTAMP_LTZ(3)
     ) WITH (
+        'changelog.mode' = 'append',
         'value.format' = 'json-registry'
-    );
+    )
     ```
     Add some values:
     ```sql
-    insert into src_table(case_id,testresults) VALUES('case_001', 'result_01'), ('case_002', CAST(NULL AS STRING)), ('case_003', 'result_03');
+    INSERT INTO raw_tickets (case_id, description, priority, owner, testresults, creation_ts)
+    VALUES
+     ('case_001', 'Login failure on checkout',        1,              'alice',  'PASS',              TO_TIMESTAMP_LTZ(1700000000, 3)),
+     ('case_002', CAST(NULL AS STRING),               2,              'bob',    CAST(NULL AS STRING), TO_TIMESTAMP_LTZ(1700001000, 3)),
     ```
+
     Now create a sink_table as:
     ```sql
-    CREATE TABLE sink_table (
-        case_id STRING,
+    CREATE TABLE src_tickets (
+        case_id STRING NOT NULL,
+        description STRING,
+        priority INT,
+        owner STRING,
         testresults STRING,
-        first_ts TIMESTAMP_LTZ(3)
+        creation_ts TIMESTAMP_LTZ(3),
+        PRIMARY KEY(case_id) NOT ENFORCED
     ) WITH (
+        'changelog.mode' = 'upsert',
         'value.format' = 'json-registry'
-    );
+    )
     ```
     Add some DML to apply business logic:
     ```sql
-    insert into sink_table select case_id, testresults, `$rowtime` as first_ts from src_table
+    insert into src_tickets select
+        case_id,
+        description,
+        priority,
+        owner,
+        testresults,
+        creation_ts,
+        `$rowtime` as first_ts 
+    from raw_tickets
     ```
     Validate the null are propagated:
     ![](./images/null_propagated.png)
 
+    As another example, use a Kafka Producer and schema registry, and tthe producer send some records with missing columns.
 
 
 ### Filtering

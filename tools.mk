@@ -6,14 +6,14 @@
 # Usage (include from any Makefile):
 #
 #   TOOLS_MK := $(abspath path/to/tools.mk)   # path to this file
-#   DEMO     := $(abspath .)                   # SQL directory with deploy_manifest.json
+#   SQL_DIR     := $(abspath .)                   # SQL directory with deploy_manifest.json
 #   include $(TOOLS_MK)
 #
 # Or use the TOOLS delegate pattern (no include needed):
 #
 #   TOOLS := $(abspath path/to/code/flink-sql/tools)
 #   deploy:
-#       $(MAKE) -C $(TOOLS) deploy SQL_DIR=$(DEMO)
+#       $(MAKE) -C $(TOOLS) deploy SQL_DIR=$(SQL_DIR)
 
 # ── Locate flink-tools-for-agents ─────────────────────────────────────────────
 # Expected at the same level as flink-studies (sibling directory).

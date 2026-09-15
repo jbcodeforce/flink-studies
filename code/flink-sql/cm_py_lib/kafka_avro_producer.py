@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 import uuid
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 from confluent_kafka import Producer
 from confluent_kafka.schema_registry import Schema, SchemaReference, SchemaRegistryClient
@@ -24,12 +24,10 @@ from confluent_kafka.schema_registry.avro import AvroSerializer
 from confluent_kafka.schema_registry.error import SchemaRegistryError
 from confluent_kafka.serialization import MessageField, SerializationContext
 
-from cm_py_lib.kafka_json_producer import (
-    SCHEMA_REGISTRY_PASSWORD,
-    SCHEMA_REGISTRY_URL,
-    SCHEMA_REGISTRY_USER,
-    _kafka_client_config,
-    ensure_topic_exists,
+from cm_py_lib.config import (
+    get_kafka_client_config,
+    get_schema_registry_config,
+    ensure_topic_exists
 )
 
 _SR_SUBJECT_NOT_FOUND = 40401
@@ -70,10 +68,11 @@ class KafkaAvroProducer:
         self.key_serializer: AvroSerializer | None = None
         self.value_serializer: AvroSerializer | None = None
 
-        ensure_topic_exists(_kafka_client_config(), topic_name)
+        kafka_cfg = get_kafka_client_config()
+        ensure_topic_exists(kafka_cfg, topic_name)
         self.producer = Producer(
             {
-                **_kafka_client_config(),
+                **kafka_cfg,
                 "delivery.timeout.ms": 15000,
                 "request.timeout.ms": 15000,
                 "client.id": f"avro-producer-{uuid.uuid4().hex[:8]}",
@@ -85,11 +84,7 @@ class KafkaAvroProducer:
             self._install_serializers()
 
     def _create_schema_registry_client(self) -> SchemaRegistryClient:
-        conf: dict[str, str] = {"url": SCHEMA_REGISTRY_URL}
-        if SCHEMA_REGISTRY_USER:
-            conf["basic.auth.user.info"] = (
-                f"{SCHEMA_REGISTRY_USER}:{SCHEMA_REGISTRY_PASSWORD}"
-            )
+        conf = get_schema_registry_config()
         return SchemaRegistryClient(conf)
 
     def _read_schema(self, path: Path) -> str:
@@ -185,7 +180,7 @@ class KafkaAvroProducer:
                 value=value_bytes,
                 callback=self._delivery_report,
             )
-            self.producer.poll(0)
+            self.producer.flush()
             return True
         except Exception as exc:
             print(f"Error sending record: {exc}")

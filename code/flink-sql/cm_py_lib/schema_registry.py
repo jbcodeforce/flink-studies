@@ -30,30 +30,62 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.error import SchemaRegistryError
 
-# Re-use the env-var constants already resolved by kafka_json_producer so
-# credentials only need to be set in one place (same pattern as
-# kafka_avro_producer.py).
-from cm_py_lib.kafka_json_producer import (
+from cm_py_lib.config import (
     SCHEMA_REGISTRY_PASSWORD,
     SCHEMA_REGISTRY_URL,
     SCHEMA_REGISTRY_USER,
+    get_schema_registry_config,
 )
 
+_SR_SUBJECT_NOT_FOUND = 40401
+_SR_INCOMPATIBLE = 40901
+
+SchemaType = Literal["AVRO", "JSON"]
 
 # ── Schema Registry access ────────────────────────────────────────────────────
+
+def create_schema_registry_client() -> SchemaRegistryClient:
+        """Create and configure Schema Registry client."""
+        conf = get_schema_registry_config()
+
+        print("=== Schema Registry Configuration ===")
+        print(f"URL: {conf['url']}")
+        print(f"Auth enabled: {bool(SCHEMA_REGISTRY_USER)}")
+        print("====================================")
+
+        return SchemaRegistryClient(conf)
+
+def value_subject_name(topic_name: str) -> str:
+    return f"{topic_name}-value"
+
+def is_subject_not_found(exc: BaseException) -> bool:
+    return isinstance(exc, SchemaRegistryError) and exc.error_code == _SR_SUBJECT_NOT_FOUND
+
+def is_schema_incompatible(exc: BaseException) -> bool:
+    return isinstance(exc, SchemaRegistryError) and exc.error_code == _SR_INCOMPATIBLE
+
+def get_schema_for_topic(topic_name: str) -> dict[str, Any] | None:
+    """Fetch JSON schema for a topic from cache or Schema Registry."""
+    sr_client = create_schema_registry_client()
+    subject_name = value_subject_name(topic_name)
+    schema_metadata = sr_client.get_latest_version(subject_name)
+    schema_dict = json.loads(schema_metadata.schema.schema_str)
+    return schema_dict
+    
+
 
 class SchemaFetcher:
     """Fetch a schema from Confluent Schema Registry by subject name.
 
     Credentials are resolved in priority order:
       1. Constructor arguments (``url``, ``key``, ``secret``)
-      2. Environment variables (via kafka_json_producer module-level constants)
+      2. Environment variables (via config module-level constants)
 
     Args:
         url:    Schema Registry base URL.  Overrides ``SCHEMA_REGISTRY_ENDPOINT``.
@@ -67,19 +99,13 @@ class SchemaFetcher:
         key: str | None = None,
         secret: str | None = None,
     ) -> None:
-        effective_url = url or SCHEMA_REGISTRY_URL
-        effective_key = key or SCHEMA_REGISTRY_USER
-        effective_secret = secret or SCHEMA_REGISTRY_PASSWORD
+        conf = get_schema_registry_config(url=url, user=key, password=secret)
 
-        if not effective_url:
+        if not conf.get("url"):
             raise ValueError(
                 "Schema Registry URL is required. Set SCHEMA_REGISTRY_ENDPOINT "
                 "or pass --sr-url."
             )
-
-        conf: dict[str, str] = {"url": effective_url}
-        if effective_key:
-            conf["basic.auth.user.info"] = f"{effective_key}:{effective_secret}"
 
         self._client = SchemaRegistryClient(conf)
 
