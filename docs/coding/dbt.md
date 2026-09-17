@@ -540,16 +540,17 @@ Read the getting started and installation in [Confluent cloud product documentat
         cloud_provider: aws
         cloud_region: us-west-2
         dbname: j9r-kafka
-        environment_id: env-yk3jm6
-        compute_pool_id: lfcp-11p88z
-        statement_label: dbt-confluent
-        statement_name_prefix: dbt-
-        endpoint: https://flink.us-east-2.aws.private.confluent.cloud  -- in case the cluster is in private network
+        environment_id: '{{ env_var(''ENVIRONMENT_ID'') }}'
+        execution_mode: streaming_query
+        flink_api_key: '{{ env_var(''FLINK_API_KEY'') }}'
+        flink_api_secret: '{{ env_var(''FLINK_API_SECRET'') }}'
+        organization_id: '{{ env_var(''ORGANIZATION_ID'') }}'
         threads: 1
         type: confluent
     target: dev
   ```
-  Some error messages reference "schema" when they mean "Kafka cluster/database". It is confusing to set the environment_id where is Confluent Cloud the environment name is used.
+  Some error messages reference "schema" when they mean "Kafka cluster/database". It is confusing to set the environment_id where is Confluent Cloud the environment name is used. Use `endpoint: https://flink.us-east-2.aws.private.confluent.cloud` when using private network, and in this case remove cloud_provider and cloud_region.
+       
 
 * The `dbt` mapping for dbt Confluent is as follow:
 
@@ -637,6 +638,7 @@ The common parts include:
 
 * Compile dbt models to Flink SQL to review
   ```sh
+  dbt compile
   ```
 
 * run a specific model:
@@ -706,14 +708,15 @@ The common parts include:
 ### Testing
 
 [See Confluent documentation for testing definition](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/deploy-flink-dbt.html#step-5-test-your-models) and [dbt testing](https://docs.getdbt.com/docs/build/unit-tests?version=2).
-- It is possible to define tests at the flink statement model level. Data engineer can define mock input data and validate output to expected values. This unit test definition can be added to the yml file that defines the columns contract or as a separate <table_name>_unit_tests.yml.
-- Only unit test models that contain complex business logic
-- Only include the specific columns relevant to the business logic you are validating. dbt automatically fills in missing columns with null values or infers them from your schema
-- If you version your models (e.g., v1, v2), use the versions: tag inside your unit test block to target specific versions so older logic test configurations do not break newer iterations
+
+* It is possible to define tests at the flink statement model level. Data engineer can define mock input data and validate output to expected values. This unit test definition can be added to the yml file that defines the columns contract or as a separate <table_name>_unit_tests.yml.
+* Only unit test models that contain complex business logic
+* Only include the specific columns relevant to the business logic you are validating. dbt automatically fills in missing columns with null values or infers them from your schema
+* If you version your models (e.g., v1, v2), use the versions: tag inside your unit test block to target specific versions so older logic test configurations do not break newer iterations
 
 ### Added tools
 
-The [code/dbt/tools](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/tools) folder includes a set of useful tool to complement your dbt Confluent project management.
+The [flink-tools-for-agents/tools](https://github.com/jbcodeforce/flink-tools-for-agents/tree/main/tools) folder includes a set of useful tool to complement your dbt Confluent project management.
 
 <figure markdown='span'>
 ![](./diagrams/dbt_other_tools.drawio.png)
@@ -721,15 +724,40 @@ The [code/dbt/tools](https://github.com/jbcodeforce/flink-studies/tree/master/co
 
 | Tool | Goal | Usage |
 | ---- | ---- | ------- |
-| [sl_dbt.py](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/tools/sl_dbt.py) | Manage your project from batch to dbt and Flink SQL. (shift_left) | `sl_dbt init <project_root>`,  `sl_dbt add-data-product <data_product>`, `sl_dbt.py add-table crm-analytics src_customers c360 --table-type dim`| 
-| sr_to_dbt_yaml.py | Fetches the key and/or value schema registered in Confluent Schema Registry for a given Kafka topic and emits a ready-to-paste dbt YAML block |  [uv run sr_to_dbt_yaml.py raw_hosts](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/tools/README.md) |
+| [sl_dbt.py](https://github.com/jbcodeforce/flink-tools-for-agents/tree/main/tools/dbt/sl_dbt.py) | Manage your project from batch to dbt and Flink SQL. (shift_left) | `sl_dbt init <project_root>`,  `sl_dbt add-data-product <data_product>`, `sl_dbt.py add-table crm-analytics src_customers c360 --table-type dim`| 
+| sr_to_dbt_yaml.py | Fetches the key and/or value schema registered in Confluent Schema Registry for a given Kafka topic and emits a ready-to-paste dbt YAML block |  [uv run sr_to_dbt_yaml.py raw_hosts](https://github.com/jbcodeforce/flink-tools-for-agents/tree/main/tools/dbt/sr_to_dbt_yaml.py) |
 | sql_to_dbt_yaml.py | parses a dbt SQL model file and emits a ready-to-paste `models:` YAML block, resolving column names and data types entirely from the SQL and the upstream model / source definitions in the project | `uv run sql_to_dbt_yaml.py ../airbnb_streaming/models/user_reviews/dimensions/dim_listings_with_hosts.sql` |
-| [flink_dbt_migrate](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/tools/flink_dbt_migrate) | Taking one or more Flink SQL queries in the form of ddl, dml or ctas and transform them for dbt processing | `flink_dbt_migrate.migrate_dml_to_dbt ../cc-flink/dml.enriched_orders.sql ../cc_dbt/models/intermediates/enriched_orders`|
+| [flink_dbt_migrate](https://github.com/jbcodeforce/flink-tools-for-agents/tree/main/tools/dbt/flink_dbt_migrate) | Taking one or more Flink SQL queries in the form of ddl, dml or ctas and transform them for dbt processing | `flink_dbt_migrate.migrate_dml_to_dbt ../cc-flink/dml.enriched_orders.sql ../cc_dbt/models/intermediates/enriched_orders`|
 | statement_management.py | help to stop and delete statements created by dbt | 
 
 
 
 ### How to
+
+???+ question "How to define distribution keys for kafka partitions?"
+    ```json
+    {{
+      config(
+        materialized='streaming_table',
+        distributed_by={
+          'columns': ['order_id'],
+          'buckets': 4
+        }
+      )
+    }}
+    ```
+
+
+???+ info "Creating table with inserted data for raw sources"
+    This could be valuable to create raw tables for testing and start a pipeline. INSERT INTO ... VALUES will not work. Follow the following pattern: 
+    See [an example](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/00-basic-sql/cc-dbt/models/raw/employees.sql)
+
+    ```sql
+    SELECT emp_id, name, dept_id FROM (VALUES
+      (1,  'John Doe',        101),
+      (2,  'Jane Smith',      101)
+    ) AS t (emp_id, name, dept_id)
+    ```
 
 ???+ question "How to define an existing topic as source?"
     A Kafka topic may exist as raw data, output of a CDC connector for example. Define the table as a source (models/sources.yml):

@@ -1,0 +1,17 @@
+version: 2
+models:
+- name: employees
+  schema: j9r-kafka
+  description: Created as raw for demonstration 
+  columns:
+  - name: emp_id
+    data_type: INT
+    constraints:
+      - type: not_null
+      - type: primary_key
+        expression: "not enforced"
+  - name: name
+    data_type: STRING
+  - name: dept_id
+    data_type: INT
+

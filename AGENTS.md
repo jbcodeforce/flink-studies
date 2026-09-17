@@ -63,8 +63,10 @@ This is a comprehensive Apache Flink and Confluent Cloud data streaming processi
 - Script to help manage demonstration and studies
 - Script to do web research on Flink articles
 
+--- 
 ## Agent Capabilities & Responsibilities
 
+When working between agents, use the `.context/` directory for scratch notes and agent-to-agent handoff artifacts. This folder is gitignored
 ### Core Competencies Required:
 1. **Apache Flink Expertise**
    - Deep understanding of Flink SQL, DataStream API, and Table API

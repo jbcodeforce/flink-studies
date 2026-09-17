@@ -1,10 +1,10 @@
-# DR Car Rides — Active/Passive Disaster Recovery Demo
+# Disaster Recovery Demonstration on Car Rides Solution
 
 The goal it to demonstrate a data stream processing (DSP) disaster recovery scenario and solution. At the high level, a DSP solution includes the following elements:
 
 ![](./docs/raw-to-sink.drawio.png)
 
-1. Two different environments in two separate regions. We use the AWS concept of region as an example, as this demonstration deploy components into AWS.
+1. Two different environments in two separate regions. This demonstration deploy components into AWS.
 1. Each region has one schema registry and one to many Kafka Clusters (only one in this demonstration).
 1. Flink jobs are deployed with Job Manager and task managers, but as the first demonstrations are done on Confluent solutions, we use the concept of compute pool to represent Flink resources deployed.
 1. The kafka topics, can be classified in two folds: 
@@ -17,17 +17,17 @@ The goal it to demonstrate a data stream processing (DSP) disaster recovery scen
 
 [See this DR cookbook](https://jbcodeforce.github.io/flink-studies/cookbook/cluster_mgt/#3-disaster-recovery-multi-region-strategies) for all the details and best practices.
 
-## Supported deployments
+## Supported deployments and Roadmap
 
-| Deployment | Path | Status |
-|------------|------|--------|
-| Confluent Cloud | [`ccloud/`](./ccloud/) | Ready (IaC + Flink SQL + scripts) |
-| OSS Apache Flink | — | Not yet implemented |
-| CP Flink | — | Not fully yet implemented; see [`savepoint-demo`](../savepoint-demo/) for CP savepoint DR |
+| Deployment | Path | Description / Status |
+|------------|------|----------------------|
+| **Confluent Cloud** | [`ccloud/`](./ccloud/) | **Ready** (Terraform multi-region IaC + Flink SQL + Cluster Linking + Schema Linking + failover runbooks) |
+| **Confluent Platform (CP)** | `cp-flink/` | Planned roadmap (Cluster Linking, Schema Registry exporter, and CP Flink / DataStream DR; see [`savepoint-demo`](../savepoint-demo/)) |
+| **OSS Apache Kafka & Flink** | `oss/` | Planned roadmap (MirrorMaker2 / Dual-write + OSS Flink savepoint restore) |
 
-## Confluent Cloud
+## Confluent Cloud Architecture & DR Strategy
 
-From Confluent disaster recovery white paper, **active/passive** multi-region DR is the recommended pattern. This includes Kafka cluster, topics and schema registry. For a data streaming processing (DSP) the Flink statements may better support an **active/active** pattern as most of DSP pipelines include stateful processing, and rebuilding state may impact RTO.
+From Confluent disaster recovery best practices, **active/passive** multi-region DR is the primary recommended pattern for Kafka clusters, topics, and Schema Registry. For Data Stream Processing (DSP), Flink statements can be operated either in **standby mode (deploy on failover)** or **active/active mode (parallel regional pipelines)** depending on RTO requirements and state rebuild costs.
 
 The demonstration starts from an existing environment (grey components on the left in figure below): **j9r-env** / **j9r-kafka** (see [deployment/cc-terraform](../../deployment/cc-terraform/))
 
@@ -79,6 +79,7 @@ Event fields (JSON + Schema Registry `json-registry`): `ride_id`, `seq`, `driver
 
 Same `seq`-based RPO / processing gap measurement as before.
 
-## Confluent Platform
+## Demonstration Structure & Agent Guide
 
-## Apache Flink and Kafka
+See [`AGENTS.md`](./AGENTS.md) for detailed guidelines on directory conventions, environment isolation, and agent practices.
+See [`ccloud/README.md`](./ccloud/README.md) for the end-to-end execution guide on Confluent Cloud.

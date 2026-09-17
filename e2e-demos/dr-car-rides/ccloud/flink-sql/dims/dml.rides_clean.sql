@@ -1,5 +1,5 @@
 -- Stage 1: stateless filter + city normalize → rides_clean
--- On DR failover, restart with earliest-offset (hybrid strategy; see DESIGN.md)
+-- On DR failover, restart with earliest-offset (see DR runbook in ccloud/README.md)
 INSERT INTO rides_clean
 SELECT
     driver_id,

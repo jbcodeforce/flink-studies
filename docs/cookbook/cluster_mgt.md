@@ -280,11 +280,15 @@ DR for Flink depends on the deployment model (Confluent Cloud, Confluent Platfor
 Data and schema replication (exact replication including offsets and schemas) are prerequisites; Flink state recovery builds on that. 
 
 ???+ info "Resiliency"
-    Resiliency is the ability of a workload to recover from infrastructure or service disruptions, dynamically acquire computing resources to meet demand, and mitigate disruptions, such as misconfigurations or transient network issues.  It addresses **DR** (restore service) and **Availability** (prevent loss of service).
+    Resiliency is the ability of a workload to recover from infrastructure or service disruptions, dynamically acquire computing resources to meet demand, and mitigate disruptions, such as misconfigurations or transient network issues. It is important to adopt a resilience-by-design mindset directly into software architecture. It addresses **DR** (restore service) and **Availability** (prevent loss of service).
 
     ![12](./diagrams/resiliency.drawio.png)
 
     Apply the sharing responsibility of resiliency: cloud provider for resiliency **of** the cloud: infrastructure. Customer responsible for resiliency **in** the cloud: adopting instance deployment across multiple locations, support self-healing, design for resilience.
+
+    It is important to bridge the gap between software and infrastructure by designing resilience directly into the application layer, by using architecture patterns, modern enterprise capabilities, and governance to bring end-to-end coherence and integration across applications, platforms, and data pipelines.
+
+    With agentic systems deployment, it should be possible to have autonomous, intelligent agents to handle unpredictable variables in real time.
 
 * Cloud Providers are offering multiple regions for disaster recovery, and multiple availability zones within a region for high-availability. They do not communicate on how the physical allocation is done between physical data centers. But it is possible that an availability zone is a data center building in other part of the city, with fiber optical links. This means Kafka cluster in multi availabiltiy zones can support some DR requirements. Cloud within a region, DR may be acceptable, but in general DR considerations are for region failover to mitigate regional outages: earthquakes, electrical disaster...
 * If availabilty zones is sufficient to support disaster management, it is the most cost effective solution as a lot of services, like Kafka, support synchronous replications between AZs (See [Confluent resilience documentation](https://docs.confluent.io/cloud/current/clusters/resilience.html)). Always clarify those topologies with the cloud provider.
@@ -413,6 +417,11 @@ The following figures illustrate what elements need to be considered for disaste
     [Cluster Links on Confluent Cloud](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/cluster-links-cc.html) enables data replication between two kafka clusters. Can be created with [Terraform](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/cluster-links-cc.html#managing-cluster-links-with-tf), [cli](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/cluster-links-cc.html#managing-cluster-links-with-the-cli) or [REST API](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/cluster-links-cc.html#managing-cluster-links-with-the-rest-api). Cluster links are created on the destination cluster. Source cluster may also be a Confluent Platform or Apache Kafka cluster.
     By default, a cluster link is a one-way bridge but can be set to be bi-directional. Clusters need to be dedicated or enterprise.
     A Service account is the principal to process the cluster link, and needs api key/secrets on both cluster. ACLs need to be set so read from topics on source cluster.
+
+???- info "Cell Architecture"
+    Modern cloud Native solution adopt the [cell architecture](https://docs.aws.amazon.com/solutions/cell-based-architecture-on-aws). It looks Confluent Cloud is based on such cell architecture. For example Flink endpoints are separated from `cloud.confluent.io/environment`. The high level view of this architecture may look like:
+
+    ![](./diagrams/cell-arch.drawio.png)
 
 ### 3.1 Active-passive pattern
 

@@ -91,22 +91,29 @@ def _sample_topic_max_seq(topic: str, timeout_s: float = 15.0) -> int | None:
             msg = consumer.poll(0.5)
             if msg is None or msg.error():
                 continue
-            try:
-                payload = json.loads(msg.value().decode("utf-8"))
-                # SR wire format: skip magic byte + schema id if present
-            except Exception:
-                raw = msg.value()
-                if raw and raw[0] == 0 and len(raw) > 5:
-                    # confluent wire format — try decode after header
-                    try:
-                        # Without SR deserializer, skip binary payloads
-                        continue
-                    except Exception:
-                        continue
+            raw = msg.value()
+            if not raw:
                 continue
-            if "seq" in payload:
-                s = int(payload["seq"])
-                max_seq = s if max_seq is None else max(max_seq, s)
+            payload = None
+            # 1. Try plain JSON UTF-8
+            try:
+                payload = json.loads(raw.decode("utf-8"))
+            except Exception:
+                pass
+
+            # 2. Try Confluent Schema Registry JSON wire format (magic byte 0x00 + 4-byte schema ID)
+            if payload is None and len(raw) > 5 and raw[0] == 0:
+                try:
+                    payload = json.loads(raw[5:].decode("utf-8"))
+                except Exception:
+                    payload = None
+
+            if payload and isinstance(payload, dict) and "seq" in payload:
+                try:
+                    s = int(payload["seq"])
+                    max_seq = s if max_seq is None else max(max_seq, s)
+                except (ValueError, TypeError):
+                    pass
         return max_seq
     finally:
         consumer.close()

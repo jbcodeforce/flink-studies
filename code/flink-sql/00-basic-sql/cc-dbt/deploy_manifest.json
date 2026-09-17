@@ -1,0 +1,26 @@
+{
+  "user_agent": "cc-sql-tools/0.1",
+  "groups": {
+    "pipeline": [
+      {
+        "name": "dbt-employee-employee-count-8a9b3b",
+        "file": "_noop"
+      },
+      {
+        "name": "dbt-employee-employees",
+        "file": "_noop"
+      }
+    ]
+  },
+  "deploy_all": [
+    "pipeline"
+  ],
+  "undeploy_all": [
+    "pipeline"
+  ],
+  "drop_tables": [
+    "employee_count",
+    "employees"
+  ],
+  "drop_statement_prefix": "dbt-employee-drop"
+}

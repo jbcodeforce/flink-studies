@@ -12,16 +12,68 @@ Reuses existing **j9r-env** / **j9r-kafka** as primary (via `import-j9r-env` rem
 
 
 
-### 2. Apply iteration 1 (Confluent DR core)
+### 1. Import Primary Environment (Once)
 
+First, import and output the existing primary environment:
 
+```bash
+cd import-j9r-env
+export CONFLUENT_CLOUD_API_KEY=...
+export CONFLUENT_CLOUD_API_SECRET=...
+terraform init
+terraform apply
+cd ..
+```
 
+### 2. Apply Iteration 1 (Confluent DR Core)
+
+Configure `terraform.tfvars`:
+
+```hcl
+enable_cluster_link   = false
+enable_schema_linking = false
+enable_tableflow      = false
+primary_region        = "us-west-2"
+dr_region             = "us-east-1"
+```
+
+Apply Terraform:
+
+```bash
+terraform init
+terraform apply
+terraform output -json > ../scripts/iac-outputs.json
+```
 
 No AWS credentials required for iteration 1 (`enable_tableflow=false` skips AWS credential validation).
+`terraform destroy` on this stack does **not** destroy `j9r-env` / `j9r-kafka` / primary SAs.
 
-`terraform destroy` on this stack does **not** destroy j9r-env / j9r-kafka / j9r SAs.
+### 3. Apply Iteration 2 (Cluster Linking & Schema Linking)
 
+Once the primary and DR clusters are provisioned, enable Cluster Linking and Schema Linking in `terraform.tfvars`:
 
+```hcl
+enable_cluster_link   = true
+enable_schema_linking = true
+```
+
+Apply again to create source topics, cluster link, mirror topics, and the schema exporter with DR Schema Registry in `IMPORT` mode:
+
+```bash
+terraform apply
+terraform output -json > ../scripts/iac-outputs.json
+```
+
+### 4. Apply Iteration 3 (Optional: Tableflow with AWS S3 + Glue)
+
+To enable Tableflow integration:
+1. Set AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`).
+2. Set `enable_tableflow = true` in `terraform.tfvars`.
+3. Apply Terraform:
+   ```bash
+   terraform apply
+   terraform output -json > ../scripts/iac-outputs.json
+   ```
 
 ## Notes
 

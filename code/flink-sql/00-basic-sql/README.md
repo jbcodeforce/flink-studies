@@ -6,7 +6,7 @@
     Updated 12/2025 Getting started by using Flink SQL client - Add deduplicate for Apache Flink OSS
     Update 2/2026: Clean readme and automate demonstration. Add REST client in python to management statement and rund demonstration.
     Update 06/2026: Align with tools and new way to organize demo
-    Update 09/2026: move dedup to 02-deduplication
+    Update 09/2026: move dedup to 02-deduplication - add cc-dbt automatically migrated with tools from []()
 
 This folder includes some basic SQL examples to be used with one of the following environments:
 

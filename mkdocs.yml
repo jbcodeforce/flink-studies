@@ -12,6 +12,7 @@ nav:
     - Code&Demos: labs/index.md
     - Confluent Cloud for Flink: techno/ccloud-flink.md
     - Agentic applications: architecture/agentic_flink.md
+    - Streamhouse: architecture/streamhouse.md
   - Cookbook:
     - Introduction: cookbook/index.md
     - Deployment Models: cookbook/considerations.md

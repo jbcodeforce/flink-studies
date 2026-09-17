@@ -9,7 +9,7 @@
   "drop_statement_prefix": "cc-flink-drop",
   "groups": {
     "ddl": [
-      {"name": "cc-flink-ddl-employees", "file": "ddl.employee.sql"}
+      {"name": "cc-flink-ddl-employees", "file": "ddl.employees.sql"}
     ],
     "data": [
       {"name": "cc-flink-insert-employees", "file": "insert_employees.sql"}

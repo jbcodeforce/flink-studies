@@ -5,8 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-FLINK_TF="$SCRIPT_DIR/../flink-sql/terraform"
-DR_STATE="$SCRIPT_DIR/../flink-sql/dr-state"
+FLINK_DIR="$SCRIPT_DIR/../flink-sql"
 
 echo "=== Soft failover: primary → DR ==="
 echo "1) Stop the producer (Ctrl-C) if it is still writing to primary."
@@ -16,14 +15,14 @@ echo
 
 if command -v confluent >/dev/null 2>&1; then
   echo "Attempting to stop primary DML statements via Confluent CLI (best-effort)..."
-  for name in dr-rides-primary-dml-rides-clean dr-rides-primary-dml-driver-stats; do
+  for name in flink-sql-dims-pipeline-rides-clean flink-sql-facts-pipeline-driver-stats; do
     confluent flink statement stop "$name" --cloud 2>/dev/null \
       || echo "  (skip/stop manually if needed: $name)"
   done
 else
-  echo "Confluent CLI not found — stop primary Flink DML statements in the Cloud UI:"
-  echo "  dr-rides-primary-dml-rides-clean"
-  echo "  dr-rides-primary-dml-driver-stats"
+  echo "Confluent CLI not found — stop primary Flink DML statements via make or Cloud UI:"
+  echo "  flink-sql-dims-pipeline-rides-clean"
+  echo "  flink-sql-facts-pipeline-driver-stats"
 fi
 
 echo
@@ -34,15 +33,8 @@ echo "   Terraform steady-state keeps DR in IMPORT; change mode in UI for the de
 echo "   or apply a targeted mode change. Schema IDs already replicated stay valid."
 echo
 
-echo "5) Deploying Flink statements + Tableflow on DR (separate TF state)..."
-mkdir -p "$DR_STATE"
-pushd "$FLINK_TF" >/dev/null
-terraform init -input=false >/dev/null
-terraform apply -auto-approve \
-  -var="deploy_site=dr" \
-  -var="statement_name_prefix=dr-rides-dr" \
-  -state="$DR_STATE/terraform.tfstate"
-popd >/dev/null
+echo "5) Deploying Flink SQL statements on DR cluster..."
+make -C "$FLINK_DIR" deploy SITE=dr
 
 echo
 echo "6) Retarget producer to DR (Kafka + Schema Registry):"

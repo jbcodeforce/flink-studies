@@ -49,3 +49,4 @@ e2e-demos/cc-cdc-tx-demo/cc-flink-sql/staging/
 **/plans/
 **/dbt_out/
 **/logs/
+.context/
