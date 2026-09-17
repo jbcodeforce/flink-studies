@@ -524,7 +524,7 @@ See [Grafana integration](https://docs.confluent.io/cloud/current/monitoring/thi
 [The product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/flink-rbac.html) goes into sufficient details on how RBAC roles work for Flink. 
 
 * Remember some inport facts:
-    * When registering to CC, one org is created with the user who creatd it. Other users are invited to the organization.
+    * When registering to CC, one org is created with the user who created it. Other users are invited to the organization.
     * Service account can be used for deployment of resources or flink statement. It will be used as principal id for Flink statement deployment. Roles need to be granted to this service account, as well as api keys. 
     * CC Flink permissions follow a layered approach
     * Flink Developer can create workspaces, but can be limited per compute pool
@@ -547,12 +547,12 @@ The following table list some classical use cases and the expected roles:
 | Admin the org | OrganizationAdmin |  
 | Access to encryption keys | DeveloperRead on the key. DeveloperWrite for the key generation |
 
-Examples of Terraform definitions for service account, (FlinkDeveloper, DevelopManager roles, and role binding on GCP [cc-flink-rbac](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/cc-flink-rbac).
+Examples of Terraform definitions for service account, (FlinkDeveloper, DevelopManager roles, and role binding on GCP) [cc-flink-rbac](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/cc-flink-rbac).
 
 ### Permissions
-* Different service accounts:
-    * Service Account: `app-manager` - used by Terraform to manage the Flink statements.
-    * Service Account: `statements-runner` - the Principal of the Flink statements. It determines the permissions inherited by the statements.
+* Different user / service accounts:
+    * User Account: `app-manager` - used for confluent cli, REST API or dbt to manage the Flink statements including CREATE TABLE, CREATE MATERIALIZED TABLE, DROP TABLE, ALTER... 
+    * Service Account: `statements-runner` - the Principal of the Flink statements deployment into production.
   
 * Permissions
     * Service Account: `app-manager`
@@ -575,6 +575,10 @@ Examples of Terraform definitions for service account, (FlinkDeveloper, DevelopM
 > The roles *DeveloperManage* on all topics, and *DeveloperWrite* on all Schema Registry subjects assigned to `statements-runner` are required only to execute `CREATE TABLE` statements. If you do not have any `CREATE TABLE` statement you can omit them.
 
 > ⚠️ Setting the *Assigner* role in the UI works the other way around: you go to the Access details of `statements-runner` (the target, not the assigner), select "+ Add role assignment", select the `app-manager` Service Account and the role *Assigner*.
+
+### Recapitulations per Environment
+
+![](./diagrams/rbac-env.drawio.png)
 
 ## Understanding pricing
 

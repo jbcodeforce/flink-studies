@@ -10,6 +10,9 @@ compiled: false
 
 This chapter is a summary on how to use DataStream API, laborate from Apache Flink documentation, and other existing examples for Flink DataStream.
 
+???+ info "Futur of Datastream"
+    As of early 2026, the investment done on Apache Flink Datastream API seems very limited since 3 years and the implementation focus is moving to Table API, SQL and PTFs. I recommend to port existing Datastream to those higher level APIs. With the progress of AI coding agent, it will be easy to prompt to get the datastream intent and logic and port it to Table API in few minutes. Developing tests to validate the port is giving same results. The lift and shift argument is less relevant with AI help.
+
 ## Key Concepts
 
 * A DataStream program is a regular Java program packaged in a JAR file. 
