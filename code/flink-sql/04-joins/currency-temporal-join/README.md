@@ -8,7 +8,7 @@ A trading platform records FX trades with `notional_amount` in the base currency
 
 ## Architecture
 
-![](./docs/shipment_joins.png)
+![](./docs/pipe.drawio.png)
 
 ---
 
