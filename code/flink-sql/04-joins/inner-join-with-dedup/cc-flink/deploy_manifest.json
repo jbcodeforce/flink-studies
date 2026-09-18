@@ -1,0 +1,28 @@
+{
+  "user_agent": "flink-studies-cc/inner-join-with-dedup/0.1",
+  "deploy_all": ["ddl", "data", "pipeline"],
+  "undeploy_all": ["pipeline", "data"],
+  "drop_tables": [
+    "raw_AssetType",
+    "raw_AssetTypeAsset",
+    "raw_AssetSubType",
+    "raw_AssetSubTypeAsset"
+  ],
+  "drop_statement_prefix": "ijwd-drop",
+  "groups": {
+    "ddl": [
+      {"name": "ijwd-ddl-raw-asset-type",         "file": "ddl.raw_AssetType.sql"},
+      {"name": "ijwd-ddl-raw-asset-type-asset",   "file": "ddl.raw_AssetTypeAsset.sql"},
+      {"name": "ijwd-ddl-raw-asset-sub-type",     "file": "ddl.raw_AssetSubType.sql"},
+      {"name": "ijwd-ddl-raw-asset-sub-type-asset","file": "ddl.raw_AssetSubTypeAsset.sql"}
+    ],
+    "data": [
+      {"name": "ijwd-data-insert-raw-assets",     "file": "dml.insert_raw_assets.sql"},
+      {"name": "ijwd-data-insert-raw-sub-assets", "file": "dml.insert_raw_sub_assets.sql"}
+    ],
+    "pipeline": [
+      {"name": "ijwd-pipeline-inner-join",          "file": "dml.inner_join.sql"},
+      {"name": "ijwd-pipeline-type-sub-type-agg",   "file": "dml.type_sub_type_array_agg.sql"}
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "user_agent": "flink-studies-cc/temporal-join/0.1",
+  "deploy_all": ["ddl", "data", "pipeline"],
+  "undeploy_all": ["pipeline", "data"],
+  "drop_tables": [
+    "d04_orders_wm",
+    "d04_products_wm",
+    "d04_shipments"
+  ],
+  "drop_statement_prefix": "tj-drop",
+  "groups": {
+    "ddl": [
+      {"name": "tj-ddl-orders-wm",   "file": "ddl.orders_wm.sql"},
+      {"name": "tj-ddl-products-wm", "file": "ddl.products_wm.sql"},
+      {"name": "tj-ddl-shipments",   "file": "ddl.shipments.sql"}
+    ],
+    "data": [
+      {"name": "tj-data-insert-shipments", "file": "dml.insert_shipments.sql"}
+    ],
+    "pipeline": [
+      {"name": "tj-pipeline-temporal-join", "file": "dml.temporal_join.sql"}
+    ]
+  }
+}

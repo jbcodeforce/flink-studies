@@ -1,0 +1,40 @@
+{
+  "user_agent": "flink-studies-cc/order-product-join/0.1",
+  "deploy_all": ["ddl", "data", "pipeline"],
+  "undeploy_all": ["pipeline", "data"],
+  "drop_tables": [
+    "d04_orders",
+    "d04_products",
+    "d04_order_product_join",
+    "d04_enriched_orders"
+  ],
+  "drop_statement_prefix": "opj-drop",
+  "groups": {
+    "ddl": [
+      {"name": "opj-ddl-orders", "file": "ddl.orders.sql"},
+      {"name": "opj-ddl-products", "file": "ddl.products.sql"},
+      {"name": "opj-ddl-enriched-orders", "file": "ddl.enriched_orders.sql"}
+    ],
+    "ddls": [
+      {"name": "opj-ddl-orders", "file": "ddl.orders.sql"},
+      {"name": "opj-ddl-products", "file": "ddl.products.sql"}
+    ],
+    "ddls_wm": [
+      {"name": "opj-ddl-orders-wm", "file": "ddl.orders_wm.sql"},
+      {"name": "opj-ddl-products-wm", "file": "ddl.products_wm.sql"}
+    ],
+    "data": [
+      {"name": "opj-data-insert-orders", "file": "dml.insert_orders.sql"},
+      {"name": "opj-data-insert-products", "file": "dml.insert_products.sql"}
+    ],
+    "pipeline": [
+      {"name": "opj-pipeline-enriched-orders", "file": "dml.enriched_orders.sql"}
+    ],
+    "op_join_1": [
+      {"name": "opj-pipeline-order-product-join", "file": "dml.order_product_join.sql"}
+    ],
+    "op_left_join": [
+      {"name": "opj-pipeline-ord-prod-left-join", "file": "dml.ord_prod_left_join.sql"}
+    ]
+  }
+}

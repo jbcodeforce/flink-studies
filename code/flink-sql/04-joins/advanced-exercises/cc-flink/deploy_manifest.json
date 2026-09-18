@@ -1,0 +1,14 @@
+{
+  "user_agent": "flink-studies-cc/advanced-exercises/0.1",
+  "deploy_all": ["pipeline"],
+  "undeploy_all": ["pipeline"],
+  "drop_tables": [],
+  "drop_statement_prefix": "ae-drop",
+  "groups": {
+    "pipeline": [
+      {"name": "ae-pipeline-avg-prod-volume",   "file": "cc-3-avg-prod-volume-per-mn.sql"},
+      {"name": "ae-pipeline-customer-orders",   "file": "cc.customer_orders.sql"},
+      {"name": "ae-pipeline-s2s-ctas-join",     "file": "cc_s2s_ctas_join-2.sql"}
+    ]
+  }
+}

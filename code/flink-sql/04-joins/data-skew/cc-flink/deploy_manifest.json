@@ -1,0 +1,20 @@
+{
+  "user_agent": "flink-studies-cc/data-skew/0.1",
+  "deploy_all": ["data", "pipeline"],
+  "undeploy_all": ["pipeline", "data"],
+  "drop_tables": [
+    "users",
+    "groups"
+  ],
+  "drop_statement_prefix": "ds-drop",
+  "groups": {
+    "data": [
+      {"name": "ds-data-insert-groups", "file": "insert_groups.sql"},
+      {"name": "ds-data-insert-users",  "file": "insert_users.sql"}
+    ],
+    "pipeline": [
+      {"name": "ds-pipeline-joins-user-group", "file": "dml.joins_user_group.sql"},
+      {"name": "ds-pipeline-salted-joins",     "file": "dml.salted_joins.sql"}
+    ]
+  }
+}

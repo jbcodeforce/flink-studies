@@ -1,0 +1,25 @@
+{
+  "user_agent": "flink-studies-cc/currency-temporal-join/0.1",
+  "deploy_all": ["ddl", "data", "pipeline"],
+  "undeploy_all": ["pipeline", "data"],
+  "drop_tables": [
+    "fx_rates",
+    "trades",
+    "converted_trades"
+  ],
+  "drop_statement_prefix": "ctj-drop",
+  "groups": {
+    "ddl": [
+      {"name": "ctj-ddl-fx-rates",         "file": "ddl.fx_rates.sql"},
+      {"name": "ctj-ddl-trades",            "file": "ddl.trades.sql"},
+      {"name": "ctj-ddl-converted-trades",  "file": "ddl.converted_trades.sql"}
+    ],
+    "data": [
+      {"name": "ctj-data-insert-fx-rates",  "file": "dml.insert_fx_rates.sql"},
+      {"name": "ctj-data-insert-trades",    "file": "dml.insert_trades.sql"}
+    ],
+    "pipeline": [
+      {"name": "ctj-pipeline-convert-trades", "file": "dml.convert_trades.sql"}
+    ]
+  }
+}

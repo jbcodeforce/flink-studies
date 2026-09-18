@@ -1,0 +1,22 @@
+-- Seed FX rates with multiple versions per currency pair.
+--
+-- Column order: from_currency, to_currency, valid_from, rate, source
+
+INSERT INTO fx_rates VALUES
+-- EUR/USD
+('EUR', 'USD', TO_TIMESTAMP_LTZ('2024-05-31 08:00:00'), 1.09000000, 'ECB'),
+('EUR', 'USD', TO_TIMESTAMP_LTZ('2024-06-01 08:00:00'), 1.08500000, 'ECB'),
+('EUR', 'USD', TO_TIMESTAMP_LTZ('2024-06-02 08:00:00'), 1.08700000, 'ECB'),
+-- GBP/USD
+('GBP', 'USD', TO_TIMESTAMP_LTZ('2024-05-31 08:00:00'), 1.25000000, 'Reuters'),
+('GBP', 'USD', TO_TIMESTAMP_LTZ('2024-06-01 08:00:00'), 1.27300000, 'Reuters'),
+('GBP', 'USD', TO_TIMESTAMP_LTZ('2024-06-02 08:00:00'), 1.27700000, 'Reuters'),
+-- JPY/USD
+('JPY', 'USD', TO_TIMESTAMP_LTZ('2024-05-31 08:00:00'), 0.00542000, 'internal'),
+('JPY', 'USD', TO_TIMESTAMP_LTZ('2024-06-01 08:00:00'), 0.00642000, 'internal'),
+-- CHF/USD
+('CHF', 'USD', TO_TIMESTAMP_LTZ('2024-05-31 07:30:00'), 1.11400000, 'Reuters'),
+('CHF', 'USD', TO_TIMESTAMP_LTZ('2024-06-01 07:30:00'), 1.12400000, 'Reuters'),
+-- USD/EUR
+('USD', 'EUR', TO_TIMESTAMP_LTZ('2024-05-31 08:00:00'), 0.90006000, 'ECB'),
+('USD', 'EUR', TO_TIMESTAMP_LTZ('2024-06-01 08:00:00'), 0.92166000, 'ECB');

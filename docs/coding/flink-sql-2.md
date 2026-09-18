@@ -869,7 +869,7 @@ ON t.stockid = s.id
     # joining in a separate DML
     ...
     from extended_sensors s
-    left join dim_rule_config for system as of s.event_ts as rule
+    left join dim_rule_config for system_time as of s.event_ts as rule
     ON  s.tenant_id = rule.tenant_id
        AND s.rule_id = rule.rule_id 
        AND s.parameter_id = rule.parameter_id
@@ -886,7 +886,7 @@ ON t.stockid = s.id
     ) select ... 
     ```
 
-    [See also this sample for rule-based control](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/04-2-joins/rule_match_on_sensors/README.md) with temporal joins and constant columns.
+    [See also this sample for rule-based control](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/04-joins/rule-match-on-sensors/README.md) with temporal joins and constant columns. And the [price value at exchange rate time](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/04-joins/currency-temporal-join)
 
 * When the LHS of a temporal join is upsert, the sink often needs retract changelog mode; while with an append LHS, an append sink is typical.
 * An inner join with only equality predicates is not a full Cartesian product; unconstrained joins can behave like one.

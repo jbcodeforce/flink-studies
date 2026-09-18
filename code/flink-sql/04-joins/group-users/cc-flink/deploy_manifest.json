@@ -1,0 +1,27 @@
+{
+  "user_agent": "flink-studies-cc/group-users/0.1",
+  "deploy_all": ["ddl", "data", "pipeline"],
+  "undeploy_all": ["pipeline", "data"],
+  "drop_tables": [
+    "group_hierarchy",
+    "groups_users_rec",
+    "dim_latest_group_users_rec"
+  ],
+  "drop_statement_prefix": "gu-drop",
+  "groups": {
+    "ddl": [
+      {"name": "gu-ddl-group-hierarchy",            "file": "ddl.group_hierarchy.sql"},
+      {"name": "gu-ddl-groups-users-rec",           "file": "ddl.groups_users_rec.sql"},
+      {"name": "gu-ddl-dim-latest-group-users-rec", "file": "ddl.dim_latest_group_users_rec.sql"}
+    ],
+    "data": [
+      {"name": "gu-data-insert-group-hierarchy",  "file": "insert_group_hierarchy.sql"},
+      {"name": "gu-data-insert-groups-users-rec", "file": "insert_groups_users_rec.sql"}
+    ],
+    "pipeline": [
+      {"name": "gu-pipeline-group-hierarchy",         "file": "dml.group_hierarchy.sql"},
+      {"name": "gu-pipeline-2nd-level-hierarchy",     "file": "dml.2nd_level_hierarchy.sql"},
+      {"name": "gu-pipeline-dim-latest-group-users",  "file": "dml.dim_latest_group_users.sql"}
+    ]
+  }
+}

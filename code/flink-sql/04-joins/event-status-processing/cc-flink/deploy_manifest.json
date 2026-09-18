@@ -1,0 +1,14 @@
+{
+  "user_agent": "flink-studies-cc/event-status-processing/0.1",
+  "deploy_all": ["ddl"],
+  "undeploy_all": [],
+  "drop_tables": [
+    "event_status"
+  ],
+  "drop_statement_prefix": "esp-drop",
+  "groups": {
+    "ddl": [
+      {"name": "esp-ddl-event-status", "file": "ddl.event_status.sql"}
+    ]
+  }
+}

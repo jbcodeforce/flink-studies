@@ -55,6 +55,7 @@ The CLI has **no `init` subcommand**. `project_root` is a bare positional argume
 The correct form is:
 
 ```bash
+# under the code/tools folder
 uv run python demo_mgr_cli.py <project_root_relative_to_tools> --project-type <e2e|study> --platform <cc-flink|cp-flink|oss|all>
 ```
 
@@ -146,17 +147,17 @@ Use `apply_diff` or `search_and_replace` to do this minimally.
 
 After writing SQL files into the platform sub-folder (e.g. `cc-flink/`), generate the
 deployment manifest automatically using `manifest_cli`. This tool lives in
-`code/flink-sql/tools/` and paths are relative to that directory.
+`flink-tools-for-agents` repository at the same level as `flink-studies`.
 
 ```bash
 # Preview without writing (dry-run)
-uv run python -m manifest.manifest_cli --sql-dir ../<slug>/cc-flink --dry-run
+uv run  flink-sql-manifesti --sql-dir ../<slug>/cc-flink --dry-run
 
 # Write deploy_manifest.json
-uv run python -m manifest.manifest_cli --sql-dir ../<slug>/cc-flink
+uv run flink-sql-manifest --sql-dir ../<slug>/cc-flink
 ```
 
-Run with `execute_command`, `cwd = "code/flink-sql/tools"`.
+Run with `execute_command`, `cwd = "../flink-tools-for-agents"`.
 
 The CLI infers groups from SQL file naming conventions:
 
@@ -186,39 +187,14 @@ Write the corrected manifest with `write_file` after reviewing the dry-run outpu
 
 ## Step 7 — Write the Makefile
 
-Create a `Makefile` at the study root that delegates to `tools/Makefile`. Copy this pattern
+Create a `Makefile` at the cc-flink that delegates to `tools.mk` under `flink-studies`. Copy this pattern
 exactly (it is identical across all modern studies):
 
 ```makefile
-TOOLS := $(abspath ../tools)
-DEMO  := $(abspath cc-flink)
-
-.PHONY: sync deploy undeploy drop-tables deploy-% undeploy-%
-
-sync:
-	$(MAKE) -C $(TOOLS) sync
-
-deploy:
-	$(MAKE) -C $(TOOLS) deploy SQL_DIR=$(DEMO)
-
-undeploy:
-	$(MAKE) -C $(TOOLS) undeploy SQL_DIR=$(DEMO)
-
-drop-tables:
-	$(MAKE) -C $(TOOLS) drop-tables SQL_DIR=$(DEMO)
-
-deploy-%:
-	$(MAKE) -C $(TOOLS) deploy-$* SQL_DIR=$(DEMO)
-
-undeploy-%:
-	$(MAKE) -C $(TOOLS) undeploy-$* SQL_DIR=$(DEMO)
+TOOLS_MK := $(abspath ../../../../tools.mk)
+SQL_DIR  := $(CURDIR)                         # SQL directory with deploy_manifest.json
+include $(TOOLS_MK)
 ```
-
-**`TOOLS` always points to `../tools`** (the shared `code/flink-sql/tools/` directory).
-**`DEMO` points to `./cc-flink`** (adjust to `./cp-flink` or `./oss` as needed).
-
-Do **not** use the older pattern from `05-changelog/Makefile` that hard-codes credentials
-and calls `confluent flink statement create` directly — that pattern is deprecated.
 
 ---
 

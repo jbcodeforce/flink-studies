@@ -1,0 +1,22 @@
+{
+  "user_agent": "flink-studies-cc/rule-match-on-sensors/0.1",
+  "deploy_all": ["ddl", "data", "pipeline"],
+  "undeploy_all": ["pipeline", "data"],
+  "drop_tables": [
+    "sensors",
+    "sensor_rules"
+  ],
+  "drop_statement_prefix": "rms-drop",
+  "groups": {
+    "ddl": [
+      {"name": "rms-ddl-sensors",      "file": "ddl.sensors.sql"},
+      {"name": "rms-ddl-sensor-rules", "file": "ddl.sensor_rules.sql"}
+    ],
+    "data": [
+      {"name": "rms-data-insert-sensor-rules", "file": "dml.insert_sensor_rules.sql"}
+    ],
+    "pipeline": [
+      {"name": "rms-pipeline-rule-match", "file": "dml.rule_match.sql"}
+    ]
+  }
+}
