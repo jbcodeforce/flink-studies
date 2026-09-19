@@ -1,0 +1,84 @@
+# -----------------------------------------------------------------------------
+# Variables — DR Car Rides Demo
+# -----------------------------------------------------------------------------
+
+variable "prefix" {
+  description = "Prefix for resource names"
+  type        = string
+  default     = "dr-rides"
+}
+
+variable "owner_email" {
+  description = "Owner email for tagging"
+  type        = string
+  default     = ""
+}
+
+variable "primary_region" {
+  description = "AWS / Confluent Cloud region for the primary Kafka cluster and Flink pool (must match reused j9r-kafka)"
+  type        = string
+  default     = "us-west-2"
+}
+
+variable "dr_region" {
+  description = "AWS / Confluent Cloud region for the DR Kafka cluster and Flink pool"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "confluent_cloud_api_key" {
+  description = "Confluent Cloud API key (or set CONFLUENT_CLOUD_API_KEY)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "confluent_cloud_api_secret" {
+  description = "Confluent Cloud API secret (or set CONFLUENT_CLOUD_API_SECRET)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "flink_max_cfu" {
+  description = "Max CFU per Flink compute pool"
+  type        = number
+  default     = 10
+}
+
+variable "topic_partitions" {
+  description = "Partitions for demo topics"
+  type        = number
+  default     = 6
+}
+
+variable "enable_cluster_link" {
+  description = "Provision topics, destination-initiated Cluster Linking (primary → DR), and DR mirrors (iteration 2)"
+  type        = bool
+  default     = false
+}
+
+variable "enable_schema_linking" {
+  description = "Provision DR SR IMPORT mode and primary→DR schema exporter (iteration 2)"
+  type        = bool
+  default     = false
+}
+
+variable "enable_tableflow" {
+  description = "Provision Tableflow BYOB AWS integration, S3, and Glue (later iteration)"
+  type        = bool
+  default     = false
+}
+
+variable "confluent_external_id" {
+  description = "External ID for Confluent to assume the Tableflow IAM role (from provider integration UI if updating trust)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "cluster_link_name" {
+  description = "Destination-initiated cluster link name (primary → DR)"
+  type        = string
+  default     = "dr-rides-primary-to-dr"
+}

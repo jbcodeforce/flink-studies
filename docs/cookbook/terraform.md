@@ -19,6 +19,11 @@ This guide covers using Terraform to deploy and manage [Confluent Cloud](https:/
 The [Confluent Terraform Provider](https://docs.confluent.io/cloud/current/clusters/terraform-provider.html) enables infrastructure-as-code management for Confluent Cloud resources including environments, Kafka clusters, Schema Registry, Flink compute pools, and Flink SQL statements.
 
 ???+ info "Terraform Core Principles"
+    * **Variables** are the inputs you provide to customize your configuration
+    * **Locals** allows to assign a name to an expression, computed once and reused. It is not updated by external modules
+    * **Data** Sources are lookups used to fetch information from the real world. It is not created. They are read-only. Data could have been created by another terraform and then read from a second one. In this case a destroy on the second will not delete those data.
+    * **Resources** are the actions that actually create, update, or destroy infrastructure
+
     When running `terraform apply`, Terraform calculates differences between the current state (tracked in its local state file) and the desired state, then applies only necessary changes. This enables incremental building of infrastructure.
 
     The `terraform plan` command performs the following steps by default: 
@@ -44,6 +49,7 @@ The [Confluent Terraform Provider](https://docs.confluent.io/cloud/current/clust
     * [deployment/ec2_tf](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/ec2_tf) to create a free-tier EC2 instance on AWS for Flink experiments
     * [Cdc with RDS, S3, TableFlow and Flink](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cc-cdc-tx-demo/cccloud/IaC) AWS resources + Confluent environments and [flink statements as separate terraform](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cc-cdc-tx-demo/cccloud/cc-flink-sql/terraform) using list of statements.
     * [e2e-demos/cdc-dedup-transform/cccloud/IaC](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cdc-dedup-transform/cccloud/IaC) creates an AWS S3 bucket with the necessary IAM user and permissions for Confluent Cloud S3 sink connector.
+    * [e2e-demos/dr-car-rides](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/dr-car-rides/ccloud/IaC/), disaster recovery demonstration
 
 ## Prerequisites
 
@@ -98,7 +104,7 @@ Do not commit `terraform.tfstate` or environment variable files to git.
     required_providers {
       confluent = {
         source  = "confluentinc/confluent"
-        version = "2.75.0"
+        version = "2.86.0"
       }
     }
   }
@@ -466,6 +472,49 @@ terraform output -json > outputs.json
 
 If you encounter 401 errors, verify the API key environment variables are set correctly.
 
+---
+
+## Iterative Development
+
+Build Terraform manifests incrementally:
+
+1. Create a main.tf with the provider definition (e.g. confluent). export env variable and verify connection:
+  ```sh
+  export CONFLUENT_CLOUD_API_KEY=P
+  export CONFLUENT_CLOUD_API_SECRET=cflt
+  terraform init
+  terraform validate
+  ```
+1. Add data for things to read like existing org and env ids, and prepare output in `outputs.tf` to validate access and retrievals:
+  ```sh
+  # in main.tf
+  data "confluent_organization" "org_id" {}
+  # in outputs.tf
+  output "organization_id" {
+    value = data.confluent_organization.org_id.id
+  }
+  ```
+
+1. Add resources: new kafka cluster, schema registry,..
+2. Run validation:
+   ```sh
+   terraform validate
+   terraform plan
+   terraform apply
+   ```
+3. Review outputs and add dependent resources
+4. Repeat
+
+This approach provides clear understanding of dependencies and makes troubleshooting easier.
+
+### Check what Terraform thinks it manages
+```sh
+terraform state list | grep kafka
+terraform state show 'confluent_kafka_cluster.kafka[0]'
+```
+
+---
+
 ## Resource Importer
 
 The [Confluent Resource Importer](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs/guides/resource-importer) exports existing Confluent Cloud resources to Terraform configuration files. This is useful for:
@@ -573,28 +622,6 @@ After importing resources into your main Terraform state, the importer folder ca
 
 ```sh
 rm -rf importer/
-```
-
-## Iterative Development
-
-Build Terraform manifests incrementally:
-
-1. Add resources and variables
-2. Run validation:
-   ```sh
-   terraform validate
-   terraform plan
-   terraform apply
-   ```
-3. Review outputs and add dependent resources
-4. Repeat
-
-This approach provides clear understanding of dependencies and makes troubleshooting easier.
-
-### Check what Terraform thinks it manages
-```sh
-terraform state list | grep kafka
-terraform state show 'confluent_kafka_cluster.kafka[0]'
 ```
 
 ## Adding Flink to an Existing Environment

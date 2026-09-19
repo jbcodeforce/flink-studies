@@ -43,6 +43,7 @@ Requires CC org + AWS credentials. **Attention**, dual Standard clusters, dual S
 * Run:
   ```bash
   cd ccloud/IaC/import-j9r-env
+  # Be sure to UNSET any env variables for Flink and Kafka. Set only the following environment variables
   export CONFLUENT_CLOUD_API_KEY=...
   export CONFLUENT_CLOUD_API_SECRET=...
   terraform init && terraform apply

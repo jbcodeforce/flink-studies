@@ -6,7 +6,7 @@ The goal it to demonstrate a data stream processing (DSP) disaster recovery scen
 
 1. Two different environments in two separate regions. This demonstration deploy components into AWS.
 1. Each region has one schema registry and one to many Kafka Clusters (only one in this demonstration).
-1. Flink jobs are deployed with Job Manager and task managers, but as the first demonstrations are done on Confluent solutions, we use the concept of compute pool to represent Flink resources deployed.
+1. On Confluent Cloud or platform, we use the concept of compute pool to represent Flink resources deployed.
 1. The kafka topics, can be classified in two folds: 
     * a- the ones created as event sources from Kafka producers, Kafka connectors or CDC connectors. For the demonstration purpose we use a `car-rides` producer application. 
     * b- the topics created as part of the Flink pipelines to prepare analytics data products
@@ -29,7 +29,7 @@ The goal it to demonstrate a data stream processing (DSP) disaster recovery scen
 
 From Confluent disaster recovery best practices, **active/passive** multi-region DR is the primary recommended pattern for Kafka clusters, topics, and Schema Registry. For Data Stream Processing (DSP), Flink statements can be operated either in **standby mode (deploy on failover)** or **active/active mode (parallel regional pipelines)** depending on RTO requirements and state rebuild costs.
 
-The demonstration starts from an existing environment (grey components on the left in figure below): **j9r-env** / **j9r-kafka** (see [deployment/cc-terraform](../../deployment/cc-terraform/))
+The demonstration starts from an existing Confluent Cloud environment (grey components on the left in figure below): **j9r-env** / **j9r-kafka** (see [deployment/cc-terraform](../../deployment/cc-terraform/))
 
 ![](./docs/cc-raw-to-sink.drawio.png)
 
@@ -40,7 +40,7 @@ Then it provisions:
 - Provision a DR Confluent Cloud environment/cluster (`us-east-1`), mirror source topic with Cluster Linking, replicate schemas with Schema Linking
 - practice soft + promote failover with sequence-based loss assessment.
 
-See [`ccloud/README.md`](./ccloud/README.md) for explanation of the demonstration steps done with Terraform.
+See [`ccloud/README.md`](./ccloud/README.md) for explanation of the demonstration steps done with Terraform and shell scripts.
 
 ### What is covered
 

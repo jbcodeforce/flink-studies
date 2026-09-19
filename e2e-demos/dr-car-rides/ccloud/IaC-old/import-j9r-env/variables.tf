@@ -4,6 +4,10 @@ variable "environment_id" {
   default     = "env-yk3jm6"
 }
 
+variable "organization_id" {
+  description = "Confluent Cloud organization ID"
+  type        = string
+}
 variable "kafka_cluster_id" {
   description = "Kafka cluster ID to import (j9r-kafka)"
   type        = string

@@ -252,42 +252,63 @@ The following is a detailed chekclist to assess as a Data Engineer to get the fu
   - Misconfigured networking / access failures?
 - Who is the primary SRE contact for this engineer’s environment/region?
 
-???- info "Demonstrate with Confluent cli"
-      This approach provides a fully managed Flink service and very easy to get started quickly without managing Flink clusters or Kafka Clusters. It uses the confluent cli
 
-      1. Upgrade the cli
-         ```sh
-         confluent update
-         ```
-      1. Create a Flink compute pool:
-         ```sh
-         confluent flink compute-pool create my-pool --cloud aws --region us-west-2
-         ```
 
-      2. Start SQL client:
-         ```sh
-         confluent flink shell
-         ```
+### Demonstrate with Confluent cli
 
-      3. Submit SQL statements:
-         ```sql
-         CREATE TABLE my_table (
-         id INT,
-         name STRING
-         ) WITH (
-         'connector' = 'kafka',
-         'topic' = 'my-topic',
-         'properties.bootstrap.servers' = 'pkc-xxxxx.region.provider.confluent.cloud:9092',
-         'properties.security.protocol' = 'SASL_SSL',
-         'properties.sasl.mechanism' = 'PLAIN',
-         'properties.sasl.jaas.config' = 'org.apache.kafka.common.security.plain.PlainLoginModule required username="<API_KEY>" password="<API_SECRET>";',
-         'format' = 'json'
-         );
-         ```
+This approach provides a fully managed Flink service and very easy to get started quickly without managing Flink clusters or Kafka Clusters. It uses the confluent cli
 
-      See [Confluent Cloud Flink documentation](../techno/ccloud-flink.md) for more details.
+1. Upgrade the cli [see new install procedure](https://docs.confluent.io/confluent-cli/current/install.html#install-confluent-cli)
+   ```sh
+   confluent update
+   ```
+1. Login, set env, and kafka cluster:
+   ```sh
+   confluent login
+   confluent environment list
+   confluent environment use env-yk3jm6
+   confluent kafka cluster list
+   confluent kafka cluster use lkc-7v233w
 
-Explore the [Shift Left project](https://jbcodeforce.github.io/shift_left_utils/), your dedicated CLI for scaling and organizing Confluent Cloud Flink projects with an opinionated, streamlined approach.
+   # KEYS
+   confluent api-key list
+   # Store the api-key in your local machine, (can be EC2) 
+   confluent api-key store 6HCPG....   F2GR7 cflt....
+   # or  use confluent api-key store --resource lkc-7v233w.
+   confluent api-key use 6HCPGTDHND3F2GR7
+   ```
+1, Use the CLI to consumer from a topic
+   ```sh
+   confluent kafka topic consume converted_trades --from-beginning --value-format avro
+   ```
+
+1. Create a Flink compute pool:
+   ```sh
+   confluent flink compute-pool create my-pool --cloud aws --region us-west-2
+   ```
+
+2. Start SQL client:
+   ```sh
+   confluent flink shell
+   ```
+
+3. Submit SQL statements:
+   ```sql
+   CREATE TABLE my_table (
+   id INT,
+   name STRING
+   ) WITH (
+   'connector' = 'kafka',
+   'topic' = 'my-topic',
+   'properties.bootstrap.servers' = 'pkc-xxxxx.region.provider.confluent.cloud:9092',
+   'properties.security.protocol' = 'SASL_SSL',
+   'properties.sasl.mechanism' = 'PLAIN',
+   'properties.sasl.jaas.config' = 'org.apache.kafka.common.security.plain.PlainLoginModule required username="<API_KEY>" password="<API_SECRET>";',
+   'format' = 'json'
+   );
+   ```
+
+See [Confluent Cloud Flink documentation](../techno/ccloud-flink.md) for more details.
 
 
 ## Additional Resources
@@ -297,6 +318,7 @@ Explore the [Shift Left project](https://jbcodeforce.github.io/shift_left_utils/
 - [Flink Kubernetes Operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/)
 - [Docker Hub Flink Images](https://hub.docker.com/_/flink)
 - [Shift Left project](https://jbcodeforce.github.io/shift_left_utils/) to manage Flink project at scale.
+* [](https://jbcodeforce.github.io/)
 
 
 <div class="nav-links" style="display: flex; justify-content: space-between;">

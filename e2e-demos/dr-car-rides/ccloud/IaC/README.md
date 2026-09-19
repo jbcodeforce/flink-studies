@@ -1,82 +1,30 @@
-# DR Car Rides
+# Disaster Recovery Site
 
-## Phase 1 IaC (incremental)
+Primary site is defined in deployment/cc-terraform. This readme address a phase approach to define disaster recovery resources in a dedicated environment
 
-Reuses existing **j9r-env** / **j9r-kafka** as primary (via `import-j9r-env` remote state). Builds the DR side in iterations.
+## Resousces for the following configuration
 
-| Iteration | Flags | Creates |
-|-----------|-------|---------|
-| 1 (current) | all `false` | DR env, DR Kafka, SR data sources, SA role bindings + API keys, Flink pools (primary + DR) |
-| 2 | `enable_cluster_link` + `enable_schema_linking` | Topics, Cluster Linking, mirrors, SR IMPORT + exporter |
-| later | `enable_tableflow` | AWS S3/Glue/IAM + Tableflow provider integrations |
+* [Terraform Confluent](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs)
+* [WS PrivateLink for Serverless Products on Confluent Cloud](https://docs.confluent.io/cloud/current/networking/aws-platt.html)
 
+## Phase 1: Disaster Environment, Kafa
 
+### 1. Read Primary Environment
 
-### 1. Import Primary Environment (Once)
-
-First, import and output the existing primary environment:
+* Define the data from primary environment in the `main.tf` and `outputs.tf`
 
 ```bash
-cd import-j9r-env
 export CONFLUENT_CLOUD_API_KEY=...
 export CONFLUENT_CLOUD_API_SECRET=...
 terraform init
-terraform apply
-cd ..
+terraform plan
 ```
 
-### 2. Apply Iteration 1 (Confluent DR Core)
+### 2. Create second env, kafka, schema registry
 
-Configure `terraform.tfvars`:
+* Add environment in `dr_site.rf` with matching ouputs.
+* Add Confluent gateway to private network
+* Add Kafka, to get cluster link, we need enterprise cluster. Enterprise clusters are private by default and require confluent_private_link_attachment plus confluent_private_link_attachment_connection
 
-```hcl
-enable_cluster_link   = false
-enable_schema_linking = false
-enable_tableflow      = false
-primary_region        = "us-west-2"
-dr_region             = "us-east-1"
-```
+* Add schema registry
 
-Apply Terraform:
-
-```bash
-terraform init
-terraform apply
-terraform output -json > ../scripts/iac-outputs.json
-```
-
-No AWS credentials required for iteration 1 (`enable_tableflow=false` skips AWS credential validation).
-`terraform destroy` on this stack does **not** destroy `j9r-env` / `j9r-kafka` / primary SAs.
-
-### 3. Apply Iteration 2 (Cluster Linking & Schema Linking)
-
-Once the primary and DR clusters are provisioned, enable Cluster Linking and Schema Linking in `terraform.tfvars`:
-
-```hcl
-enable_cluster_link   = true
-enable_schema_linking = true
-```
-
-Apply again to create source topics, cluster link, mirror topics, and the schema exporter with DR Schema Registry in `IMPORT` mode:
-
-```bash
-terraform apply
-terraform output -json > ../scripts/iac-outputs.json
-```
-
-### 4. Apply Iteration 3 (Optional: Tableflow with AWS S3 + Glue)
-
-To enable Tableflow integration:
-1. Set AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`).
-2. Set `enable_tableflow = true` in `terraform.tfvars`.
-3. Apply Terraform:
-   ```bash
-   terraform apply
-   terraform output -json > ../scripts/iac-outputs.json
-   ```
-
-## Notes
-
-- Demo roles reuse the imported `env-manager` SA. This stack creates API keys and role bindings on that SA.
-- Iteration 2: set `enable_cluster_link = true` and `enable_schema_linking = true`, then re-apply.
-- Tableflow: set `enable_tableflow = true` after AWS is ready; then set `confluent_external_id` from the Confluent UI and re-apply.
