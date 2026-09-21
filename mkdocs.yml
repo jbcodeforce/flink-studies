@@ -22,6 +22,7 @@ nav:
     - Fit for purpose: architecture/fitforpurpose.md
     - Flink  App Tuning: cookbook/flink_app_tuning.md
     - Flink Project Management: cookbook/pm.md
+    - Flink Tools for Agents: https://jbcodeforce.github.io/flink-tools-for-agents/
     - Confluent Cloud Terraform: cookbook/terraform.md
   - Flink_App_Coding:
     - Flink SQL coding:
