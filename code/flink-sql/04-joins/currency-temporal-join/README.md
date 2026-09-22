@@ -19,9 +19,7 @@ A trading platform records FX trades with `notional_amount` in the base currency
 Adding the version column to the primary key:
 
 ```sql
--- ✗ Wrong — triggers:
---   "Temporal table's primary key [from_currency,to_currency,valid_from] must be
---    included in the equivalence condition of temporal join"
+
 PRIMARY KEY (from_currency, to_currency, valid_from) NOT ENFORCED
 ```
 

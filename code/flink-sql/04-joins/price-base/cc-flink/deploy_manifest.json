@@ -1,0 +1,54 @@
+{
+  "user_agent": "flink-studies-cc/price-base/0.1",
+  "deploy_all": ["ddl", "data", "pipeline"],
+  "undeploy_all": ["pipeline", "data"],
+  "drop_tables": [
+    "product_sku_price",
+    "price_list_by_window",
+    "base_amount_by_window",
+    "heartbeat",
+    "effective_sku_price",
+    "tpricelistassignment",
+    "tbaseamount",
+    "tproductsku",
+    "tsellingcontextcondition",
+    "tsellingcontext",
+    "tpricelist",
+    "tcatalog"
+  ],
+  "drop_statement_prefix": "pb-drop",
+  "groups": {
+    "ddl": [
+      {"name": "pb-ddl-tcatalog",                   "file": "ddl.tcatalog.sql"},
+      {"name": "pb-ddl-tpricelist",                 "file": "ddl.tpricelist.sql"},
+      {"name": "pb-ddl-tsellingcontext",            "file": "ddl.tsellingcontext.sql"},
+      {"name": "pb-ddl-tsellingcontextcondition",   "file": "ddl.tsellingcontextcondition.sql"},
+      {"name": "pb-ddl-tproductsku",                "file": "ddl.tproductsku.sql"},
+      {"name": "pb-ddl-tbaseamount",                "file": "ddl.tbaseamount.sql"},
+      {"name": "pb-ddl-tpricelistassignment",       "file": "ddl.tpricelistassignment.sql"},
+      {"name": "pb-ddl-effective-sku-price",        "file": "ddl.effective_sku_price.sql"},
+      {"name": "pb-ddl-heartbeat",                  "file": "ddl.heartbeat.sql"},
+      {"name": "pb-ddl-base-amount-by-window",      "file": "ddl.base_amount_by_window.sql"},
+      {"name": "pb-ddl-price-list-by-window",       "file": "ddl.tpricelist_by_window.sql"},
+      {"name": "pb-ddl-product-sku-price",          "file": "ddl.product_sku_price.sql"}
+    ],
+    "data": [
+      {"name": "pb-data-tcatalog",                  "file": "dml.insert_tcatalog.sql"},
+      {"name": "pb-data-tsellingcontext",           "file": "dml.insert_tsellingcontext.sql"},
+      {"name": "pb-data-tsellingcontextcondition",  "file": "dml.insert_tsellingcontextcondition.sql"},
+      {"name": "pb-data-tpricelist",                "file": "dml.insert_tpricelist.sql"},
+      {"name": "pb-data-tpricelistassignment",      "file": "dml.insert_tpricelistassignment.sql"},
+      {"name": "pb-data-tproductsku",               "file": "dml.insert_tproductsku.sql"},
+      {"name": "pb-data-tbaseamount",               "file": "dml.insert_tbaseamount.sql"}
+    ],
+    "pipeline": [
+      {"name": "pb-pipeline-effective-sku-price",     "file": "dml.effective_sku_price.sql"},
+      {"name": "pb-pipeline-base-amount-by-window",   "file": "dml.base_amount_by_window.sql"},
+      {"name": "pb-pipeline-price-list-by-window",    "file": "dml.price_list_by_window.sql"},
+      {"name": "pb-pipeline-product-sku-price",       "file": "dml.product_sku_price.sql"}
+    ],
+    "heartbeat": [
+      {"name": "pb-heartbeat-tick",                 "file": "dml.insert_heartbeat_tick.sql"}
+    ]
+  }
+}
