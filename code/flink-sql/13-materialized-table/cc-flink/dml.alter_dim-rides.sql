@@ -1,9 +1,11 @@
-CREATE OR ALTER MATERIALIZED TABLE dim_rides (
+CREATE OR ALTER MATERIALIZED TABLE dim_car_rides (
   driver_id STRING NOT NULL,
   total_rides BIGINT,
   total_distance DOUBLE,
   total_fare DOUBLE,
   car_type STRING,
+  event_ts TIMESTAMP_LTZ(3),
+  WATERMARK FOR event_ts AS event_ts - INTERVAL '5' MINUTES,
   PRIMARY KEY(driver_id) NOT ENFORCED
 )
   START_MODE = RESUME_OR_FROM_BEGINNING

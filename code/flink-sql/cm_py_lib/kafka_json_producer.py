@@ -249,10 +249,10 @@ class KafkaJSONProducer:
         def to_dict(obj: Any, _ctx: SerializationContext) -> dict[str, Any]:
             if obj is None:
                 return None
-            # exclude_unset=True omits fields that were never set (e.g. model_construct
-            # without a field), producing a payload without that key at all.
-            # mode='json' guarantees AwareDatetime maps to an ISO string.
-            return obj.model_dump(mode='json', exclude_unset=True)
+            # mode='python' lets @field_serializer results pass through as-is
+            # (e.g. epoch-ms integers). mode='json' would re-encode datetime
+            # back to an ISO string, overriding custom serializers.
+            return obj.model_dump(mode='python', exclude_unset=True)
             
         self.value_serializer = JSONSerializer(
             schema_str=schema_str,
@@ -291,21 +291,54 @@ class KafkaJSONProducer:
 
 
     def ensure_value_schema(self, model_class: type[BaseModel]) -> None:
-        """Register or fetch the JSON schema for the topic value subject."""
+        """Register or fetch the JSON schema for the topic value subject.
+
+        If the registered schema's property types differ from the model's current
+        schema (e.g. datetime fields changed from string to integer), a new schema
+        version is registered before building the serializer.
+        """
+        prior_schema: dict[str, Any] | None = None
         try:
-            schema_dict=get_schema_for_topic(self.topic_name)
+            prior_schema = get_schema_for_topic(self.topic_name)
         except SchemaRegistryError as exc:
             if not is_subject_not_found(exc):
                 raise
             print(f"Subject for '{self.topic_name}' not found; registering initial schema")
-            schema_dict = prepare_json_schema_for_registry(
-                model_class.model_json_schema(),
-                model_class,
+
+        current_schema = prepare_json_schema_for_registry(
+            model_class.model_json_schema(),
+            model_class,
+            prior_schema,
+        )
+
+        if prior_schema is None:
+            self._register_and_install_schema(current_schema)
+            schema_dict = current_schema
+        elif self._schema_properties_changed(prior_schema, current_schema):
+            print(
+                f"Schema property types changed for '{self.topic_name}'; "
+                "registering updated schema version"
             )
-            self._register_and_install_schema(schema_dict)
+            self._register_and_install_schema(current_schema)
+            schema_dict = current_schema
+        else:
+            schema_dict = prior_schema
+
         self.cached_schemas[self.topic_name] = schema_dict
-        schema_str = json.dumps(schema_dict)
-        self._build_value_serializer(schema_str)
+        self._build_value_serializer(json.dumps(schema_dict))
+
+    @staticmethod
+    def _schema_properties_changed(
+        prior: dict[str, Any], current: dict[str, Any]
+    ) -> bool:
+        """Return True when any property type differs between the two schemas."""
+        prior_props = prior.get('properties', {})
+        current_props = current.get('properties', {})
+        for name, current_prop in current_props.items():
+            prior_prop = prior_props.get(name, {})
+            if current_prop.get('type') != prior_prop.get('type'):
+                return True
+        return False
 
 
     def _validate_against_schema(self, data: dict[str, Any], schema: dict[str, Any]) -> bool:

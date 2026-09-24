@@ -24,11 +24,11 @@ import os
 import random
 import time
 import uuid
-from datetime import datetime, timedelta
-from typing import Literal, Type
+from datetime import datetime, timedelta, timezone
+from typing import Annotated, Callable, Literal, Type, Union
 
 from cm_py_lib.kafka_json_producer import KafkaJSONProducer
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 
 DEFAULT_TOPIC = os.getenv('KAFKA_TOPIC', 'raw_rides')
 LOCATIONS = [
@@ -41,17 +41,37 @@ LOCATIONS = [
 CAR_TYPES = ('S', 'L', 'XL')
 
 
+def _to_epoch_ms(dt: datetime) -> int:
+    """Serialize a datetime as epoch milliseconds so Flink maps it to TIMESTAMP_LTZ(3)."""
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return int(dt.timestamp() * 1000)
+
+
+# Annotated type that (a) serializes to epoch-ms int and (b) tells Pydantic's
+# JSON Schema generator to emit {"type": "integer"} instead of {"type": "string"}.
+def _epoch_ms_schema(schema: dict) -> None:
+    schema['type'] = 'integer'
+    schema.pop('format', None)
+
+EpochMs = Annotated[datetime, Field(json_schema_extra=_epoch_ms_schema)]
+
+
 class Ride(BaseModel):
     ride_id: str
     driver_id: str
     pickup_location: str
     dropoff_location: str
-    pickup_time: str
-    dropoff_time: str
+    pickup_time: EpochMs
+    dropoff_time: EpochMs
     distance: float
     fare: float
     payment_type: str
     rating: float
+
+    @field_serializer('pickup_time', 'dropoff_time')
+    def serialize_timestamps(self, dt: datetime) -> int:
+        return _to_epoch_ms(dt)
 
 
 class Ride2(BaseModel):
@@ -60,12 +80,16 @@ class Ride2(BaseModel):
     car_type: Literal['S', 'L', 'XL'] = Field(default='S')
     pickup_location: str
     dropoff_location: str
-    pickup_time: str
-    dropoff_time: str
+    pickup_time: EpochMs
+    dropoff_time: EpochMs
     distance: float
     fare: float
     payment_type: str
     rating: float
+
+    @field_serializer('pickup_time', 'dropoff_time')
+    def serialize_timestamps(self, dt: datetime) -> int:
+        return _to_epoch_ms(dt)
 
 
 def _pick_dropoff(pickup: str) -> str:
@@ -74,13 +98,14 @@ def _pick_dropoff(pickup: str) -> str:
 
 def _base_ride_fields() -> dict:
     pickup = random.choice(LOCATIONS)
+    now = datetime.now()
     return {
         'ride_id': str(uuid.uuid4()),
         'driver_id': f'Driver_{random.randint(1, 50)}',
         'pickup_location': pickup,
         'dropoff_location': _pick_dropoff(pickup),
-        'pickup_time': datetime.now().isoformat(),
-        'dropoff_time': (datetime.now() + timedelta(hours=random.randint(1, 20))).isoformat(),
+        'pickup_time': now -  timedelta(hours=random.randint(1, 10)),
+        'dropoff_time': now + timedelta(hours=random.randint(1, 20)),
         'distance': round(random.uniform(1, 20), 2),
         'fare': round(random.uniform(1, 80), 2),
         'payment_type': random.choice(
@@ -98,7 +123,7 @@ def generate_ride2_record(_i: int) -> Ride2:
     return Ride2(**_base_ride_fields(), car_type=random.choice(CAR_TYPES))
 
 
-SCHEMA_CHOICES: dict[str, tuple[Type[BaseModel], object]] = {
+SCHEMA_CHOICES: dict[str, tuple[Type[Union[Ride, Ride2]], Callable[[int], Union[Ride, Ride2]]]] = {
     'ride': (Ride, generate_ride_record),
     'ride2': (Ride2, generate_ride2_record),
 }

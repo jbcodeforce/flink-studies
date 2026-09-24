@@ -1,7 +1,7 @@
 {
   "user_agent": "flink-studies-cc/price-base/0.1",
-  "deploy_all": ["ddl", "data", "pipeline"],
-  "undeploy_all": ["pipeline", "data"],
+  "deploy_all": ["ddl", "data", "heartbeat", "pipeline"],
+  "undeploy_all": ["pipeline", "data", "heartbeat"],
   "drop_tables": [
     "product_sku_price",
     "price_list_by_window",

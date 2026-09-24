@@ -139,3 +139,25 @@ For Confluent Cloud, MTs use exactly the same RBAC model as other Flink Statemen
 ### Change source topic schema
  
 We want to demonstrate how a change the source schema, with controlled records. See the folder [flink-sql/13-materialized-table/cc](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/13-materialized-table/cc) with Kafka producer and materialized table.
+
+### FAQs
+
+???+ question "Does MT support custom watermark column?"
+    Yes as other table.
+
+    ```sql
+    CREATE OR ALTER MATERIALIZED TABLE dim_car_rides (
+        driver_id STRING NOT NULL,
+        total_rides BIGINT,
+        total_distance DOUBLE,
+        total_fare DOUBLE,
+        event_ts TIMESTAMP_LTZ(3),
+        WATERMARK FOR event_ts AS event_ts - INTERVAL '5' MINUTES,
+    ```
+
+    The watermark strategy may differ from the refreshness timer.
+
+    Also to compute aggregate on windows based on this watermark 
+
+???+ info "Failing and restart?"
+    If the MT has not DLQ, and there is a deserialization error on the source connector. If the statement is resubmitted. with no change, the MT will continue from the last successful checkpoint, if RESUME_OR_FROM_BEGINNING was set. It is like any other Flink statement, it will load the last schema definition from the schema registry, so the new version may have defined default value to be able to process the poisonned record. 

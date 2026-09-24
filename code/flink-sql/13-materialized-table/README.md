@@ -179,10 +179,14 @@ export SCHEMA_REGISTRY_API_SECRET=
 * Create a `raw_rides` table to stream 200 records, to simulate CDC topics for getting records about a car shared services. 
     ```sh
     source set_env.sh  # set environment variables
-    uv run python 13-materialized-table/rides_producer.py --count 50 --schema ride --interval 0.5
+    uv run python rides_producer.py --count 50 --schema ride --interval 0.5
     ```
 
 * Create materialized tables as `dim-rides` using the [cc-flink/dml.dim-rides.sql](./cc-flink/dml.dim-rides.sql)
+    ```sh
+    cd cc-flink
+    make deploy
+    ```
 
 * Query the resulting table:
     ```sql

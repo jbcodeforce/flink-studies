@@ -31,7 +31,7 @@ Basic Flink SQL (employees per department). Runs on local Flink OSS, Confluent P
 
 | Asset | Code completion | Deployment status | Automation |
 |-------|------------------|-------------------|------------|
-| `cc-flink/` (`deploy_manifest.json`, Makefile) | Complete | Confluent Cloud | `make deploy` via [cc_deploy](../tools/cc_deploy/) |
+| `cc-flink/` (`deploy_m anifest.json`, Makefile) | Complete | Confluent Cloud | `make deploy` via cc_deploy|
 | `cc-flink/terraform/` | Complete | Confluent Cloud | Terraform |
 | `oss-flink/create_customers.sql` | Complete | Local | Manual |
 | `oss-flink/create_orders.sql` | Complete | Local | Manual |
@@ -171,8 +171,19 @@ AI/ML agents and Flink (e.g. anomaly detection). Documentation and reference ass
 
 | Asset | Code completion | Deployment status | Automation |
 |-------|------------------|-------------------|------------|
+
+
+
+---
+
+## 13-Materialized-table
+
+
+
+| Asset | Code completion | Deployment status | Automation |
+|-------|------------------|-------------------|------------|
 | `README.md` | Stub/Docs | — | — |
-| `images/ml_anomaly_results.png` | Complete | — | — |
+
 
 ---
 

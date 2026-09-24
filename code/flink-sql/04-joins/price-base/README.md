@@ -30,7 +30,7 @@ Those tables are implemented as DDL in cc-flink folder.
 ![](./docs/hb_approach.drawio.png)
 
 *  Once the current time has passed either end date, Flink will do a -U +U to the outgoing kafka topic for downstream system that support upsert semantic.
-* For the core of the business logic implementation the tables: tsellingcontext, tsellingcontextcondition, tpricelistassignment are not needed.
+* For the core of the business logic implementation the tables: `tsellingcontext, tsellingcontextcondition, tpricelistassignment` are not needed.
 
 ## Process Price List Assignement
 
@@ -64,7 +64,7 @@ Known limitation: the sink is keyed by `PRODUCT_SKU_GUID` only, so if a SKU is e
 price list at the same time (e.g. two currencies), only the most-recently-updated one survives — use
 `(PRODUCT_SKU_GUID, PRICE_LIST_GUID)` as the key if that must be supported.
 
-## The heartbeat (`heartbeat`)
+## The heartbeat
 
 `heartbeat` (`ddl.heartbeat.sql`) is a single-row upsert table holding one "current time" tick.
 `dml.insert_heartbeat_tick.sql` is a one-shot statement:
