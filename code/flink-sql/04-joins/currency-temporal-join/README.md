@@ -14,7 +14,7 @@ A trading platform records FX trades with `notional_amount` in the base currency
 
 ## Common Pitfalls — Why the Query May Produce No Results
 
-### Pitfall 1 — `valid_from` in the PRIMARY KEY (produces the PK constraint error)
+### Pitfall 1 — `valid_from` in the PRIMARY KEY
 
 Adding the version column to the primary key:
 

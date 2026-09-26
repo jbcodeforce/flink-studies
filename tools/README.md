@@ -3,7 +3,7 @@
 ## Project manager CLI
 
 ```sh
-uv run demo_mgr_cli.py
+uv run demo_mgr_cli.py  --project-type study --platform cc-flink ../code/flink-sql/14-rehydration/old_cut_off 
 ```
 
 ## A Flink Researcher Agent
