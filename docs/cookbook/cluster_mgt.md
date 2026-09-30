@@ -363,7 +363,7 @@ The following view presnts the deployed components, which we should assess how, 
 
 | DSP Components | DR Considerations | 
 | -------------- | ------------------ |
-| **Kafka Topics** | Data replications and offset integrity | 
+| **Kafka Topics** | Data replications and offset integrity. RPO zero is not achievable with asynchronous replication. | 
 | **Schemas** | Same versions on both sides, schemaId integrity |
 | **Kafka source connectors** | Configurations for both sites | 
 | **Kafka sink connectors** | Configurations for both sites  |
@@ -371,6 +371,21 @@ The following view presnts the deployed components, which we should assess how, 
 | **Tableflow** | Configuration for both sites, triggered by code, resume from replicated storage |
 | **Catalog** | |
 | **Iceberg Tables** | Replicatd by cloud provider service- 15 minutes latency is common. |
+
+???+ info "Tablelfow specific"
+    As of now, 09/2026, Tableflow is regional, and does not replicate the table state to other region, so recovery means reconstructing each table in a second region, fomr the Kafka Topics. When those topics were created by Flink processing, this is not an issue as Flink has to run in parallel to keep its state and respect normal operation expected RTO. 
+    
+    ![](./diagrams/tf/tf_dr_ctx.drawio.png)
+
+    In case the topics are cluster linked (with schema IDs preserved via schema linking), just enabling Tableflow on those. If Tableflow is not active, starting it on DR after failover, may lead to bigger RTO as, it needs to reprocess the lag. Larger tables recover slower.
+    
+    Be sure to set the primary topics to infinite retention before any failover, so the full changelog is retained, replicated to DR region,  and each table can be rematerialized from offset 0. This could be relaxed if the business requirements authorize it. Also compacted topics have discarded history.
+    
+    The DR buckets need to be configured upfront. The external catalog needs to federate to the DR Tableflow catalog. As the catalog namespace is linked to the kafka cluster, those names are different for each region. 
+
+    Downstream consumers need to point to new tables.
+
+    The above materialization mechanism can be set active/passive or active/active with duplicate records and the need to reconcile at the Iceberg tables query engine level.
 
 Obviously all other components of the figure above needs to have DR runbooks too.
 

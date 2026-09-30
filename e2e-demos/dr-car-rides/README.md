@@ -1,18 +1,22 @@
 # Disaster Recovery Demonstration on Car Rides Solution
 
-The goal it to demonstrate a data stream processing (DSP) disaster recovery scenario and solution. At the high level, a DSP solution includes the following elements:
+*Updated 09/29/2029*
+
+The goal is to demonstrate a data stream processing (DSP) disaster recovery scenario for Confleuint Cloud deployment. At the high level, a DSP solution includes the following elements:
 
 ![](./docs/raw-to-sink.drawio.png)
 
-1. Two different environments in two separate regions. This demonstration deploy components into AWS.
+1. The terraform files deploy components into two AWS regions
 1. Each region has one schema registry and one to many Kafka Clusters (only one in this demonstration).
-1. On Confluent Cloud or platform, we use the concept of compute pool to represent Flink resources deployed.
+1. On Confluent Cloud or platform, we use the concept of compute pool to represent Flink resources deployed. Each region has at least one compute pool, but any production  will have more compute pools to better manage Flink statements deployment.
 1. The kafka topics, can be classified in two folds: 
-    * a- the ones created as event sources from Kafka producers, Kafka connectors or CDC connectors. For the demonstration purpose we use a `car-rides` producer application. 
+    * a- the ones created as event sources from Kafka producers, Kafka connectors or CDC connectors. For the demonstration purpose we use a `car-rides` producer application which creates schemas and topic
     * b- the topics created as part of the Flink pipelines to prepare analytics data products
 
-1. To get lower level of RTO and RPO, replication of data from topics to topics are setup, as well as schema exports. Not all topics are replicated.
-1. We suppose, as most DSP solutions do, a query engine on top of Iceberg tables is used as final client of the pipelines. 
+    Some companies want to enforce creating topic via infrastructure as code. In Flink the semantic of the query may impact the topic properties, and a `CREATE TABLE ` does create the topic and the schema. If the data engineers clearly separate the DDL from the DML then it is possbile to deploy DDL with terraform, while DMLs can be done by using dbt or other
+
+1. To get lower level of RTO and RPO, replication of data from topics to topics are setup, as well as schema exports. Not all topics are replicated as Flink statments will repopulate the data while running.
+1. We suppose, as most DSP solutions do, a query engine on top of Iceberg tables is used as final client of the pipelines. This engine has its own DR runbook, not addressed here. As Confluent Cloud Tableflow is enabled, dual buckets will be created the switch to DR is done to point to the DR buckets.
  
 
 [See this DR cookbook](https://jbcodeforce.github.io/flink-studies/cookbook/cluster_mgt/#3-disaster-recovery-multi-region-strategies) for all the details and best practices.
@@ -37,8 +41,7 @@ Then it provisions:
 
 - The primary components of the DSP primary region: flink compute pool, deployed flink statements, and run producer app.
 - Materialize aggregates with Tableflow to AWS Glue
-- Provision a DR Confluent Cloud environment/cluster (`us-east-1`), mirror source topic with Cluster Linking, replicate schemas with Schema Linking
-- practice soft + promote failover with sequence-based loss assessment.
+- A DR Confluent Cloud environment/cluster (`us-east-1`), mirror source topic with Cluster Linking, replicate schemas with Schema Linking
 
 See [`ccloud/README.md`](./ccloud/README.md) for explanation of the demonstration steps done with Terraform and shell scripts.
 
@@ -82,4 +85,4 @@ Same `seq`-based RPO / processing gap measurement as before.
 ## Demonstration Structure & Agent Guide
 
 See [`AGENTS.md`](./AGENTS.md) for detailed guidelines on directory conventions, environment isolation, and agent practices.
-See [`ccloud/README.md`](./ccloud/README.md) for the end-to-end execution guide on Confluent Cloud.
+See [`ccloud/README.md`](./ccloud/README.md) for the end-to-end execution guide on Confluent Cloud using Terraform, producer code, tableflow, and query engine.

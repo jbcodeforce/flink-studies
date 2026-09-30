@@ -559,7 +559,7 @@ Read the getting started and installation in [Confluent cloud product documentat
     | view     | create view .. as select | view |
     | table     | CTAS snapshot query  | streaming_table  |
     |  |  streaming query with DDL and insert | streaming_table |
-    |  |  Flink connector-backed source table | streaming_source |
+    |  |  Flink connector-backed source tables, or existing kafka topic | streaming_source |
     | | materialized table | |
     | incremental | not-supported | | 
     | ephemeral | not supported | | 
@@ -567,9 +567,25 @@ Read the getting started and installation in [Confluent cloud product documentat
 
 * The dependencies are managed by using the `ref()` or `source()` functions as core dbt does. The deployment follows a topological order.
 * Re-running `dbt run` against an existing `table`, `streaming_table`, or `streaming_source` does **not** re-create it.
-* `--full-refresh` drops the Kafka topic, and create everythin. But the downstream statement keeps reporting `Running` with zero exceptions while consuming nothing. 
+* `--full-refresh` drops the Kafka topic, and create everything. But the downstream statement keeps reporting `Running` with zero exceptions while consuming nothing. 
 * Using a select with '+' postfix will rebuild the current statement and its children.
 * Re-submitting an append-mode INSERT that replays from earliest, against a table deliberately not dropped, will create duplicates
+* Existing Kafka topics created outside of Flink statements can be reused and referenced with:
+  ```sql
+  FROM {{ source('cc_flink', 'cdc.public.customers') }
+  ```
+  
+  when declared within a sources.yaml file as:
+  ```yaml
+  version: 2
+  sources:
+  - name: cc_flink
+    schema: j9r-kafka
+    tables:
+    - name: cdc.public.customers
+  ```
+  `name` at the source level may represent a reference to an environment in `profile.yaml`, while `schema` is to reference the name of the Kafka cluster where the topic is, and tables.name is the topic name.
+
 
 ### Code Repository
 
@@ -618,11 +634,11 @@ We propose to adopt two types of project organization:
 
 The common parts include:
 
-* a docs folder for future documentation
-* IaC for terraform content to declare compute pool, service account, api keys and secrets
-* tools for future scripts and other tools
-* pipelines to includes the different dbt constructs
-* sl_dbt.yml a metadata file used by this tool 
+* a `docs` folder for future documentation
+* `IaC` for terraform content to declare compute pool, service account, api keys and secrets
+* `tools` for future scripts and other tools
+* `pipelines` to includes the different dbt constructs
+* `sl_dbt.yml` a metadata file used by this tool 
 
 ### Naming convention
 
@@ -634,12 +650,16 @@ The common parts include:
 
 ### Organize table and tests
 
+The project management for dbt based project is now in [a separate chapter](../methodology/data_eng_101.md)
+
 ### Useful commands to remember
 
 * Compile dbt models to Flink SQL to review
   ```sh
   dbt compile
   ```
+
+  Compiled statements are in `target/compiled` folder
 
 * run a specific model:
   ```sh
@@ -653,6 +673,7 @@ The common parts include:
   ```sh
   dbt ls --select src_listings+
   ```
+  
   Results from the [airbnb_streaming](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/airbnb_streaming):
   ```sh
   airbnb_streaming.user_reviews.dimensions.dim_listings_cleansed
@@ -716,7 +737,7 @@ The common parts include:
 
 ### Added tools
 
-The [flink-tools-for-agents/tools](https://github.com/jbcodeforce/flink-tools-for-agents/tree/main/tools) folder includes a set of useful tool to complement your dbt Confluent project management.
+The [flink-tools-for-agents/tools](https://github.com/jbcodeforce/flink-tools-for-agents/tree/main/tools) folder includes a set of useful tools to complement your dbt Confluent project management.
 
 <figure markdown='span'>
 ![](./diagrams/dbt_other_tools.drawio.png)
@@ -725,7 +746,6 @@ The [flink-tools-for-agents/tools](https://github.com/jbcodeforce/flink-tools-fo
 | Tool | Goal | Usage |
 | ---- | ---- | ------- |
 | [sl_dbt.py](https://github.com/jbcodeforce/flink-tools-for-agents/tree/main/tools/dbt/sl_dbt.py) | Manage your project from batch to dbt and Flink SQL. (shift_left) | `sl_dbt init <project_root>`,  `sl_dbt add-data-product <data_product>`, `sl_dbt.py add-table crm-analytics src_customers c360 --table-type dim`| 
-| sr_to_dbt_yaml.py | Fetches the key and/or value schema registered in Confluent Schema Registry for a given Kafka topic and emits a ready-to-paste dbt YAML block |  [uv run sr_to_dbt_yaml.py raw_hosts](https://github.com/jbcodeforce/flink-tools-for-agents/tree/main/tools/dbt/sr_to_dbt_yaml.py) |
 | sql_to_dbt_yaml.py | parses a dbt SQL model file and emits a ready-to-paste `models:` YAML block, resolving column names and data types entirely from the SQL and the upstream model / source definitions in the project | `uv run sql_to_dbt_yaml.py ../airbnb_streaming/models/user_reviews/dimensions/dim_listings_with_hosts.sql` |
 | [flink_dbt_migrate](https://github.com/jbcodeforce/flink-tools-for-agents/tree/main/tools/dbt/flink_dbt_migrate) | Taking one or more Flink SQL queries in the form of ddl, dml or ctas and transform them for dbt processing | `flink_dbt_migrate.migrate_dml_to_dbt ../cc-flink/dml.enriched_orders.sql ../cc_dbt/models/intermediates/enriched_orders`|
 | statement_management.py | help to stop and delete statements created by dbt | 
@@ -745,6 +765,24 @@ The [flink-tools-for-agents/tools](https://github.com/jbcodeforce/flink-tools-fo
         }
       )
     }}
+    ```
+
+    The column need to have aprimary constraint, this should be added to the schema.yaml
+    ```yaml
+      - name: order_id
+          data_type: BYTES
+          constraints:
+            - type: not_null
+            - type: primary_key
+              expression: not enforced
+    ```
+
+    or when there are multiple key to distributed on:
+    ```yaml
+      constraints:
+      - type: primary_key
+        columns: [user_id, right_id, __db]
+        expression: not enforced
     ```
 
 
@@ -829,6 +867,7 @@ The [flink-tools-for-agents/tools](https://github.com/jbcodeforce/flink-tools-fo
 
 ???+ question "How to specify compute pool?"
     Setting a default compute pool is set in the connection definition in `profile.yml`. It is possible to define this at the model level using compute_pool in config element.
+
     ```yaml
     models:
       - name: my_heavy_model
@@ -915,7 +954,7 @@ The [flink-tools-for-agents/tools](https://github.com/jbcodeforce/flink-tools-fo
       }}
       ```
 
-???+ info "Privatre networking / using endpoint"
+???+ info "Private networking / using endpoint"
     For private networking it is recommended to set the `endpoint` parameter in the profile.yml. In this case you need to remove the prodiver and region:
     ```yaml
     cc_flink:
@@ -946,7 +985,8 @@ The [flink-tools-for-agents/tools](https://github.com/jbcodeforce/flink-tools-fo
 * [Research on PTF](https://github.com/jbcodeforce/research/tree/main/flink-ptf-multitenant-debezium-spanout/sql/order_pipeline)
 * [wd-flink-demo](https://github.com/jbcodeforce/wd-flink-demo)
 * [Airbnb streaming](https://github.com/jbcodeforce/flink-studies/tree/main/code/dbt/airbnb_streaming)
-* [Tool to help migrate Flink ddl and dmls to dbt model](https://github.com/jbcodeforce/flink-studies/tree/main/code/flink-sql/tools/flink_dbt_migrate)
+* [Tools to manage a Flink project on top of dbt](https://github.com/jbcodeforce/flink-tools-for-agents/tree/main/tools/dbt/)
+* [Tool to help migrate Flink ddl and dmls to dbt model](https://github.com/jbcodeforce/flink-tools-for-agents/tree/main/tools/dbt/flink_dbt_migrate)
 
 ## Sources of Information
 

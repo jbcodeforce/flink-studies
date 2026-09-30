@@ -10,7 +10,7 @@ compiled: false
 
 ???- info "Version"
     * Created November 2024
-    * Updated June 2026
+    * Updated Spet 29 2026
 
 This guide covers using Terraform to deploy and manage [Confluent Cloud](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs) infrastructure for Kafka, schema registry, Kafka connectors, and Flink applications. 
 
@@ -49,7 +49,8 @@ The [Confluent Terraform Provider](https://docs.confluent.io/cloud/current/clust
     * [deployment/ec2_tf](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/ec2_tf) to create a free-tier EC2 instance on AWS for Flink experiments
     * [Cdc with RDS, S3, TableFlow and Flink](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cc-cdc-tx-demo/cccloud/IaC) AWS resources + Confluent environments and [flink statements as separate terraform](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cc-cdc-tx-demo/cccloud/cc-flink-sql/terraform) using list of statements.
     * [e2e-demos/cdc-dedup-transform/cccloud/IaC](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cdc-dedup-transform/cccloud/IaC) creates an AWS S3 bucket with the necessary IAM user and permissions for Confluent Cloud S3 sink connector.
-    * [e2e-demos/dr-car-rides](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/dr-car-rides/ccloud/IaC/), disaster recovery demonstration
+    * [e2e-demos/dr-car-rides](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/dr-car-rides/ccloud/IaC/), disaster recovery demonstration.
+    * [Streamhouse data evolution use case](https://github.com/jbcodeforce/stream_house_c360_demo)
 
 ## Prerequisites
 
@@ -75,11 +76,17 @@ confluent api-key list | grep <cc_userid>
 
 ### Environment Variables
 
-Export credentials as environment variables:
+Export credentials as environment variables. If we do not set anything while declaring the Confluent provider we only need the KAFKA_API_KEY and KAFKA_API_SECRET.
 
-```sh
-export TF_VAR_confluent_cloud_api_key="<your-api-key>"
-export TF_VAR_confluent_cloud_api_secret="<your-api-secret>"
+```json
+provider "confluent" {
+  cloud_api_key    = var.confluent_cloud_api_key
+  cloud_api_secret = var.confluent_cloud_api_secret
+}
+```
+
+But if we have set up more variables in the confluent provider 
+```sh 
 TF_VAR_schema_registry_id=${SCHEMA_REGISTRY_ID}
 TF_VAR_schema_registry_rest_endpoint=${SCHEMA_REGISTRY_ENDPOINT}
 TF_VAR_schema_registry_api_key=${SCHEMA_REGISTRY_API_KEY}
