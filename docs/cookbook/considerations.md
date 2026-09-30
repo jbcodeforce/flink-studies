@@ -427,7 +427,54 @@ With hot-hot deployment, it is possible to get the same running application runn
 
 It will depend of the application state size and logic to operate. If all state stays in memory, yes this is a common pattern to use. If state are bigger than physical memory of the computer running the task manager, then the processing needs more computers, so more task managers and need to distribute data. Then it needs distributed storage to persist states. 
 
-### Eactly-once processing
+## Exactly-once processing
+
+Flink's internal exactly-once guarantee is robust, but for the results to be accurate in the external system, that system (the sink) must cooperate.
+
+This is a complex subject to address and context is important on how to assess exactly-once-delivery: within Flink processing, versus with an end-to-end solution context. 
+
+### Flink context
+
+For Flink, "Each incoming event affects the final Flink statement results exactly once." as said [Piotr Nowojski during his presentation at the Flink Forward 2017 conference](https://www.youtube.com/watch?v=rh7wdvZXTOo). No data duplication and no data loss. Flink achieves it through a combination of checkpointing, state management, and transactional sinks. Checkpoints save the state of the stream processing application at regular intervals, including the last read-committed offsets. State management maintains the consistency of data between the checkpoints. Transactional sinks ensure that data gets written out exactly once, even during failures.
+
+Flink uses transactions when writing messages into Kafka. Kafka messages are only visible when the transaction is actually committed as part of a Flink checkpoint. The frequency of the checkpoint impact the latency of records with exactly once delivery.
+
+`read_committed` consumers will only get the committed messages. `read_uncommitted` consumers see all messages, with a better latency.
+
+Below is an example of creating Flink Table in Confluent Cloud with reading committed only messages (opposite property will be: 'kafka.consumer.isolation-level'='read-uncommitted'):
+
+```sql
+CREATE TABLE exactly_once
+  WITH(
+    'kafka.consumer.isolation-level'='read-committed'
+    )
+  AS SELECT * FROM `transactions`..
+```
+
+As the default checkpoint interval is set to 60 seconds, `read_committed` consumers will see up to one minute latency: a Kafka message sent just before the commit will have few second latency, while older messages will be above 60 seconds.
+
+When multiple Flink statements are chained in a pipeline, the latency adds up, as Flink Kafka source connector uses `read_committed` isolation.
+
+The checkpoints frequency can be updated but could not go below 10s. Shorter interval improves fault tolerance, but adds persistence and performance overhead.
+
+### End-to-end solution
+
+On the sink side, Flink has a [2 phase commit sink function](https://nightlies.apache.org/flink/flink-docs-release-1.4/api/java/org/apache/flink/streaming/api/functions/sink/TwoPhaseCommitSinkFunction.html) on specific data sources, which includes Kafka, message queue and JDBC. 
+
+For stream processing requiring an **upsert** capability (insert new records or update existing ones based on a key), the approach is to assess:
+
+* if the sink kafka connector support upsert operations: it emits only the latest state for each key, and a tombstone message for delete (which is crucial for Kafka's log compaction to work correctly).
+* For Datsabase, be sure to use a JDBC connector, with upsert support. Achieving exactly-once to a traditional database is done by leveraging the sink's implementation of Flink's Two-Phase Commit protocol. The database's transactions must be compatible with this to make sure writes are only committed when a Flink checkpoint successfully completes.
+* For Lakehouse Sink, a few supports upsert semantic. Confluent Cloud Tableflow product does. It leverages the Iceberg protocol to update existing records. 
+
+When using transactions on sink side, there is a pre-commit phase which starts from the checkpointing: the Job Manager injects a checkpoint barrier to seperate streamed in records before or after the barrier. As the barrier flows to the operators, each one of them, takes a snapshot or their state. The sink operators that support transactions, need to start the transaction in the precommit phase while saving its state to the state backend. After a successful pre-commit phase, the commit must guarantee the success for all operators. In case of any failure, the tx is aborted and rolled back.
+
+
+* [Article: An Overview of End-to-End Exactly-Once Processing in Apache Flink (with Apache Kafka, too!)](https://flink.apache.org/2018/02/28/an-overview-of-end-to-end-exactly-once-processing-in-apache-flink-with-apache-kafka-too/).
+* [Confluent documentation](https://docs.confluent.io/cloud/current/flink/concepts/delivery-guarantees.html).
+* [Confluent Platform - Kafka consumer isolation level property.](https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#isolation-level)
+
+### Considerations
 
 When addressing exactly once processing, it is crucial to consider the following steps:
 
@@ -436,14 +483,18 @@ When addressing exactly once processing, it is crucial to consider the following
 * **Generate Results to a Sink** introduces more complexity. While reading from the source and applying processing logic can be managed to ensure exactly-once semantics, generating a unique result to a sink depends on the target technology and its capabilities. Different sink technologies may have varying levels of support for exactly-once processing, requiring additional strategies such as idempotent writes or transactional sinks to achieve the desired consistency.
 
 <figure markdown="span">
-![](./images/e2e-1.png){ width=800 }
+![](./images/e2e-1.drawio.png){ width=800 }
 <figcaption>End-to-end exactly once</figcaption>
 </figure>
 
-After reading records from Kafka, processing them, and generating results, if a failure occurs, Flink will revert to the last committed read offset. This means it will reload the records from Kafka and reprocess them. As a result, this can lead to duplicate entries being generated in the sink:
+In the figure above, Flink computes the sum of values for the records seen so far. So 0 + 1 -> 1; then 1 + 2 ->3, 3 + 3 ->6; 6 + 4 ->10. The sink connector has generate a sum of 10,. but the task manager stops/crashes before completing the transaction. So the last committed offset from the source is record 4. On the sink side, recods 1,3,6 are committed.
+
+When restarting Flink will revert to the last committed read offset. This means it will reload the records from Kafka and reprocess them. In figure above the last committed offset was for record 4. The state was 10. 
+
+As a result, this can lead to duplicate entries being generated in the sink, the second not being committed. In the figure below, aggregation state is reloaded from the checkpoint, and source operator continues reading from last committed offset so reloads record 5. Sink operator commits the new results. (the schema is simplified, as in real deployment the record 10 will be committed with other records as commits happen at checkpoint frequency)
 
 <figure markdown="span">
-![](./images/e2e-2.png){ width=800 }
+![](./images/e2e-2.drawio.png){ width=800 }
 <figcaption>End-to-end recovery</figcaption>
 </figure>
 
@@ -462,25 +513,7 @@ new KafkaSinkBuilder<String>()
     .setTransactionalIdPrefix("store-sol")
 ```
 
-With transaction ID, a sequence number is sent by the Kafka producer API to the broker, and so the partition leader will be able to remove duplicate retries.
-
-<figure markdown="span">
-![](./images/e2e-3.png){ width=800 }
-<figcaption>End-to-end with Kafka transaction id</figcaption>
-</figure>
-
-When the checkpointing period is set, we need to also configure `transaction.max.timeout.ms` of the Kafka broker and `transaction.timeout.ms` for the producer (sink connector) to a higher timeout than the checkpointing interval plus the max expected Flink downtime. If not the Kafka broker will consider the connection has failed and will remove its state management.
-
-???- info "Event-driven microservice"
-    The evolution of microservice is to become more event-driven, which are stateful streaming applications that ingest event streams and process the events with application-specific business logic. This logic can be done in flow defined in Flink and executed in the clustered runtime.
-
-    <figure markdown="span">
-    ![](./images/evt-app.png)
-    <figcaption>Event-driven application as a sequence of Flink apps</figcaption>
-    </figure>
-
-
-## State Backends and Storage
+With transaction ID, a sequence number is sent by the Kafka producer API to the broker, and so the partition leader will be able to remove duplicate retries. When the checkpointing period is set, we need to also configure `transaction.max.timeout.ms` of the Kafka broker and `transaction.timeout.ms` for the producer (sink connector) to a higher timeout than the checkpointing interval plus the max expected Flink downtime. If not the Kafka broker will consider the connection has failed and will remove its state management.
 
 ## SLOs
 

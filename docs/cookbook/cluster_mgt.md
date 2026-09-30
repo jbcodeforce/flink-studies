@@ -308,6 +308,7 @@ In this recipe we consider region failover.
     * assess cost of downtime? 
     * business metrics used to measure impact? and any existing metrics and tools to compute outage impact. 
     * 70% of CIO wants to be resilient, 80% have nothing in place, and most has no real metrics.
+
 * Assess what is the current method to detect downtime, and the definition of downtime. Moving to a standby region cost time and effort, getting a clear assessment of what downtime means is very important before triggering the failover. Is it latency? is it missing orders? Is it network split?
 * Get an application inventory by category of criticality, including compliance requirements. 
 
@@ -354,7 +355,7 @@ Recall a traditional data streaming processing includes at least the following c
 <caption>**Figure: Flink Statement Pipeline with src and sinks**</caption>
 </figure>
 
-The following view presnts the deployed components, which we should assess how, each component, needs to support DR:
+The following view presents the deployed components, which we should assess how, each component, needs to support DR:
 
 <figure markdown="span">
 ![](./diagrams/dsp-elements.drawio.png)
@@ -372,7 +373,7 @@ The following view presnts the deployed components, which we should assess how, 
 | **Catalog** | |
 | **Iceberg Tables** | Replicatd by cloud provider service- 15 minutes latency is common. |
 
-???+ info "Tablelfow specific"
+???+ info "Tableflow specific"
     As of now, 09/2026, Tableflow is regional, and does not replicate the table state to other region, so recovery means reconstructing each table in a second region, fomr the Kafka Topics. When those topics were created by Flink processing, this is not an issue as Flink has to run in parallel to keep its state and respect normal operation expected RTO. 
     
     ![](./diagrams/tf/tf_dr_ctx.drawio.png)

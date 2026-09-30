@@ -14,7 +14,7 @@ With Flink SQL statements, developers who need to update the pipeline's logic (e
 
 ## Concepts
 
-[Materialized Tables](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/materialized-table/overview/)(MT) helps to manage Tables in long term with easier development life cycle than traditional Flink Tables. They are the recommended solution for creating permanent, evolving streaming pipelines.
+[Materialized Tables](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/materialized-table/overview/)(MT) helps to manage tables in long term with easier development life cycle than traditional Flink Tables. They are the recommended solution for creating permanent, evolving streaming pipelines.
 
 Materialized Tables includes the following elements:
 
@@ -38,9 +38,11 @@ Materialized Tables support in-place evolution via the CREATE OR ALTER command. 
     ```sql
     CREATE MATERIALIZED OR ALTER TABLE orders_table
     FRESHNESS = INTERVAL '10' SECOND
+    START_MODE = RESUME_OR_FROM_BEGINNING
+    REFRESH_MODE = CONTINUOUS
     AS SELECT * FROM kafka_catalog.db1.orders;
     ```
-* Materialized tables use the same table properties and defaults as CREATE TABLE — including changelog.mode — and support the exact same WITH options.
+* Materialized tables use the same table properties and defaults as CREATE TABLE — including `changelog.mode` — and support the exact same WITH options.
 * Use CREATE OR ALTER MATERIALIZED TABLE, to suspend and resume, refresh pipeline of materialized tables, to manually trigger data refreshes, and to modify the query definition of materialized tables. Users can control how much historical data is processed during these updates by configuring the START_MODE parameter. In Confluent Cloud the START_MODE default value is RESUME_OR_FROM_BEGINNING.
 
 * In Apache Flink, SUSPEND needs to set the savepoint directory:
@@ -57,6 +59,7 @@ Materialized Tables support in-place evolution via the CREATE OR ALTER command. 
 * `ALTER... AS` will change the table schema, and then refresh the data. In FULL mode, not partitioned, the table will be overwritten. With partioning it will refresh the latest partition. With CONTINUOUS, the new refresh job starts from the beginning and does not restore from the previous state.
 * When runing, ALTER MATERIALIZED TABLE that changes a GROUP BY or window definition in a stateful aggregation, the old aggregation state is discarded. The new results are rebuilt from scratch. Users often expect continuity and are surprised by the reprocessing cost. Use START_MODE = FROM_NOW if the statement do not need historical recomputation. 
 * Use SHOW CREATE MATERIALIZED TABLE <name> to get the changelog mode (upsert, retract, append-only), the current query, and the WITH properties. Zombie / duplicate triage depends on knowing the changelog mode first. This command also shows FRESHNESS and REFRESH_MODE values.
+* In Confluent Cloud, it is possible to convert an existing toopic/table to a materialized table. In those table was created and updated by an existing Flink statement, this one needs to be stopped.
 
 ## Architecture
 
@@ -70,7 +73,6 @@ For Confluent Cloud, MTs use exactly the same RBAC model as other Flink Statemen
 
 * No Statement Sets: Materialized tables cannot be grouped or used within Flink statement sets
 * **Not Idempotent**: Running a CREATE OR ALTER command on a materialized table will always trigger a new evolution and **discard state**, even if the query logic hasn't changed. State is rebuilt from the source. 
-* Net-New Only: You cannot convert an existing standard table into a materialized table; you must create a new MT
 * User can’t define a Materialized Table on an existing Kafka topic, a new MT needs to be defined from data of this topic.
 * **No Automatic Change Detection**: Neither materialized tables nor statements will automatically detect changes to upstream dependencies (like a source topic's schema changing); an evolution must be explicitly triggered by using CREATE OR ALTER TABLE.
 * During reprocessing, append-sinks will **receive duplicates**.
@@ -84,7 +86,7 @@ For Confluent Cloud, MTs use exactly the same RBAC model as other Flink Statemen
 
 ## Demonstrations
 
-* [See 13-materialized table folder](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/13-materialized-table) in this repository for Apache Flink and Confluent Cloud demonstrations. The demonstration presents a classical joins on raw data tp build a simple dimension table:
+* [See 13-materialized table folder](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/13-materialized-table) in this repository for Apache Flink and Confluent Cloud demonstrations. The demonstration presents a classical joins on raw data to build a simple dimension table:
 
 ![](./diagrams/cdc_2_MT.drawio.png)
 

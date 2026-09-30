@@ -28,3 +28,17 @@ The Confluent distribution of a streamhouse is the Data streaming platform (DSP)
 
 
 * A snapshot query is a one-time Flink SQL query that reads a consistent, point-in-time view of a table, returns the results, and then terminates
+
+## Shifting to real-time processing
+
+Preparing medallion layers is possible by using data already in Kafka. The classical batch processing can be shifted to the left of the architecture, by doing transformation, filtering, deduplication to build the silver layer in Kafka Topic using Flink processing. 
+
+<figure markdown='span'>
+![](../cookbook/diagrams/raw-to-sink.drawio.png)
+</figure>
+
+The business logic that applies to data in Kafka topics so in Flink tables can be built in Flink to create gold records. Those gold records, representing dimensions and facts, can be persisted for long term in object storages, in Iceberg Tables. An external query engines, and federated catalog can be used on top of those Iceberg Tables.  Most of the logic done in batch should be easily ported to real-time processing. Still some consideration like state size, running all time streaming processing, time and watermark add to the semantic complexity.
+
+Adopting an event-driven architecture, silver and gold topics/ business events are reusable and not just usable for analytic query engines.
+
+
