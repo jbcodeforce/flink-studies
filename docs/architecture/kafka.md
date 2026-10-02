@@ -66,11 +66,11 @@ In case of a job failure, Flink will restore the streaming program to the state 
 checkpoint and re-consume the records from Kafka, starting from the offsets that were stored 
 in the checkpoint.
 
-![](../cookbook/images/e2e-1.png)
+![](../cookbook/images/e2e-1.drawio.png)
 
 But when it reprocesses the records again it will generate duplicate at the consumer level. 
 
-![](../cookbook/images/e2e-2.png)
+![](../cookbook/images/e2e-2.drawio.png)
 
 Therefore the Sink connector needs to support transactional producer, and
 uses the producer API to support avoid duplication with transaction id, idempotence

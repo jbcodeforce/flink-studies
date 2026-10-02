@@ -42,3 +42,4 @@ The business logic that applies to data in Kafka topics so in Flink tables can b
 Adopting an event-driven architecture, silver and gold topics/ business events are reusable and not just usable for analytic query engines.
 
 
+## 

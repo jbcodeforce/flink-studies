@@ -12,7 +12,7 @@ compiled: false
     Create 07/2025
     Update - 08/08/26
 
-Industry analysts (for example Gartner) project strong adoption of agentic AI in enterprise applications by 2028, with significant potential impact on automation and cost. Treat such figures as directional, not precise forecasts. One of the problems is that organizations do not have the right data for AI. Classical ML models are trained from historical data using batch processing; they are tailored for a specific use case with a specific feature set. Generative models are built on public human-generated unstructured information, and they generalize across many tasks. They do not know your organization’s data. Therefore a key challenge is to **deliver the right data at the right time with the right context.**
+Industry analysts (as Gartner) project strong adoption of agentic AI in enterprise applications by 2028, with significant potential impact on automation and cost. Treat such figures as directional, not precise forecasts. One of the problems is that organizations do not have the right data for AI. Classical ML models are trained from historical data using batch processing; they are tailored for a specific use case with a specific feature set. Generative models are built on public human-generated unstructured information, and they generalize across many tasks. They do not know your organization’s data. Therefore a key challenge is to **deliver the right data at the right time with the right context.**
 
 Traditional AI agents are reactive: you ask a question, they call an API, they give an answer. This works for chatbots, but it fails for autonomous systems. If you want an agent to monitor a factory floor or a global supply chain, it cannot wait for a human to type a prompt. It needs to "live" inside the data stream. Flink provides the stateful memory and time semantics that raw LLM calls alone do not give you.
 
@@ -169,7 +169,7 @@ The following pattern appears throughout this book: ingest events, derive time-b
 
 ### Confluent Intelligence
 
-Confluent’s stream processing and governance offerings help you build event-driven pipelines for continuous AI context: capture data as it is generated, curate it in Flink SQL, and serve it to AI systems. The product direction is a unified, real-time, trust-oriented view of the business. See [Confluent Intelligence](https://www.confluent.io/product/confluent-intelligence/). Current generative AI use data to continuously learning and adapting the logic and response. This should not be considered without risk, and static business logic and rules should never be undeterministic. Rule based systems have still their important play in modern AI, ignoring it, will lead company in mined land.
+Confluent’s stream processing and governance offerings help you build event-driven pipelines for continuous AI context: capture data as it is generated, curate it in Flink SQL, and serve it to AI systems. The product direction is a unified, real-time, trust-oriented view of the business. See [Confluent Intelligence documentation](https://www.confluent.io/product/confluent-intelligence/). Current generative AI uses data to continuously learning and adapting the logic and response. This should not be considered without risk, and static business logic and rules should never be undeterministic. Rule based systems have still their important play in modern AI, ignoring it, will lead company in mined land.
 
 [Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/ai/overview.html) combines, at a high level:
 
@@ -178,9 +178,9 @@ Confluent’s stream processing and governance offerings help you build event-dr
 3. **Real-time Context Engine:** can expose governed, materialized data to other apps, in some flows via MCP, so not every team must hand-wire Kafka details. It is enabled at a topic level. 
   ![](./images/ctx_engine_topic.png)
 
-  Once enabled, 3 tools are available: `getMetadata`, `listTopics`, `queryData` to a code agent like Claude, Cursor or your own.
+  Once enabled, 3 tools are available: `getMetadata`, `listTopics`, `queryData` to a code agent like Claude, Cursor, IBM Bob or your own.
 
-Layers Confluent often highlights:
+#### Layers Confluent often highlights:
 
 * **Real-time processing:** Kafka paired with Flink, with [ML](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html) and [preprocessing](https://docs.confluent.io/cloud/current/flink/reference/functions/ml-preprocessing-functions.html) helpers in SQL, including [anomaly detection](https://docs.confluent.io/cloud/current/ai/builtin-functions/detect-anomalies.html) using ARIMA-style and MAD algorithms.
 
@@ -222,6 +222,27 @@ CREATE AGENT support_triage_agent
 ```
 
 The [code/flink-sql/12-ai-agents](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/12-ai-agents) includes an example of anomaly gating. The local Apache Flink Agents demo is under [e2e-demos/agentic-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/agentic-demo).
+
+#### Real-time context engine
+
+This is a set of features to serve trustworthy, structured context to any AI app or agent via MCP for real time data. See [RTCE documentation](https://docs.confluent.io/cloud/current/ai/real-time-context-engine/overview.html). RTCE integrates with AI harness via MCP protocol.
+
+* Enabled at the topic level, fully managed serverless backend, multi-tenants. It is a regional service.
+* materializes the topic data into a table in a low-latency data-serving layer optimized for fast lookups.
+* query engine prepares query plan
+* RBAC for topic access
+* Pay only for the compute and storage used
+* Support append log, or upsert mode where RTCE keeps only the latest record for each key. The selection is based on the topic’s `cleanup.policy`
+* AI Agent can access RTCE data plane via CC API Key and Secret. RTCE authenticates MCP requests with HTTP Basic authentication using a base64 of key andd secret
+
+The high level architecture for RTCE and the EA Lighting Tables looks like:
+
+![](./diagrams/rtce_hl_arch.drawio.png)
+
+* the queryData tool goes to a SQL query engine controller and are continuously executed by query engine process(pod). A set of metadata services keep access control and where to find data. Data may be persisted of local storage or fast object storage. Those queries are select and filter with limit to do not returns millions of record. The where by id will be the most common query created by the AI harness and agent. Stateful queries are not possible, but those queries can get data from a topic that is itself an output of Flink processing.
+* Warm / hot data come from Kafka topic, cold data may come from materialized iceberg tables.
+
+* See a terraform to enable [RTCE on c360 profile]()
 
 ### Confluent Cloud - MCP Server
 

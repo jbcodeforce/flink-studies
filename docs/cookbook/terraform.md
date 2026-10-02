@@ -85,20 +85,24 @@ provider "confluent" {
 }
 ```
 
-But if we have set up more variables in the confluent provider 
-```sh 
-TF_VAR_schema_registry_id=${SCHEMA_REGISTRY_ID}
-TF_VAR_schema_registry_rest_endpoint=${SCHEMA_REGISTRY_ENDPOINT}
-TF_VAR_schema_registry_api_key=${SCHEMA_REGISTRY_API_KEY}
-TF_VAR_schema_registry_api_secret=${SCHEMA_REGISTRY_API_SECRET}
+But if we have set up more environment variables then we need to also define them in the confluent provider:
 
-TF_VAR_organization_id=${ORGANIZATION_ID}
-TF_VAR_environment_id=${ENVIRONMENT_ID}
-TF_VAR_flink_rest_endpoint=${FLINK_REST_END_POINT}
-TF_VAR_flink_api_key=${FLINK_API_KEY}
-TF_VAR_flink_api_secret=${FLINK_API_SECRET}
-TF_VAR_flink_principal_id=${PRINCIPAL_ID}
-TF_VAR_flink_compute_pool_id=${FLINK_COMPUTE_POOL_ID}
+```sh 
+provider "confluent" {
+  cloud_api_key                 = var.confluent_cloud_api_key
+  cloud_api_secret              = var.confluent_cloud_api_secret
+  schema_registry_id            = var.schema_registry_id            # optionally use SCHEMA_REGISTRY_ID env var
+  schema_registry_rest_endpoint = var.schema_registry_rest_endpoint # optionally use SCHEMA_REGISTRY_REST_ENDPOINT env var
+  schema_registry_api_key       = var.schema_registry_api_key       # optionally use SCHEMA_REGISTRY_API_KEY env var
+  schema_registry_api_secret    = var.schema_registry_api_secret  
+  flink_api_key                 = var.flink_api_key
+  flink_api_secret              = var.flink_api_secret
+  flink_rest_endpoint           = var.flink_rest_endpoint
+  organization_id               = var.organization_id
+  environment_id                = var.environment_id
+  flink_compute_pool_id         = var.flink_compute_pool_id
+  flink_principal_id            = var.flink_principal_id
+}
 ```
 
 Do not commit `terraform.tfstate` or environment variable files to git.
@@ -119,21 +123,9 @@ Do not commit `terraform.tfstate` or environment variable files to git.
   provider "confluent" {
       cloud_api_key                 = var.confluent_cloud_api_key
       cloud_api_secret              = var.confluent_cloud_api_secret
-      schema_registry_id            = var.schema_registry_id            # optionally use SCHEMA_REGISTRY_ID env var
-      schema_registry_rest_endpoint = var.schema_registry_rest_endpoint # optionally use SCHEMA_REGISTRY_REST_ENDPOINT env var
-      schema_registry_api_key       = var.schema_registry_api_key       # optionally use SCHEMA_REGISTRY_API_KEY env var
-      schema_registry_api_secret    = var.schema_registry_api_secret  
-      flink_api_key                 = var.flink_api_key
-      flink_api_secret              = var.flink_api_secret
-      flink_rest_endpoint           = var.flink_rest_endpoint
-      organization_id               = var.organization_id
-      environment_id                = var.environment_id
-      flink_compute_pool_id         = var.flink_compute_pool_id
-      flink_principal_id            = var.
   }
 
-  data "confluent_organization" "my_org" {}
-
+  # discovered at runtime
   data "confluent_flink_region" "flink_region" {
     cloud  = var.cloud_provider
     region = var.cloud_region
@@ -153,6 +145,13 @@ Do not commit `terraform.tfstate` or environment variable files to git.
     type        = string
     sensitive   = true
   }
+
+  variable "prefix" {
+      type        = string
+      default     = "j9r"
+      description = "prefix for environment" 
+  }
+  
   ...
   ```
 
@@ -163,7 +162,7 @@ Do not commit `terraform.tfstate` or environment variable files to git.
 
 ## Resource Definitions
 
-Build infrastructure incrementally following dependency order. The [deployment/cc-terraform](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/cc-terraform) folder contains a complete base infrastructure example.
+Build infrastructure incrementally following dependency order. The [deployment/cc-terraform](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/cc-terraform) folder contains a complete Confluent Cloud infrastructure example.
 
 ### Environment Layer
 
@@ -207,52 +206,56 @@ import {
 
 ### Kafka Layer
 
-Create a Kafka cluster with API keys:
+* Create a Kafka cluster with API keys (single zone for dev purpose):
+  ```terraform
+  resource "confluent_kafka_cluster" "standard" {
+    display_name = "${var.prefix}-kafka"
+    availability = "SINGLE_ZONE"
+    cloud        = var.cloud_provider
+    region       = var.cloud_region
+    standard {}
 
-```terraform
-resource "confluent_kafka_cluster" "standard" {
-  display_name = "${var.prefix}-kafka"
-  availability = "SINGLE_ZONE"
-  cloud        = var.cloud_provider
-  region       = var.cloud_region
-  standard {}
-
-  environment {
-    id = confluent_environment.env.id
-  }
-}
-
-resource "confluent_api_key" "kafka-api-key" {
-  display_name = "kafka-api-key"
-  description  = "Kafka API Key"
-  owner {
-    id          = confluent_service_account.env-manager.id
-    api_version = confluent_service_account.env-manager.api_version
-    kind        = confluent_service_account.env-manager.kind
-  }
-  managed_resource {
-    id          = confluent_kafka_cluster.standard.id
-    api_version = confluent_kafka_cluster.standard.api_version
-    kind        = confluent_kafka_cluster.standard.kind
     environment {
       id = confluent_environment.env.id
     }
   }
-}
-```
 
-Import existing Kafka cluster definition
+  resource "confluent_api_key" "kafka-api-key" {
+    display_name = "kafka-api-key"
+    description  = "Kafka API Key"
+    owner {
+      id          = confluent_service_account.env-manager.id
+      api_version = confluent_service_account.env-manager.api_version
+      kind        = confluent_service_account.env-manager.kind
+    }
+    managed_resource {
+      id          = confluent_kafka_cluster.standard.id
+      api_version = confluent_kafka_cluster.standard.api_version
+      kind        = confluent_kafka_cluster.standard.kind
+      environment {
+        id = confluent_environment.env.id
+      }
+    }
+  }
+  ```
 
-```sh
-terraform import confluent_kafka_cluster.standard env-abc123/lkc-xyz789
-```
+* [See documentation for api key](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs/resources/confluent_api_key)
+* Get secrets to env variable to use with local code using REST API:
+  ```sh
+  export KAFKA_API_SECRET=$(terraform output -raw api_key_secret)
+  ```
+
+* Import existing Kafka cluster definition
+  ```sh
+  terraform import confluent_kafka_cluster.standard env-abc123/lkc-xyz789
+  ```
 
 ### Schema Registry
 
 Schema Registry is auto-provisioned with the environment. Reference it as a data source using `data` construct:
 
 ```terraform
-data "confluent_schema_registry_cluster" "essentials" {
+data "confluent_schema_registry_cluster" "sr_essentials" {
   environment {
     id = confluent_environment.env.id
   }
@@ -267,9 +270,9 @@ resource "confluent_api_key" "schema-registry-api-key" {
     kind        = confluent_service_account.env-manager.kind
   }
   managed_resource {
-    id          = data.confluent_schema_registry_cluster.essentials.id
-    api_version = data.confluent_schema_registry_cluster.essentials.api_version
-    kind        = data.confluent_schema_registry_cluster.essentials.kind
+    id          = data.confluent_schema_registry_cluster.sr_essentials.id
+    api_version = data.confluent_schema_registry_cluster.sr_essentials.api_version
+    kind        = data.confluent_schema_registry_cluster.sr_essentials.kind
     environment {
       id = confluent_environment.env.id
     }
@@ -281,7 +284,7 @@ resource "confluent_api_key" "schema-registry-api-key" {
 
 Flink requires two service accounts with specific role bindings:
 
-1. **flink-app** - Runtime principal for Flink statements
+1. **flink-app** - Runtime principal for Flink statements to get authorization to access functions, connections..
 2. **flink-developer-sa** - Deploys Flink statements
 
 ```terraform
