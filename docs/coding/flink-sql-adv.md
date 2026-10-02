@@ -1,5 +1,50 @@
 # Flink SQL Advanced Topics
 
+
+## PROCTIME
+
+Processing Time (proctime) in Apache Flink refers to the system time of the local machine (TaskManager node) executing a specific transformation operator. It looks simpler as it does not require watermark, timestamp extraction and out-of order event handling. It operates directly at the physical execution layer of a Flink TaskManager.
+
+TaskManager calls `System.currentTimeMillis()` at the precise instant an operator thread processes an incoming record.
+
+For accuracy, replayability with same results requirements, Confluent Cloud does not support proctime. It is non-deterministic, because proctime relies on wall-clock time, re-processing streaming data during job recovery (from savepoints or checkpoints) evaluates against the new system time, completely altering window assignments and aggregations.
+
+One of the classical impact is when reprocessing historical data through a 5-minute tumbling window will group all replayed records into the single 5-minute window corresponding to the recovery execution window, collapsing the historical distribution.
+
+When downstream operators introduce backpressure, records stall inside intermediate network buffers.The arrival time at the operator execution thread is artificially delayed. Records produced at T_0 might be stamped with proctime T_0 + Delta t, causing window skew and inaccurate throughput measurements. Long Java garbage collection pauses produce identical anomalies: records buffered during a GC pause are processed immediately afterward in a dense batch, incorrectly filling downstream processing-time windows.
+
+Clock synchronization between nodes running the task manager needs to be in place, using Network Time Protocol.
+
+In SQL, Apache OSS the following DDL uses the function
+
+```sql
+CREATE TABLE user_clicks (
+    user_id STRING,
+    url STRING,
+    click_time AS PROCTIME() -- Declares a processing-time attribute
+) WITH (
+    'connector' = 'kafka',
+    'topic' = 'user-clicks',
+    'properties.bootstrap.servers' = 'localhost:9092',
+    'format' = 'json'
+);
+```
+
+Then a tumblink window will use this time:
+
+```sql
+SELECT 
+    user_id,
+    COUNT(*) AS click_count,
+    TUMBLE_START(click_time, INTERVAL '1' MINUTE) AS window_start,
+    TUMBLE_END(click_time, INTERVAL '1' MINUTE) AS window_end
+FROM user_clicks
+GROUP BY 
+    user_id, 
+    TUMBLE(click_time, INTERVAL '1' MINUTE);
+```
+
+
 ## State bootstraping
 
 

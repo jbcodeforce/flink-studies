@@ -939,6 +939,10 @@ The project management for dbt based project is now in [a separate chapter](../m
       }}
       ```
 
+???+ question "Define seed and reference it?"
+    Seed can be set from csv files. 
+
+
 ???+ info "Private networking / using endpoint"
     For private networking it is recommended to set the `endpoint` parameter in the profile.yml. In this case you need to remove the prodiver and region:
     ```yaml
@@ -964,6 +968,26 @@ The project management for dbt based project is now in [a separate chapter](../m
     The error NullConverter cannot convert Python None to statement string directly. Use AnnotatedNull to specify the desired SQL type for NULL parameters is thrown by dbt's seed compiler when it encounters an empty CSV cell (representing NULL) and cannot determine the SQL type to annotate it.
 
 
+???- info "strange error reported on duplicate entry in a schema.yaml"
+    ```
+     dbt found two schema.yml entries for the same resource named <>. Resources and their associated columns may only be described a single time. To fix this, remove one of the resource entries for <> in this file: ...schema.yml
+    ```
+    it's a stale partial-parse cache, not an actual duplicate in your source. The stale cache still has an entry from the old pre-rename project state, and dbt is treating it as a second definition colliding with the current one.
+    
+    ```sh
+    rm target/partial_parse.msgpack
+    ```
+
+
+???- info "Error of column named comment not quoted on a generated SQL not the same as the one defined in the model"
+    1/ the fact that the model does not look the same, is due to every column in the project's schema.yml declares a data_type (plus constraints on the key), dbt treats the model as contract-enforced and runs dbt-core's default__get_empty_schema_sql macro before submitting the real DML — it builds a throwaway cast(null as <type>) as <column> query straight from the schema.yml column list to sanity-check the declared types.
+
+    2/ Now the comment column in the real SQL is quoted: `comment`. The macro (dbt/include/global_project/macros/adapters/columns.sql:62) only quotes a column identifier if the schema.yml entry sets `quote: true`. So the schema.yaml needs to get those changes:
+    ```yaml
+      - name: comment
+        data_type: VARCHAR
+        quote: true
+    ``` 
 
 ### Added tools
 
