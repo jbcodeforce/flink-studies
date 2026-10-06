@@ -382,7 +382,7 @@ The following view presents the deployed components, which we should assess how,
     
     Be sure to set the primary topics to infinite retention before any failover, so the full changelog is retained, replicated to DR region,  and each table can be rematerialized from offset 0. This could be relaxed if the business requirements authorize it. Also compacted topics have discarded history.
     
-    The DR buckets need to be configured upfront. The external catalog needs to federate to the DR Tableflow catalog. As the catalog namespace is linked to the kafka cluster, those names are different for each region. 
+    The DR buckets need to be configured upfront. The external catalog needs to federate to the DR Tableflow catalog. As the catalog namespace is linked to the kafka cluster, those names are different for each region. Also bucket names and folder path will be different than from primary site. 
 
     Downstream consumers need to point to new tables.
 
@@ -420,7 +420,6 @@ The following figures illustrate what elements need to be considered for disaste
 * Need to decide which elements can run and being created in the DR site.
 * Active means, clients applications write data to the primary cluster. Passive, DR site, captures the replicated data and schemas. Active/active, clients write to either cluster.
 
-
 * How networking hostname and CIDRs are defined in both sites. 
 * Flink Statements are most of the time stateful, and run continuously. Rebuild state cost RTO. A Flink statement stopped and restarted is the same as starting a new job. Assess if sources topics have extactly the same records.
 * In case of active/passive, failover decision is triggered by human but automated by scripts and runbooks. Clients must bootstrap to the DR cluster once a failover is triggered.
@@ -450,24 +449,22 @@ Recalls that:
 
 * Cluster Linking is set as bidirectional mode to enable topic data and metadata to sync between two clusters and should be used in all disaster recovery patterns. In the event of a disaster, a bidirectional Cluster Link can reverse the direction of data and metadata to support easy failover and/or fail back.
 
-???- info "Cluster Link"
+???+ info "Cluster Link"
     [Cluster Links on Confluent Cloud](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/cluster-links-cc.html) enables data replication between two kafka clusters. Can be created with [Terraform](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/cluster-links-cc.html#managing-cluster-links-with-tf), [cli](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/cluster-links-cc.html#managing-cluster-links-with-the-cli) or [REST API](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/cluster-links-cc.html#managing-cluster-links-with-the-rest-api). Cluster links are created on the destination Kafka cluster. Source cluster may also be a Confluent Platform or Apache Kafka cluster.
 
     By default, a cluster link is a one-way bridge but can be set to be bi-directional. Kafka clusters need to be dedicated or enterprise.
     A Service account is the principal to process the cluster link, and needs api key/secrets on both clusters. ACLs need to be set so read from topics on source cluster.
 
-???- info "Cell Architecture"
+???+ info "Cell Architecture"
     Modern cloud Native solution adopt the [cell architecture](https://docs.aws.amazon.com/solutions/cell-based-architecture-on-aws), as replacement of the traditional model of a single, multi-AZ cluster with multiple independent, single-AZ clusters. This model treats the Availability Zone as a strict fault domain. Each cell represents a fully functioning, independent replica of the application infrastructure.
     
     ![](./diagrams/cell-arch.drawio.png)
    
     It is not necessary to map cell to AZ, it is even recommended to have cell over multi-AZs too, within a VPC. 
     
-    ![](./diagrams/cell-arch-2.drawio.png)
-
     It looks Confluent Cloud is based on such cell architecture. For example Flink endpoints are separated from `cloud.confluent.io/environment`. The high level view of this architecture may look like:
 
-
+    ![](./diagrams/cell-arch-2.drawio.png)
 
     To address routing to cell, we need to setup dedicated ALB per cell with cross-zone routing disabled. This routing layer may include application load balancing, meaning specific tenant's traffic can be routed within a specific cell.  Intra-service traffic is contained inside the cell boundary. Chatty microservices that exchange high volumes of data within a cluster generate zero inter-AZ data transfer charges because all pods run within the same AZ. 
 
