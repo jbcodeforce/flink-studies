@@ -76,5 +76,14 @@ A demonstration pipeline:
 ![](./diagrams/d16_flow.drawio.png)
 
 
+## Lightning Queries
 
+[Lightning Queries](https://docs.confluent.io/cloud/current/ai/real-time-context-engine/lightning-queries.html) are enabled when setting [Real-time context engine](../architecture/agentic_flink.md/#real-time-context-engine) on a topic. They read data from the materialized table in Flink, run once and returns an output. It supports millisecond response times and high concurrency lookups.
 
+This is supported in the AI Agent querying via the MCP. It will be open to human's queries too.
+
+Some constraints:
+* Compact table leads to query in upsert semantic
+* Structured key schemas (Avro, Protobuf) are not supported in upsert mode, only raw.
+* Agents need Global API key to access all Confluent Cloud resources
+* RTCE authenticates MCP requests with HTTP Basic authentication, a Base64-encoded token built with API KEY and SECRET

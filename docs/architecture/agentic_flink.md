@@ -225,11 +225,11 @@ The [code/flink-sql/12-ai-agents](https://github.com/jbcodeforce/flink-studies/t
 
 #### Real-time context engine
 
-This is a set of features to serve trustworthy, structured context to any AI app or agent via MCP for real time data. See [RTCE documentation](https://docs.confluent.io/cloud/current/ai/real-time-context-engine/overview.html). RTCE integrates with AI harness via MCP protocol.
+This is a set of features to serve trustworthy, structured context to any AI app or agent via MCP for real time data. See [RTCE documentation](https://docs.confluent.io/cloud/current/ai/real-time-context-engine/overview.html). RTCE integrates with AI harnesses via MCP protocol. It is not the same as MCP Server, used to manage resources in Confluent Cloud.
 
-* Enabled at the topic level, fully managed serverless backend, multi-tenants. It is a regional service.
-* materializes the topic data into a table in a low-latency data-serving layer optimized for fast lookups.
-* query engine prepares query plan
+* Enabled at the topic level, fully managed serverless backend, multi-tenants. It is a regional service but can query resources at the global or regional level.
+* It materializes the topic data into a table in a low-latency data-serving layer optimized for fast lookups.
+* Query engine prepares query plan
 * RBAC for topic access
 * Pay only for the compute and storage used
 * Support append log, or upsert mode where RTCE keeps only the latest record for each key. The selection is based on the topic’s `cleanup.policy`
@@ -239,7 +239,7 @@ The high level architecture for RTCE and the EA Lighting Tables looks like:
 
 ![](./diagrams/rtce_hl_arch.drawio.png)
 
-* the queryData tool goes to a SQL query engine controller and are continuously executed by query engine process(pod). A set of metadata services keep access control and where to find data. Data may be persisted of local storage or fast object storage. Those queries are select and filter with limit to do not returns millions of record. The where by id will be the most common query created by the AI harness and agent. Stateful queries are not possible, but those queries can get data from a topic that is itself an output of Flink processing.
+* The [`queryData` tool]() goes to a SQL query engine controller and are continuously executed by query engine process(pod). A set of metadata services keep access control and where to find data. Data may be persisted of local storage or fast object storage. Those queries are select and filter with limit to do not returns millions of record. The where by id will be the most common query created by the AI harness and agent. Stateful queries are not possible, but those queries can get data from a topic that is itself an output of Flink processing.
 * Warm / hot data come from Kafka topic, cold data may come from materialized iceberg tables.
 
 * See a terraform to enable [RTCE on c360 profile]()
@@ -250,9 +250,10 @@ The [mcp-confluent](https://github.com/confluentinc/mcp-confluent) project expos
 
 <figure markdown='span'>
 ![](./diagrams/cc-mcp-arch.drawio.png){: style="width: 1000px;" }
-<figcaption>MCP to Confluent: assistants propose changes; version control and pipelines keep governance and rollbacks; Kafka and Flink stay managed by the platform team.</figcaption>
+<caption>MCP to Confluent: assistants propose changes; version control and pipelines keep governance and rollbacks; Kafka and Flink stay managed by the platform team.</caption>
 </figure>
 
+The MCP client needs [to define two servers](https://docs.confluent.io/cloud/current/ai/ai-tools/managed-mcp-server.html#configure-claude-code): the global and regional.
 The server exposes many tools; categories include Kafka, Flink SQL, Schema Registry, Kafka Connect, Tableflow, and platform management (environments, clusters). See the repository for the current list.
 
 | Service Category | Examples |
@@ -288,5 +289,3 @@ The server exposes many tools; categories include Kafka, Flink SQL, Schema Regis
 * [SQL CREATE AGENT (Confluent Cloud)](https://docs.confluent.io/cloud/current/flink/reference/statements/create-agent.html).
 * [IBM Bob Workshop - Event-Driven AI Agents with Confluent Cloud](https://juseljuk.github.io/bobchestrate-workshop/advanced/part2-confluent)
 
-
-## To work one
