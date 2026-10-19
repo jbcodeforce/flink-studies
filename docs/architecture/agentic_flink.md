@@ -10,7 +10,7 @@ compiled: false
 
 ???- "Version"
     Create 07/2025
-    Update - 08/08/26
+    Update - 10/18/26
 
 Industry analysts (as Gartner) project strong adoption of agentic AI in enterprise applications by 2028, with significant potential impact on automation and cost. Treat such figures as directional, not precise forecasts. One of the problems is that organizations do not have the right data for AI. Classical ML models are trained from historical data using batch processing; they are tailored for a specific use case with a specific feature set. Generative models are built on public human-generated unstructured information, and they generalize across many tasks. They do not know your organization’s data. Therefore a key challenge is to **deliver the right data at the right time with the right context.**
 
@@ -28,7 +28,7 @@ Traditional AI agents are reactive: you ask a question, they call an API, they g
 ## Current Industry Challenges
 
 * **Real-time context:** Answering "How do systems access relevant context in real time?" is still hard in practice.
-* **Integration patterns:** Exposing data through every possible protocol has a cost. [Model Context Protocol (MCP)](https://www.anthropic.com/news/model-context-protocol) can centralize governed, discoverable tools and context for assistants, but it adds moving parts: tokens, routing, and security reviews. Many teams also wrap HTTP APIs, CLIs, or internal SDKs directly for lower latency and simpler hardening. The two approaches coexist: use MCP where a shared context plane and tool contracts help product teams; prefer direct APIs when you need tight SLAs, air-gapped runs, or minimal indirection.
+* **Integration patterns:** Exposing data through every possible protocol has a cost. [Model Context Protocol (MCP)](https://www.anthropic.com/news/model-context-protocol) can centralize governed, discoverable tools and context for assistants, but it adds moving parts: tokens, routing, and security reviews. Many teams also wrap HTTP APIs, CLIs, or internal SDKs directly using tool declaration, for lower latency and simpler hardening. The two approaches coexist: use MCP where a shared context plane and tool contracts help integrations; prefer direct APIs when you need tight SLAs, air-gapped runs, or minimal indirection.
 * While the medallion architecture and ELT batch jobs prepare data well, high end-to-end latency blocks agents that must act on fresh facts. You cannot have agents depend on data that is a day or a few hours old for many operational cases. Stale data served in production is a real issue. Data has a shelf life. The exact cutoff depends on the domain: sub-second to low-second processing matters for payment and safety-style signals; tens of seconds to minutes may be enough for other workflows. The point is order-of-magnitude fit, not a single universal latency number. A delayed batch-based alert can be far less useful than a stream-based one for the same business event.
 * Many agentic frameworks are strong for demos and less opinionated about production: governance, guardrails, hardening, and observability still need your platform choices.
 * Not all data must be real time; "real-time" is relative to the decision. The goal is still to feed domain-specific context from internal systems into generation and planning.
@@ -42,10 +42,10 @@ Traditional AI agents are reactive: you ask a question, they call an API, they g
 
 | Concern | MCP-oriented approach | Direct API / CLI / SDK |
 | --- | --- | --- |
-| Discovery and contracts | One protocol for tools and context; easier for many assistants | Per-service integration, more code |
-| Security model | Mediated servers; org policies on what tools exist | You control per call; fewer hops |
-| Latency | Extra hop; varies by deployment | Often lower, simpler paths |
-| Fit | Shared context for many agents and IDEs | Tight-coupling to one app or pipeline |
+| **Discovery and contracts** | One protocol for tools and context; easier for many assistants | Per-service integration, more code |
+| **Security model** | Mediated servers; org policies on what tools exist | You control per call; fewer hops |
+| **Latency** | Extra hop; varies by deployment | Often lower, simpler paths |
+| **Fit** | Shared context for many agents and IDEs | Tight-coupling to one app or pipeline |
 
 Products such as [Confluent Intelligence](https://www.confluent.io/product/confluent-intelligence/) may expose governed, materialized context over MCP to AI apps while the stream platform (Kafka, Flink) stays the source of truth. That is MCP as an access pattern, not a claim that all agents must use MCP for everything.
 
@@ -75,22 +75,36 @@ Flink’s event processing, state, and exactly-once semantics (where you configu
 
 Agents should not be limited to one database; they should participate in an ecosystem that consumes events, applies logic, and republishes results. That is the shift toward event-driven agents.
 
+The [Streamhouse](./streamhouse.md) architecture presents integration with transactional systems, and lakehouse, with real-time context exposed as events and AI context. 
+
+![](./diagrams/stream-cc-arch.drawio.png)
+
 ### Business use cases
 
-Examples from early adopters:
+Flink is especially useful when agents must reason over continuous, stateful, real-time events rather than isolated requests.
 
-* Detecting changes in trading volume and alerting a person; learning trends on individual names.
-* Detect changes in telemetries from IoT devices and manufacturing equipments.
-* Detecting changes in campaign engagement.
-* Spikes or dips in new patient registrations by location.
-* Product reviews: classify sentiment, then use anomaly detection on negative share to catch incidents early.
+| Use case | What the agent does | Flink’s role |
+| --- | --- | --- |
+| **Real-time fraud investigation** | Detects suspicious transactions, gathers account/device context, scores risk, and recommends or triggers actions. | Stateful event correlation, sliding windows, enrichment, and exactly-once processing. | 
+| **Autonomous IT/SRE operations** | Watches logs, metrics, traces, and deployment events; identifies incidents; investigates likely causes; and executes approved remediation. | Joins operational streams, maintains incident state, detects patterns, and tracks recovery. | 
+| **Personalized recommendations** | Continuously adapts recommendations based on clicks, purchases, searches, and session behavior. | Per-user state, real-time feature computation, and low-latency model inference. | 
+| **Customer-support agents** | Detects customer frustration or escalation risk from conversations and account events, then recommends next-best actions. | Combines chat, CRM, product-usage, and billing streams in real time. | 
+| **Predictive maintenance** | Monitors sensor data, detects abnormal behavior, diagnoses probable failures, and schedules maintenance. | Time-series processing, anomaly detection, event-time windows, and device state. | 
+| **Dynamic pricing and promotions** | Adjusts offers based on demand, inventory, customer behavior, and competitor signals. | Real-time aggregation, rule evaluation, and continuous feature updates. | 
+| **Supply-chain exception handling** | Detects shipment delays or inventory risks, identifies downstream impact, and proposes alternate suppliers or routes. | Correlates orders, inventory, logistics, and external event streams. | 
+| **Compliance monitoring** | Reviews financial or operational events, detects policy violations, and creates investigation cases with supporting evidence. | Stateful pattern detection, temporal rules, and immutable event processing. | 
+| **Autonomous data-quality remediation** | Detects schema changes, late data, duplicates, or anomalous values; determines likely causes; and opens or resolves tickets. | Stream validation, anomaly detection, lineage context, and stateful monitoring. | 
+| **Real-time knowledge agents** | Maintains a current view of entities such as customers, products, or accounts so an agent can answer using the latest facts. | Builds continuously updated materialized views and retrieval-ready state.|
+| **Financial transactions** | Detecting changes in trading volume and alerting a person; learning trends on individual names. | Stateful pattern detection, Real-time aggregation |
+| **Healthcare device monitoring - care plan** | Analyze spikes or dips in medical devices according to prescriptions. | Stream validation, anomaly detection, correlation. |
+|  **Product reviews** | Classify sentiment, then use anomaly detection on negative share to catch incidents early. | Anomaly detection, Real-time aggregation |
 
 ## Requirements
 
 ### Cost, throughput, and models
 
 * **Cost model:** Pushing every business event through an LLM is often prohibitively expensive. Use traditional ML (anomaly detection, fraud detection, forecasting) or business rules as a first-pass filter, and reserve LLM steps for text based tasks.
-* **Inference and enrichment:** As already said, fresh data from transactions into context for agents brings more value than stale data. Stale data drives weak recommendations. Private data is often integrated at inference and through RAG rather than by training on all of it in the public model.
+* **Inference and enrichment:** As already said, fresh data from transactions into context for agents brings more value than stale data. Stale data drives weak recommendations. Private data is often integrated at inference and through RAG rather than by training.
 
 ### Data preparation and search
 
@@ -101,8 +115,8 @@ Examples from early adopters:
 
 ### Platform and operations
 
-* Prefer event-driven integration: messaging and stream contracts instead of only static orchestrators (for example Apache Airflow) for all operational reactions, use batch orchestration where it fits, streams where time is of the essence.
-* Event processing can trigger agents. External tools can be reached via MCP, cli or direct APIs, depending on the pattern above.
+* **Prefer event-driven integration**: messaging and stream contracts instead of only static orchestrators (for example Apache Airflow) for all operational reactions, use batch orchestration where it fits, streams where time is of the essence.
+* Event processing can trigger agents: External tools can be reached via MCP, cli or direct APIs, depending on the pattern above.
 * Embedded and edge cases (for example drones) add safety and bandwidth constraints beyond the data center.
 
 ???- info "Decision Intelligent Platforms"
@@ -146,16 +160,20 @@ Lilian Weng’s agent survey [via this summary](https://jbcodeforce.github.io/ML
 <figcaption>EDA for agents: services publish facts; stream processors derive features and triggers; agent runtimes and tools sit behind clear contracts, often with multiple consumer groups and replays for test.</figcaption>
 </figure>
 
-The event-driven agent may be implemented using Apache Flink for stateful aggregation, data transformation and filtering to prepare a relevant and fresh context to the LLM. The agent remote call the inference endpoint.  
+The event-driven agent may be implemented using Apache Flink for stateful aggregation, data transformation and filtering to prepare a relevant and fresh context to the LLM. The agent remote calls the inference endpoint and produces results in another table.  
 
 With Kafka, you can replay a time range to reproduce why a probabilistic model behaved a certain way, usually easier than re-building a one-off batch extract for the same question.
 
-LLMs are not the only implementation: classic ML scoring, calibrated rules, and NN models all have a place, depending on cost and risk.
+LLMs are not the only implementation: classic ML scoring, calibrated rules, and deep-learning models all have a place, depending on data quality, cost and risk.
 
 ### Reference data-flow pattern
 
-The following pattern appears throughout this book: ingest events, derive time-bounded state, optionally score with cheap models, then optionally call expensive tools or LLMs, and emit downstream facts (also durable on Kafka) for other agents and systems.
+The following pattern appears throughout this book: ingest events, derives time-bounded state, optionally scores with cheap models, then optionally calls expensive frontier LLMs, then emits downstream facts (also durable on Kafka) for other agents and systems.
 
+<figure markdown='span'>
+![](./diagrams/data-flow.drawio.png)
+<caption>Real-time processing and AI based flow</caption>
+</figure>
 
 ## Technologies
 
@@ -164,8 +182,12 @@ The following pattern appears throughout this book: ingest events, derive time-b
 [Apache Flink Agents](https://nightlies.apache.org/flink/flink-agents-docs-latest/docs/get-started/overview/) is an open-source framework for event-driven streaming agents. Multiple patterns are in scope:
 
 1. **Workflow streaming agents:** a directed workflow of actions connected by events, a form of [SAGA  choreography](https://jbcodeforce.github.io/eda-studies/patterns/saga/#services-choreography). See the [Apache Flink Agents repository](https://github.com/apache/flink-agents) and the Python [workflow example](https://github.com/apache/flink-agents/blob/main/python/flink_agents/examples/quickstart/workflow_single_agent_example.py).
+    * The [`flink_agents.api.agents.agent.Agent` class](https://nightlies.apache.org/flink/flink-agents-docs-main/docs/development/create-agent/overview/) defines the contract each agent implementation, deployed into a task manager, will have to conform to. One function to process the event as input, and a second methods to post process the LLM response.
+    * The SDK wraps each input record in an InputEvent. `ChatRequestEvent` and `ChatResponseEvent` are classes to manage interactions with  LLM
+    * Annotations are used for defining prompt, tools, model description, skills (bundled in the deployed package) `flink_agents.api.skills.Skills`,
+    * A runner context, `flink_agents.api.runner_context.RunnerContext`, provides Flink engine access to remote service to send request as event.
 
-2. **ReAct pattern:** the user states a goal; the agent interleaves reasoning and tool use with an LLM. The Python [ReAct example](https://github.com/apache/flink-agents/blob/main/python/flink_agents/examples/quickstart/react_agent_example.py) shows the idea. A runnable layout with OSS Flink and Kafka lives under [e2e-demos/agentic-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/agentic-demo) in this repository.
+2. **ReAct pattern:** the user states a goal; the agent interleaves reasoning and tools use with an LLM. The Python [ReAct example](https://github.com/apache/flink-agents/blob/main/python/flink_agents/examples/quickstart/react_agent_example.py) shows the idea. A runnable port with OSS Flink and Kafka lives under [e2e-demos/agentic-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/agentic-demo) in this repository.
 
 ### Confluent Intelligence
 
@@ -221,11 +243,13 @@ CREATE AGENT support_triage_agent
   );
 ```
 
-The [code/flink-sql/12-ai-agents](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/12-ai-agents) includes an example of anomaly gating. The local Apache Flink Agents demo is under [e2e-demos/agentic-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/agentic-demo).
+The [code/flink-sql/12-ai-agents](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/12-ai-agents) includes an example of anomaly gating. 
+
+The local, based Apache Flink Agents demo is under [e2e-demos/agentic-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/agentic-demo).
 
 #### Real-time context engine
 
-This is a set of features to serve trustworthy, structured context to any AI app or agent via MCP for real time data. See [RTCE documentation](https://docs.confluent.io/cloud/current/ai/real-time-context-engine/overview.html). RTCE integrates with AI harnesses via MCP protocol. It is not the same as MCP Server, used to manage resources in Confluent Cloud.
+This is a set of features to serve structured context to any AI apps or agents via MCP for real time data. See [RTCE documentation](https://docs.confluent.io/cloud/current/ai/real-time-context-engine/overview.html). RTCE integrates with AI harnesses via MCP protocol. This is not the same as MCP Server, used to manage resources in Confluent Cloud.
 
 * Enabled at the topic level, fully managed serverless backend, multi-tenants. It is a regional service but can query resources at the global or regional level.
 * It materializes the topic data into a table in a low-latency data-serving layer optimized for fast lookups.
@@ -280,11 +304,12 @@ The server exposes many tools; categories include Kafka, Flink SQL, Schema Regis
     ```
 
 
-## Sources
+## More information - Sources
 
 * [code/flink-sql/12-ai-agents](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/12-ai-agents): Anomaly detection and gating to a downstream view; links to replay notes.
-* [Confluent model inference and AI functions](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html) (including `AI_TOOL_INVOKE` patterns where applicable).
+* [AI Model Inference and Machine Learning Functions in Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html) (including `AI_TOOL_INVOKE` patterns where applicable).
 * [Confluent quickstart streaming agents](https://github.com/confluentinc/quickstart-streaming-agents/): [LAB3 walkthrough](https://github.com/confluentinc/quickstart-streaming-agents/blob/master/LAB3-Walkthrough.md) (fleet-style scenario).
+* [](https://github.com/confluentinc/demo-confluent-fraud-agent)
 * [Apache Flink Agents documentation](https://nightlies.apache.org/flink/flink-agents-docs-latest/docs/get-started/overview/).
 * [SQL CREATE AGENT (Confluent Cloud)](https://docs.confluent.io/cloud/current/flink/reference/statements/create-agent.html).
 * [IBM Bob Workshop - Event-Driven AI Agents with Confluent Cloud](https://juseljuk.github.io/bobchestrate-workshop/advanced/part2-confluent)

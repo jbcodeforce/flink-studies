@@ -6,11 +6,11 @@ Run upstream [Apache Flink Agents](https://nightlies.apache.org/flink/flink-agen
 
 ## Status
 
-Documented. Requires manual Flink install ([deployment/product-tar/install-flink-local.sh](../../../deployment/product-tar/install-flink-local.sh)), `uv` env at demo root, and **Ollama** for the ReAct example.
+Requires manual Flink install ([deployment/product-tar/install-flink-local.sh](../../../deployment/product-tar/install-flink-local.sh)), `uv` env at demo root, and **oMLX** for the ReAct example.
 
 ## Implementation approach
 
-- **No IaC / Docker** in this folder — intentional for PyFlink Agents (tarball + `PYTHONPATH` vs containerized SQL demos).
+- **No IaC or Docker** in this folder — intentional for PyFlink Agents (tarball + `PYTHONPATH` vs containerized SQL demos).
 - **Flink:** Local cluster from product-tar install; align version with [Flink Agents compatibility](https://nightlies.apache.org/flink/flink-agents-docs-latest/docs/get-started/overview/) and [`pyproject.toml`](../pyproject.toml) / `uv.lock`.
 - **Application logic:** Upstream modules `flink_agents.examples.quickstart.workflow_single_agent_example` and `react_agent_example` (no repo-owned job module yet).
 - **Automation:** Shell scripts under [`scripts/`](scripts/) wrap env setup and example runs.

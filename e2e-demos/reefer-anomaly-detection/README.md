@@ -1,6 +1,6 @@
 # Reefer Anomaly Detection
 
-iot streaming demo: reefer-anomaly-detection
+IoT streaming demo: reefer-anomaly-detection
 
 ## Business domain
 
