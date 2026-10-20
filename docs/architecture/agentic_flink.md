@@ -25,7 +25,7 @@ Traditional AI agents are reactive: you ask a question, they call an API, they g
 </figure>
 
 1. First high level use case will be a user leveraging harness with tools, MCP, local or frontier LLMs
-1. The agent 
+1. The agent acts on events, uses LLM to extract information and decisions, and publishes results to kafka with exactly-once semantic.
 
 ## Who this chapter is for
 
@@ -272,7 +272,7 @@ The high level architecture for RTCE and the EA Lighting Tables looks like:
 
 ![](./diagrams/rtce_hl_arch.drawio.png)
 
-* The [`queryData` tool]() goes to a SQL query engine controller and are continuously executed by query engine process(pod). A set of metadata services keep access control and where to find data. Data may be persisted of local storage or fast object storage. Those queries are select and filter with limit to do not returns millions of record. The where by id will be the most common query created by the AI harness and agent. Stateful queries are not possible, but those queries can get data from a topic that is itself an output of Flink processing.
+* The [`queryData` tool](https://docs.confluent.io/cloud/current/ai/real-time-context-engine/query-data.html#querydata) goes to a SQL query engine controller and are continuously executed by query engine process(pod). A set of metadata services keep access control and where to find data. Data may be persisted of local storage or fast object storage. Those queries are select and filter with limit to do not returns millions of record. The where by id will be the most common query created by the AI harness and agent. Stateful queries are not possible, but those queries can get data from a topic that is itself an output of Flink processing.
 * Warm / hot data come from Kafka topic, cold data may come from materialized iceberg tables.
 
 * See a terraform to enable [RTCE on c360 profile]()
@@ -317,6 +317,7 @@ The server exposes many tools; categories include Kafka, Flink SQL, Schema Regis
 
 * [code/flink-sql/12-ai-agents](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/12-ai-agents): Anomaly detection and gating to a downstream view; links to replay notes.
 * [AI Model Inference and Machine Learning Functions in Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html) (including `AI_TOOL_INVOKE` patterns where applicable).
+* [Streaming Agents Examples with Confluent Cloud](https://docs.confluent.io/cloud/current/ai/streaming-agents/streaming-agents-examples.html)
 * [Confluent quickstart streaming agents](https://github.com/confluentinc/quickstart-streaming-agents/): [LAB3 walkthrough](https://github.com/confluentinc/quickstart-streaming-agents/blob/master/LAB3-Walkthrough.md) (fleet-style scenario).
 * [Demonstration for fraud detection agent.](https://github.com/confluentinc/demo-confluent-fraud-agent)
 * [Apache Flink Agents documentation](https://nightlies.apache.org/flink/flink-agents-docs-latest/docs/get-started/overview/).
