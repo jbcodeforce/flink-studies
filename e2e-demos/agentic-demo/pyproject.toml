@@ -6,4 +6,5 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "flink-agents>=0.1.1",
+    "apache-flink>=2.3.0",
 ]

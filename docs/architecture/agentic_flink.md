@@ -19,11 +19,19 @@ Traditional AI agents are reactive: you ask a question, they call an API, they g
 * Request/Response: The agent is "asleep" until called.
 * Flink/Event-Driven: The agent is "awake," maintaining a continuous state of the world as events fly by.
 
+<figure markdown='span'>
+![](./diagrams/hl_uc_rt_agent.drawio.png)
+<caption>High level view of RT-Agent components</caption>
+</figure>
+
+1. First high level use case will be a user leveraging harness with tools, MCP, local or frontier LLMs
+1. The agent 
+
 ## Who this chapter is for
 
-* **Solution and enterprise architects** positioning GenAI on top of data platforms and event streams.
+* **Solution and enterprise architects** positioning GenAI, deep learning agent, on top of data platforms and event streams.
 * **Streaming and platform engineers** integrating Kafka, Flink, and operational data.
-* **ML and GenAI practitioners** who need to adopt autonomous agents.
+* **ML and GenAI practitioners** who need to adopt autonomous agents acting on streaming events.
 
 ## Current Industry Challenges
 
@@ -88,8 +96,9 @@ Flink is especially useful when agents must reason over continuous, stateful, re
 | **Real-time fraud investigation** | Detects suspicious transactions, gathers account/device context, scores risk, and recommends or triggers actions. | Stateful event correlation, sliding windows, enrichment, and exactly-once processing. | 
 | **Autonomous IT/SRE operations** | Watches logs, metrics, traces, and deployment events; identifies incidents; investigates likely causes; and executes approved remediation. | Joins operational streams, maintains incident state, detects patterns, and tracks recovery. | 
 | **Personalized recommendations** | Continuously adapts recommendations based on clicks, purchases, searches, and session behavior. | Per-user state, real-time feature computation, and low-latency model inference. | 
-| **Customer-support agents** | Detects customer frustration or escalation risk from conversations and account events, then recommends next-best actions. | Combines chat, CRM, product-usage, and billing streams in real time. | 
-| **Predictive maintenance** | Monitors sensor data, detects abnormal behavior, diagnoses probable failures, and schedules maintenance. | Time-series processing, anomaly detection, event-time windows, and device state. | 
+| **Customer-support agents** | Detects customer frustration or escalation risk from conversations and account events, then recommends next-best actions. Every customer interaction is streamed as an event the instant it occurs. | Combines chat, CRM, product-usage, and billing streams in real time. Streaming Agents run live transcription and analysis in-flight. | 
+| **Predictive maintenance** | Monitors sensor data, detects abnormal behavior, diagnoses probable failures, and schedules maintenance. | Time-series processing, anomaly detection, event-time windows, and device state. |
+| **Real-time inventory** | Cameras recording shelves. Tens of millions of shelf scans per day. Move to 95% shelf availability accuracy. No batch processing. | Flink processing and routing it into the Shelf AI product in real time | 
 | **Dynamic pricing and promotions** | Adjusts offers based on demand, inventory, customer behavior, and competitor signals. | Real-time aggregation, rule evaluation, and continuous feature updates. | 
 | **Supply-chain exception handling** | Detects shipment delays or inventory risks, identifies downstream impact, and proposes alternate suppliers or routes. | Correlates orders, inventory, logistics, and external event streams. | 
 | **Compliance monitoring** | Reviews financial or operational events, detects policy violations, and creates investigation cases with supporting evidence. | Stateful pattern detection, temporal rules, and immutable event processing. | 
@@ -202,7 +211,7 @@ Confluent’s stream processing and governance offerings help you build event-dr
 
   Once enabled, 3 tools are available: `getMetadata`, `listTopics`, `queryData` to a code agent like Claude, Cursor, IBM Bob or your own.
 
-#### Layers Confluent often highlights:
+#### Capabilities
 
 * **Real-time processing:** Kafka paired with Flink, with [ML](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html) and [preprocessing](https://docs.confluent.io/cloud/current/flink/reference/functions/ml-preprocessing-functions.html) helpers in SQL, including [anomaly detection](https://docs.confluent.io/cloud/current/ai/builtin-functions/detect-anomalies.html) using ARIMA-style and MAD algorithms.
 
@@ -217,7 +226,7 @@ Confluent’s stream processing and governance offerings help you build event-dr
 
 Other agent protocols (for product integration) include [Google A2A](https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/) and the [Agent Communication Protocol](https://agentcommunicationprotocol.dev/introduction/welcome) from the Linux Foundation ecosystem, alongside [Anthropic’s MCP](https://www.anthropic.com/news/model-context-protocol) for tools and context to models. Native inference on Confluent Cloud (where available) and multivariate anomaly detection are product-specific; check current documentation for your environment.
 
-[quickstart-streaming-agents](https://github.com/confluentinc/quickstart-streaming-agents/) includes examples such as price monitoring, RAG over vector-backed text, and taxi demand with anomaly handling.
+The [quickstart-streaming-agents](https://github.com/confluentinc/quickstart-streaming-agents/) includes examples such as price monitoring, RAG over vector-backed text, and taxi demand with anomaly handling.
 
 #### Quick demonstration (Confluent Cloud)
 
@@ -247,7 +256,7 @@ The [code/flink-sql/12-ai-agents](https://github.com/jbcodeforce/flink-studies/t
 
 The local, based Apache Flink Agents demo is under [e2e-demos/agentic-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/agentic-demo).
 
-#### Real-time context engine
+### Real-time context engine
 
 This is a set of features to serve structured context to any AI apps or agents via MCP for real time data. See [RTCE documentation](https://docs.confluent.io/cloud/current/ai/real-time-context-engine/overview.html). RTCE integrates with AI harnesses via MCP protocol. This is not the same as MCP Server, used to manage resources in Confluent Cloud.
 
@@ -309,8 +318,9 @@ The server exposes many tools; categories include Kafka, Flink SQL, Schema Regis
 * [code/flink-sql/12-ai-agents](https://github.com/jbcodeforce/flink-studies/tree/master/code/flink-sql/12-ai-agents): Anomaly detection and gating to a downstream view; links to replay notes.
 * [AI Model Inference and Machine Learning Functions in Confluent Cloud for Apache Flink](https://docs.confluent.io/cloud/current/flink/reference/functions/model-inference-functions.html) (including `AI_TOOL_INVOKE` patterns where applicable).
 * [Confluent quickstart streaming agents](https://github.com/confluentinc/quickstart-streaming-agents/): [LAB3 walkthrough](https://github.com/confluentinc/quickstart-streaming-agents/blob/master/LAB3-Walkthrough.md) (fleet-style scenario).
-* [](https://github.com/confluentinc/demo-confluent-fraud-agent)
+* [Demonstration for fraud detection agent.](https://github.com/confluentinc/demo-confluent-fraud-agent)
 * [Apache Flink Agents documentation](https://nightlies.apache.org/flink/flink-agents-docs-latest/docs/get-started/overview/).
+* [F1 Pit Wall AI: River Racing at Silverstone:](https://github.com/confluentinc/demo-confluent-intelligence-f1) A real-time AI pit-strategy system on Confluent Cloud. Live telemetry and race standings stream into Kafka, Flink SQL detects a front-left tire anomaly, and a Streaming Agent recommends whether River Racing should pit now, pit soon, or stay out, explaining its reasoning in natural language.
 * [SQL CREATE AGENT (Confluent Cloud)](https://docs.confluent.io/cloud/current/flink/reference/statements/create-agent.html).
 * [IBM Bob Workshop - Event-Driven AI Agents with Confluent Cloud](https://juseljuk.github.io/bobchestrate-workshop/advanced/part2-confluent)
 

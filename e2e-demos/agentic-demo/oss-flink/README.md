@@ -23,7 +23,7 @@ Requires manual Flink install ([deployment/product-tar/install-flink-local.sh](.
 
    ```sh
    cd deployment/product-tar
-   ./install-flink-local.sh 1.20.3
+   ./install-flink-local.sh 2.3.0
    ```
 
 2. From demo root (`e2e-demos/agentic-demo`):
