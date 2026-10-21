@@ -1,6 +1,6 @@
 # Complex Event Processing Examples
 
-Those samples use dbt for deployment on Confluent Cloud, SQL client for Apache Flink.
+Those samples use dbt for deployment on Confluent Cloud, and SQL client for Apache Flink.
 
 ## MATCH_RECOGNIZE
 

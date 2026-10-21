@@ -2,12 +2,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NETWORK_NAME="flink-network"
-
+NETWORK_NAME="default"
+CP_VERSION=7.9.10
+FLINK_VERSION=2.3.0
 # Function to check if a container exists
 container_exists() {
   local name="$1"
-  container ps -a --format '{{.Names}}' 2>/dev/null | grep -qw "$name" || false
+  container ls -q | grep -Fxq "$name"
 }
 
 # Function to check if a network exists
@@ -38,7 +39,6 @@ start_stack() {
   echo "Starting Kafka broker..."
   container run -d \
     --name broker \
-    --hostname broker \
     --network "${NETWORK_NAME}" \
     -p 9092:9092 \
     -e KAFKA_BROKER_ID=1 \
@@ -56,7 +56,7 @@ start_stack() {
     -e KAFKA_CONTROLLER_LISTENER_NAMES="CONTROLLER" \
     -e KAFKA_LOG_DIRS="/tmp/kraft-combined-logs" \
     -e CLUSTER_ID="MkU3OEVBNTcwNTJENDM2Qk" \
-    confluentinc/cp-kafka:7.8.0
+    confluentinc/cp-kafka:${CP_VERSION}
 
   # 2. Start Flink JobManager
   if container_exists "flink-jobmanager"; then
@@ -73,11 +73,10 @@ EOF
 )
   container run -d \
     --name flink-jobmanager \
-    --hostname flink-jobmanager \
     --network "${NETWORK_NAME}" \
     -p 9081:9081 \
     -e FLINK_PROPERTIES="${FLINK_JM_PROPS}" \
-    cnfldemos/flink-kafka:1.19.1-scala_2.12-java17 \
+    cnfldemos/flink-kafka:${FLINK_VERSION}-scala_2.12-java17 \
     jobmanager
 
   # 3. Start Flink TaskManager
@@ -95,10 +94,9 @@ EOF
 )
   container run -d \
     --name flink-taskmanager \
-    --hostname flink-taskmanager \
     --network "${NETWORK_NAME}" \
     -e FLINK_PROPERTIES="${FLINK_TM_PROPS}" \
-    cnfldemos/flink-kafka:1.19.1-scala_2.12-java17 \
+    cnfldemos/flink-kafka:${FLINK_VERSION}-scala_2.12-java17 \
     taskmanager
 
   # 4. Start Flink SQL Client (daemonized or run interactively)
@@ -111,11 +109,10 @@ EOF
   echo "Starting Flink SQL Client..."
   container run -d \
     --name flink-sql-client \
-    --hostname flink-sql-client \
     --network "${NETWORK_NAME}" \
     -v "${SCRIPT_DIR}/settings:/settings" \
     -e FLINK_JOBMANAGER_HOST=flink-jobmanager \
-    cnfldemos/flink-sql-client-kafka:1.19.1-scala_2.12-java17
+    cnfldemos/flink-sql-client-kafka:${FLINK_VERSION}-scala_2.12-java17
 
   echo ""
   echo "All containers started successfully!"
@@ -123,7 +120,8 @@ EOF
   echo " - Kafka Broker:    localhost:9092"
   echo ""
   echo "To attach to the Flink SQL Client CLI, run:"
-  echo "  container exec -it flink-sql-client /docker-entrypoint.sh sql-client"
+  echo "  container exec -it flink-sql-client bash"
+  echo " then in the shell: ./bin/sql-client.sh"
 }
 
 stop_stack() {
@@ -145,7 +143,7 @@ status_stack() {
 
 sql_client() {
   echo "=== Connecting to Flink SQL Client CLI ==="
-  container exec -it flink-sql-client /docker-entrypoint.sh sql-client
+  container exec -it flink-sql-client bash
 }
 
 case "${1:-start}" in

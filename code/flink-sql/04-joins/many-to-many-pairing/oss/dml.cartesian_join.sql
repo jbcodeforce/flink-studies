@@ -1,4 +1,4 @@
--- APPROACH 3 — plain regular join: literal many-to-many (cartesian product).
+-- APPROACH 1 — plain regular join: literal many-to-many (cartesian product).
 --
 -- Every USER crossed with every TASK sharing the project. For project 'P' with
 -- users {u1,u2} and tasks {t1,t2,t3} it emits all 6 combinations as +I rows:
