@@ -11,13 +11,7 @@
 -- sequence. Unlike a join, CEP pairs by ORDER, so an unmatched event is dropped.
 -- Each row is a new INSERT, never an update -- there is no GROUP BY key to collide
 -- on. That is the contrast with Approach 2 (ROW_NUMBER top-1), which updates in place.
---
--- WHY NOT `PATTERN (U TMID* TEND)` to fold t2+t3 into one (u2, t3) row:
--- TMID and TEND would both be defined as event_type='TASK' -- two CONSECUTIVE
--- variables matching the SAME rows. Flink warns against this (the matcher tries all
--- combinations) and here it starves the mandatory TEND, so the pattern matches
--- NOTHING and returns zero rows. Keep consecutive variables non-overlapping.
---
+
 -- Idle timeout: on Confluent Cloud `sql.tables.scan.idle-timeout` defaults to 0
 -- (OFF), so a caught-up source may not advance its watermark; set it so pending
 -- matches flush. Run in the SAME workspace session, immediately before the query.
@@ -33,10 +27,9 @@ MATCH_RECOGNIZE (
     T.entity_id AS task_id,
     T.event_ts  AS paired_at
   ONE ROW PER MATCH
-  AFTER MATCH SKIP PAST LAST T
   PATTERN (U T+ NEXTU)                     -- distinct variables, ends on simple var T
   DEFINE
     U AS U.event_type = 'USER',
     T AS T.event_type = 'TASK',
-    NEXTU = next USER/FLUSH
+   NEXTU as NEXTU.event_type = 'USER' or NEXTU.event_type = 'FLUSH'
 ) AS m;

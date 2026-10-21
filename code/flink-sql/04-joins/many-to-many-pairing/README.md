@@ -8,7 +8,22 @@ Reproduces a scenario and clarifies the Flink SQL concept underneath it: **wheth
 
 The basic approach of using `ROW_NUMBER` to pair the two sides may not cover all requirements.
 
-[]
+Here is the input:
+```sql
+INSERT INTO project_events (project_id, event_type, entity_id, event_ts) VALUES
+  ('P', 'USER',  'u1', TIMESTAMP '2026-01-01 10:00:00'),
+  ('Q', 'USER',  'u9', TIMESTAMP '2026-01-01 10:00:03'),
+  ('P', 'TASK',  't1', TIMESTAMP '2026-01-01 10:00:05'),
+  ('Q', 'TASK',  't9', TIMESTAMP '2026-01-01 10:00:08'),
+  ('P', 'USER',  'u2', TIMESTAMP '2026-01-01 10:00:10'),
+  ('P', 'TASK',  't2', TIMESTAMP '2026-01-01 10:00:15'),
+  ('P', 'TASK',  't3', TIMESTAMP '2026-01-01 10:00:20'),
+  ('P', 'FLUSH', '-',  TIMESTAMP '2026-01-01 10:05:00'),
+  ('Q', 'FLUSH', '-',  TIMESTAMP '2026-01-01 10:05:00');
+```
+
+The trailing 'FLUSH' events push the watermark PAST t3 (10:00:20) so the final MATCH_RECOGNIZE match (P, u2, t3) can finalize and emit. Without them, event-time CEP has no event after t3 to advance the watermark, so that match never appears. 'FLUSH' is neither 'USER' nor 'TASK', so it is filtered out of all three queries.
+
 ## The resolution
 
 Three different tools give three different — all correct — behaviors. Pick by the semantics you actually want:
@@ -118,11 +133,11 @@ MATCH_RECOGNIZE (
     T.entity_id AS task_id,
     T.event_ts  AS paired_at
   ONE ROW PER MATCH
-  AFTER MATCH SKIP PAST LAST ROW
-  PATTERN (U T)                     -- distinct variables, ends on simple var T
+  PATTERN (U T+ NEXTU) 
   DEFINE
     U AS U.event_type = 'USER',
-    T AS T.event_type = 'TASK'
+    T AS T.event_type = 'TASK',
+    NEXTU as NEXTU.event_type = 'USER' or NEXTU.event_type = 'FLUSH'
 ) AS m;
 ```
 
@@ -133,7 +148,7 @@ MATCH_RECOGNIZE (
 | OP | project_id | user_id | task_id | paired_at |
 | ---| ---------- | ------- | ------- | --------- |
 | +I | P          | u1      | t1      | 2026-01-01 10:00:05.000 |
-| +I | P          | u2      | t2      | 2026-01-01 10:00:15.000 |
+| +I | P          | u2      | t3      | 2026-01-01 10:00:20.000 |
 | +I | Q          | u9      | t9      | 2026-01-01 10:00:08.000 |
 
 Sources: 

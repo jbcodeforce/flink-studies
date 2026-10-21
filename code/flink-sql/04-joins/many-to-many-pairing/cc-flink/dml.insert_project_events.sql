@@ -1,7 +1,6 @@
 -- Deterministic reproduction of the scenario for project 'P':
 --   u1 assigned, t1 arrives, u2 assigned, t2 arrives, t3 arrives.
--- Project 'Q' adds a second partition-group to prove PARTITION BY isolates projects.
---
+
 -- Rows are ordered by event_ts ASCENDING on purpose: the watermark allows only
 -- 1s of lateness, so an out-of-order insert (e.g. Q's 10:00:03 row after P's
 -- 10:00:20 row) would be dropped as late. Keep inserts in timestamp order.
