@@ -16,5 +16,5 @@ CREATE TABLE project_events (
 -- rejected, use `DISTRIBUTED BY (project_id) INTO 1 BUCKETS`.)
 DISTRIBUTED INTO 1 BUCKETS
 WITH (
-  'changelog.mode' = 'append'
+  'changelog.mode' = 'append',
 );

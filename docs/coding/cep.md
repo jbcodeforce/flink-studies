@@ -6,6 +6,7 @@ tags: [flink, coding, cep]
 type: article
 compiled: false
 ---
+
 # Complex event processing
 
 The goal of CEP is to analyzing pattern relationships between streamed events. Complex processing can be done using Flink using three capabilities: 
@@ -17,18 +18,16 @@ The goal of CEP is to analyzing pattern relationships between streamed events. C
 ## Use cases
 
 * Real-time marketing
-* Anomalies detection
+* Anomaly detection
 * Financial apps to check the trend in the stock market.
 * Credit card fraud detection.
 * RFID based tracking and monitoring systems
 
 ## Concepts
 
-It uses the [pattern API](https://ci.apache.org/projects/flink/flink-docs-release-1.13/docs/libs/cep/#the-pattern-api) to define complex pattern sequences 
-that we want to extract from the input stream.
+It uses the [pattern API](https://ci.apache.org/projects/flink/flink-docs-release-1.13/docs/libs/cep/#the-pattern-api) to define complex pattern sequences that we want to extract from the input stream.
 
-The events in the DataStream to which you want to apply pattern matching must implement proper `equals() `
-and `hashCode()` methods because FlinkCEP uses them for comparing and matching events.
+The events in the DataStream to which you want to apply pattern matching must implement proper `equals()` and `hashCode()` methods because Flink CEP uses them for comparing and matching events.
 
 The approach is to define simple patterns and then combine them in pattern sequence. 
 

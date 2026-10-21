@@ -8,6 +8,7 @@ Reproduces a scenario and clarifies the Flink SQL concept underneath it: **wheth
 
 The basic approach of using `ROW_NUMBER` to pair the two sides may not cover all requirements.
 
+[]
 ## The resolution
 
 Three different tools give three different — all correct — behaviors. Pick by the semantics you actually want:
@@ -16,9 +17,9 @@ Three different tools give three different — all correct — behaviors. Pick b
 |-----------|------|-----------|-------------------------|
 | Every user × task combination (literal M:N) | plain `INNER JOIN` | append (`+I` only) | all 6 combos |
 | One current row per project | `ROW_NUMBER` top-1 / `GROUP BY` | **updating** (`-U`/`+U`) | one row, retracted + replaced each time |
-| Sequential pairing, each match kept forever | `MATCH_RECOGNIZE` (CEP) | append (`+I` only) | `(u1,t1)`, `(u2,t3)` — as expected |
+| Sequential pairing, each match a new row | `MATCH_RECOGNIZE` (CEP) | append (`+I` only) | `(u1,t1)`, `(u2,t2)`; orphan `t3` dropped |
 
-**`MATCH_RECOGNIZE` is the "better way without a UDF."** : Flink SQL only supports `ONE ROW PER MATCH` (there is **no** `ALL ROWS PER MATCH`). A pattern `U TMID* TEND` matching `u2, (t2), t3` collapses to one row — `t2` folds into `TMID` and `TEND = t3` is reported — so `(P,u2,t3)` is emitted as an independent `+I`. It is not an update to `(P,u1,t1)` because each match has its own identity; there is no shared GROUP BY key to collide on. (The pattern ends on the simple variable `TEND` because Flink rejects a greedy quantifier such as `T+` as the last element.)
+**`MATCH_RECOGNIZE` is the "better way without a UDF."** The pattern `U T` pairs each user with its next task (`(u1,t1)`, `(u2,t2)`), emitting each pair as an independent `+I`. No row is an update to another — each match has its own identity, with no shared GROUP BY key to collide on. `t3` is an orphan (no new user precedes it in the sequence) and is simply not emitted: CEP pairs by order, so an unmatched event is dropped, unlike a join. (Flink supports only `ONE ROW PER MATCH` — there is **no** `ALL ROWS PER MATCH` — so a single match cannot fan a user out to several tasks.)
 
 
 ### Approach 1: plain regular join: literal many-to-many (cartesian product).
@@ -89,9 +90,22 @@ Watch the "op" column in the Confluent Cloud Flink workspace to see the  -U / +U
 | +U | P          | t3      | 2026-01-01 10:00:20.000
 
 
-### Approach 3: 
+### Approach 3 — MATCH_RECOGNIZE (CEP): append-only sequential pairing.
 
-* [File ./cc-flink/dml.cartesian_join.sql](./cc-flink/dml.match_recognize.sql)
+Pattern `U T`: one USER immediately followed by one TASK — two distinct, non-overlapping variables. Each match is one `(user, task)` pair, emitted as an independent `+I`:
+
+* `(P, u1, t1)` — u1 paired with its next task t1
+* `(P, u2, t2)` — u2 paired with its next task t2
+* `(Q, u9, t9)`
+
+`t3` is an orphan task (no new USER before it in the sequence) and is **not** emitted — CEP pairs by order, so an unmatched event is dropped (unlike a join). Every row is an independent `+I`: no match updates another, because each has its own identity with no GROUP BY key to collide on. That is the contrast with Approach 2.
+
+**Pitfalls (both hit while building this):**
+
+- A pattern may **not end in a greedy quantifier** (`T+` / `T*`) — Flink rejects it. End on a simple variable (or a reluctant quantifier).
+- Avoid **consecutive variables that match the same rows**. The intuitive "fold" pattern `U TMID* TEND` with `TMID` and `TEND` both `event_type='TASK'` matches **nothing**: greedy `TMID*` consumes the whole task run and starves the mandatory `TEND`. Keep adjacent variables non-overlapping.
+
+* [File ./cc-flink/dml.match_recognize.sql](./cc-flink/dml.match_recognize.sql)
 
 ```sql
 SELECT *
@@ -100,21 +114,31 @@ MATCH_RECOGNIZE (
   PARTITION BY project_id
   ORDER BY event_ts                 -- must order by the event-time attribute, ascending
   MEASURES
-    U.entity_id           AS user_id,
-    TEND.entity_id        AS task_id,            -- the task this match reports
-    FIRST(TMID.entity_id) AS folded_first_task,  -- earlier task folded in (NULL if none)
-    TEND.event_ts         AS paired_at
+    U.entity_id AS user_id,
+    T.entity_id AS task_id,
+    T.event_ts  AS paired_at
   ONE ROW PER MATCH
   AFTER MATCH SKIP PAST LAST ROW
-  PATTERN (U TMID* TEND) 
+  PATTERN (U T)                     -- distinct variables, ends on simple var T
   DEFINE
-    U    AS U.event_type    = 'USER',
-    TMID AS TMID.event_type = 'TASK',
-    TEND AS TEND.event_type = 'TASK'
+    U AS U.event_type = 'USER',
+    T AS T.event_type = 'TASK'
 ) AS m;
 ```
 
-Flink forbids a greedy quantifier as the final pattern element. PATTERN (U T+) ended on greedy T+.
+> The committed `cc-flink/dml.match_recognize.sql` also prepends `SET 'sql.tables.scan.idle-timeout' = '1 s';` — run it in the same workspace session (see Troubleshooting).
+
+* Results:
+
+| OP | project_id | user_id | task_id | paired_at |
+| ---| ---------- | ------- | ------- | --------- |
+| +I | P          | u1      | t1      | 2026-01-01 10:00:05.000 |
+| +I | P          | u2      | t2      | 2026-01-01 10:00:15.000 |
+| +I | Q          | u9      | t9      | 2026-01-01 10:00:08.000 |
+
+Sources: 
+* Flink Pattern Recognition (https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/sql/queries/match_recognize/)
+* Confluent Cloud MATCH_RECOGNIZE (https://docs.confluent.io/cloud/current/flink/reference/queries/match_recognize.html)
 
 ### Why not update
 
@@ -135,9 +159,9 @@ That comes from the `ROW_NUMBER` top-1 / `GROUP BY` shape, which is **keyed by t
 cc-flink/   Confluent Cloud Flink (deploy tooling + manifest)
   ddl.project_events.sql         unified append stream (USER + TASK events)
   dml.insert_project_events.sql  the scenario as deterministic VALUES
-  dml.match_recognize.sql        APPROACH 1 — CEP sequential pairing (append)
+  dml.cartesian_join.sql         APPROACH 1 — plain join (literal M:N, append)
   dml.rownumber_top1.sql         APPROACH 2 — top-1 dedup (updating changelog)
-  dml.cartesian_join.sql         APPROACH 3 — plain join (literal M:N, append)
+  dml.match_recognize.sql        APPROACH 3 — CEP sequential pairing (append)
   Makefile  deploy_manifest.json
 oss/        local Apache Flink SQL client (docker-compose) — same 3 queries
   ddl.project_events.sql         Kafka-backed source on the local broker
@@ -169,12 +193,21 @@ To compare behaviors, paste `dml.rownumber_top1.sql` and `dml.cartesian_join.sql
 
 ### Troubleshooting: MATCH_RECOGNIZE returns no rows
 
-Event-time CEP only emits a match once the **watermark passes the match's last row**. On Confluent Cloud two traps cause an empty result, and this demo is built to avoid both:
+Event-time CEP only emits a match once the **watermark passes the match's last row**. `ROW_NUMBER` and joins emit per record and do not wait on watermarks — so if only `MATCH_RECOGNIZE` is empty, the watermark is not advancing.
 
-1. **Idle partitions stall the watermark → zero rows.** A default multi-partition topic leaves some partitions empty; the source watermark is the min across partitions, so it never advances. Fix: create the table with `DISTRIBUTED INTO 1 BUCKETS` (see `cc-flink/ddl.project_events.sql`). If the table already exists, `make drop-tables` and redeploy.
-2. **No event after the last match → final row missing.** With `t3` the latest event, the watermark never passes `t3`, so `(P,u2,t3)` never finalizes. Fix: the trailing `FLUSH` events in `dml.insert_project_events.sql` advance the watermark past `t3` (and are filtered out of every query).
+**Primary fix — enable source idleness (the usual cause).** On Confluent Cloud `sql.tables.scan.idle-timeout` defaults to `0` (OFF), so a *caught-up* source (all rows read, nothing new arriving — exactly this bounded demo) never emits a high watermark, and `MATCH_RECOGNIZE` returns zero rows. In the **same workspace session**, run this before the query:
 
-Also keep inserts in `event_ts` order — the 1s watermark drops rows that arrive more than a second late.
+```sql
+SET 'sql.tables.scan.idle-timeout' = '1 s';
+```
+
+When the source goes idle it emits a MAX watermark, flushing every pending match — including `(P,u2,t3)`. There is no table-level WITH option for this on CC; it must be a `SET`. (`cc-flink/dml.match_recognize.sql` already includes this line.)
+
+**Secondary factors (already handled in this demo):**
+
+- Keep the topic single-partition (`DISTRIBUTED INTO 1 BUCKETS`) so empty partitions can't pin the watermark at the min across partitions.
+- Keep inserts in `event_ts` order — the 1s watermark drops rows that arrive more than a second late.
+- The trailing `FLUSH` events are a belt-and-suspenders way to push the watermark past `t3`; with the idle timeout set they are no longer required.
 
 ## Run locally (OSS Apache Flink)
 
