@@ -1,0 +1,12 @@
+{
+  "m2m-data-insert-events": {
+    "deployed_at": "2026-10-21T11:13:52Z",
+    "sql_hash": "29b92e40d2f047879bcd59dcbbe0e21331f214fb2a8dc2e72bf8a9d91d571093",
+    "target": "env-yk3jm6|lfcp-11p88z|j9r-kafka"
+  },
+  "m2m-ddl-project-events": {
+    "deployed_at": "2026-10-21T11:13:45Z",
+    "sql_hash": "00182f11c0a38786496b0302c97470fd1a30279861ea79ceb3176d010a6915c2",
+    "target": "env-yk3jm6|lfcp-11p88z|j9r-kafka"
+  }
+}

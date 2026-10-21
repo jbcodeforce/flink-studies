@@ -1,0 +1,20 @@
+{
+  "user_agent": "flink-studies-cc/many-to-many-pairing/0.1",
+  "deploy_all": ["ddl", "data"],
+  "undeploy_all": [],
+  "drop_tables": [
+    "project_events"
+  ],
+  "drop_statement_prefix": "m2m-drop",
+  "groups": {
+    "ddl": [
+      {"name": "m2m-ddl-project-events", "file": "ddl.project_events.sql"}
+    ],
+    "data": [
+      {"name": "m2m-data-insert-events", "file": "dml.insert_project_events.sql"}
+    ],
+    "pipeline": [
+      {"name": "m2m-match-recognize", "file": "dml.match_recognize.sql"}
+    ]
+  }
+}

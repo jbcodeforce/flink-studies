@@ -255,6 +255,7 @@ State backends determine how the state is physically stored. Options typically i
 * [Stateful processing - Apache Flink documentation](https://nightlies.apache.org/flink/flink-docs-release-2.2/docs/concepts/stateful-stream-processing/).
 * [Confluent state management documentation.](https://docs.confluent.io/cloud/current/flink/concepts/overview.html#id2)
 * [See 'working with state' from Flink documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream/fault-tolerance/state/).
+
 ## Windowing
 
 [Windows](https://ci.apache.org/projects/flink/flink-docs-release-1.20/dev/stream/operators/windows.html) group stream events into finite buckets for processing. Flink provides window table-valued functions (TVFs): Tumbling, Hop, Cumulate, and Session.
@@ -670,5 +671,6 @@ To demonstrate partitioning, use a sink topic with three partitions. With a part
 * [Flink docker setup](https://ci.apache.org/projects/flink/flink-docs-master/ops/deployment/docker.html) and the docker-compose files in this repo.
 * [FAQ](https://wints.github.io/flink-web/faq.html)
 * [x] [Cloudera Flink stateful tutorial](https://github.com/cloudera/flink-tutorials/tree/master/flink-stateful-tutorial): strong example for inventory transactions and queries treating items as a stream
+* [x] [David Luckham’s "The Power of Events: An Introduction to Complex Event Processing in Distributed Enterprise Systems"](./cep.md)
 * [Building real-time dashboard applications with Apache Flink, Elasticsearch, and Kibana](https://www.elastic.co/blog/building-real-time-dashboard-applications-with-apache-flink-elasticsearch-and-kibana)
  
