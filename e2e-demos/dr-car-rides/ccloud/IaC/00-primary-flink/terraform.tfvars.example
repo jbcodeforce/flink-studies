@@ -1,0 +1,28 @@
+# terraform.tfvars — Layer 0 (Primary Flink)
+# Copy to terraform.tfvars and adjust as needed.
+#
+# Credentials must be set as environment variables before running:
+#   export CONFLUENT_CLOUD_API_KEY=<your-cloud-api-key>
+#   export CONFLUENT_CLOUD_API_SECRET=<your-cloud-api-secret>
+#
+# IMPORTANT: unset any SCHEMA_REGISTRY_* env vars before applying this layer —
+# the provider block does not set them and stale shell vars will cause a plan error:
+#   unset SCHEMA_REGISTRY_ID SCHEMA_REGISTRY_REST_ENDPOINT \
+#         SCHEMA_REGISTRY_API_KEY SCHEMA_REGISTRY_API_SECRET
+#
+# Apply:
+#   terraform init
+#   terraform apply
+#   terraform output -json > ../../../scripts/layer0.json
+
+prefix = "j9r"
+
+# IDs of the existing primary resources (j9r-env / j9r-kafka / j9r-sr).
+# These are read-only data sources — Terraform will never destroy them.
+primary_environment_id     = "env-yk3jm6"
+primary_kafka_cluster_id   = "lkc-7v233w"
+primary_schema_registry_id = "lsrc-3oxyv2"
+
+primary_region   = "us-west-2"
+flink_max_cfu    = 10
+topic_partitions = 6

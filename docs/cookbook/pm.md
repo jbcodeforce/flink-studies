@@ -138,7 +138,7 @@ In business analytics, there is a need to differentiate data tables according to
 
 ### The star schema
 
-The star schema was defined in the late 1980s as a multidimensional data model to organize data in a data warehouse, preserve history, and reduce duplication. A star schema is used to denormalize business data into dimensions and facts it help to address analytical questions such as: "Which region had the highest revenue growth from millennial shoppers last quarter?". Doing such queries on transactional, OLAP, data schema will be... at minimum challenging.
+The star schema was defined in the late 1980s as a multidimensional data model to organize data in a data warehouse, preserve history, and reduce duplication. A star schema is used to denormalize business data into dimensions and facts. It helps to address analytical questions such as: "Which region had the highest revenue growth from millennial shoppers last quarter?". Doing such queries on transactional, OLAP, data schema will be... at minimum challenging.
 
 The star schema gets its name because it looks like a star: a single, central Fact Table surrounded by multiple Dimension Tables (the points of the star)
 
