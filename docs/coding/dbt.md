@@ -989,6 +989,9 @@ The project management for dbt based project is now in [a separate chapter](../m
         quote: true
     ``` 
 
+???- question "Running dbt Confluent in dbt cloud?"
+    dbt core is in the process of shifting dbt Fusion (used for cloud) over to dbt Core 2.0, which is based on RUST language. dbt Confluent is currently based on abt core 1.0, done as python library. 2.0 means writing ADBC driver.
+
 ### Added tools
 
 The [flink-tools-for-agents/tools](https://github.com/jbcodeforce/flink-tools-for-agents/tree/main/tools) folder includes a set of useful tools to complement your dbt Confluent project management.
@@ -1007,10 +1010,10 @@ The [flink-tools-for-agents/tools](https://github.com/jbcodeforce/flink-tools-fo
 
 ### Flink SQL Demos using dbt
 
-* [Jan's flink workshop ported to dbt](https://github.com/jbcodeforce/flink-studies/tree/main/code/dbt/flink_workshop)    
+* [Jan's flink workshop ported to dbt](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/flink_workshop)    
 * [Research on PTF](https://github.com/jbcodeforce/research/tree/main/flink-ptf-multitenant-debezium-spanout/sql/order_pipeline)
 * [wd-flink-demo](https://github.com/jbcodeforce/wd-flink-demo)
-* [Airbnb streaming](https://github.com/jbcodeforce/flink-studies/tree/main/code/dbt/airbnb_streaming)
+* [Airbnb streaming](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/airbnb_streaming)
 * [Streamhouse demonstration](https://github.com/jbcodeforce/stream_house_c360_demo)
 * [Tools to manage a Flink project on top of dbt](https://github.com/jbcodeforce/flink-tools-for-agents/tree/main/tools/dbt/)
 * [Tool to help migrate Flink ddl and dmls to dbt model](https://github.com/jbcodeforce/flink-tools-for-agents/tree/main/tools/dbt/flink_dbt_migrate)

@@ -8,25 +8,34 @@ compiled: false
 ---
 # 🚧 The Complete Guide to Apache Flink and Confluent Flink
 
-Welcome to **"A Guide to Apache Flink and Confluent Flink"** - a comprehensive, hands-on resource for mastering stream processing with Apache Flink and its enterprise distributions. I started this living book, in 2018 while working as IBM Distinguished Enginer / CTO for [Event-Driven Architecture](https://jbcodeforce.github.io/eda-studies/), and continue to enhance it while working at AWS and Confluent. It addresses practical implementations, methodologies and best practices I can share with my customers. In 2024 and 2025 I am focusing on Confluent Flink and Data mesh. All this content come from public content, articles, youtube, product documentations, git repositories.
+Welcome to **"A Guide to Apache Flink and Confluent Flink"** - a comprehensive, hands-on resource for mastering stream processing with Apache Flink and its enterprise distributions. I started this living book, in 2018 while working as IBM Distinguished Enginer / CTO for [Event-Driven Architecture](https://jbcodeforce.github.io/eda-studies/), and continue to enhance it while working at AWS and Confluent. It addresses practical implementations, methodologies and best practices I can share with my customers. Since 2024, I am focusing on Confluent Flink, Data streaming processing (DSP) and [Streamhouse](./architecture/streamhouse.md). All this content come from public documentation, articles, youtube, git repositories and my current engagements with DSP projects.
 
 To make it fun, here is the book cover! Very imaginative for a book that will never go to press.
 
 <figure markdown="span">
   ![Book cover](./images/flink-book-cover.png)
-  <figcaption>A virtual book about Apache Flink - 2018 to 2025</figcaption>
+  <figcaption>A virtual book about Apache Flink - 2018 to 2026</figcaption>
 </figure>
 
 ???- info "Site updates"
-    * Created 2018 
-    * Updates 10/2024: Reorganized content, separated SQL vs Java, added Confluent Cloud/Platform integration
-    * Updates 01/25: Added Terraform deployment examples, expanded SQL samples
-    * Updates 07/25: Added e2e demos, Flink estimator webapp, Data mesh
-    * Update 09/2025: Work on new demonstration, code samples, improve deployment for Confluent Platform for Flink
-    * Update 10/2025: k8s chapter, json xform and external lookup demos
-    * Update 02/2026: New event-driven agentic chapter, new e2e demos, SQL examples
-    * update 05/2026: Snapshot query, Materialized Table, dbt, 
+    <!-- book:updates:start -->
+    * Update 10/2026: new DR chapter, DR demo, agentic and real time context engine, materialized tables chapters. dbt updates.
     * update 07/2026: add new code for flink-sql, work on cookbook content 
+    * update 05/2026: Snapshot query, Materialized Table, dbt, 
+    * Update 02/2026: New event-driven agentic chapter, new e2e demos, SQL examples
+    * Update 10/2025: k8s chapter, json xform and external lookup demos
+    * Update 09/2025: Work on new demonstration, code samples, improve deployment for Confluent Platform for Flink
+    * Updates 07/25: Added e2e demos, Flink estimator webapp, Data mesh
+    * Updates 01/25: Added Terraform deployment examples, expanded SQL samples
+    * Updates 10/2024: Reorganized content, separated SQL vs Java, added Confluent Cloud/Platform integration
+    * Created 2018 
+
+
+
+
+ 
+   
+    <!-- book:updates:end -->
 
 ## What You'll Discover
 
@@ -103,27 +112,40 @@ Whether you're a **data engineer** building streaming pipelines, a **software ar
 
 This book is structured to support both **linear reading** and **focused deep-dives**:
 
-=== "**Quick Start Track** (1-2 weeks)""
-    1. [Getting Started](coding/getting-started.md) - Your first Flink application
-    2. [Flink SQL Basics - DDLs](coding/flink-sql-1.md) - Stream processing with SQL - Table creation
-    3. [Flink SQL Basics - DMLs](coding/flink-sql-2.md) - Stream processing with SQL
-    4. [Local Deployment](coding/k8s-deploy.md) - Running Flink on Kubernetes
+=== "**Quick Start Track** (1-2 weeks)"
+    1. [Getting Started](coding/getting-started.md) - Install Flink and run your first application (local, Docker, Kubernetes, Confluent Cloud)
+    2. [Flink SQL Concepts](concepts/flink-sql.md) - Changelog modes, state in SQL operators, SQL vs. database SQL
+    3. [Flink SQL Basics - DDLs](coding/flink-sql-1.md) - Stream processing with SQL: table creation
+    4. [Flink SQL Basics - DMLs](coding/flink-sql-2.md) - Stream processing with SQL: queries, joins, aggregations
+    5. [Local Kubernetes Deployment](coding/k8s-deploy.md) - Running Flink on Kubernetes with the operators
 
-
-=== "**Foundation Track** (3-4 weeks)""
-    1. [Architecture Deep Dive](concepts/index.md) - Understanding Flink internals
+=== "**Foundation Track** (3-4 weeks)"
+    1. [Architecture Deep Dive](concepts/index.md#runtime-architecture) - Understanding Flink internals
     2. [State Management](concepts/index.md#state-management) - Stateful stream processing
     3. [Fault Tolerance](concepts/index.md#fault-tolerance-and-consistency) - Exactly-once guarantees
+    4. [Windowing, Event Time and Watermarks](concepts/index.md#windowing) - Time-based processing semantics
+    5. [Materialized Tables](coding/flink-sql-3.md) - Declarative, continuously refreshed tables
+    6. [Table API](coding/table-api.md) - Bridge between SQL and programmatic APIs
 
 === "**Advanced Track** (4-6 weeks)"
     1. [DataStream Programming](coding/datastream.md) - Complex stream processing logic
-    2. [Kafka Integration](architecture/kafka.md) - Event-driven architectures
-    3. [Production Deployment](techno/ccloud-flink.md) - Enterprise deployment patterns
+    2. [Flink SQL Advanced Topics](coding/flink-sql-adv.md) - Processing time, state bootstrapping, changelog PTFs
+    3. [UDFs](coding/udf_sql.md) and [Process Table Functions](coding/ptf.md) - Extending Flink SQL with custom logic
+    4. [Complex Event Processing](coding/cep.md) - Pattern detection with MATCH_RECOGNIZE
+    5. [dbt for Flink SQL](coding/dbt.md) - Managing SQL pipelines as code
+    6. [Kafka Integration](architecture/kafka.md) - Event-driven architectures
+    7. [Confluent Cloud for Flink](techno/ccloud-flink.md) - Managed Flink, compute pools, RBAC and pricing
 
 === "**Production Track** (6-8 weeks)"
-    1. [Performance Tuning](architecture/cookbook.md) - Optimization techniques
-    2. [Monitoring & Observability](techno/fk-k8s-monitor.md) - Production operations
-    3. [End-to-End Projects](labs/index.md) - Real-world implementations
+    1. [Production Cookbook](cookbook/index.md) - Day-2 operations overview
+    2. [Deployment Models](cookbook/considerations.md) and [Cluster Management](cookbook/cluster_mgt.md) - Provisioning, scaling and sizing
+    3. [Job Lifecycle](cookbook/job_lifecycle.md) - Deploying and upgrading jobs safely with savepoints and schema evolution
+    4. [Application Tuning](cookbook/flink_app_tuning.md) - Memory, parallelism, checkpointing, RocksDB and bottleneck analysis
+    5. [Troubleshooting and Latency Measurement](architecture/cookbook.md) - Debugging statements and measuring end-to-end latency
+    6. [Monitoring & Observability](techno/fk-k8s-monitor.md) - Operating Flink on Kubernetes
+    7. [Disaster Recovery](cookbook/cluster_mgt.md#3-disaster-recovery-multi-region-strategies) - Multi-region and DR strategies for OSS, Confluent Platform and Confluent Cloud
+    8. [Infrastructure as Code](cookbook/terraform.md) and [Governance](cookbook/governance.md) - Terraform, change management and security
+    9. [End-to-End Projects](labs/index.md) - Real-world implementations with materialized tables, dbt, advanced topics and disaster recovery
 
 ## What Makes This Guide Unique
 

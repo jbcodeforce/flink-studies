@@ -8,14 +8,12 @@ compiled: false
 ---
 # Last Flink News
 
-???- info "Updates"
-    - Created 03/11/2026
-    - Updated 05/17/2026
-    - 06/11/2026: PTF, schema ID, Materialized table
-    - 07/2026: DR chapter update. DLQ and DDL chapter updated. Added DR demo.  Initiate AI in streaming processing chapter.
+<!-- book:news-log:start -->
+<!-- book:news-log:end -->
+<!-- book:sync commit=1d6e082 date=2026-08 -->
 
 ## Updates to this web site
-
+<!-- book:news-site:start -->
 ### Documentation
 
 - **Labs & navigation**
@@ -164,3 +162,4 @@ Confluent has integrated AI as a "first-class citizen" within Flink SQL, allowin
 * **Built-in ML Functions:** New functions for forecasting and anomaly detection are available natively in Flink SQL, making advanced data science accessible to non-specialists.
 * **Progressive Idleness Detection:** Idle timeouts were reduced (from 15s to 10s), and idle partitions now forward their latest event time, ensuring that one quiet partition doesn't block the results of a multi-partition query.
 * **Vector Search on External DBs:** Specifically, similarity search support for Azure Cosmos DB was added in early 2026 for RAG
+<!-- book:news-site:end -->

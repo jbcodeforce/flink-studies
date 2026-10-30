@@ -256,14 +256,14 @@ The [code/flink-sql/12-ai-agents](https://github.com/jbcodeforce/flink-studies/t
 
 The local, based Apache Flink Agents demo is under [e2e-demos/agentic-demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/agentic-demo).
 
-### Real-time context engine
+### Real-Time Context Engine
 
-This is a set of features to serve structured context to any AI apps or agents via MCP for real time data. See [RTCE documentation](https://docs.confluent.io/cloud/current/ai/real-time-context-engine/overview.html). RTCE integrates with AI harnesses via MCP protocol. This is not the same as MCP Server, used to manage resources in Confluent Cloud.
+[Real-Time Context Engine (RTCE)](https://docs.confluent.io/cloud/current/ai/real-time-context-engine/overview.html) is a set of features to serve structured context to any AI apps or agents via MCP for real time data. RTCE integrates with AI harnesses via MCP protocol. This is not the same as Confluent MCP Server, used to manage resources in Confluent Cloud.
 
-* Enabled at the topic level, fully managed serverless backend, multi-tenants. It is a regional service but can query resources at the global or regional level.
+* Enabled at the topic level, fully managed serverless backend, multi-tenants. It is a regional service but can query resources at the global or regional level. Enabled via Console, Terraform, CLI or REST API. IT is important to tune the description so Agent can select the topic from user's queries
 * It materializes the topic data into a table in a low-latency data-serving layer optimized for fast lookups.
 * Query engine prepares query plan
-* RBAC for topic access
+* RBAC for topic access, API key with Global resources.
 * Pay only for the compute and storage used
 * Support append log, or upsert mode where RTCE keeps only the latest record for each key. The selection is based on the topic’s `cleanup.policy`
 * AI Agent can access RTCE data plane via CC API Key and Secret. RTCE authenticates MCP requests with HTTP Basic authentication using a base64 of key andd secret
@@ -275,7 +275,7 @@ The high level architecture for RTCE and the EA Lighting Tables looks like:
 * The [`queryData` tool](https://docs.confluent.io/cloud/current/ai/real-time-context-engine/query-data.html#querydata) goes to a SQL query engine controller and are continuously executed by query engine process(pod). A set of metadata services keep access control and where to find data. Data may be persisted of local storage or fast object storage. Those queries are select and filter with limit to do not returns millions of record. The where by id will be the most common query created by the AI harness and agent. Stateful queries are not possible, but those queries can get data from a topic that is itself an output of Flink processing.
 * Warm / hot data come from Kafka topic, cold data may come from materialized iceberg tables.
 
-* See a terraform to enable [RTCE on c360 profile]()
+* See a terraform to enable [RTCE on c360 profile](https://github.com/jbcodeforce/streamhouse_c360_demo/blob/main/IaC/rtce/rtce.tf), and the [demonstration dashboard](https://github.com/jbcodeforce/streamhouse_c360_demo/blob/main/docs/demo_script.md) which integrates with Confluent REST API for lightning query or RTCE MCP server.
 
 ### Confluent Cloud - MCP Server
 

@@ -261,13 +261,39 @@ SELECT ...
 
 ![](./images/snapshot_q.png)
 
-When summitting statement via the REST API, the mode is set via spec properties. 
+When submitting statement via the REST API, the mode is set via spec properties. 
 
 Flink automatically switches to batch mode processing. Snapshot queries use read-committed as the default isolation level, which aligns with Kafka’s exactly-once semantics (EOS).
 
-### Confluent [bootstrap query]()
+Here is an example of using [Confluent sql module](https://pypi.org/project/confluent-sql/) to perform a snapshot query from code: 
+
+```python
+def query(self, sql: str) -> list[dict]:
+# try and catch removed
+    conn = confluent_sql.connect(
+            organization_id=s.FLINK_ORG_ID,
+            environment_id=s.FLINK_ENV_ID,
+            cloud_provider=s.CLOUD_PROVIDER,
+            cloud_region=s.CLOUD_REGION,
+            compute_pool_id=s.FLINK_COMPUTE_POOL_ID,
+            flink_api_key=s.FLINK_API_KEY,
+            flink_api_secret=s.FLINK_API_SECRET,
+            database=s.FLINK_DATABASE,
+            database_kafka_cluster_id=s.KAFKA_CLUSTER_ID,
+        )
+    cur = conn.cursor()  # snapshot mode is the default
+    cur.execute(sql)
+    columns = [d[0] for d in (cur.description or [])]
+    return [dict(zip(columns, row)) for row in cur.fetchall()]
+```
+
+[See also confluent_sql_client.py](https://github.com/jbcodeforce/streamhouse_c360_demo/blob/main/apps/backend/analytics/confluent_sql_client.py)) from streamhouse demo.
+
+### Confluent [Streaming bootstrap](https://docs.confluent.io/cloud/current/flink/concepts/batch-and-stream-processing.html#streaming-bootstrap)
 
 Flink has the [HybridSource](https://nightlies.apache.org/flink/flink-docs-stable/docs/connectors/datastream/hybridsource/) capability to sequentially read input from heterogeneous sources to produce a single input stream. A typical use case is to read days of data from S3 bucket and then continue to consume streaming data from Kafka. The historical records source needs to be bounded. 
+
+If Tableflow is enabled on a source topic, Flink reads historical records from the Tableflow/Iceberg table and then switches to reading recent records directly from Kafka.  Once the historical batch catch-up finishes, the query automatically shifts to continuous stream processing mode without duplicating state.
 
 * This should be set in a with property
 ```sql
