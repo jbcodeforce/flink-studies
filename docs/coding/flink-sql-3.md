@@ -14,7 +14,7 @@ With Flink SQL statements, developers who need to update the pipeline's logic (e
 
 ## Concepts
 
-[Materialized Tables](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/materialized-table/overview/)(MT) helps to manage tables in long term with easier development life cycle than traditional Flink Tables. They are the recommended solution for creating permanent, evolving streaming pipelines.
+[Materialized Tables](https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/materialized-table/overview/)(MT) helps to manage tables in long term with easier development life cycle than traditional Flink Tables. They are the recommended solution for creating permanent, evolving streaming pipelines. [Materialized Table is also supported by confluent](https://docs.confluent.io/cloud/current/flink/concepts/materialized-tables.html).
 
 Materialized Tables includes the following elements:
 
@@ -35,7 +35,7 @@ Materialized Tables support in-place evolution via the `CREATE OR ALTER MATERIAL
 
 * With full mode, there is a scheduler that triggers a batch job to refresh the materialized table data. 
 * With CONTINUOUS, data freshness is converted into the checkpoint interval of the Flink streaming job.
-* Materialized Tables are defined as other Flink tables, with the MATERIALIZED keywords. [See the syntax](https://nightlies.apache.org/flink/flink-docs-release-2.2/docs/dev/table/materialized-table/statements/), and uses a CTAS structure
+* Materialized Tables are defined as other Flink tables, with the MATERIALIZED keywords. [See the syntax](https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/dev/table/materialized-table/statements/), and uses a CTAS structure
     ```sql
     CREATE MATERIALIZED OR ALTER TABLE orders_table
     FRESHNESS = INTERVAL '10' SECOND

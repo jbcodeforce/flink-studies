@@ -1,1 +1,0 @@
-# The customer microservice using outbox pattern.

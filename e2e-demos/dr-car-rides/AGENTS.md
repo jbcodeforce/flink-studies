@@ -7,7 +7,7 @@ The demonstration illustrates multi-region disaster recovery for streaming data 
 1. Active/Passive Kafka replication via Cluster Linking.
 2. Schema replication via Schema Linking in `IMPORT` mode to preserve Schema IDs.
 3. Stateful and stateless Flink SQL pipelines deployed across primary and DR regions.
-4. Data lakehouse materialization with Confluent Tableflow (Iceberg / AWS Glue).
+4. Data lakehouse materialization with Confluent Tableflow (Iceberg).
 5. Controlled failover (soft failover), ungraceful failover (promote failover), and failback procedures.
 6. Sequence-based RPO and processing gap loss assessment (`assess_loss.py`).
 

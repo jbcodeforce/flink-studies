@@ -87,3 +87,4 @@ Some constraints:
 * Structured key schemas (Avro, Protobuf) are not supported in upsert mode, only raw.
 * Agents need Global API key to access all Confluent Cloud resources
 * RTCE authenticates MCP requests with HTTP Basic authentication, a Base64-encoded token built with API KEY and SECRET
+* [Schema evolution constraints in Confluent Cloud.](https://docs.confluent.io/cloud/current/lightning-tables/schema-evolution.html#schema-evolution-for-lightning-tables-in-ccloud)

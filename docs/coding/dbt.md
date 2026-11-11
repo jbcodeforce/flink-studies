@@ -940,8 +940,25 @@ The project management for dbt based project is now in [a separate chapter](../m
       ```
 
 ???+ question "Define seed and reference it?"
-    Seed can be set from csv files. 
+    Seed can be set from csv files, in `seeds` folder and then the command will populate the expected topics:
+    ```sh
+    dbt seed
+    ```
 
+    See [example in Streamhouse demo](https://github.com/jbcodeforce/streamhouse_c360_demo/tree/main/pipelines/seeds)
+
+
+???+ question "How to alter dependent tables from current model?"
+    Suppose the source topic was created with CDC and is in retract mode. We want to get it in append mode, dbt support pre hook in the config function:
+    ```json
+    {{ config(
+      ...
+      pre_hook=[
+          "ALTER TABLE {{ source('cdc', 'customers') }} SET ( 'changelog.mode' = 'append')", 
+          "ALTER TABLE {{ source('cdc', 'customers') }} SET ('value.format' = 'avro-registry')",
+      ]
+    ) }}
+    ```
 
 ???+ info "Private networking / using endpoint"
     For private networking it is recommended to set the `endpoint` parameter in the profile.yml. In this case you need to remove the prodiver and region:

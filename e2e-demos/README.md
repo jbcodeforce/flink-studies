@@ -12,9 +12,7 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 
 ### 1.1 Confluent Cloud – Transaction processing (RDS → Kafka → Flink → Iceberg)
 
-| Demo | Path | Description |
-|------|------|-------------|
-| **cc-cdc-tx-demo** | `cc-cdc-tx-demo/` | Full Confluent Cloud demo: AWS RDS PostgreSQL → Debezium CDC → Kafka → Flink (dedup, enrichment, sliding-window aggregates) → TableFlow → Iceberg/S3, AWS Glue, Athena. ML scoring via ECS/Fargate. **Deployment:** `cccloud/IaC/` (Terraform), `cccloud/cc-flink-sql/` (Flink statements). Root: `data-generators/`, `tx_scoring/`. |
+[See Streamhouse demonstration](https://jbcodeforce.github.io/streamhouse_c360_demo/)
 
 ### 1.2 Qlik CDC – Dedup & transform to analytics-ready streams
 
@@ -133,20 +131,20 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 
 | Topic | Demos |
 |-------|--------|
-| **CDC (Debezium)** | `cc-cdc-tx-demo`, `cdc-demo` |
+| **CDC (Debezium)** | `cdc-demo` |
 | **CDC (Qlik / custom envelope)** | `cdc-dedup-transform` |
-| **Deduplication** | `dedup-demo`, `cdc-dedup-transform`, `cc-cdc-tx-demo` |
-| **Enrichment / joins** | `cc-cdc-tx-demo`, `json-transformation`, `external-lookup`, `e2e-streaming-demo` |
-| **Windowing / aggregation** | `cc-cdc-tx-demo`, `e2e-streaming-demo`, `e-com-sale`, `flink-to-feast`, `flink-watermark` |
+| **Deduplication** | `dedup-demo`, `cdc-dedup-transform` |
+| **Enrichment / joins** | `json-transformation`, `external-lookup`, `e2e-streaming-demo` |
+| **Windowing / aggregation** | `e2e-streaming-demo`, `e-com-sale`, `flink-to-feast`, `flink-watermark` |
 | **JSON / nested** | `json-transformation` |
 | **External DB lookup** | `external-lookup`, `e2e-streaming-demo` (JDBC temporal) |
-| **ML / feature store** | `flink-to-feast`, `cc-cdc-tx-demo` (tx_scoring) |
+| **ML / feature store** | `flink-to-feast` |
 | **Sink to RDBMS** | `flink-to-sink-postgresql` |
-| **Confluent Cloud** | `cc-cdc-tx-demo` (cccloud/), `json-transformation` (cccloud/), `cdc-dedup-transform` (cccloud/), `package-event-cutoff` (cccloud/) |
+| **Confluent Cloud** |  `json-transformation` (cccloud/), `cdc-dedup-transform` (cccloud/), `package-event-cutoff` (cccloud/) |
 | **Confluent Platform / K8s** | `json-transformation` (cp-flink/), `dedup-demo` (cp-flink/), `external-lookup` (cp-flink/), `cdc-demo` (cp-flink/), `e-com-sale` (cp-flink/), `savepoint-demo` (cp-flink/) |
 | **OSS Flink** | `dedup-demo` (oss-flink/), `e-com-sale` (oss-flink/), `perf-testing` (oss-flink/), `cdc-tableapi-to-silver` (oss-flink/), `flink-to-sink-postgresql` (oss-flink/), `e2e-streaming-demo` (oss-flink/), `sql-gateway-demo` (oss-flink/), `agentic-demo` (oss-flink/) |
-| **Terraform / IaC** | `cc-cdc-tx-demo` (cccloud/IaC), `cdc-dedup-transform` (cccloud/IaC), `package-event-cutoff` (cccloud/IaC), `dr-car-rides` (cccloud/IaC) |
-| **TableFlow / Iceberg** | `cc-cdc-tx-demo`, `dr-car-rides` |
+| **Terraform / IaC** | `cdc-dedup-transform` (cccloud/IaC), `package-event-cutoff` (cccloud/IaC), `dr-car-rides` (cccloud/IaC) |
+| **TableFlow / Iceberg** |  `dr-car-rides` |
 | **Disaster Recovery / Cluster Linking** | `dr-car-rides` (CC active/passive), `savepoint-demo` (CP savepoints) |
 | **Savepoints** | `savepoint-demo` |
 | **SQL Gateway** | `sql-gateway-demo` |
@@ -175,7 +173,3 @@ All end-to-end demonstrations under `e2e-demos/`, grouped by subject. Paths are 
 ### Flink Watermark
 
 * [Readme](./flink-watermark/README.md)
-
-## CC-flink Demonstrations
-
-* [cc-cdc-tx-demo](./cc-cdc-tx-demo/README.md) CDC from Postgresql tables, Debezium envelop processing, deduplication, delete operation propagation, statefule windowing processing. Finance Domain: customer, transaction. Terraform deployment: RDS, kafka cluster, connectors, compute pool, S3, Redshift.
