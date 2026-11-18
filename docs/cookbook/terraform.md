@@ -369,7 +369,7 @@ Deploying Flink Statements with Terraform in production is an anti-pattern, as F
 
 For demonstration purpose, Flink SQL statements can be deployed using the `confluent_flink_statement` resource. See the [Flink Statement Resource Documentation](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs/resources/confluent_flink_statement). We recommend to separate the deployment from the infrastructure but reference the terraform state to get the definitions from already deployed resources. 
 
-See [e2e-demos/cc-cdc-tx-demo/cc-flink-sql/terraform](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cc-cdc-tx-demo/cc-flink-sql/terraform) folder for such approach.
+[For Flink statement deployment the recommended approach is to use dbt Confluent](https://github.com/confluentinc/dbt-confluent)
 
 ### Single Compute Pool Configuration
 
@@ -452,7 +452,7 @@ resource "confluent_flink_statement" "streaming_job" {
 }
 ```
 
-For complex deployments with many statements, blue/green releases, consider using [shift_left_utils](https://jbcodeforce.github.io/shift_left_utils/).
+For complex deployments with many statements, blue/green releases, consider using [dbt confluent](../coding/dbt.md).
 
 ## Workflow Commands
 

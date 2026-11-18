@@ -10,7 +10,7 @@ compiled: false
 
 ???- info "Chapter updates"
     - Created 10/2025
-    - Updated 07/2027: DR works
+    - Updated 11/2026: DR works
 
 ## 1- Provisioning and Scaling Clusters
 
@@ -268,21 +268,42 @@ This section applies only to self managed Flink deployments. As Confluent Cloud 
 ---
 ## 3 Disaster Recovery & Multi-Region Strategies
 
-Disaster recovery is about business continuity. Review the core principles of DR in [this note](https://jbcodeforce.github.io/architecture/DR/). The figure below, simply presents the important metrics to consider and impact on data loss and service recovery.
+Disaster recovery is about business continuity. Disaster recovery consists of well-defined strategies to back up the primary data center and restore its data to a secondary data center. During normal operations, the live systems are used. The secondary programs run in the background to save environmental information and application data. When the live system goes down, the backup system is restored from the backed up data. End users can use the system again. 
+
+The figure below, simply presents the important metrics to consider and impact on data loss and service recovery.
 
 <figure markdown="span">
 ![11](./images/rto-rpo.png){ iwdth=400 }
 <capture>**How much data can you afford to recreate or lose? How quickly must you recover?**</capture>
 </figure>
 
-DR for Flink depends on the deployment model (Confluent Cloud, Confluent Platform, or open-source) and always requires a DR strategy for Kafka and Schema Registry first. Data Stream Processing is not Multi-Region Cluster, it uses separate clusters with asynchronous replication/Cluster Linking instead of one stretched, synchronously replicated MRC cluster. MRC is generally used for high availability and near-zero data loss across multiple site, but only Kafka may support it. 
+???- info "RTO and RPO definitions"
+    * **RTO** is related to downtime and measure the time required to restore the environment after the primary site becomes unavailable.
+    This is the maximum time the business can be unavailable. RTO refers, to the amount of time the system's data is unavailable or inaccessible preventing normal service.
+    * **RPO** refers to the amount of data at risk. It's determined by the amount of time between data protection events and reflects the amount of data that potentially could be lost during a disaster recovery. The metric is an indication of the amount of data at risk of being lost. Usually measured in the time elapsed, between the state of the runtime data at the source and at the replica.
+
+
+???- info "Different costs"
+    Assessing the business dimensions of DR is a mandatory activity to select the best strategy for the cost to operate. 
+
+    The first curve illustrates the cost of the business impact depending of the length of the service interruption: The RTO vertical line is when the time of the service interruption is acceptable, on the right side of it, the business impact is too high.
+
+    ![](./diagrams/dr/RTO-cost.drawio.png)
+
+    A less expensive solution that reduces the cost of recovery, has also an higher length of interruption. 
+    
+    **"Acceptable recovery cost"** is the amount of $ the business is accepting to pay for a solution. From those curves we can deduct that backup and restore and warm standby will be acceptable solution. This assessment should be done for all application, as not all of them needs to be active-active. Enterprises use a 3-level classification mechanism: low = not strategic applications, high=  highly strategic to the company revenue and branding (e-commerce, fullfilment, inventory, payment), medium = the rest.
+
+    When the RTO line is going to the right and the Acceptable recovery cost line going too low, there may be no acceptable solution to support the DR strategy.
+
+DR for Flink depends on the deployment model (Confluent Cloud, Confluent Platform, or open-source) and always requires a DR strategy for Kafka and Schema Registry first. Data Stream Processing is not running on Multi-Region Cluster, it uses separate clusters with asynchronous replication/Cluster Linking instead of one stretched, synchronously replicated MRC cluster. MRC is generally used for high availability and near-zero data loss across multiple site, but only Kafka may support it. 
 
 Data and schema replication (exact replication including offsets and schemas) are prerequisites; Flink state recovery builds on that. 
 
 ???+ info "Resiliency"
     Resiliency is the ability of a workload to recover from infrastructure or service disruptions, dynamically acquire computing resources to meet demand, and mitigate disruptions, such as misconfigurations or transient network issues. It is important to adopt a resilience-by-design mindset directly into software architecture. It addresses **DR** (restore service) and **Availability** (prevent loss of service).
 
-    ![12](./diagrams/resiliency.drawio.png)
+    ![12](./diagrams/dr/resiliency.drawio.png)
 
     Apply the sharing responsibility of resiliency: cloud provider for resiliency **of** the cloud: infrastructure. Customer responsible for resiliency **in** the cloud: adopting instance deployment across multiple locations, support self-healing, design for resilience.
 
@@ -290,11 +311,18 @@ Data and schema replication (exact replication including offsets and schemas) ar
 
     With agentic systems deployment, it should be possible to have autonomous, intelligent agents to handle unpredictable variables in real time.
 
-* Cloud Providers are offering multiple regions for disaster recovery, and multiple availability zones within a region for high-availability. They do not communicate on how the physical allocation is done between physical data centers. But it is possible that an availability zone is a data center building in other part of the city, with fiber optical links. This means Kafka cluster in multi availabiltiy zones can support some DR requirements. Cloud within a region, DR may be acceptable, but in general DR considerations are for region failover to mitigate regional outages: earthquakes, electrical disaster...
-* If availabilty zones is sufficient to support disaster management, it is the most cost effective solution as a lot of services, like Kafka, support synchronous replications between AZs (See [Confluent resilience documentation](https://docs.confluent.io/cloud/current/clusters/resilience.html)). Always clarify those topologies with the cloud provider.
+???- info "Disaster Recovery patterns"
+    Below are some common types of disaster recovery solutions:
+
+    * **Database-based disaster recovery solutions**: Database systems such as IBM DB2® have specific features that can be used to replicate the primary database data to a standby database. These solutions are commonly adopted by applications that interact with only a single database.
+    * **Fabric-based disaster recovery solutions**: These methods are focused on transferring data within the storage network from a source fabric to a destination fabric using special hardware like Storage Area Network products which provides both Global and Metro mirror capabilities to implement data protection. These solutions are attractives because they can accommodate different storage subsystems. 
+    * **Storage subsystem-based disaster recovery solutions**: These are also called controller-based solutions because they use a storage controller to transfer data from a source storage subsystem to a destination storage subsystem. Usually controller-based solutions are homogeneous, with data copied between disk arrays from the same manufacturer and often within the same family of products. A dedicated transport channel is commonly required to link the two sites. 
+
+* Cloud Providers are offering multiple regions for disaster recovery, and multiple availability zones within a region for high-availability. They do not communicate on how the physical allocation is done between physical data centers. But it is possible that an availability zone is a data center building in another part of the city, with fiber optical links. This means Kafka cluster in multi availability zones can support some DR requirements. Cloud within a region, DR may be acceptable, but in general DR considerations are for region failover to mitigate regional outages: earthquakes, electrical disaster...
+* If availability zones is sufficient to support disaster management, it is the most cost effective solution as a lot of services, like Kafka, support synchronous replications between AZs (See [Confluent resilience documentation](https://docs.confluent.io/cloud/current/clusters/resilience.html)). Always clarify those topologies with the cloud provider.
 
 <figure markdown="span">
-![](./diagrams/dr-region-az.drawio.png)
+![](./diagrams/dr/dr-region-az.drawio.png)
 </figure>
 
 * Failure to one Cloud Provider's AZ should be easily recoverable, and are well managed by software like Kafka, Flink, kubernetes...
@@ -304,12 +332,20 @@ In this recipe we consider region failover.
 
 ### 3.0 Assessing resiliency needs
 
+First let start by a postulat: **Not all applications need to be active - active.** Application requirements determine replication strategy.
+
+???- info "Classical replication strategies"
+    * **Aggressive RPO & RTO objectives:** Favor asynchronous replication via Storage System tooling where replication may be done while servers are online and active.
+    * **Lenient RPO & RTO objectives:** Favor synchronous replication via Operating System tooling (file copy) where replication must be done off line, while the different runtime solutions are quiesced (a maintenance window)
+    * **DB-managed replication:** This approach leverages transaction logs to be stored in a DB. Remark that this approach is applicable only if the single database stores all application resources that need to be replicated
+
+
 * Start by looking at business impacts: 
     * assess cost of downtime? 
     * business metrics used to measure impact? and any existing metrics and tools to compute outage impact. 
     * 70% of CIO wants to be resilient, 80% have nothing in place, and most has no real metrics.
 
-* Assess what is the current method to detect downtime, and the definition of downtime. Moving to a standby region cost time and effort, getting a clear assessment of what downtime means is very important before triggering the failover. Is it latency? is it missing orders? Is it network split?
+* Assess what is the current method to detect downtime, and the definition of downtime. Failing over a standby region, costs time and effort. It is important to get a clear assessment of what downtime means before triggering the failover. Is it latency? is it missing orders? Is it network split?
 * Get an application inventory by category of criticality, including compliance requirements. 
 
 * What is the process in place to alert human for downtime?
@@ -317,18 +353,18 @@ In this recipe we consider region failover.
 * What is the current recovery strategy? When companies are asking ISV to support some DR requirements, it should never be in a vaccum, but part of bigger initiative. I recall spending 3 hours on technical meeting on how to support DR for our software and discovering that the DR site was another room in the same building as the primary site... 
 
 
-As any flink solution, the following need to be deeply assessed:
+As any flink solution, the following items need to be deeply assessed:
 
 * What Flink application and SQL statements to consider in scope of DR? Map applications, flink pipelines with their expected RPO and RTO. When building analytics data products, most likely those metrics can be relaxed. Here is a simple template:
 
-    | Data product | Flink Pipeline DML | Consumers | RTO | RPO |
-    | -------------|--------------------|-----------|-----| ----|
-    | c360 analytics | dml.c360-fact-cust.sql | BI dashboard | 4 hours |  20 mn   |  
-    |              |                    |           |     |     |
+    | Data product | Flink Pipeline DML | Consumers | RTO | RPO | Compliance | Type |
+    | -------------|--------------------|-----------|-----| ---- | ---|---|
+    | c360 analytics | dml.c360-fact-cust.sql | BI dashboard | 4 hours |  20 mn   |  None | Low |
+    |              |                    |           |     |     | | |
 
-* Can Flink's state be recreated?  This is driven by the underlying Kafka Clusters RPO and the retention policies.
+* Can Flink's state be recreated?  What state really mean? This is driven by the underlying Kafka Clusters RPO and the retention policies.
 * How long is tolerable to recreate that state? This is driven by the overall RTO. 
-* What is the semantic expected by consumer applications? This is driven by consuming app tolerance. Semantics options are: exactly-once, at-least once (duplicate possible), at-most once (data loss and duplicate possible).
+* What is the semantic expected by consumer applications? This is driven by consuming applications' tolerance. Semantics options are: exactly-once, at-least once (duplicate possible), at-most once (data loss and duplicate possible).
 * Is the Flink job processing deterministic? will a Flink job always output the same results?
 
 
@@ -346,9 +382,9 @@ For Flink we can consider two main patterns:
 
 We are going to detail those patterns.
 
-### 3.2 DSP Elements to consider
+### 3.2 Streamhouse elements to consider
 
-Recall a traditional data streaming processing includes at least the following components:
+Recall a traditional data streaming processing / [streamhouse](../architecture/streamhouse.md) includes at least the following components:
 
 <figure markdown="span">
 ![](./diagrams/raw-to-sink.drawio.png)
@@ -415,7 +451,7 @@ The following figures illustrate what elements need to be considered for disaste
     * The blue color border means, those elements can be configured as code.
 
 === "Apache Flink"
-    ![](./diagrams/dr_act_act.drawio.png)
+    ![](./diagrams/dr/dr_act_act.drawio.png)
 
 * Need to decide which elements can run and being created in the DR site.
 * Active means, clients applications write data to the primary cluster. Passive, DR site, captures the replicated data and schemas. Active/active, clients write to either cluster.
@@ -501,7 +537,7 @@ A generic a ctive/passice DR component views will reley on the selected platform
 
 === "Confluent Cloud"
     <figure markdown="span">
-    ![](./diagrams/dr_act_passive.drawio.png)
+    ![](./diagrams/dr/dr_act_passive.drawio.png)
     <capture>Classical DR replication</capture>
     </figure>
 
@@ -516,7 +552,7 @@ A generic a ctive/passice DR component views will reley on the selected platform
 === "Confluent Platform / Apache flink"
     For Confluent Platform or Apache Flink on Kubernetes the replications includes resource definitions, configurations, savepoints replications. It is easier to test and practice DR by moving producers and consumers to the DR cluster and reversing the direction of data and metadata.
     <figure markdown="span">
-    ![](./diagrams/dr_k8s_act_passive.drawio.png)
+    ![](./diagrams/dr/dr_k8s_act_passive.drawio.png)
     <capture>Classical DR replication</capture>
     </figure>
 
@@ -583,7 +619,7 @@ This is recommended for low RTO requirements, with Flink jobs with large states,
 
 === "Confluent Cloud"
     <figure markdown="span">
-    ![](./diagrams/dr_act_act.drawio.png)
+    ![](./diagrams/dr/dr_act_act.drawio.png)
     <capture>Classical DR replication</capture>
     </figure>
 
@@ -596,7 +632,7 @@ This is recommended for low RTO requirements, with Flink jobs with large states,
 === "Confluent Platform / Apache flink"
   
     <figure markdown="span">
-    ![](./diagrams/dr_k8s_act_act.drawio.png)
+    ![](./diagrams/dr/dr_k8s_act_act.drawio.png)
     <capture>DR replication</capture>
     </figure>
 

@@ -25,7 +25,10 @@
     height: 5.0rem;
     width: 6.0rem;
 }
-  
+ 
+table thead th {
+  background-color: #e9ecef;
+}
 .section ul li {
   margin-bottom: 10px;
   }
