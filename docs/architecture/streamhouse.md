@@ -41,6 +41,16 @@ Tableflow, snapshot queries, stream governance, schema registry, and lightning t
 
 Streamhouse does not have to be only SaaS, and some elements may run in VPC and private data center. Confluent Platform offers also Streamhouse components to support hybrid solution.
 
+### Some typical use cases for event-driven agents on top of streamhouse
+
+AI Agents will impact any business process workflows. By leveraging event-driven architectures and real-time data streaming, organizations can unlock the full potential of AI-driven automation, improving efficiency, reducing costs, and delivering better experiences. Below are some potential use cases:
+
+* Real-Time Fraud Detection and Risk Management: Agentic AI enables real-time transaction monitoring, detecting anomalies as they occur and blocking fraudulent activities instantly. Agent may analyze market trends, adjust investment strategies, and automate compliance processes
+* Monitor telecom network traffic, predict congestion, and automatically reconfigure network resources in real time.
+* In e-business or retail, agent analyzes customer interactions, adjusts recommendations dynamically, and personalizes promotions based on live purchasing behavior.
+* Monitor health medical devices to detect early signs of deterioration and triggering instant alerts to medical staff
+* Monitors manufactoring production processes in real time to detect quality issues early and adjusting machine parameters autonomously. Agents analyze real-time sensor data, perform alarm filtering and correlation. The goal is to reduce downtime, minimize defects, adapt configuration and optimize machine performance
+
 ### Demonstrations
 
 As part of an internal project, I have to develop [this streamhouse demonstration](https://github.com/jbcodeforce/streamhouse_c360_demo/) on top of Confluent Cloud, with infrastructure as code, Flink processing deployed with dbt, and using materialized tables, schema registry, CDC connector, and an application to demonstrate the art of possible for complex snapshot query, or lightning table query as well as AI agent querying with MCP tools.
@@ -138,4 +148,26 @@ The business logic that applies to data in Kafka topics so in Flink tables can b
 Adopting an event-driven architecture, silver and gold topics/ business events are reusable and not just usable for analytic query engines.
 
 
-## 
+## Lakehouse co-existence
+
+Lakehouse platforms leverage the Streamhouse architecture by enabling certain features and analytics transformatin=on shifting to real-time, streams, processing. Tableflow materializes those streams directly into Apache Iceberg tables, and open catalog built on Apache Polaris governs and exposes them instantly to SQL engine.
+
+Lakehouse is still serving data not coming from real-time processing and integrated with older datawarehouses. 
+
+???- info "Apache Polaris"
+    
+
+## Open Source Streamhouse
+
+Building an open-source Streamhouse requires enabling together five distinct layers—Capture, Transport, Transform, Govern & Store, and Serve:
+
+| Layer	| Primary Open-Source Choice	| Strong Alternatives	| Architectural Role |
+| --- | --- | --- | --- |
+| Capture (CDC & Events) | 	Debezium |	Flink CDC | Streams row-level database changes (WAL) and app events in milliseconds.|
+| Transport & Schema	| Apache Kafka (KRaft mode) + Apicurio / Karapace | |  Durable, replayable event log with schema enforcement on the wire. |
+| Stream Transform	| Apache Flink (Flink SQL) | Spark Structured Streaming | Stateful joins, enrichment, deduplication, and exactly-once writes to tables. | 
+| Table Format |	Apache Iceberg	| Apache Paimon, Delta Lake	| Open ACID table layer on object storage supporting time travel and schema evolution. |
+| Catalog & Governance	| Apache Polaris |	Project Nessie, Unity Catalog OSS |	REST catalog providing cross-engine RBAC, lineage, and atomic commits. |
+| Object Storage	| SeaweedFS	| Apache Ozone, Ceph (or cloud S3/GCS)	| Self-hosted S3-compatible storage for Parquet files. |
+| Serving & Query	| Trino + Apache Pinot	| StarRocks, Apache Doris, DuckDB	| Trino/DuckDB handle federated lakehouse SQL; Pinot/StarRocks serve sub-second app/AI queries. |
+

@@ -1,0 +1,8 @@
+[project]
+name = "dr-car-rides-pipelines"
+version = "0.1.0"
+description = "dbt-confluent project that deploys the DR car-rides Flink statements"
+requires-python = ">=3.12"
+dependencies = [
+    "dbt-confluent>=0.5.0",
+]

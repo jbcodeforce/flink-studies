@@ -3,8 +3,9 @@
 Writes to rides_raw with a monotonic seq (logged for loss assessment).
 Uses Schema Registry JSON wire format when SCHEMA_REGISTRY_* is set.
 
-Does not auto-register schemas. Flink DDL owns rides_raw-key / rides_raw-value
-(redeploy with value.fields-include=all so driver_id is in key and value).
+Does not auto-register schemas. Terraform (IaC/00-primary-flink/schemas.tf) owns
+the rides_raw topic and the rides_raw-key / rides_raw-value JSON schemas; on DR
+they are replicated by the cluster link and the schema exporter.
 
 Environment (via export-env.sh or manual):
   KAFKA_BOOTSTRAP_SERVERS, KAFKA_API_KEY, KAFKA_API_SECRET
@@ -18,6 +19,7 @@ import argparse
 import json
 import os
 import random
+import sys
 import time
 import uuid
 from datetime import datetime, timezone
@@ -62,7 +64,8 @@ class CarRide(BaseModel):
 
 def _kafka_conf() -> dict:
     bootstrap = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
-    conf: dict = {"bootstrap.servers": bootstrap}
+    # Fail undelivered records after 20s (default 5 min) so an outage shows up quickly.
+    conf: dict = {"bootstrap.servers": bootstrap, "message.timeout.ms": 20000}
     api_key = os.environ.get("KAFKA_API_KEY")
     api_secret = os.environ.get("KAFKA_API_SECRET")
     if api_key and api_secret:
@@ -122,14 +125,30 @@ def main() -> None:
     key_serializer = None
     json_serializer = None
     if sr is not None:
-        # Schema owned by Flink DDL; do not register from Pydantic.
+        # Schema owned by Terraform; do not register from Pydantic.
         key_serializer = JSONSerializer(None, sr, _key_to_dict, conf=_SR_SERDE_CONF)
         json_serializer = JSONSerializer(None, sr, _to_dict, conf=_SR_SERDE_CONF)
 
     seq = args.start_seq
     sent = 0
+    failed = 0
     mode = "SR json-registry (use.latest.version)" if sr else "plain JSON (no SR)"
     print(f"Producing to {args.topic} every {args.interval}s [{mode}]; seq log → {seq_path}")
+
+    def make_on_delivery(entry: dict):
+        # The seq log only holds records the broker acknowledged, so its max is the real
+        # producer high-water (what the primary durably accepted). During a primary outage
+        # failed sends are reported on stderr and never reach the log.
+        def on_delivery(err, _msg) -> None:
+            nonlocal failed
+            if err is not None:
+                failed += 1
+                print(f"DELIVERY FAILED seq={entry['seq']}: {err}", file=sys.stderr)
+                return
+            with seq_path.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(entry) + "\n")
+
+        return on_delivery
 
     try:
         while True:
@@ -156,26 +175,21 @@ def main() -> None:
                 key = json.dumps(key_obj).encode("utf-8")
                 value = json.dumps(ride.model_dump()).encode("utf-8")
 
+            entry = {
+                "seq": seq,
+                "ride_id": ride.ride_id,
+                "driver_id": ride.driver_id,
+                "status": ride.status,
+                "ts": now.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
+                "pickup_ts_ms": ride.pickup_ts,
+            }
             producer.produce(
                 topic=args.topic,
                 key=key,
                 value=value,
+                on_delivery=make_on_delivery(entry),
             )
             producer.poll(0)
-            with seq_path.open("a", encoding="utf-8") as fh:
-                fh.write(
-                    json.dumps(
-                        {
-                            "seq": seq,
-                            "ride_id": ride.ride_id,
-                            "driver_id": ride.driver_id,
-                            "status": ride.status,
-                            "ts": now.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
-                            "pickup_ts_ms": ride.pickup_ts,
-                        }
-                    )
-                    + "\n"
-                )
 
             seq += 1
             sent += 1
@@ -185,8 +199,8 @@ def main() -> None:
     except KeyboardInterrupt:
         print("\nStopping producer...")
     finally:
-        producer.flush()
-        print(f"Sent {sent} events; last seq={seq - 1}")
+        producer.flush(10)
+        print(f"Produced {sent} events ({failed} delivery failures); last seq attempted={seq - 1}")
 
 
 if __name__ == "__main__":

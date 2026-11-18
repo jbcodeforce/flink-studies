@@ -1,0 +1,28 @@
+version: 2
+models:
+- name: rides_clean
+  description: Migrated from dml.rides_clean.sql
+  constraints:
+    - type: custom
+      expression: "WATERMARK FOR pickup_ts AS pickup_ts - INTERVAL '5' SECOND"
+  columns:
+  - name: driver_id
+    data_type: STRING      
+    constraints:
+      - type: not_null
+      - type: primary_key
+        expression: "not enforced"
+  - name: ride_id
+    data_type: STRING
+  - name: seq
+    data_type: BIGINT
+  - name: rider_id
+    data_type: STRING
+  - name: pickup_ts
+    data_type: TIMESTAMP(3)
+  - name: fare_usd
+    data_type: DOUBLE
+  - name: status
+    data_type: STRING
+  - name: city
+    data_type: STRING

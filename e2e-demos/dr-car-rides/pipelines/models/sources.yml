@@ -1,0 +1,11 @@
+version: 2
+
+# rides_raw is an external source: Terraform owns the topic and its JSON schemas
+# (IaC/00-primary-flink); on the DR site it is a read-only cluster-link mirror.
+# `schema` is the Kafka cluster (Flink database) name, which differs per site,
+# so it comes from FLINK_DATABASE_NAME (exported by scripts/export-env.sh).
+sources:
+  - name: rides
+    schema: "{{ env_var('FLINK_DATABASE_NAME') }}"
+    tables:
+      - name: rides_raw

@@ -49,7 +49,7 @@ The [Confluent Terraform Provider](https://docs.confluent.io/cloud/current/clust
     * [deployment/ec2_tf](https://github.com/jbcodeforce/flink-studies/tree/master/deployment/ec2_tf) to create a free-tier EC2 instance on AWS for Flink experiments
     * [Cdc with RDS, S3, TableFlow and Flink](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cc-cdc-tx-demo/cccloud/IaC) AWS resources + Confluent environments and [flink statements as separate terraform](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cc-cdc-tx-demo/cccloud/cc-flink-sql/terraform) using list of statements.
     * [e2e-demos/cdc-dedup-transform/cccloud/IaC](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/cdc-dedup-transform/cccloud/IaC) creates an AWS S3 bucket with the necessary IAM user and permissions for Confluent Cloud S3 sink connector.
-    * [e2e-demos/dr-car-rides](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/dr-car-rides/ccloud/IaC/), disaster recovery demonstration.
+    * [e2e-demos/dr-car-rides](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/dr-car-rides/IaC/), disaster recovery demonstration.
     * [Streamhouse data evolution use case](https://github.com/jbcodeforce/stream_house_c360_demo)
 
 ## Prerequisites

@@ -1,0 +1,2 @@
+# Generated from scripts/iac-outputs.json; contains API keys and secrets
+*.tfvars.json

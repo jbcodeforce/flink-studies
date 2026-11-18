@@ -1,0 +1,21 @@
+version: 2
+models:
+- name: driver_stats
+  description: driver statistics
+  columns:
+  - name: driver_id
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    - type: primary_key
+      expression: not enforced
+  - name: window_start
+    data_type: TIMESTAMP(3)
+  - name: window_end
+    data_type: TIMESTAMP(3)
+  - name: ride_count
+    data_type: BIGINT
+  - name: fare_sum
+    data_type: DOUBLE
+  - name: max_seq
+    data_type: BIGINT

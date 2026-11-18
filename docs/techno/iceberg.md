@@ -1,6 +1,8 @@
 # [Apache Iceberg](https://iceberg.apache.org/docs/latest/)
 
-Apache Iceberg is an open table format for huge analytic datasets. It becomes a specifications and a set of libraries to standardize how to represent a table as a set of metadata and data files. The libraries support a protocol to manipulate theses file safely.
+[Apache Iceberg](https://iceberg.apache.org/docs/latest/) is an open table format for huge analytic datasets. It becomes a specifications and a set of libraries to standardize how to represent a table as a set of metadata and data files. The libraries support a protocol to manipulate theses file safely.
+
+## Concepts
 
 * It adds tables to compute engines such as Spark, Trino, PrestoDB, Flink, Hive and Impala.
 * It works just like a SQL table on cloud object storage.
@@ -30,7 +32,11 @@ When records are added to the table, Iceberg creates one parquet file for each r
 When updating record, Iceberg creates snapshot to keep information of the new manifest file created for the update. The previous record is marked as deleted.
 Developers may query the history table of the database main table to see the different snapshots.
 
-### Interresting content
+## Local Studies
+
+The [code/iceberg]() folder includes some demonstrations and studies. 
+
+## Interresting content
 
 * [Getting started](https://iceberg.apache.org/docs/latest/getting-started/)
 * [Icebert and Spark quickstart with local docker compose](https://iceberg.apache.org/spark-quickstart/)

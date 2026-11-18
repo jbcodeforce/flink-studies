@@ -352,7 +352,7 @@ Kafka clusters have the following properties:
 * Basic and standard clusters are multi-tenant and accessible via secured (TLS encrypted) public endpoints.
 * Using private link does not expose Kafka clusters to the public.
 * Enterprise clusters are accessible through secure, AWS VPC peering,  PrivateLink attachement on AWS, Azure, GCP private network connections.
-* A PrivateLink Attachment is a resource that enables you to connect to Confluent serverless products, like Enterprise clusters and Flink.
+* A PrivateLink Attachment (PLATT) is a resource that enables you to connect to Confluent serverless products, like Enterprise clusters and Flink.
 * Secure public endpoints are protected by a proxy layer that prevents types of DoS, DDoS, syn flooding, and other network-level attacks.
 * A Confluent Cloud network is an abstraction for a single tenant network environment. [See setup CC network on AWS.](https://docs.confluent.io/cloud/current/networking/ccloud-network/aws.html#create-ccloud-network-aws). 
 * For AWS and Confluent Dedicated Clusters, networking can be done via VPC peering, transit gateway, inbound and outbound private link (for Kafka and Flink): this is a one-way connection access from a VPC to CC.
@@ -361,6 +361,8 @@ Kafka clusters have the following properties:
 ![](./images/flink-private-networking.svg)
 
 * PLATT is independant of the network type: PrivateLink, VPC peering or transit GTW.
+
+[See a PLATT configuration in the DR demo](https://github.com/jbcodeforce/flink-studies/tree/master/e2e-demos/dr-car-rides/IaC/01-dr-site/network.tf)
 
 ## Autopilot / auto-scaling
 

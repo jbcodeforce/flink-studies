@@ -43,6 +43,12 @@ status: verify_cmf verify_cmf_rest_class verify_flink_env list_kafka_catalogs ##
 
 undeploy:  delete_compute_pool delete_kafka_catalog delete_kafka_secret delete_env_secret_mapping ## Undeploy the Confluent Manager for Flink.
 
+list_images: ## List all Confluent image versions in deployment files
+	@../update-confluent-versions.sh --cmf-only --include-json --list
+
+update_images: ## Update Confluent Flink image versions (use FLINK_VERSION=2.2.0-cp2-java21)
+	@../update-confluent-versions.sh --cmf-only --include-json --flink-version $(or $(FLINK_VERSION),2.2.0-cp2-java21)
+
 use_flink_ns: ## Use the Flink namespace.
 	@kubectl config set-context --current --namespace=$(FLCK_NS)
 	@echo "$(GREEN) Using namespace: $(FLCK_NS)$(NC)"

@@ -747,6 +747,16 @@ The project management for dbt based project is now in [a separate chapter](../m
         distributed_by={
           'columns': ['order_id'],
           'buckets': 4
+        },
+        with={
+          'changelog.mode': 'upsert',
+          'key.format': 'json-registry',
+          'value.format': 'json-registry',
+          'value.fields-include': 'all',
+          'kafka.cleanup-policy': 'compact',
+          'kafka.retention.time': '86400000 ms',
+          'scan.bounded.mode': 'unbounded',
+          'scan.startup.mode': 'earliest-offset'
         }
       )
     }}
@@ -800,32 +810,6 @@ The project management for dbt based project is now in [a separate chapter](../m
         - name: raw_reviews
     ```
 
-    Then add columns definition matching the schema definition from the topic. 
-    ```yaml
-      - name: raw_listings
-        schema: j9r-kafka
-        tables:
-          - name: raw_listings
-            columns:
-              - name: id
-                data_type: string
-              - name: name
-                data_type: string
-              - name: listing_url
-                data_type: string
-              - name: room_type
-                data_type: string
-              - name: minimum_nights
-                data_type: int
-              - name: host_id
-                data_type: string
-              - name: price
-                data_type: string
-              - name: created_at
-                data_type: string
-              - name: updated_at
-                data_type: string
-    ```
     When our models have `+materialized: streaming_table` set , it triggers the Confluent macro `materialization_streaming_table_confluent` which calls assert_columns_equivalent.
 
     Finally add for each Flink statement that will create sink record, a yaml definition for the columns name and type. For example a file named `src_hosts_models.yaml`:
@@ -859,6 +843,10 @@ The project management for dbt based project is now in [a separate chapter](../m
         config:
           compute_pool: "my-large-pool"
     ```
+
+    It can also be configured in the `config()` function
+    ```
+    ```
     
 ???+ handson "Seed reference data on Confluent Cloud for Flink"
     The [airbnb_streaming](https://github.com/jbcodeforce/flink-studies/tree/master/code/dbt/airbnb_streaming) project loads small reference CSVs into Flink tables with `dbt seed`. The dbt-confluent adapter infers column types from the CSV (via agate) and issues `CREATE TABLE` followed by `INSERT INTO ... VALUES`. Override types in `seeds/seeds.yml` when inference is too coarse (e.g. map date strings to `DATE`).
@@ -883,6 +871,7 @@ The project management for dbt based project is now in [a separate chapter](../m
 
     Optionally run `make seed` to regenerate `seeds.yml` column types from CSV headers before seeding.
 
+    See [another example in Streamhouse demo](https://github.com/jbcodeforce/streamhouse_c360_demo/tree/main/pipelines/seeds)
 
 ???+ question "How to specify table properties?"
     Use the config function, and the `with` proiperties section as json.
@@ -908,6 +897,7 @@ The project management for dbt based project is now in [a separate chapter](../m
           - type: primary_key
             expression: "not enforced"
     ``` 
+
     or as combined keys set with external contraints:
     ```yaml
     columns:
@@ -923,6 +913,25 @@ The project management for dbt based project is now in [a separate chapter](../m
         expression: "NOT ENFORCED"
     ```
 
+???+ question "How to specify a watermark column?"
+    This is done in the schema.yml as contraint on the table, using the name of a timestamp or timestamp_ltz column:
+    ```yml
+    models:
+    - name: rides_clean
+      description: Migrated from dml.rides_clean.sql
+      constraints:
+        - type: custom
+          expression: "WATERMARK FOR pickup_ts AS pickup_ts - INTERVAL '5' SECOND"
+      columns:
+      - name: driver_id
+        data_type: STRING      
+        constraints:
+          - type: not_null
+          - type: primary_key
+            expression: "not enforced"
+      - name: pickup_ts
+        data_type: TIMESTAMP(3)
+    ```
 ???+ question "How to define materialized table"
     Add the config element in the model file
       ```sql
@@ -938,14 +947,6 @@ The project management for dbt based project is now in [a separate chapter](../m
         ) 
       }}
       ```
-
-???+ question "Define seed and reference it?"
-    Seed can be set from csv files, in `seeds` folder and then the command will populate the expected topics:
-    ```sh
-    dbt seed
-    ```
-
-    See [example in Streamhouse demo](https://github.com/jbcodeforce/streamhouse_c360_demo/tree/main/pipelines/seeds)
 
 
 ???+ question "How to alter dependent tables from current model?"

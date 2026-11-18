@@ -51,7 +51,7 @@ undeploy:
 	$(FTA_UV) flink-sql-deploy --sql-dir $(SQL_DIR) undeploy
 
 drop-tables:
-	$(FTA_UV) flink-sql-deploy --sql-dir $(SQL_DIR) drop-tables
+	$(FTA_UV) flink-sql-deploy --sql-dir $(SQL_DIR) drop_tables
 
 # Pattern targets: make deploy-sources  make undeploy-facts  etc.
 deploy-%:

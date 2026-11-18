@@ -1,0 +1,77 @@
+services:
+  spark-iceberg:
+    image: tabulario/spark-iceberg
+    container_name: spark-iceberg
+    build: spark/
+    networks:
+      iceberg_net:
+    depends_on:
+      - rest
+      - object-store
+    volumes:
+      - ./warehouse:/home/iceberg/warehouse
+      - ./notebooks:/home/iceberg/notebooks/notebooks
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+    ports:
+      - 8888:8888
+      - 8080:8080
+      - 10000:10000
+      - 10001:10001
+  rest:
+    image: apache/iceberg-rest-fixture
+    container_name: iceberg-rest
+    networks:
+      iceberg_net:
+    ports:
+      - 8181:8181
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+      - CATALOG_WAREHOUSE=s3://warehouse/
+      - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
+      - CATALOG_S3_ENDPOINT=http://object-store:9000
+      - CATALOG_S3_PATH__STYLE__ACCESS=true
+  # tabulario/spark-iceberg expects virtual-hosted-style S3 at http://minio:9000
+  object-store:
+    image: rustfs/rustfs:1.0.0
+    container_name: object-store
+    environment:
+      - RUSTFS_ACCESS_KEY=admin
+      - RUSTFS_SECRET_KEY=password
+      - RUSTFS_OBS_LOG_STDOUT_ENABLED=true
+      - RUSTFS_SERVER_DOMAINS=minio
+    networks:
+      iceberg_net:
+        aliases:
+          - minio
+          - warehouse.minio
+    ports:
+      - 9001:9001
+      - 9000:9000
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:9000/health/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  create-bucket:
+    image: rustfs/rustfs:1.0.0
+    container_name: create-bucket
+    depends_on:
+      object-store:
+        condition: service_healthy
+    networks:
+      iceberg_net:
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - >-
+        curl -sf -o /dev/null --aws-sigv4 aws:amz:us-east-1:s3 --user admin:password
+        --head http://object-store:9000/warehouse ||
+        curl -sSf --aws-sigv4 aws:amz:us-east-1:s3 --user admin:password
+        -X PUT http://object-store:9000/warehouse
+networks:
+  iceberg_net:

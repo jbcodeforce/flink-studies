@@ -345,14 +345,14 @@ wheels = [
 
 [[package]]
 name = "confluent-sql"
-version = "0.5.5"
+version = "0.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6b/f5/2cb230f0349e9305c8147388bdb154bc0c74f4cfd055b42d0d75ed5d6589/confluent_sql-0.5.5.tar.gz", hash = "sha256:3b88748c4b31d787bbcd8c5d7660dfed570056f923c79ba5e3d8619fdc429e76", size = 303655, upload-time = "2026-09-09T22:53:53.274Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/94/48/29c5ff22409b44415f66e36be6c2a29cef401984be2d65f173e6af8ee973/confluent_sql-0.8.0.tar.gz", hash = "sha256:e544f1fc34edbe458844b0461168c69f717fb0992a4b9a6c7377c80733e2c815", size = 473468, upload-time = "2026-10-30T16:27:05.391Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/90/af/282e349e6247b11caba319a1418776250e6f5ff63ad336d263b1a04150b8/confluent_sql-0.5.5-py3-none-any.whl", hash = "sha256:4d00c19bb529423b7e9f549d3a6010a1508356def483976cdba94ddea6e1b122", size = 113735, upload-time = "2026-09-09T22:53:52.079Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/18/521d6513b1816a571a227fbbc3b83caf8ef8675dfc20c3bff4f1d9b1baf4/confluent_sql-0.8.0-py3-none-any.whl", hash = "sha256:da5805804b16cddbad752e112a8f8db7b78330da7af3148349709f073d8910e7", size = 188384, upload-time = "2026-10-30T16:27:03.823Z" },
 ]
 
 [[package]]
@@ -545,12 +545,10 @@ dependencies = [
     { name = "authlib" },
     { name = "cachetools" },
     { name = "confluent-kafka" },
-    { name = "confluent-sql" },
     { name = "dagster-dbt" },
     { name = "dagster-webserver" },
     { name = "dbt-autofix" },
     { name = "dbt-confluent" },
-    { name = "dbt-core" },
     { name = "dbt-duckdb" },
     { name = "dbt-snowflake" },
     { name = "pydantic" },
@@ -568,12 +566,10 @@ requires-dist = [
     { name = "authlib", specifier = ">=1.6.5" },
     { name = "cachetools", specifier = ">=6.2.1" },
     { name = "confluent-kafka", specifier = ">=2.6.0" },
-    { name = "confluent-sql", specifier = ">=0.5.4" },
     { name = "dagster-dbt", specifier = ">=0.28.14" },
     { name = "dagster-webserver", specifier = ">=1.12.14" },
     { name = "dbt-autofix", specifier = ">=0.20.0" },
-    { name = "dbt-confluent", specifier = ">=0.3.1" },
-    { name = "dbt-core", specifier = ">=1.11.12" },
+    { name = "dbt-confluent", specifier = ">=0.5.0" },
     { name = "dbt-duckdb", specifier = ">=1.10.1" },
     { name = "dbt-snowflake", specifier = ">=1.11.2" },
     { name = "pydantic", specifier = ">=2.11.0" },
@@ -649,7 +645,7 @@ wheels = [
 
 [[package]]
 name = "dbt-confluent"
-version = "0.3.1"
+version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "agate" },
@@ -659,9 +655,9 @@ dependencies = [
     { name = "dbt-core" },
     { name = "httpx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9c/c3/f9e12a2ea36581d8a3618ba99a38ef9727efc07ade055b0d17d00af881f2/dbt_confluent-0.3.1.tar.gz", hash = "sha256:def9243982ed05749dabc85bb2904f9181ff4e75d935af9943894f5356712965", size = 155132, upload-time = "2026-09-09T15:58:17.195Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/84/cd/660389f4e08a92a98b6416873259c03fff2faec102d290fe4aa08105d3be/dbt_confluent-0.5.0.tar.gz", hash = "sha256:fd5b06d68d25487fd1be638d96ba86e35e8307e8d7963d9d80500e41cfab728a", size = 318949, upload-time = "2026-11-06T14:25:55.283Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f3/2d/2446270d6704528bacfb6c87202607e1d9dd6f98b21997833de6168c966f/dbt_confluent-0.3.1-py3-none-any.whl", hash = "sha256:ce61a28d584963f6f3d6bec3429cf03375162e2966065500ad68dc1f3c96138a", size = 51215, upload-time = "2026-09-09T15:58:15.966Z" },
+    { url = "https://files.pythonhosted.org/packages/e9/e0/b393718943f74a00a734095ac337f82aa62d651e560755d3dcdfe0a1d7a8/dbt_confluent-0.5.0-py3-none-any.whl", hash = "sha256:f7b2d63501a89d7d134d9b0e0d6c89e01e4023f22ec2946527a6ec7a914f361c", size = 103830, upload-time = "2026-11-06T14:25:54.057Z" },
 ]
 
 [[package]]

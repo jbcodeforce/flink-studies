@@ -1,0 +1,16 @@
+# Layer 1 — DR site. Copy to terraform.tfvars (gitignored) and adjust.
+# Confluent credentials come from the environment, not from this file:
+#   export CONFLUENT_CLOUD_API_KEY=...  CONFLUENT_CLOUD_API_SECRET=...
+# AWS credentials come from `aws sso login --profile <aws_profile>`.
+
+prefix        = "j9r"
+dr_region     = "us-east-1"
+flink_max_cfu = 10
+
+aws_profile = "829250931565_nonprod-administrator"
+
+vpc_cidr              = "10.20.0.0/16"
+bastion_instance_type = "t3.small"
+
+# Only if the DR Flink API must be reached privately (dbt dr target then runs on the bastion):
+# flink_private_endpoint = "https://flink.<...>.private.confluent.cloud"

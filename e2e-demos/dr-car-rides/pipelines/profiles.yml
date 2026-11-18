@@ -1,0 +1,38 @@
+# dbt profile for the DR car-rides demo. It holds NO secret: every value comes from the
+# environment exported by ../scripts/export-env.sh <site> (which reads the Terraform outputs).
+# Use it with:  dbt <cmd> --profiles-dir . --target primary|dr   (the Makefile does it)
+#
+#   primary: public Flink API, built from cloud_provider + cloud_region.
+#   dr:      the DR cluster is private (PrivateLink), so statements MUST go to the private
+#            Flink endpoint. The adapter rejects cloud_provider/cloud_region next to
+#            `endpoint`. That endpoint only resolves inside the DR VPC: run dbt on the bastion.
+j9r:
+  target: primary
+  outputs:
+    primary:
+      type: confluent
+      organization_id: "{{ env_var('ORGANIZATION_ID') }}"
+      environment_id: "{{ env_var('FLINK_ENV_ID') }}"
+      dbname: "{{ env_var('KAFKA_CLUSTER_NAME') }}"
+      compute_pool_id: "{{ env_var('FLINK_COMPUTE_POOL_ID') }}"
+      flink_api_key: "{{ env_var('FLINK_API_KEY') }}"
+      flink_api_secret: "{{ env_var('FLINK_API_SECRET') }}"
+      cloud_provider: "{{ env_var('CLOUD_PROVIDER') }}"
+      cloud_region: "{{ env_var('CLOUD_REGION') }}"
+      execution_mode: streaming_query
+      statement_label: dbt-confluent
+      statement_name_prefix: dbt-
+      threads: 4
+    dr:
+      type: confluent
+      organization_id: "{{ env_var('ORGANIZATION_ID') }}"
+      environment_id: "{{ env_var('FLINK_ENV_ID') }}"
+      dbname: "{{ env_var('KAFKA_CLUSTER_NAME') }}"
+      compute_pool_id: "{{ env_var('FLINK_COMPUTE_POOL_ID') }}"
+      flink_api_key: "{{ env_var('FLINK_API_KEY') }}"
+      flink_api_secret: "{{ env_var('FLINK_API_SECRET') }}"
+      endpoint: "{{ env_var('FLINK_ENDPOINT') }}"
+      execution_mode: streaming_query
+      statement_label: dbt-confluent
+      statement_name_prefix: dbt-
+      threads: 4

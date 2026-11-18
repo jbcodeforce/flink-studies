@@ -1,0 +1,24 @@
+{
+  "user_agent": "dr-car-rides-dbt/0.1",
+  "groups": {
+    "pipeline": [
+      {
+        "name": "dr-dims-rides-clean",
+        "file": "_noop"
+      },
+      {
+        "name": "dr-facts-driver-stats",
+        "file": "_noop"
+      }
+    ]
+  },
+  "deploy_all": [],
+  "undeploy_all": [
+    "pipeline"
+  ],
+  "drop_tables": [
+    "driver_stats",
+    "rides_clean"
+  ],
+  "drop_statement_prefix": "flink-sql-drop"
+}

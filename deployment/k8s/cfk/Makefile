@@ -41,6 +41,12 @@ status: use_confluent_ns verify_cp_cfk verify_kraft verify_kafka verify_controlc
 
 undeploy: delete_cp_cluster uninstall_cp_cfk ## Undeploy the Confluent Platform.
 
+list_images: ## List all Confluent image versions in deployment files
+	@../update-confluent-versions.sh --cfk-only --list
+
+update_images: ## Update Confluent Platform image versions (use CP_VERSION=8.1.0)
+	@../update-confluent-versions.sh --cfk-only -v $(or $(CP_VERSION),8.1.0)
+
 port_forward_cp_console: ## Port forward the Confluent Platform console.
 	@osascript -e 'tell app "Terminal" to do script "kubectl -n $(CFNT_NS) port-forward svc/controlcenter-ng 9021:9021"'
 

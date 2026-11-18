@@ -1,8 +1,6 @@
 
 MINIO_NS=minio-dev
-CERT_MGR_VERSION=v1.18.2
-FLINK_OPERATOR_VERSION=1.11.0
-CMF_URL=http://localhost:8084
+CERT_MGR_VERSION=v1.20.4
 CERT_MGR_NS=cert-manager
 
 # Colors for output
