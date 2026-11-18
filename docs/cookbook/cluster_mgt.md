@@ -9,23 +9,23 @@ compiled: false
 # Cluster & Environment Management
 
 ???- info "Chapter updates"
+    - Updated 11/2026: DR work, remove ref to my estimator.
     - Created 10/2025
-    - Updated 11/2026: DR works
 
 ## 1- Provisioning and Scaling Clusters
 
 ### 1.0 Sizing Flink Resources
 
 #### Context
-Sizing a Flink cluster is a complex project task, influenced by many factors, including workload demands, application logic, data characteristics, expected state size, required throughput and latency, concurrency, and hardware characteristics. 
+Sizing a Flink cluster is a complex task, influenced by many factors, including workload demands, application logic, data characteristics, expected state size, required throughput and latency, concurrency, and hardware characteristics. 
 
-Because of those variables, every Flink deployment needs a unique sizing approach. The most effective method is to run a real job, on real hardware and tune Flink to that specific workload.
+Because of those variables, every Flink deployment needs a unique sizing approach. The most effective method is to run a real job on real hardware, and tune Flink to that specific workload.
 
 For architects seeking sizing guidance, it's helpful to consider:
 
 * the workload semantic complexity, with the usage of aggregations, joins, windows, and processing type, 
 * the input throughput (MB/s or records/second), 
-* the expected Flink state size (GB): assess number of unique key with average size of data to keep 
+* the expected Flink state size (GB): assess the number of unique keys and the average size of the data to keep 
 * the expected latency.
 
 While Kafka sizing estimates are based on throughput and latency, this is a very crude method for Flink, as it overlooks many critical details. 
@@ -34,7 +34,7 @@ For new Flink deployments, a preliminary estimate can be provided, but it's impo
 
 A simple Flink job can process approximately **10,000 records per second per CPU**. However, a more substantial job, based on benchmarks, might process closer to 5,000 records per second per CPU. 
 
-Flink Job and Task managers run in JVM, and the Task manager memory allocation looks like in the figure below. **Flink memory** is used by the Flink code, and is decomposed by 1/ <ins>network buffers</ins> to exchange partitions among operators, 2/ <ins>managed memory</ins> for state persistence buffering when using RockDB or ForSt, 3/ <ins>Task and Framework Off-heap</ins>, 4/ <ins>JVM Heap</ins>
+Flink Job and Task Managers run in a JVM, and the Task Manager memory allocation is shown in the figure below. **Flink memory** is used by the Flink code, and is decomposed by 1/ <ins>network buffers</ins> to exchange partitions among operators, 2/ <ins>managed memory</ins> for state persistence buffering when using RocksDB or ForSt, 3/ <ins>Task and Framework Off-heap</ins>, 4/ <ins>JVM Heap</ins>
 
 <figure markdown="span">
 ![1](./diagrams/tm_mem_map.drawio.png)
@@ -65,7 +65,7 @@ Flink Job and Task managers run in JVM, and the Task manager memory allocation l
 
 * For stateful streaming workloads, **managed memory** is usually the parameter that matters most. Shrink it and RocksDB gets less off-heap room for its block cache and other structures, so hot state falls back to disk more often and end-to-end latency increases. Grow it without proportionally sizing the **JVM heap** and the heap side for user functions can be squeezed, with GC events more likely to destabilize or fail the process.
 
-* In context of Confluent Platform for Flink, or Apache Flink, the deployment entity is an Application, which means 1 job manager and 1 to many task managers. So Kubernetes worker nodes host multiple job managers and Task managers. For most of the case the Job Manager use one core and 2GB of RAM. But when the number of keys in state grows it may be needed to go to 2-4 cores and 4-8 GB.
+* In the context of Confluent Platform for Flink or Apache Flink, the deployment entity is an Application, which means 1 Job Manager and 1 to many Task Managers. So Kubernetes worker nodes host multiple Job Managers and Task Managers. In most cases, the Job Manager uses one core and 2GB of RAM. But when the number of keys in state grows, it may be necessary to increase it to 2-4 cores and 4-8 GB.
 
 #### Preconditions / Checklist
 
@@ -84,18 +84,7 @@ Assess Hardware constraints:
 
 #### CP Flink Estimation
 
-I tentatively built a [flink-estimator webapp](https://github.com/jbcodeforce/flink-estimator) with backend estimator for Apache Flink or Confluent Platform Cluster sizing.
-
-The tool needs to be simple, it limits the number of parameters, and persists the estimation as json on the local disk to be able to save different estimations or update existing ones. 
-
-To access this web app there is a docker image at [dockerhub - flink-estimator](https://hub.docker.com/repository/docker/jbcodeforce/flink-estimator/general), or [cloning the repository](https://github.com/jbcodeforce/flink-estimator) and run with python. 
-
-* use `docker-compose up -d`  OR run with: `./run.sh`
-* Access via web browser [http://localhost:8002/](http://localhost:8002/)
-    <figure markdown="span">
-    ![2](./images/flink-estimator.png)
-    </figure>
-
+Confluent built [This Confluent Platform sizing calculator](https://cpc-sizing-calculator-825418823664.us-central1.run.app/)
 
 ### 1.1 Bring up new cluster/environment.
 #### Context
@@ -106,12 +95,12 @@ Use this recipe when you need a new Flink environment (e.g., dev / stage / prod 
 * CP Flink components installed via Helm (Flink K8s Operator + CMF).
 * An existing Kafka cluster (Confluent Platform or Confluent Cloud).
 
-Out of scope: deep infrastructure provisioning automation. The focus on the Flink layer once K8s and Kafka exist.
+Out of scope: deep infrastructure provisioning automation. The focus is on the Flink layer once K8s and Kafka exist.
 
-The Components to install for each deployment approach:
+The components to install for each deployment approach:
 
 === "Confluent Platform"
-    In the context of a Confluent Platform deployment, the components to install are represented in the following figure from bottom to higher layer:
+    In the context of a Confluent Platform deployment, the components to install are represented in the following figure from the bottom layer to the top:
 
     ![3](../coding/diagrams/cp_comp_to_deploy.drawio.png)
 
@@ -150,12 +139,12 @@ The Components to install for each deployment approach:
 
 #### Procedure
 
-We list here the high level steps. For [dedicated chapter on Kubernetes deployment](../coding/k8s-deploy.md)
+We list here the high-level steps. See the [dedicated chapter on Kubernetes deployment](../coding/k8s-deploy.md).
 
 === "Apache Flink or Confluent Platform"
     1. Prepare Kubernetes Namespaces
     * Install Flink Kubernetes Operator (FKO)
-    * Install Confluent Manager for Apache Flink (CMF) - Not need for pure Apache Flink
+    * Install Confluent Manager for Apache Flink (CMF) - Not needed for pure Apache Flink
     * Configure Durable Storage for State
     * Expose CMF API for Environment Management
     * Create a Flink Environment (Logical Environment)
@@ -165,26 +154,26 @@ We list here the high level steps. For [dedicated chapter on Kubernetes deployme
     ![5](./images/argocd-start.png)
 
 === "Confluent Cloud"
-    With Terraform (see [deo environment definitions]()):
-    1. Set variables TF_VAR_confluent_cloud_api_key and TF_VAR_confluent_cloud_api_secret
+    With Terraform (see [dev environment definitions](https://github.com/jbcodeforce/flink-studies/blob/master/deployment/cc-terraform/env.tf)):
+    1. Set variables CONFLUENT_CLOUD_API_KEY and CONFLUENT_CLOUD_API_SECRET
     1. Run the `terraform init` then `terraform plan` to finally deploy the resources `terraform apply --auto-approve`
 
 #### Gotchas
 
 === "Apache Flink or Confluent Platform"
-    * Durable storage is not optional in production; losing it, it means losing consistent recovery 
+    * Durable storage is not optional in production; losing it means losing consistent recovery 
     * For multi-namespace or multi-cluster topology, leverage CMF’s multi-cluster support
-    * Adopting a declarative configuration for all applications and infrastructure components deployed to Kubernetes clusters with ArgoCD: [see Rick Osowski's repository](https://github.com/osowski/confluent-platform-gitops) addressing a GitOps practices for Confluent Platform deployment running on Kubernetes.
+    * Adopting a declarative configuration for all applications and infrastructure components deployed to Kubernetes clusters with ArgoCD: [see Rick Osowski's repository](https://github.com/osowski/confluent-platform-gitops) addressing GitOps practices for Confluent Platform deployment running on Kubernetes.
 
 ### 1.2 Adjust cluster resources (more TaskManagers, more slots).
 
 #### Context
 
-Use this when a Flink job or compute pool is under-provisioned: sustained backpressure, growing Kafka lag, or repeated "NoRecentCheckpoints"/resource exhaustion alerts or when on Confluent Cloud the statement becomes `Degraded`. 
+Use this when a Flink job or compute pool is under-provisioned: sustained backpressure, growing Kafka lag, or repeated "NoRecentCheckpoints" or resource exhaustion alerts, or, on Confluent Cloud, when the statement becomes `Degraded`. 
 
 **Confluent Platform for Flink or Apache Flink:**
 
-When you need to increase or decrease the cluster’s capacity by adding/removing TaskManagers, or by changing `taskmanager.numberOfTaskSlots` (slots per TM).
+When you need to increase or decrease the cluster’s capacity by adding or removing TaskManagers, or by changing `taskmanager.numberOfTaskSlots` (slots per TM).
 
 This recipe is primarily cluster/platform facing; job-level parallelism tuning is covered in a separate “Scale a Flink Job” recipe.
 
@@ -196,7 +185,7 @@ Always try to clarify the goal:
 
 #### Preconditions / Checklist
 
-* Have a good understanding of the performance situation with observability stack like Grafana dasboards and other metrics
+* Have a good understanding of the performance situation with observability stack like Grafana dashboards and other metrics
 * Get a clear assessment of the current number of Task managers and task slots per task manager
 * Confirm current job parallelism and utilization
 * Revisit current traffic pattern, versus the one used for platform sizing
@@ -211,30 +200,31 @@ Always try to clarify the goal:
 1. Diagnose whether you need more TMs, more Slots, or both. Check TM utilization and slot usage:
     * Are TaskManagers at or near 100% busy?
     * Are all slots occupied? Are there idle slots but backpressure at specific operators?
-* Check compute-pool / CFU limits (CP Flink / CCFlink): Ensure your target TM count/size stays within declared the limit; large TMs and more slots affect costs.
+* Check compute-pool / CFU limits (CP Flink / Apache Flink): Ensure your target TM count/size stays within the declared limit; large TMs and more slots affect costs.
 * Adjust TaskManager count for horizontal scaling - (CP and OSS). 
-    * Adjust max CFU per compute pool, add more compute pool in Confluent Cloud. TM count is controlled indirectly via compute pool CFU and Autopilot/DSA; horizontal scaling is typically automatic.
-    * For operator-only K8s Flink, TM count commonly set via deployment/Helm values for the TaskManager deployment (e.g., replicas in K8s or CFK spec).
+    * Adjust max CFU per compute pool, add more compute pool in Confluent Cloud. The TM count is controlled indirectly via compute pool CFU and Autopilot/DSA; horizontal scaling is typically automatic.
+    * For operator-only K8s Flink, the TM count is commonly set via deployment/Helm values for the TaskManager deployment (e.g., replicas in K8s or CFK spec).
 
 * Monitor - Check that:
     * Backpressure decreases.
     * Checkpoint durations stabilize or drop (CP or OSS).
     * TM CPU/memory are in a reasonable range (no massive under-utilization).
 
-* (Optional) Scale down later (CP or OSS): Once load drops, you can scale TMs down again to save resources. In CCFlink Autopilot will handle this automatically.
+* (Optional) Scale down later (CP or OSS): Once load drops, you can scale TMs down again to save resources. In CCFlink, Autopilot handles this automatically.
 * Adjust Slots Per TaskManager (Vertical Slot Scaling). Change `taskmanager.numberOfTaskSlots` to alter concurrency per TM. Get at least one core per busy slot for non-trivial jobs.
 
 ???- info "Understand slot semantics"
-    Each TaskManager is a JVM process; each slot is a fixed share of that TM’s resources. More slots per TM = more tasks sharing CPU, heap, network and disk; good for many small jobs, risky for heavy jobs.
+    Each TaskManager is a JVM process; each slot is a fixed share of that TM’s resources. More slots per TM means more tasks sharing CPU, heap, network and disk. This is good for many small jobs but risky for heavy jobs.
 
     Update slot configuration. In a FlinkApplication / K8s spec (CP Flink example):
     ```json
+        {
         "flinkConfiguration": {
-        "taskmanager.numberOfTaskSlots": "2"
-        }
+            "taskmanager.numberOfTaskSlots": "2"
+        }}
     ```
 
-    Changing taskmanager.numberOfTaskSlots typically requires restarting TaskManagers
+    Changing `taskmanager.numberOfTaskSlots` typically requires restarting TaskManagers.
 
     Watch for increased GC pressure and longer checkpoint times. Assess disk I/O saturation (RocksDB state, shuffle).
 
@@ -243,12 +233,12 @@ Always try to clarify the goal:
 If the change makes things worse (more instability, timeouts, cost spikes):
 
 * Revert TM Count / Slots
-* If jobs fail or degrade: Temporarily move the most critical jobs to a separate, known-good pool / cluster with conservative settings. Then investigate per-job parallelism / skew, the RocksDB / disk hot spots, the autoscaler behavior.
+* If jobs fail or degrade: Temporarily move the most critical jobs to a separate, known-good pool / cluster with conservative settings. Then investigate per-job parallelism / skew, RocksDB or disk hot spots, and the autoscaler behavior.
 * Document Effective Settings
 
 ## 2- Upgrading Flink Components
 
-This section applies only to self managed Flink deployments. As Confluent Cloud is a managed service, the product version to version update is transparent to the users.
+This section applies only to self-managed Flink deployments. As Confluent Cloud is a managed service, the product version to version update is transparent to the users.
 
 ### 2.1 Upgrade Flink minor/patch versions.
 #### Context
@@ -270,33 +260,33 @@ This section applies only to self managed Flink deployments. As Confluent Cloud 
 
 Disaster recovery is about business continuity. Disaster recovery consists of well-defined strategies to back up the primary data center and restore its data to a secondary data center. During normal operations, the live systems are used. The secondary programs run in the background to save environmental information and application data. When the live system goes down, the backup system is restored from the backed up data. End users can use the system again. 
 
-The figure below, simply presents the important metrics to consider and impact on data loss and service recovery.
+The figure below presents the important metrics to consider and impact on data loss and service recovery.
 
 <figure markdown="span">
-![11](./images/rto-rpo.png){ iwdth=400 }
-<capture>**How much data can you afford to recreate or lose? How quickly must you recover?**</capture>
+![11](./images/rto-rpo.png){ width=600 }
+<figcaption>How much data can you afford to recreate or lose? How quickly must you recover?</figcaption>
 </figure>
 
 ???- info "RTO and RPO definitions"
-    * **RTO** is related to downtime and measure the time required to restore the environment after the primary site becomes unavailable.
-    This is the maximum time the business can be unavailable. RTO refers, to the amount of time the system's data is unavailable or inaccessible preventing normal service.
-    * **RPO** refers to the amount of data at risk. It's determined by the amount of time between data protection events and reflects the amount of data that potentially could be lost during a disaster recovery. The metric is an indication of the amount of data at risk of being lost. Usually measured in the time elapsed, between the state of the runtime data at the source and at the replica.
+    * **RTO** is related to downtime and measures the time required to restore the environment after the primary site becomes unavailable.
+    This is the maximum time the business can be unavailable. RTO refers to the amount of time the system's data is unavailable or inaccessible preventing normal service.
+    * **RPO** refers to the amount of data at risk. It's determined by the amount of time between data protection events and reflects the amount of data that potentially could be lost during a disaster recovery. The metric is an indication of the amount of data at risk of being lost. Usually measured as the time elapsed between the state of the runtime data at the source and at the replica.
 
 
 ???- info "Different costs"
     Assessing the business dimensions of DR is a mandatory activity to select the best strategy for the cost to operate. 
 
-    The first curve illustrates the cost of the business impact depending of the length of the service interruption: The RTO vertical line is when the time of the service interruption is acceptable, on the right side of it, the business impact is too high.
+    The first curve illustrates the cost of the business impact depending on the length of the service interruption: The RTO vertical line is when the time of the service interruption is acceptable, on the right side of it, the business impact is too high.
 
     ![](./diagrams/dr/RTO-cost.drawio.png)
 
-    A less expensive solution that reduces the cost of recovery, has also an higher length of interruption. 
+    A less expensive solution that reduces the cost of recovery, also has a longer interruption. 
     
-    **"Acceptable recovery cost"** is the amount of $ the business is accepting to pay for a solution. From those curves we can deduct that backup and restore and warm standby will be acceptable solution. This assessment should be done for all application, as not all of them needs to be active-active. Enterprises use a 3-level classification mechanism: low = not strategic applications, high=  highly strategic to the company revenue and branding (e-commerce, fullfilment, inventory, payment), medium = the rest.
+    **"Acceptable recovery cost"** is the amount of $ the business is accepting to pay for a solution. From those curves we can deduce that backup and restore and warm standby will be acceptable solutions. This assessment should be done for all applications, as not all of them need to be active-active. Enterprises use a 3-level classification mechanism: low = not strategic applications, high=  highly strategic to the company revenue and branding (e-commerce, fulfillment, inventory, payment), medium = the rest.
 
     When the RTO line is going to the right and the Acceptable recovery cost line going too low, there may be no acceptable solution to support the DR strategy.
 
-DR for Flink depends on the deployment model (Confluent Cloud, Confluent Platform, or open-source) and always requires a DR strategy for Kafka and Schema Registry first. Data Stream Processing is not running on Multi-Region Cluster, it uses separate clusters with asynchronous replication/Cluster Linking instead of one stretched, synchronously replicated MRC cluster. MRC is generally used for high availability and near-zero data loss across multiple site, but only Kafka may support it. 
+DR for Flink depends on the deployment model (Confluent Cloud, Confluent Platform, or open-source) and always requires a DR strategy for Kafka and Schema Registry first. Data stream processing does not run on a Multi-Region Cluster (MRC); it uses separate clusters with asynchronous replication/Cluster Linking instead of one stretched, synchronously replicated MRC cluster. MRC is generally used for high availability and near-zero data loss across multiple sites, but only Kafka may support it. 
 
 Data and schema replication (exact replication including offsets and schemas) are prerequisites; Flink state recovery builds on that. 
 
@@ -305,7 +295,7 @@ Data and schema replication (exact replication including offsets and schemas) ar
 
     ![12](./diagrams/dr/resiliency.drawio.png)
 
-    Apply the sharing responsibility of resiliency: cloud provider for resiliency **of** the cloud: infrastructure. Customer responsible for resiliency **in** the cloud: adopting instance deployment across multiple locations, support self-healing, design for resilience.
+    Apply the shared responsibility model for resiliency: cloud provider for resiliency **of** the cloud: infrastructure. Customer responsible for resiliency **in** the cloud: adopting instance deployment across multiple locations, support self-healing, design for resilience.
 
     It is important to bridge the gap between software and infrastructure by designing resilience directly into the application layer, by using architecture patterns, modern enterprise capabilities, and governance to bring end-to-end coherence and integration across applications, platforms, and data pipelines.
 
@@ -315,45 +305,39 @@ Data and schema replication (exact replication including offsets and schemas) ar
     Below are some common types of disaster recovery solutions:
 
     * **Database-based disaster recovery solutions**: Database systems such as IBM DB2® have specific features that can be used to replicate the primary database data to a standby database. These solutions are commonly adopted by applications that interact with only a single database.
-    * **Fabric-based disaster recovery solutions**: These methods are focused on transferring data within the storage network from a source fabric to a destination fabric using special hardware like Storage Area Network products which provides both Global and Metro mirror capabilities to implement data protection. These solutions are attractives because they can accommodate different storage subsystems. 
+    * **Fabric-based disaster recovery solutions**: These methods are focused on transferring data within the storage network from a source fabric to a destination fabric using special hardware like Storage Area Network products which provides both Global and Metro mirror capabilities to implement data protection. These solutions are attractive because they can accommodate different storage subsystems. 
     * **Storage subsystem-based disaster recovery solutions**: These are also called controller-based solutions because they use a storage controller to transfer data from a source storage subsystem to a destination storage subsystem. Usually controller-based solutions are homogeneous, with data copied between disk arrays from the same manufacturer and often within the same family of products. A dedicated transport channel is commonly required to link the two sites. 
 
-* Cloud Providers are offering multiple regions for disaster recovery, and multiple availability zones within a region for high-availability. They do not communicate on how the physical allocation is done between physical data centers. But it is possible that an availability zone is a data center building in another part of the city, with fiber optical links. This means Kafka cluster in multi availability zones can support some DR requirements. Cloud within a region, DR may be acceptable, but in general DR considerations are for region failover to mitigate regional outages: earthquakes, electrical disaster...
-* If availability zones is sufficient to support disaster management, it is the most cost effective solution as a lot of services, like Kafka, support synchronous replications between AZs (See [Confluent resilience documentation](https://docs.confluent.io/cloud/current/clusters/resilience.html)). Always clarify those topologies with the cloud provider.
+* Cloud Providers are offering multiple regions for disaster recovery, and multiple availability zones within a region for high-availability. They do not communicate on how the physical allocation is done between physical data centers. But it is possible that an availability zone is a data center building in another part of the city, with fiber optical links. This means a Kafka cluster spanning multiple availability zones can support some DR requirements. Within a region, DR may be acceptable, but in general DR considerations are for region failover to mitigate regional outages: earthquakes, electrical disaster...
+* If availability zones are sufficient to support disaster management, it is the most cost effective solution as a lot of services, like Kafka, support synchronous replications between AZs (See [Confluent resilience documentation](https://docs.confluent.io/cloud/current/clusters/resilience.html)). Always clarify those topologies with the cloud provider.
 
 <figure markdown="span">
 ![](./diagrams/dr/dr-region-az.drawio.png)
 </figure>
 
-* Failure to one Cloud Provider's AZ should be easily recoverable, and are well managed by software like Kafka, Flink, kubernetes...
-* In recent data center disasters, most of the failure were linked to networking configuration issues, cutting the access to control plane: it is always difficult to take the decision to failover in this case. Recent wars are also showing a data center can be a target to bombing, and failover region may be in other countries.
+* A failure of one Cloud Provider's AZ should be easily recoverable and is well managed by software like Kafka, Flink, kubernetes...
+* In recent data center disasters, most failures were linked to networking configuration issues, cutting the access to control plane: it is always difficult to take the decision to failover in this case. Recent wars are also showing a data center can be a target to bombing, and failover region may be in other countries.
 
 In this recipe we consider region failover.
 
 ### 3.0 Assessing resiliency needs
 
-First let start by a postulat: **Not all applications need to be active - active.** Application requirements determine replication strategy.
-
-???- info "Classical replication strategies"
-    * **Aggressive RPO & RTO objectives:** Favor asynchronous replication via Storage System tooling where replication may be done while servers are online and active.
-    * **Lenient RPO & RTO objectives:** Favor synchronous replication via Operating System tooling (file copy) where replication must be done off line, while the different runtime solutions are quiesced (a maintenance window)
-    * **DB-managed replication:** This approach leverages transaction logs to be stored in a DB. Remark that this approach is applicable only if the single database stores all application resources that need to be replicated
-
+First, let's start with a premise: **Not all applications need to be active-active.** Application requirements determine replication strategy.
 
 * Start by looking at business impacts: 
-    * assess cost of downtime? 
-    * business metrics used to measure impact? and any existing metrics and tools to compute outage impact. 
-    * 70% of CIO wants to be resilient, 80% have nothing in place, and most has no real metrics.
+    * assess the cost of downtime
+    * business metrics used to measure impact, and any existing metrics and tools to compute outage impact. 
+    * 70% of CIOs want to be resilient, 80% have nothing in place, and most have no real metrics.
 
-* Assess what is the current method to detect downtime, and the definition of downtime. Failing over a standby region, costs time and effort. It is important to get a clear assessment of what downtime means before triggering the failover. Is it latency? is it missing orders? Is it network split?
+* Assess what is the current method to detect downtime, and the definition of downtime. Failing over to a standby region costs time and effort. It is important to get a clear assessment of what downtime means before triggering the failover. Is it latency? is it missing orders? Is it network split?
 * Get an application inventory by category of criticality, including compliance requirements. 
 
-* What is the process in place to alert human for downtime?
+* What is the process in place to alert humans of downtime?
 * What are the current observability practices to clearly identify disaster?
-* What is the current recovery strategy? When companies are asking ISV to support some DR requirements, it should never be in a vaccum, but part of bigger initiative. I recall spending 3 hours on technical meeting on how to support DR for our software and discovering that the DR site was another room in the same building as the primary site... 
+* What is the current recovery strategy? When companies are asking ISV to support some DR requirements, it should never be done in a vacuum, but as part of a bigger initiative. I recall spending 3 hours in a technical meeting on how to support DR for our software and discovering that the DR site was another room in the same building as the primary site... 
 
 
-As any flink solution, the following items need to be deeply assessed:
+As with any Flink solution, the following items need to be deeply assessed:
 
 * What Flink application and SQL statements to consider in scope of DR? Map applications, flink pipelines with their expected RPO and RTO. When building analytics data products, most likely those metrics can be relaxed. Here is a simple template:
 
@@ -362,25 +346,27 @@ As any flink solution, the following items need to be deeply assessed:
     | c360 analytics | dml.c360-fact-cust.sql | BI dashboard | 4 hours |  20 mn   |  None | Low |
     |              |                    |           |     |     | | |
 
-* Can Flink's state be recreated?  What state really mean? This is driven by the underlying Kafka Clusters RPO and the retention policies.
+* Can Flink's state be recreated?  What does state really mean? This is driven by the underlying Kafka Clusters RPO and the retention policies.
 * How long is tolerable to recreate that state? This is driven by the overall RTO. 
-* What is the semantic expected by consumer applications? This is driven by consuming applications' tolerance. Semantics options are: exactly-once, at-least once (duplicate possible), at-most once (data loss and duplicate possible).
+* What semantics are expected by consumer applications? This is driven by consuming applications' tolerance. Semantics options are: exactly-once, at-least-once (duplicates possible), at-most once (data loss and duplicate possible).
 * Is the Flink job processing deterministic? will a Flink job always output the same results?
 
 
 ### 3.1 Strategies for DR
 
-* **Backup/restore** is for lower priority workload, cost less, and provision cloud resources after the event. RTO/RPO in hours.
+Strategies need to consider RTO and RPO. We can forecast two main objectives:
+
+* **Aggressive RPO & RTO objectives:** Favor asynchronous replication via Storage System tooling where replication may be done while servers are online and active.
+* **Lenient RPO & RTO objectives:** Favor synchronous replication via Operating System tooling (file copy) where replication must be done off line, while the different runtime solutions are quiesced (a maintenance window)
+
+As seen in the cost section, different approaches may be used"
+
+* **Backup/restore** is for lower-priority workloads, costs less, and provision cloud resources after the event. RTO/RPO in hours.
 * **Pilot Light**: Data is live but services are idle. Provision some resource and scale after event. RPO/RTO in 10s of minutes.
-* **Warm standby**: The DR site is always running but smaller scale. Resources will scale after the event. RPO/RTO at the minutes level.
+* **Warm standby - active/passive**: The DR site is always running but smaller scale. Resources will scale after the event. RPO/RTO at the minutes level.
 * **Multi-site active/active**: Zero downtime, near zero data loss. This is really for mission critical services. 
 
-For Flink we can consider two main patterns:
-
-* **Active/active**: Two (or more) regions run identical Flink jobs continuously, both processing the same input (with replication delay in the secondary). Best for low RTO, large state, or when you need exactly-once semantics and both regions to produce the same results.
-* **Active/passive**: Flink runs only in the primary region. In the DR region, Flink jobs are started at failover time. Best when state can be recreated quickly (e.g. stateless or small time windows) or when at-least-once/at-most-once is acceptable. It is relevant for use cases that fail forward, and that require failing back to the original region within weeks of the outage. Stateful/windowed Flink statements may still be deployed in this mode, but those statements need to be running against mirrored source topics, allowing Flink to maintain equivalent state with the primary region. Do not mirror any flink sink topics because asynchronous replication can leave state inconsistent and duplicates.
-
-We are going to detail those patterns.
+We are going to detail the asctive/passive and active/active patterns.
 
 ### 3.2 Streamhouse elements to consider
 
@@ -388,88 +374,109 @@ Recall a traditional data streaming processing / [streamhouse](../architecture/s
 
 <figure markdown="span">
 ![](./diagrams/raw-to-sink.drawio.png)
-<caption>**Figure: Flink Statement Pipeline with src and sinks**</caption>
+<figcaption>Figure: Flink Statement Pipeline with src and sinks</figcaption>
 </figure>
 
-The following view presents the deployed components, which we should assess how, each component, needs to support DR:
+The following view presents the deployed components, where we should assess how each component needs to support DR:
 
 <figure markdown="span">
 ![](./diagrams/dsp-elements.drawio.png)
-<caption>**Figure: DSP components to consider for DR**</caption>
+<figcaption>Figure: DSP components to consider for DR</figcaption>
 </figure>
 
-| DSP Components | DR Considerations | 
+| Streamhouse Components | DR Considerations | 
 | -------------- | ------------------ |
 | **Kafka Topics** | Data replications and offset integrity. RPO zero is not achievable with asynchronous replication. | 
-| **Schemas** | Same versions on both sides, schemaId integrity |
+| **Schemas** | Same versions on both sides, to keep schemaId integrity |
 | **Kafka source connectors** | Configurations for both sites | 
 | **Kafka sink connectors** | Configurations for both sites  |
 | **Flink applications/statements** | Same Version deployment, state construction, offsets propagation |
 | **Tableflow** | Configuration for both sites, triggered by code, resume from replicated storage |
 | **Catalog** | |
-| **Iceberg Tables** | Replicatd by cloud provider service- 15 minutes latency is common. |
+| **Iceberg Tables** | Replicated by the cloud provider service; 15 minutes latency is common. |
+| **DB-managed replication** | This approach leverages transaction logs to be stored in a DB. Note that this approach is applicable only if a single database stores all application resources that need to be replicated |
+
+Kafka retention time per topics, and each consumer apps expected semantic tolerance is important. The following type of table is needed:
+
+| Topic | Retention | Consumer with expected semantic |
+| ----- | --------- | --------------------------------|
+| raw_tx | 2 days | Flink needs to rebuild state for exactly once |
+| raw_customer | 2 years | Upsert, at-least once for any consumers |
+| | |
+
+
+???+ info "Flink Specific"
+    Confluent Cloud for Flink is a regional, multi-AZ service. Flink per design is highly available, and recovers from local task manager failures. Flink relies on low-latency inter-node communication (TaskManagers exchanging shuffle data via RPCs) and tight state coordination. Running one cluster across regions creates severe network bottlenecks and split-brain risks. 
+    
+    Most modern Flink deployments are done as FlinkApplication resources on top of an orchestrator like Kubernetes; the worker nodes host those applications, and an application consists of a Job Manager and n Task Managers. Flink Kubernetes Operator acts as a control plane to manage the application deployment life cycle.
+
+    <figure markdown="span">
+    ![](./diagrams/flink-arch.drawio.png)
+    <figcaption>Figure: Flink Components with underlying services</figcaption>
+    </figure>
+
+    Instead, multi-region resiliency requires deploying independent, fully self-contained Flink clusters in each region, paired with a cross-region streaming data pipeline. The choice of source and sink connectors also impacts the design of the Flink DR solution. Using Kafka or Iceberg connectors has very different impacts.
+
+    
+    For each DR patterns recall:
+
+    * **Active/active**: Two (or more) regions run identical Flink jobs continuously, both processing the same input (with replication delay in the secondary). Best for low RTO, large state, or when you need exactly-once semantics and both regions to produce the same results.
+    * **Active/passive**: Flink runs only in the primary region. In the DR region, Flink jobs are started at **failover** time. Best when state can be recreated quickly (e.g. stateless or small time windows) or when at-least-once/at-most-once is acceptable. It is relevant for use cases that fail forward, and that require failing back to the original region within weeks of the outage. Stateful/windowed Flink statements may still be deployed in this mode, but those statements need to be running against mirrored source topics, allowing Flink to maintain equivalent state with the primary region. Do not mirror any Flink sink topics because asynchronous replication can leave state inconsistent and produce duplicates. RPO is linked to the Kafka topic replication performance.
 
 ???+ info "Tableflow specific"
-    As of now, 09/2026, Tableflow is regional, and does not replicate the table state to other region, so recovery means reconstructing each table in a second region, fomr the Kafka Topics. When those topics were created by Flink processing, this is not an issue as Flink has to run in parallel to keep its state and respect normal operation expected RTO. 
+    As of now, 09/2026, Tableflow is regional, and does not replicate the table state to another region, so recovery means reconstructing each table in a second region from the Kafka topics. When those topics were created by Flink processing, this is not an issue as Flink has to run in parallel to keep its state and respect normal operation expected RTO. 
     
     ![](./diagrams/tf/tf_dr_ctx.drawio.png)
 
-    In case the topics are cluster linked (with schema IDs preserved via schema linking), just enabling Tableflow on those. If Tableflow is not active, starting it on DR after failover, may lead to bigger RTO as, it needs to reprocess the lag. Larger tables recover slower.
+    In case the topics are cluster linked (with schema IDs preserved via schema linking), simply enable Tableflow on them. If Tableflow is not active, starting it on DR after failover, may lead to bigger RTO as, it needs to reprocess the lag. Larger tables recover slower.
     
-    Be sure to set the primary topics to infinite retention before any failover, so the full changelog is retained, replicated to DR region,  and each table can be rematerialized from offset 0. This could be relaxed if the business requirements authorize it. Also compacted topics have discarded history.
+    Be sure to set the primary topics to infinite retention before any failover, so the full changelog is retained, replicated to DR region,  and each table can be rematerialized from offset 0. This could be relaxed if the business requirements authorize it. Also, compacted topics have discarded history.
     
-    The DR buckets need to be configured upfront. The external catalog needs to federate to the DR Tableflow catalog. As the catalog namespace is linked to the kafka cluster, those names are different for each region. Also bucket names and folder path will be different than from primary site. 
+    The DR buckets need to be configured upfront. The external catalog needs to federate to the DR Tableflow catalog. As the catalog namespace is linked to the kafka cluster, those names are different for each region. Also bucket names and folder path will be different from the primary site. 
 
     Downstream consumers need to point to new tables.
 
     The above materialization mechanism can be set active/passive or active/active with duplicate records and the need to reconcile at the Iceberg tables query engine level.
 
-Obviously all other components of the figure above needs to have DR runbooks too.
+Obviously all other components of the figure above need to have DR runbooks too.
 
-When looking at the Flink architecture, it is important to recall that Flink relies on low-latency inter-node communication (TaskManagers exchanging shuffle data via RPCs) and tight state coordination, running one cluster across regions creates severe network bottlenecks and split-brain risks. Most of modern flink deployments are done as FlinkApplication on top of an orchestrator like kubernetes, the worker nodes host those applications, and application is job manager and n task manager. Flink Kubernetes Operator acts as a control plane to manage the application deployment life cycle.
 
-<figure markdown="span">
-![](./diagrams/flink-arch.drawio.png)
-<caption>**Figure: Flink Components with underlying services**</caption>
-</figure>
 
-Instead, multi-region resiliency requires deploying independent, fully self-contained Flink clusters in each region, paired with a cross-region streaming data pipeline. Also the source and sink connector selections impact the design of Flink DR solution. Using Kafka or Iceberg connectors have very different impacts.
-
-The following figures illustrate what elements need to be considered for disaster recovery for the different platforms:
+The following figures illustrate what elements need to be considered for disaster recovery for the different streamhouse platforms:
 
 === "Confluent Cloud"
     ![](./diagrams/cc-dr-elements.drawio.png)
 
-    * The blue color border means, those elements can be configured as infrastructure as code (e.g. terraform).
-    * Confluent Cloud control plane and data planes are separate points of failures. Data plane can run in any supported Cloud provider's regions.
+    * The blue border means that those elements can be configured as infrastructure as code (e.g. terraform).
+    * Confluent Cloud control plane and data planes are separate points of failure. Data plane can run in any supported Cloud provider's regions.
     * Communication between Control plane and data planes is done with the 'mothership' kafka cluster.
    
     [See Confluent Cloud resilience chapter.](https://docs.confluent.io/cloud/current/clusters/resilience.html)
 
 === "Confluent Platform"
     * TBC
-    * The blue color border means, those elements can be configured as code.
+    * The blue border means that those elements can be configured as code.
 
 === "Apache Flink"
     ![](./diagrams/dr/dr_act_act.drawio.png)
 
-* Need to decide which elements can run and being created in the DR site.
-* Active means, clients applications write data to the primary cluster. Passive, DR site, captures the replicated data and schemas. Active/active, clients write to either cluster.
+* Decide which elements can run and be created in the DR site.
+* Active means client applications write data to the primary cluster. Passive, DR site, captures the replicated data and schemas. Active/active, clients write to either cluster.
 
-* How networking hostname and CIDRs are defined in both sites. 
-* Flink Statements are most of the time stateful, and run continuously. Rebuild state cost RTO. A Flink statement stopped and restarted is the same as starting a new job. Assess if sources topics have extactly the same records.
-* In case of active/passive, failover decision is triggered by human but automated by scripts and runbooks. Clients must bootstrap to the DR cluster once a failover is triggered.
-* Disaster means source site is not reachable.
-* Assess if the consumer apps of records generated by Flink statements are idempotent and accept duplicates (the most recent consumer offsets may not have been committed to the destination cluster when a disaster occurs). Also consumers and producers must be tolerant of some RPO: there may be a small number of messages that have not been replicated to the DR cluster at the time of failover.
-* Not all kafka topics need to be replicated to DR sites. For Flink pipelines, it may be relevant to replicate only the source topics.
+* Define how network hostnames and CIDRs are set in both sites. 
+* Flink Statements are most of the time stateful, and run continuously. Rebuilding state adds to the RTO. A Flink statement stopped and restarted is the same as starting a new job. Assess if source topics have exactly the same records.
+* In case of active/passive, the failover decision is triggered by a human but automated by scripts and runbooks. Clients must bootstrap to the DR cluster once a failover is triggered.
+* Disaster means the source site is not reachable.
+* Assess whether the consumer apps of records generated by Flink statements are idempotent and accept duplicates (the most recent consumer offsets may not have been committed to the destination cluster when a disaster occurs). Also consumers and producers must be tolerant of some RPO: there may be a small number of messages that have not been replicated to the DR cluster at the time of failover.
+* Not all Kafka topics need to be replicated to DR sites. For Flink pipelines, it may be relevant to replicate only the source topics.
 
 ### 3.3 Networking
 
-Recalls that:
+Recall that:
 
-* VPC runs in a specific region. They can be connected via VPC peering to do inter-region traffic.
+* A VPC runs in a specific region. They can be connected via VPC peering to do inter-region traffic.
 * Security policies control ingress and egress traffic to/from VPC
-* Kafka use a binary protocol (not HTTP based). It use TLS with the common protocol of SASL_SSL for both authentication and encryption. Kafka Client applications cannot access Kafka through a traditional load balancer. 
+* Kafka uses a binary protocol (not HTTP-based). It uses TLS with the common protocol of SASL_SSL for both authentication and encryption. Kafka Client applications cannot access Kafka through a traditional load balancer. 
 * Client apps need DNS and port # of bootstrap servers advertised listener address. They need a network path to Confluent Cloud network
 
 <figure markdown="span">
@@ -479,41 +486,41 @@ Recalls that:
 * Confluent Cloud requires TLS for encryption for all communication. It also requires authentication using API_key and secret
 * Assess if public endpoint is an option to access Kafka, schema registry...
 * Revisit ingress to private network from Confluent Cloud network. Managed connectors are going to access your data sources and data sinks, your data sources and data sinks need to be accessible over the internet or via VPC gateways / private links.
-* VPC to Confluent Cloud can be interconnected using [Private Link](https://docs.confluent.io/cloud/current/networking/aws-privatelink-overview.html), which helps to access CCloud via private endpoint within VPC. Private Link network regroups an endpoint service, and n endpoints in the VPC or VNet associated with the endpoint service. Those endpoint service establishes connectivity to the Kafka cluster; each endpoint is an IP address that lives in one of the VPC subnets. This is a **unidirectional** connection, nothing in Confluent Cloud can access private environment. On the VPC side, SRE need to set up wildcard DNS records to forward all traffic destined for Confluent brokers to the correct Private Link endpoint that exists in the VPC. On-premises network can access CC via VPC. [See those notes.](https://developer.confluent.io/courses/confluent-cloud-networking/private-link/)
-* Access to Schema Registry - which is metadata only - is only accessible over the Internet
+* VPC to Confluent Cloud can be interconnected using [Private Link](https://docs.confluent.io/cloud/current/networking/aws-privatelink-overview.html), which helps to access CCloud via private endpoint within VPC. Private Link network regroups an endpoint service, and n endpoints in the VPC or VNet associated with the endpoint service. Those endpoint services establish connectivity to the Kafka cluster; each endpoint is an IP address that lives in one of the VPC subnets. This is a **unidirectional** connection, nothing in Confluent Cloud can access private environment. On the VPC side, SREs need to set up wildcard DNS records to forward all traffic destined for Confluent brokers to the correct Private Link endpoint that exists in the VPC. On-premises network can access CC via VPC. [See those notes.](https://developer.confluent.io/courses/confluent-cloud-networking/private-link/)
+* Schema Registry - which is metadata only - is only accessible over the Internet
 
 
 * Cluster Linking is set as bidirectional mode to enable topic data and metadata to sync between two clusters and should be used in all disaster recovery patterns. In the event of a disaster, a bidirectional Cluster Link can reverse the direction of data and metadata to support easy failover and/or fail back.
 
 ???+ info "Cluster Link"
-    [Cluster Links on Confluent Cloud](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/cluster-links-cc.html) enables data replication between two kafka clusters. Can be created with [Terraform](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/cluster-links-cc.html#managing-cluster-links-with-tf), [cli](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/cluster-links-cc.html#managing-cluster-links-with-the-cli) or [REST API](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/cluster-links-cc.html#managing-cluster-links-with-the-rest-api). Cluster links are created on the destination Kafka cluster. Source cluster may also be a Confluent Platform or Apache Kafka cluster.
+    [Cluster Links on Confluent Cloud](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/cluster-links-cc.html) enable data replication between two Kafka clusters. Can be created with [Terraform](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/cluster-links-cc.html#managing-cluster-links-with-tf), [cli](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/cluster-links-cc.html#managing-cluster-links-with-the-cli) or [REST API](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/cluster-links-cc.html#managing-cluster-links-with-the-rest-api). Cluster links are created on the destination Kafka cluster. Source cluster may also be a Confluent Platform or Apache Kafka cluster.
 
     By default, a cluster link is a one-way bridge but can be set to be bi-directional. Kafka clusters need to be dedicated or enterprise.
-    A Service account is the principal to process the cluster link, and needs api key/secrets on both clusters. ACLs need to be set so read from topics on source cluster.
+    A Service account is the principal to process the cluster link, and needs api key/secrets on both clusters. ACLs need to be set to allow reads from topics on the source cluster.
 
 ???+ info "Cell Architecture"
-    Modern cloud Native solution adopt the [cell architecture](https://docs.aws.amazon.com/solutions/cell-based-architecture-on-aws), as replacement of the traditional model of a single, multi-AZ cluster with multiple independent, single-AZ clusters. This model treats the Availability Zone as a strict fault domain. Each cell represents a fully functioning, independent replica of the application infrastructure.
+    Modern cloud-native solutions adopt the [cell architecture](https://docs.aws.amazon.com/solutions/cell-based-architecture-on-aws), as replacement of the traditional model of a single, multi-AZ cluster with multiple independent, single-AZ clusters. This model treats the Availability Zone as a strict fault domain. Each cell represents a fully functioning, independent replica of the application infrastructure.
     
     ![](./diagrams/cell-arch.drawio.png)
    
     It is not necessary to map cell to AZ, it is even recommended to have cell over multi-AZs too, within a VPC. 
     
-    It looks Confluent Cloud is based on such cell architecture. For example Flink endpoints are separated from `cloud.confluent.io/environment`. The high level view of this architecture may look like:
+    It looks like Confluent Cloud is based on such cell architecture. For example Flink endpoints are separated from `cloud.confluent.io/environment`. The high level view of this architecture may look like:
 
     ![](./diagrams/cell-arch-2.drawio.png)
 
-    To address routing to cell, we need to setup dedicated ALB per cell with cross-zone routing disabled. This routing layer may include application load balancing, meaning specific tenant's traffic can be routed within a specific cell.  Intra-service traffic is contained inside the cell boundary. Chatty microservices that exchange high volumes of data within a cluster generate zero inter-AZ data transfer charges because all pods run within the same AZ. 
+    To address routing to cell, we need to set up a dedicated ALB per cell with cross-zone routing disabled. This routing layer may include application load balancing, meaning specific tenant's traffic can be routed within a specific cell.  Intra-service traffic is contained inside the cell boundary. Chatty microservices that exchange high volumes of data within a cluster generate zero inter-AZ data transfer charges because all pods run within the same AZ. 
 
     Microservices inside a cell communicate solely with other pods inside the same cell, maintaining static stability. Data persistence services remain centralized and multi-AZ. 
 
-    The values are:
+    The benefits are:
 
     * Lower blast radius
     * Higher Mean Time Between Failure (MTBF)
     * Lower Mean Time to Recovery (MTTR)
     * Safer deployment (which enforces strong GitOps automation). 
 
-    See [AWS cell-based microservice architectuyre on AWS - Video](https://www.youtube.com/watch?y=&v=ReRrhU-yRjg&start=277)
+    See [AWS cell-based microservice architecture on AWS - Video](https://www.youtube.com/watch?y=&v=ReRrhU-yRjg&start=277)
 
 #### Resources
 
@@ -525,20 +532,20 @@ Recalls that:
 
 Use this when you need to survive a full region or data-center failure. Flink DR options assume **Kafka and Schema Registry DR** first: exact replication of data (including consumer offsets) and schemas. 
 
-Flink jobs are started, in second region, only on failover.
+Flink jobs are started in the second region only on failover.
 
-This approach is best for stateless jobs, or when states can be created quickly: Flink Jobs Window Size and time to recompute job state < RTO. Also for solutions based on at-least once, or at-most-once. Even for stateless jobs, exactly-once semantics is not supported as duplicates are possible at the Flink pipeline sink. 
+This approach is best for stateless jobs, or when state can be rebuilt quickly: Flink Jobs Window Size and time to recompute job state < RTO. Also for solutions based on at-least once, or at-most-once. Even for stateless jobs, exactly-once semantics is not supported as duplicates are possible at the Flink pipeline sink. 
 
 On Confluent Cloud, [Cluster Linking](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/dr-failover.html) and [Schema Linking](https://docs.confluent.io/cloud/current/sr/schema-linking.html) deliver topic and schema replications. 
 
 On Confluent Platform or self-managed Flink, you replicate topics (and offsets) and schemas by your own means (e.g. MirrorMaker, cluster links, or shared storage).
 
-A generic a ctive/passice DR component views will reley on the selected platform: 
+Generic active/passive DR component views will rely on the selected platform: 
 
 === "Confluent Cloud"
     <figure markdown="span">
     ![](./diagrams/dr/dr_act_passive.drawio.png)
-    <capture>Classical DR replication</capture>
+    <figcaption>Classical DR replication</figcaption>
     </figure>
 
     * DB Replication is for transactional payload and leverage RDBMS replication mechanisms
@@ -547,27 +554,27 @@ A generic a ctive/passice DR component views will reley on the selected platform
     * Object Storage replication is a Cloud Provider service
     * Flink Compute pools are created by IaC and can be created upfront in both regions
     * Cluster Linking creates “mirror topics” with globally consistent offsets. Messages on the source topics are mirrored identically onto the destination cluster, at the same partitions and offsets. 
-    * Each Confluent Cloud environment is allowed one Schema Registry instance, which is used by all of the Kafka clusters, Connect clusters, Flink statements. Schema linking replicates schemas (and schema id) between schema registries. It  requires the destination’s Schema Registry2 to be in IMPORT mode, which allows new schemas to be written only by Schema Linking.
+    * Each Confluent Cloud environment is allowed one Schema Registry instance, which is used by all of the Kafka clusters, Connect clusters, Flink statements. Schema linking replicates schemas (and schema id) between schema registries. It  requires the destination’s Schema Registry to be in IMPORT mode, which allows new schemas to be written only by Schema Linking.
 
 === "Confluent Platform / Apache flink"
-    For Confluent Platform or Apache Flink on Kubernetes the replications includes resource definitions, configurations, savepoints replications. It is easier to test and practice DR by moving producers and consumers to the DR cluster and reversing the direction of data and metadata.
+    For Confluent Platform or Apache Flink on Kubernetes the replication includes resource definitions, configurations, and savepoints. It is easier to test and practice DR by moving producers and consumers to the DR cluster and reversing the direction of data and metadata.
     <figure markdown="span">
     ![](./diagrams/dr/dr_k8s_act_passive.drawio.png)
-    <capture>Classical DR replication</capture>
+    <figcaption>Classical DR replication</figcaption>
     </figure>
 
     * DB Replication is for transactional payload and leverage RDBMS replication mechanisms
     * Topic replication is supported by Confluent cluster link
     * Schema replication is for Confluent Schema linking
     * K8S configuration, ETCD config.. need to be replicated
-    * Storage softwware may have their replication capabilities to manage cross-region replications.
+    * Storage software may have replication capabilities to manage cross-region replication.
 
 #### Preconditions / Checklist
 
 * Provision API keys for the DR cluster in advance and store them in a vault for low RTO.
 * Kafka and Schema Registry DR are in place: topics and consumer offsets replicated to the secondary cluster; schemas replicated (e.g. Schema Linking on Confluent Cloud). see [Cluster Linking DR and Failover](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/dr-failover.html) 
 * Cluster Linking is asynchronous: RPO is bounded by mirror lag while RTO depends on client failover and time to start Flink and restore state, which may take hours.
-* Topic retention in DR must exceed the time needed to rebuild state (e.g. window size or TTL). Without enough retention, results will be wrong, or only subset of queries would work. To avoid duplicates of Flink table content, do not replicate Flink created topics.
+* Topic retention in DR must exceed the time needed to rebuild state (e.g. window size or TTL). Without enough retention, results will be wrong, or only a subset of queries will work. To avoid duplicates of Flink table content, do not replicate Flink created topics.
 * Use event time (not processing time) for windows and aggregations so replay produces correct results.
 * Create the appropriate role bindings in the DR environment for applications and users that will failover.
 * Assess if cluster links need to be set bi-directional to easily failback to primary, once failed over.
@@ -601,15 +608,15 @@ A generic a ctive/passice DR component views will reley on the selected platform
 * When disaster failover happens, Flink can keep reading schema-based data only if schemas have already been replicated to the DR region’s Schema Registry via Schema Linking. Otherwise record deserialization will fail.
 * In the standard DR pattern, primary SR stays READWRITE, secondary SR stays IMPORT, and during failover you must reverse the schema link. [See product documentation](https://docs.confluent.io/cloud/current/sr/schema-linking.html#configure-credentials-on-the-destination).
 * On failover, ensure Schema Link is caught up, then promote/switch Kafka side.
-* If you need Flink to run CREATE TABLE after failover, the DR side must allow schema writes to the active SR and the user/service account must have the required SR/Kafka permissions
+* If you need Flink to run CREATE TABLE after failover, the DR side must allow schema writes to the active SR and the user/service account must have the required SR/Kafka permissions.
 
 ---
 
 ### 3.5 Active-active pattern
 
-In the scope of classical web applciation, active/active really means that a user will loose connection to a site and be routed to another site in milliseconds: session data as cookies may be recovered. For Kafka, producer and consumer may use a bootstrap list of URLs including both sites. For Flink the query/job deployments is done on both site in parallel. The main problem is to assess what to replicate, and if the Flink pipelines need to be consumed or not.
+In the scope of classical web application, active/active really means that a user will lose connection to a site and be routed to another site in milliseconds: session data as cookies may be recovered. For Kafka, producer and consumer may use a bootstrap list of URLs including both sites. For Flink, the query and job deployments are done on both sites in parallel. The main problem is to assess what to replicate, and if the Flink pipelines need to be consumed or not.
 
-The biggest challenge is to avoid data collision in the same data store: entity created in two regions in less than 100ms can collide when replicated. So replications need to be done on data that could not be sourced on both sites.
+The biggest challenge is to avoid data collision in the same data store: entity created in two regions in less than 100ms can collide when replicated. So replications need to be done on data that cannot be sourced on both sites.
 
 The approach is to have two identical Flink jobs or pipelines of jobs run in parallel continuously in both regions. They process the same data, with some replication delay in the secondary region.
 
@@ -620,7 +627,7 @@ This is recommended for low RTO requirements, with Flink jobs with large states,
 === "Confluent Cloud"
     <figure markdown="span">
     ![](./diagrams/dr/dr_act_act.drawio.png)
-    <capture>Classical DR replication</capture>
+    <figcaption>Classical DR replication</figcaption>
     </figure>
 
     1. Replicate **only input topics** to the DR region (e.g. cluster link from primary to DR). Do not replicate Flink output topics into the other region’s input to avoid duplicates.
@@ -633,12 +640,13 @@ This is recommended for low RTO requirements, with Flink jobs with large states,
   
     <figure markdown="span">
     ![](./diagrams/dr/dr_k8s_act_act.drawio.png)
-    <capture>DR replication</capture>
+    <figcaption>DR replication</figcaption>
     </figure>
 
     
 ---
-TBC
+
+To Be Continued
 
 ### 3.6 Apache Flink / CP backup/restore of state backend
 
@@ -651,7 +659,7 @@ Use this when you need to back up Flink job state for recovery, upgrades, or mig
 
 **By deployment:**
 
-* **Confluent Cloud**: Regional, multi-AZ service. Checkpoints run every minute for in-region fault tolerance. No user-configurable state backend; state is managed by the service. In a region loss, there is no built-in cross-region state restore—you must implement a cross-region DR strategy (see [3.2 below](./cluster_mgt.md/#34-active-passive-pattern)).
+* **Confluent Cloud**: Regional, multi-AZ service. Checkpoints run every minute for in-region fault tolerance. No user-configurable state backend; state is managed by the service. In a region loss, there is no built-in cross-region state restore; you must implement a cross-region DR strategy (see [3.4 above](#34-active-passive-pattern)).
 * **Confluent Platform (CMF) / Kubernetes**: Checkpoints and savepoints go to object or distributed storage (e.g. S3, HDFS). [CMF supports Savepoint resources](https://docs.confluent.io/platform/current/flink/jobs/savepoints.html) (trigger, list, detach, start from savepoint) via REST API. For failover between data centers, durable storage must be accessible from both (or replicated); Kafka topics (and offsets) must be replicated; then Flink applications can be restarted from checkpoints/savepoints in the DR site.
 * **Open-source Flink (e.g. K8s operator)**: Same concepts; configure `state.checkpoints.dir` and optional `state.savepoints.dir` to durable storage. Use [Kubernetes HA](https://nightlies.apache.org/flink/flink-docs-stable/docs/deployment/ha/kubernetes_ha/) with `high-availability.storageDir` for JobManager metadata.
 
@@ -692,7 +700,7 @@ Use this when you need to back up Flink job state for recovery, upgrades, or mig
 
 1. **From savepoint**: Start the application with `startFromSavepoint` set to the savepoint path, CMF savepoint name, or UID. In CMF: create/update application with `savepointName`/`uid`/`initialSavepointPath`, or `POST .../applications/{appName}/start?startFromSavepointUid={uid}`.
 2. **From checkpoint (automatic)**: After a failure, Flink (and K8s HA if configured) restarts the job and restores from the latest successful checkpoint when no savepoint is specified.
-3. **Confluent Cloud**: Failed statements auto-restart using the last checkpoint; there is no user-visible backup/restore of state to another region—use active-active or active-passive (see 3.2).
+3. **Confluent Cloud**: Failed statements auto-restart using the last checkpoint; there is no user-visible backup/restore of state to another region; use active-active or active-passive (see 3.4).
 
 #### Rollback
 
