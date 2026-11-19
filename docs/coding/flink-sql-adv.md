@@ -48,7 +48,7 @@ GROUP BY
 ## State bootstraping
 
 
-The Flink stateful function [State Bootstrapping](https://nightlies.apache.org/flink/flink-statefun-docs-master/docs/deployment/state-bootstrap/) helps to load data in Flink snapshot as a way to bootstrap Flink stateful statement.
+The Flink stateful function [State Bootstrapping](https://nightlies.apache.org/flink/flink-statefun-docs-master/docs/deployment/state-bootstrap/) helps to load data in Flink as a way to bootstrap Flink stateful statement.
 
 ## Bootstrap Queries
 

@@ -265,6 +265,12 @@ When submitting statement via the REST API, the mode is set via spec properties.
 
 Flink automatically switches to batch mode processing. Snapshot queries use read-committed as the default isolation level, which aligns with Kafka’s exactly-once semantics (EOS).
 
+Confluent cli supports [snapshot query directly](https://docs.confluent.io/cloud/current/flink/reference/flink-sql-cli.html#run-a-query)
+
+```sh
+confluent flink query --sql "SELECT * FROM driver_rides LIMIT 10;"
+```
+
 Here is an example of using [Confluent sql module](https://pypi.org/project/confluent-sql/) to perform a snapshot query from code: 
 
 ```python

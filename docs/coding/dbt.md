@@ -948,6 +948,8 @@ The project management for dbt based project is now in [a separate chapter](../m
       }}
       ```
 
+      See [product documentation](https://github.com/confluentinc/dbt-confluent/blob/main/MATERIALIZATIONS.md)
+
 
 ???+ question "How to alter dependent tables from current model?"
     Suppose the source topic was created with CDC and is in retract mode. We want to get it in append mode, dbt support pre hook in the config function:
@@ -960,6 +962,10 @@ The project management for dbt based project is now in [a separate chapter](../m
       ]
     ) }}
     ```
+
+???+ info "Enabling Confluent Tableflow"
+    Add a tableflow config to a model and the adapter turns its topic into an Iceberg and/or Delta table, with Confluent-managed storage or your own S3, ADLS, or GCS bucket.  
+    [See Confluent dbt reference documentation.](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/dbt-adapter-reference.html)
 
 ???+ info "Private networking / using endpoint"
     For private networking it is recommended to set the `endpoint` parameter in the profile.yml. In this case you need to remove the prodiver and region:

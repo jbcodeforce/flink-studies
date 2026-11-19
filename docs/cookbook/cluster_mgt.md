@@ -386,8 +386,8 @@ The following view presents the deployed components, where we should assess how 
 
 | Streamhouse Components | DR Considerations | 
 | -------------- | ------------------ |
-| **Kafka Topics** | Data replications and offset integrity. RPO zero is not achievable with asynchronous replication. | 
-| **Schemas** | Same versions on both sides, to keep schemaId integrity |
+| **Kafka Topics** | Data replications and offset integrity. RPO zero is not achievable with asynchronous replication. Confluent Cloud cluster link is used.| 
+| **Schemas** | Same versions on both sides, to keep schemaId integrity. Confluent Cloud Schema link is used. |
 | **Kafka source connectors** | Configurations for both sites | 
 | **Kafka sink connectors** | Configurations for both sites  |
 | **Flink applications/statements** | Same Version deployment, state construction, offsets propagation |
@@ -420,7 +420,7 @@ Kafka retention time per topics, and each consumer apps expected semantic tolera
     
     For each DR patterns recall:
 
-    * **Active/active**: Two (or more) regions run identical Flink jobs continuously, both processing the same input (with replication delay in the secondary). Best for low RTO, large state, or when you need exactly-once semantics and both regions to produce the same results.
+    * **Active/active**: Two (or more) regions run identical Flink jobs continuously, both processing the same input raw topics (with replication delay in the secondary). Best for low RTO, large state, or when you need exactly-once semantics and both regions to produce the same results.
     * **Active/passive**: Flink runs only in the primary region. In the DR region, Flink jobs are started at **failover** time. Best when state can be recreated quickly (e.g. stateless or small time windows) or when at-least-once/at-most-once is acceptable. It is relevant for use cases that fail forward, and that require failing back to the original region within weeks of the outage. Stateful/windowed Flink statements may still be deployed in this mode, but those statements need to be running against mirrored source topics, allowing Flink to maintain equivalent state with the primary region. Do not mirror any Flink sink topics because asynchronous replication can leave state inconsistent and produce duplicates. RPO is linked to the Kafka topic replication performance.
 
 ???+ info "Tableflow specific"
@@ -439,8 +439,6 @@ Kafka retention time per topics, and each consumer apps expected semantic tolera
     The above materialization mechanism can be set active/passive or active/active with duplicate records and the need to reconcile at the Iceberg tables query engine level.
 
 Obviously all other components of the figure above need to have DR runbooks too.
-
-
 
 The following figures illustrate what elements need to be considered for disaster recovery for the different streamhouse platforms:
 
@@ -475,8 +473,8 @@ The following figures illustrate what elements need to be considered for disaste
 Recall that:
 
 * A VPC runs in a specific region. They can be connected via VPC peering to do inter-region traffic.
-* Security policies control ingress and egress traffic to/from VPC
-* Kafka uses a binary protocol (not HTTP-based). It uses TLS with the common protocol of SASL_SSL for both authentication and encryption. Kafka Client applications cannot access Kafka through a traditional load balancer. 
+* Security policies control ingress and egress traffic to/from VPC, and need to be replicated between region/VPC
+* Kafka uses a binary protocol (not HTTP-based). It uses TLS with the common protocol of SASL_SSL for both authentication and encryption. Kafka Client applications cannot access Kafka through a traditional load balancer. A network load balancer is needed.
 * Client apps need DNS and port # of bootstrap servers advertised listener address. They need a network path to Confluent Cloud network
 
 <figure markdown="span">
@@ -530,11 +528,11 @@ Recall that:
 
 #### Context
 
-Use this when you need to survive a full region or data-center failure. Flink DR options assume **Kafka and Schema Registry DR** first: exact replication of data (including consumer offsets) and schemas. 
+Use this when you need to survive a full region or data-center failure. Flink DR options assume **Kafka and Schema Registry DR** first: exact replication of data (including offsets) and schemas. 
 
 Flink jobs are started in the second region only on failover.
 
-This approach is best for stateless jobs, or when state can be rebuilt quickly: Flink Jobs Window Size and time to recompute job state < RTO. Also for solutions based on at-least once, or at-most-once. Even for stateless jobs, exactly-once semantics is not supported as duplicates are possible at the Flink pipeline sink. 
+This approach is best for stateless jobs, or when state can be rebuilt quickly: Flink Jobs Window Size and time to recompute job state < RTO. Also for solutions based on at-least once, or at-most-once. Even for stateless jobs, exactly-once semantics is not supported as duplicates are possible at the Flink pipeline sink. Important that retention time set at the source topics, consumed by Flink jobs needs to be greater that to any window size and time conditions used in the flink logic.
 
 On Confluent Cloud, [Cluster Linking](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/dr-failover.html) and [Schema Linking](https://docs.confluent.io/cloud/current/sr/schema-linking.html) deliver topic and schema replications. 
 
@@ -549,10 +547,10 @@ Generic active/passive DR component views will rely on the selected platform:
     </figure>
 
     * DB Replication is for transactional payload and leverage RDBMS replication mechanisms
-    * Topic replication is supported by Confluent cluster link
+    * Topic replication is supported by Confluent Cluster link
     * Schema replication is for Confluent Schema linking
     * Object Storage replication is a Cloud Provider service
-    * Flink Compute pools are created by IaC and can be created upfront in both regions
+    * Flink Compute pools are created by Infrastructure as Code and can be created upfront in both regions
     * Cluster Linking creates “mirror topics” with globally consistent offsets. Messages on the source topics are mirrored identically onto the destination cluster, at the same partitions and offsets. 
     * Each Confluent Cloud environment is allowed one Schema Registry instance, which is used by all of the Kafka clusters, Connect clusters, Flink statements. Schema linking replicates schemas (and schema id) between schema registries. It  requires the destination’s Schema Registry to be in IMPORT mode, which allows new schemas to be written only by Schema Linking.
 
@@ -572,8 +570,8 @@ Generic active/passive DR component views will rely on the selected platform:
 #### Preconditions / Checklist
 
 * Provision API keys for the DR cluster in advance and store them in a vault for low RTO.
-* Kafka and Schema Registry DR are in place: topics and consumer offsets replicated to the secondary cluster; schemas replicated (e.g. Schema Linking on Confluent Cloud). see [Cluster Linking DR and Failover](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/dr-failover.html) 
-* Cluster Linking is asynchronous: RPO is bounded by mirror lag while RTO depends on client failover and time to start Flink and restore state, which may take hours.
+* Kafka and Schema Registry DR are in place: topics and consumer offsets replicated to the secondary cluster; schemas replicated (e.g. Schema Linking on Confluent Cloud). see [Cluster Linking DR and Failover](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/dr-failover.html). [See also those terraform from the DR demo - Cluster link](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/dr-car-rides/IaC/02-cluster-link/cluster-link.tf) and [schema link](https://github.com/jbcodeforce/flink-studies/blob/master/e2e-demos/dr-car-rides/IaC/03-schema-linking/schema-linking.tf)
+* Cluster Linking is asynchronous: RPO is bounded by mirror lag while RTO depends on client failover and time to start Flink and restore state, which may take hours. Prefer to replicate only source/raw topics.
 * Topic retention in DR must exceed the time needed to rebuild state (e.g. window size or TTL). Without enough retention, results will be wrong, or only a subset of queries will work. To avoid duplicates of Flink table content, do not replicate Flink created topics.
 * Use event time (not processing time) for windows and aggregations so replay produces correct results.
 * Create the appropriate role bindings in the DR environment for applications and users that will failover.
